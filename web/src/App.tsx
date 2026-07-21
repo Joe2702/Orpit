@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from './store';
 import { api } from './api';
 
@@ -194,6 +194,20 @@ export function App() {
     else setLocalTheme(t);
   };
 
+  // On a phone (or installed as a PWA) fill the whole screen like a native app.
+  // On a desktop, keep the pretty phone-mockup showcase.
+  const [mobile, setMobile] = useState<boolean>(() => detectMobile());
+  useEffect(() => {
+    const on = () => setMobile(detectMobile());
+    window.addEventListener('resize', on);
+    const mm = window.matchMedia('(display-mode: standalone)');
+    mm.addEventListener?.('change', on);
+    return () => {
+      window.removeEventListener('resize', on);
+      mm.removeEventListener?.('change', on);
+    };
+  }, []);
+
   const showTabs = APP_SCREENS.includes(screen);
 
   const pill = (active: boolean): React.CSSProperties => ({
@@ -208,6 +222,70 @@ export function App() {
     ...(active ? { background: '#14151A', color: '#fff' } : { background: 'transparent', color: '#3a3b42' }),
   });
 
+  const appInner = (
+    <>
+      {!mobile && (
+        <div style={{ position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)', width: 118, height: 34, background: '#000', borderRadius: 20, zIndex: 80 }} />
+      )}
+
+      {!mobile && <StatusBar />}
+
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', position: 'relative', WebkitOverflowScrolling: 'touch' }}>
+        {ready ? <CurrentScreen /> : null}
+      </div>
+
+      {toast && (
+        <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, background: 'var(--text)', color: 'var(--bg)', padding: '11px 20px', borderRadius: 999, fontSize: 14, fontWeight: 600, boxShadow: '0 12px 32px rgba(8,9,14,.28)', animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' }}>
+          <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--success)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+            <path d="M4 9.5l3.4 3.4L14 5" />
+          </svg>
+          {toast}
+        </div>
+      )}
+
+      {showTabs && <TabBar />}
+
+      {sheet && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 90, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+          <div onClick={closeSheet} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.5)', animation: 'fadeIn .25s ease', backdropFilter: 'blur(2px)' }} />
+          <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: '30px 30px 0 0', animation: 'sheetUp .34s cubic-bezier(.22,1,.36,1)', maxHeight: '92%', display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 40px rgba(8,9,14,.3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 2px', flex: 'none' }}>
+              <div style={{ width: 38, height: 4, borderRadius: 999, background: 'var(--border)' }} />
+            </div>
+            <div style={{ overflowY: 'auto', paddingBottom: mobile ? 'env(safe-area-inset-bottom)' : 0 }}>
+              <SheetBody />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  // Phone / installed PWA: fill the whole screen, no mockup frame.
+  if (mobile) {
+    return (
+      <div
+        className="orbit"
+        data-theme={theme}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          width: '100%',
+          height: '100dvh',
+          background: 'var(--bg)',
+          color: 'var(--text)',
+          display: 'flex',
+          flexDirection: 'column',
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        {appInner}
+      </div>
+    );
+  }
+
+  // Desktop: pretty phone-mockup showcase.
   return (
     <div className="stage">
       <div style={{ display: 'flex', gap: 4, alignItems: 'center', background: 'rgba(255,255,255,.7)', backdropFilter: 'blur(8px)', borderRadius: 999, padding: 5, boxShadow: '0 2px 12px rgba(20,21,30,.12)' }}>
@@ -217,38 +295,7 @@ export function App() {
 
       <div style={{ width: 414, height: 868, background: '#08080a', borderRadius: 56, padding: 12, boxShadow: '0 60px 120px -30px rgba(15,16,24,.6), 0 0 0 2px rgba(255,255,255,.05) inset', flex: 'none' }}>
         <div className="orbit" data-theme={theme} style={{ position: 'relative', width: 390, height: 844, borderRadius: 44, overflow: 'hidden', background: 'var(--bg)', display: 'flex', flexDirection: 'column', color: 'var(--text)' }}>
-          <div style={{ position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)', width: 118, height: 34, background: '#000', borderRadius: 20, zIndex: 80 }} />
-
-          <StatusBar />
-
-          <div style={{ flex: 1, overflowY: 'auto', position: 'relative', WebkitOverflowScrolling: 'touch' }}>
-            {ready ? <CurrentScreen /> : null}
-          </div>
-
-          {toast && (
-            <div style={{ position: 'absolute', top: 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, background: 'var(--text)', color: 'var(--bg)', padding: '11px 20px', borderRadius: 999, fontSize: 14, fontWeight: 600, boxShadow: '0 12px 32px rgba(8,9,14,.28)', animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' }}>
-              <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--success)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-                <path d="M4 9.5l3.4 3.4L14 5" />
-              </svg>
-              {toast}
-            </div>
-          )}
-
-          {showTabs && <TabBar />}
-
-          {sheet && (
-            <div style={{ position: 'absolute', inset: 0, zIndex: 90, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-              <div onClick={closeSheet} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.5)', animation: 'fadeIn .25s ease', backdropFilter: 'blur(2px)' }} />
-              <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: '30px 30px 0 0', animation: 'sheetUp .34s cubic-bezier(.22,1,.36,1)', maxHeight: '92%', display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 40px rgba(8,9,14,.3)' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 2px', flex: 'none' }}>
-                  <div style={{ width: 38, height: 4, borderRadius: 999, background: 'var(--border)' }} />
-                </div>
-                <div style={{ overflowY: 'auto' }}>
-                  <SheetBody />
-                </div>
-              </div>
-            </div>
-          )}
+          {appInner}
         </div>
       </div>
 
@@ -257,4 +304,13 @@ export function App() {
       </div>
     </div>
   );
+}
+
+function detectMobile(): boolean {
+  if (typeof window === 'undefined') return false;
+  const standalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    // iOS Safari standalone flag
+    (window.navigator as any).standalone === true;
+  return standalone || window.innerWidth < 700;
 }
