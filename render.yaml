@@ -1,0 +1,18 @@
+# Render Blueprint — deploys the whole Orbit app (frontend + backend) as one free web service.
+# In Render: New → Blueprint → connect this repo. You'll be asked for DATABASE_URL.
+services:
+  - type: web
+    name: orbit
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      # Paste your Neon connection string here when Render prompts you.
+      - key: DATABASE_URL
+        sync: false
+      # A strong random secret for signing logins — Render generates it for you.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_VERSION
+        value: "22"

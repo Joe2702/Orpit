@@ -1,0 +1,123 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: 'Geist', system-ui, -apple-system, sans-serif;
+}
+
+/* Outer page (device on a soft backdrop), mirrors the prototype's frame stage. */
+.stage {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 40px 20px;
+  font-family: 'Geist', sans-serif;
+  background: radial-gradient(120% 90% at 50% -10%, #ece9e3 0%, #ded9ce 58%, #d1ccbe 100%);
+}
+
+.orbit {
+  --indigo: #5c57c9;
+  --coral: #c77b66;
+  --teal: #5e9c8e;
+  --blue: #6e8bc0;
+  --emerald: #5e9b79;
+  --success: #5e9b79;
+  --warning: #c79a52;
+  --danger: #c25b53;
+  --bg: #f4f2ee;
+  --surface: #fcfbf9;
+  --surface2: #f7f5f1;
+  --text: #211f1b;
+  --text2: #807a70;
+  --border: #e9e5de;
+  --shadow: 0 1px 2px rgba(38, 34, 28, 0.04), 0 4px 16px -8px rgba(38, 34, 28, 0.1);
+  font-family: 'Geist', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.orbit[data-theme='dark'] {
+  --bg: #16140f;
+  --surface: #201e19;
+  --surface2: #262320;
+  --text: #f1eee7;
+  --text2: #9c968b;
+  --border: #2d2a24;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.orbit *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+.orbit input {
+  font-family: 'Geist', sans-serif;
+}
+.orbit input::placeholder {
+  color: var(--text2);
+  opacity: 0.7;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.4);
+  }
+  55% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes sheetUp {
+  from {
+    transform: translateY(101%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Press feedback — replaces the prototype's style-active hook. */
+.press:active {
+  transform: scale(0.98);
+}
+.press96:active {
+  transform: scale(0.96);
+}
+.press99:active {
+  transform: scale(0.99);
+}
+.press92:active {
+  transform: scale(0.92);
+}
+.pressRow:active {
+  background: var(--bg);
+}

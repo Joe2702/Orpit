@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:'Geist',system-ui,-apple-system,sans-serif}
+.orbit{
+  --indigo:#6366F1; --coral:#F97362; --teal:#14B8A6; --blue:#60A5FA; --emerald:#10B981;
+  --success:#22C55E; --warning:#F59E0B; --danger:#EF4444;
+  --bg:#F6F7F9; --surface:#FFFFFF; --surface2:#FBFBFC; --text:#14151A; --text2:#6B7280;
+  --border:#ECEEF2; --shadow:0 1px 2px rgba(20,21,26,.04), 0 6px 20px -6px rgba(20,21,26,.10);
+  font-family:'Geist',sans-serif; font-variant-numeric:tabular-nums;
+}
+.orbit[data-theme="dark"]{
+  --bg:#0E0F13; --surface:#181A20; --surface2:#1E2128; --text:#F2F3F5; --text2:#9AA0AB;
+  --border:#262932; --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+.orbit *::-webkit-scrollbar{width:0;height:0;display:none}
+.orbit input{font-family:'Geist',sans-serif}
+.orbit input::placeholder{color:var(--text2);opacity:.7}
+@keyframes pop{0%{transform:scale(.4)}55%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes sheetUp{from{transform:translateY(101%)}to{transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:40px 20px;background:radial-gradient(120% 90% at 50% -10%, #eceef2 0%, #d3d6dd 60%, #c4c8d0 100%);font-family:'Geist',sans-serif">
+
+  <div style="display:flex;gap:4px;align-items:center;background:rgba(255,255,255,.7);backdrop-filter:blur(8px);border-radius:999px;padding:5px;box-shadow:0 2px 12px rgba(20,21,30,.12)">
+    <div onClick="{{ setLight }}" style="{{ lightPillStyle }}">Light</div>
+    <div onClick="{{ setDark }}" style="{{ darkPillStyle }}">Dark</div>
+  </div>
+
+  <div style="width:414px;height:868px;background:#08080a;border-radius:56px;padding:12px;box-shadow:0 60px 120px -30px rgba(15,16,24,.6), 0 0 0 2px rgba(255,255,255,.05) inset;flex:none">
+    <div class="orbit" data-theme="{{ theme }}" style="position:relative;width:390px;height:844px;border-radius:44px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;color:var(--text)">
+
+      <div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:118px;height:34px;background:#000;border-radius:20px;z-index:80"></div>
+
+      <div style="height:54px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 30px 9px;z-index:60">
+        <div style="font-size:15px;font-weight:600;color:var(--text);letter-spacing:.01em">9:41</div>
+        <div style="display:flex;align-items:center;gap:7px;color:var(--text)">
+          <svg width="18" height="12" style="display:block;fill:currentColor"><rect x="0" y="8" width="3" height="4" rx="1"></rect><rect x="5" y="5.5" width="3" height="6.5" rx="1"></rect><rect x="10" y="3" width="3" height="9" rx="1"></rect><rect x="15" y="0" width="3" height="12" rx="1"></rect></svg>
+          <svg width="17" height="12" style="display:block;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round"><path d="M2 4.5a10 10 0 0 1 13 0"></path><path d="M4.5 7.2a6 6 0 0 1 8 0"></path><path d="M7 9.8a2.2 2.2 0 0 1 3 0"></path></svg>
+          <div style="display:flex;align-items:center;gap:1.5px">
+            <div style="width:22px;height:11.5px;border:1.4px solid currentColor;border-radius:3px;padding:1.4px;opacity:.9"><div style="width:78%;height:100%;background:currentColor;border-radius:1px"></div></div>
+            <div style="width:1.5px;height:4px;background:currentColor;border-radius:2px;opacity:.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;position:relative;-webkit-overflow-scrolling:touch">
+
+        <sc-if value="{{ isWelcome }}" hint-placeholder-val="{{ true }}">
+          <div style="height:100%;display:flex;flex-direction:column;padding:0 28px;animation:fadeIn .5s ease">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px">
+              <div style="position:relative;width:104px;height:104px;display:flex;align-items:center;justify-content:center">
+                <div style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(150deg,#6366F1,#818CF8);box-shadow:0 24px 54px -10px rgba(99,102,241,.65)"></div>
+                <svg width="104" height="104" style="position:absolute;inset:0;overflow:visible">
+                  <ellipse cx="52" cy="52" rx="46" ry="18" transform="rotate(-28 52 52)" style="fill:none;stroke:rgba(255,255,255,.5);stroke-width:2"></ellipse>
+                  <circle cx="90" cy="33" r="5" style="fill:#fff"></circle>
+                </svg>
+                <div style="width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:2"></div>
+              </div>
+              <div style="text-align:center">
+                <div style="font-size:42px;font-weight:700;letter-spacing:-.03em;color:var(--text)">Orbit</div>
+                <div style="font-size:16px;color:var(--text2);margin-top:10px;line-height:1.55;max-width:250px">Tap to log, dive deep to learn. Your whole life, gently tracked.</div>
+              </div>
+            </div>
+            <div style="padding-bottom:42px;display:flex;flex-direction:column;gap:6px">
+              <div onClick="{{ goSignup }}" style="background:var(--indigo);color:#fff;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;cursor:pointer;box-shadow:0 12px 26px -8px rgba(99,102,241,.6)" style-active="transform:scale(.98)">Get started</div>
+              <div onClick="{{ goSignin }}" style="text-align:center;font-size:14px;font-weight:500;color:var(--text2);padding:14px;cursor:pointer">I already have an account</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSignin }}" hint-placeholder-val="{{ false }}">
+          <div style="min-height:100%;display:flex;flex-direction:column;padding:6px 28px 36px;animation:fadeUp .4s ease">
+            <div onClick="{{ goWelcome }}" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;background:var(--surface);border:1px solid var(--border)">
+              <svg width="20" height="20" style="fill:none;stroke:var(--text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 5l-5 5 5 5"></path></svg>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px 0">
+              <div style="font-size:30px;font-weight:700;letter-spacing:-.025em;color:var(--text)">{{ signTitle }}</div>
+              <div style="font-size:15px;color:var(--text2);margin-top:8px;line-height:1.5">{{ signSub }}</div>
+              <div style="margin-top:30px">
+                <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:8px">Email</div>
+                <input type="email" value="{{ email }}" onChange="{{ setEmail }}" placeholder="you@example.com" style="width:100%;height:52px;border-radius:14px;border:1px solid var(--border);background:var(--surface);padding:0 16px;font-size:16px;color:var(--text);outline:none" style-focus="border-color:var(--indigo)"/>
+              </div>
+              <div onClick="{{ goHome }}" style="background:var(--indigo);color:#fff;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;cursor:pointer;margin-top:18px;box-shadow:0 12px 26px -8px rgba(99,102,241,.55)" style-active="transform:scale(.98)">{{ signCta }}</div>
+              <div style="display:flex;align-items:center;gap:14px;margin:24px 0">
+                <div style="flex:1;height:1px;background:var(--border)"></div>
+                <div style="font-size:12px;color:var(--text2);font-weight:500">or continue with</div>
+                <div style="flex:1;height:1px;background:var(--border)"></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div onClick="{{ goHome }}" style="height:52px;border-radius:14px;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;font-weight:600;color:var(--text);cursor:pointer" style-active="transform:scale(.99)">
+                  <svg width="18" height="18" style="fill:var(--text)"><path d="M12.2 9.5c0-1.4.7-2.5 1.7-3.1-.6-.9-1.6-1.4-2.8-1.5-1.2-.1-2.4.7-3 .7-.6 0-1.6-.7-2.6-.7-1.4 0-2.6.8-3.3 2-1.4 2.5-.4 6.2 1 8.2.7 1 1.4 2.1 2.4 2 1-.04 1.3-.65 2.5-.65s1.5.65 2.5.63c1-.02 1.7-1 2.4-2 .5-.7.8-1.5 1-2.2-1.4-.5-2.2-1.7-2.2-3.1Z"></path><path d="M10.6 3.7c.6-.7.9-1.6.8-2.5-.8.04-1.7.5-2.3 1.2-.5.6-.9 1.5-.8 2.4.9.07 1.7-.4 2.3-1.1Z"></path></svg>
+                  Continue with Apple
+                </div>
+                <div onClick="{{ goHome }}" style="height:52px;border-radius:14px;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;font-weight:600;color:var(--text);cursor:pointer" style-active="transform:scale(.99)">
+                  <svg width="18" height="18" style="fill:none;stroke:var(--text);stroke-width:2"><circle cx="9" cy="9" r="7"></circle><path d="M9 6v6M6 9h6" style="stroke-linecap:round"></path></svg>
+                  Continue with Google
+                </div>
+              </div>
+            </div>
+            <div onClick="{{ toggleSign }}" style="text-align:center;font-size:14px;color:var(--text2);padding:8px;cursor:pointer">{{ signToggle }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isHomeFull }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 28px;animation:fadeIn .4s ease">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--text2);letter-spacing:.01em">{{ todayStr }}</div>
+                <div style="font-size:27px;font-weight:700;letter-spacing:-.025em;margin-top:3px;color:var(--text)">{{ greeting }}</div>
+              </div>
+              <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#6366F1,#A5B4FC);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:17px;box-shadow:0 8px 18px -5px rgba(99,102,241,.5)">A</div>
+            </div>
+
+            <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+              <span style="white-space:nowrap">Today's habits</span>
+              <span style="color:var(--text2);font-weight:500;text-transform:none;letter-spacing:0;font-size:13px">{{ habitsDoneLabel }}</span>
+            </div>
+            <div style="background:var(--surface);border-radius:20px;border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;margin-bottom:28px">
+              <sc-for list="{{ homeHabits }}" as="hb" hint-placeholder-count="4">
+                <div style="{{ hb.rowStyle }}">
+                  <div onClick="{{ hb.onToggle }}" style="{{ hb.checkStyle }}">
+                    <svg width="17" height="17" style="{{ hb.markStyle }}"><path d="M4 9l3.2 3.2L13.5 5.5"></path></svg>
+                  </div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:15px;font-weight:600;color:var(--text)">{{ hb.name }}</div>
+                    <div style="font-size:12.5px;color:var(--text2);margin-top:1px">{{ hb.sub }}</div>
+                  </div>
+                  <div style="{{ hb.chipStyle }}">🔥 {{ hb.streak }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:12px">Quick add</div>
+            <div style="display:flex;gap:10px;margin-bottom:30px">
+              <div onClick="{{ openWorkout }}" style="flex:1;background:color-mix(in srgb,var(--coral) 11%,var(--surface));border:1px solid color-mix(in srgb,var(--coral) 16%,var(--border));border-radius:18px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer" style-active="transform:scale(.96)">
+                <svg width="22" height="22" style="fill:none;stroke:var(--coral);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 8v6M8 6v10M14 6v10M17 8v6M8 11h6"></path></svg>
+                <span style="font-size:12px;font-weight:600;color:var(--text)">Workout</span>
+              </div>
+              <div onClick="{{ openSleep }}" style="flex:1;background:color-mix(in srgb,var(--blue) 11%,var(--surface));border:1px solid color-mix(in srgb,var(--blue) 16%,var(--border));border-radius:18px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer" style-active="transform:scale(.96)">
+                <svg width="22" height="22" style="fill:none;stroke:var(--blue);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M19 12.3A8 8 0 1 1 9.7 3a6.3 6.3 0 0 0 9.3 9.3Z"></path></svg>
+                <span style="font-size:12px;font-weight:600;color:var(--text)">Sleep</span>
+              </div>
+              <div onClick="{{ openExpense }}" style="flex:1;background:color-mix(in srgb,var(--emerald) 11%,var(--surface));border:1px solid color-mix(in srgb,var(--emerald) 16%,var(--border));border-radius:18px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer" style-active="transform:scale(.96)">
+                <svg width="22" height="22" style="fill:none;stroke:var(--emerald);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M11 3v16M14.5 6H9.2a2.7 2.7 0 0 0 0 5.4h3.6a2.7 2.7 0 0 1 0 5.4H7"></path></svg>
+                <span style="font-size:12px;font-weight:600;color:var(--text)">Expense</span>
+              </div>
+              <div onClick="{{ openHabit }}" style="flex:1;background:color-mix(in srgb,var(--teal) 11%,var(--surface));border:1px solid color-mix(in srgb,var(--teal) 16%,var(--border));border-radius:18px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer" style-active="transform:scale(.96)">
+                <svg width="22" height="22" style="fill:none;stroke:var(--teal);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="11" cy="11" r="8"></circle><path d="M7.5 11l2.3 2.3L15 8"></path></svg>
+                <span style="font-size:12px;font-weight:600;color:var(--text)">Habit</span>
+              </div>
+            </div>
+
+            <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:12px">This week</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div onClick="{{ goWorkouts }}" style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:15px;cursor:pointer;display:flex;flex-direction:column;gap:6px" style-active="transform:scale(.98)">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:12.5px;font-weight:600;color:var(--text2)">Workouts</span>
+                  <span style="width:24px;height:24px;border-radius:8px;background:color-mix(in srgb,var(--coral) 14%,transparent);display:flex;align-items:center;justify-content:center">
+                    <svg width="14" height="14" style="fill:none;stroke:var(--coral);stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M3 5v4M5 4v6M9 4v6M11 5v4M5 7h4" transform="translate(0 0)"></path></svg>
+                  </span>
+                </div>
+                <div style="font-size:36px;font-weight:700;letter-spacing:-.03em;color:var(--text);line-height:1.05">{{ homeWorkoutCount }}</div>
+                <div style="font-size:11.5px;color:var(--text2);margin-top:-2px">sessions this week</div>
+                <div style="height:42px;margin-top:4px">{{ homeWorkoutBars }}</div>
+              </div>
+              <div onClick="{{ goSleep }}" style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:15px;cursor:pointer;display:flex;flex-direction:column;gap:6px" style-active="transform:scale(.98)">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:12.5px;font-weight:600;color:var(--text2)">Avg sleep</span>
+                  <span style="width:24px;height:24px;border-radius:8px;background:color-mix(in srgb,var(--blue) 14%,transparent);display:flex;align-items:center;justify-content:center">
+                    <svg width="14" height="14" style="fill:none;stroke:var(--blue);stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M12 7.5A5 5 0 1 1 6 2a4 4 0 0 0 6 5.5Z"></path></svg>
+                  </span>
+                </div>
+                <div style="font-size:34px;font-weight:700;letter-spacing:-.03em;color:var(--text);line-height:1.05">{{ homeSleepH }}<span style="font-size:20px;font-weight:600">h</span> {{ homeSleepM }}<span style="font-size:20px;font-weight:600">m</span></div>
+                <div style="font-size:11.5px;color:var(--text2);margin-top:-2px">nightly average</div>
+                <div style="height:42px;margin-top:4px">{{ homeSleepSpark }}</div>
+              </div>
+              <div onClick="{{ goHabits }}" style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:15px;cursor:pointer;display:flex;align-items:center;gap:12px" style-active="transform:scale(.98)">
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                  <span style="font-size:12.5px;font-weight:600;color:var(--text2)">Habits</span>
+                  <div style="font-size:36px;font-weight:700;letter-spacing:-.03em;color:var(--text);line-height:1.05">{{ homeHabitPct }}<span style="font-size:20px;font-weight:600">%</span></div>
+                  <div style="font-size:11.5px;color:var(--text2);margin-top:-2px">completion</div>
+                </div>
+                <div style="position:relative;width:56px;height:56px;flex:none;display:flex;align-items:center;justify-content:center">{{ homeHabitRing }}</div>
+              </div>
+              <div onClick="{{ goFinances }}" style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:15px;cursor:pointer;display:flex;flex-direction:column;gap:6px" style-active="transform:scale(.98)">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:12.5px;font-weight:600;color:var(--text2)">Net spend</span>
+                  <span style="width:24px;height:24px;border-radius:8px;background:color-mix(in srgb,var(--emerald) 14%,transparent);display:flex;align-items:center;justify-content:center">
+                    <svg width="14" height="14" style="fill:none;stroke:var(--emerald);stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round"><path d="M7 2v10M9 4H5.8a1.8 1.8 0 0 0 0 3.6h2.4a1.8 1.8 0 0 1 0 3.6H4.5"></path></svg>
+                  </span>
+                </div>
+                <div style="font-size:34px;font-weight:700;letter-spacing:-.03em;color:var(--text);line-height:1.05">{{ homeNetSpend }}</div>
+                <div style="font-size:11.5px;color:var(--text2);margin-top:-2px">this week</div>
+                <div style="height:42px;margin-top:4px">{{ homeSpendSpark }}</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isWorkoutsFull }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 28px;animation:fadeIn .35s ease">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+              <div onClick="{{ goHome }}" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;background:var(--surface);border:1px solid var(--border)"><svg width="20" height="20" style="fill:none;stroke:var(--text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 5l-5 5 5 5"></path></svg></div>
+              <div style="flex:1;font-size:24px;font-weight:700;letter-spacing:-.025em;color:var(--text)">Workouts</div>
+              <span style="width:40px;height:40px;border-radius:13px;background:color-mix(in srgb,var(--coral) 14%,transparent);display:flex;align-items:center;justify-content:center;flex:none"><svg width="22" height="22" style="fill:none;stroke:var(--coral);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 8v6M8 6v10M14 6v10M17 8v6M8 11h6"></path></svg></span>
+            </div>
+            <div style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:3px;margin-bottom:20px"><sc-for list="{{ segItems }}" as="sg" hint-placeholder-count="4"><div onClick="{{ sg.onClick }}" style="{{ sg.style }}">{{ sg.label }}</div></sc-for></div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:18px 8px;display:flex;margin-bottom:14px">
+              <div style="flex:1;text-align:center"><div style="font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--text)">{{ wCount }}</div><div style="font-size:12px;color:var(--text2);margin-top:3px">Workouts</div></div>
+              <div style="width:1px;background:var(--border)"></div>
+              <div style="flex:1;text-align:center"><div style="font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--text)">{{ wTotalMin }}</div><div style="font-size:12px;color:var(--text2);margin-top:3px">Minutes</div></div>
+              <div style="width:1px;background:var(--border)"></div>
+              <div style="flex:1;text-align:center"><div style="font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--coral)">{{ wStreak }}</div><div style="font-size:12px;color:var(--text2);margin-top:3px">Day streak</div></div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:18px;margin-bottom:14px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><span style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2)">Minutes</span><span style="font-size:12px;color:var(--text2)">{{ rangeWord }}</span></div>
+              <div style="height:120px">{{ wMinutesChart }}</div>
+              <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--text2);font-variant-numeric:tabular-nums"><sc-for list="{{ wMinAxis }}" as="a" hint-placeholder-count="7"><span>{{ a.l }}</span></sc-for></div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:18px;margin-bottom:24px">
+              <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:14px">Type split</div>
+              <div style="display:flex;align-items:center;gap:16px">
+                <div style="position:relative;width:146px;height:146px;flex:none;display:flex;align-items:center;justify-content:center">{{ wTypeDonut }}<div style="position:absolute;text-align:center"><div style="font-size:26px;font-weight:700;color:var(--text)">{{ wCount }}</div><div style="font-size:11px;color:var(--text2);margin-top:-2px">sessions</div></div></div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:11px"><sc-for list="{{ wTypeLegend }}" as="lg" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:9px"><span style="{{ lg.dotStyle }}"></span><span style="flex:1;font-size:14px;font-weight:500;color:var(--text)">{{ lg.label }}</span><span style="font-size:14px;font-weight:600;color:var(--text2)">{{ lg.value }}</span></div>
+                </sc-for></div>
+              </div>
+            </div>
+            <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:12px">Recent</div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);overflow:hidden">
+              <sc-for list="{{ workouts }}" as="w" hint-placeholder-count="4">
+                <div onClick="{{ w.onEdit }}" style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer" style-active="background:var(--bg)">
+                  <span style="width:38px;height:38px;border-radius:11px;flex:none;background:color-mix(in srgb,var(--coral) 13%,transparent);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" style="fill:none;stroke:var(--coral);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 8v6M8 6v10M14 6v10M17 8v6M8 11h6"></path></svg></span>
+                  <div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600;color:var(--text)">{{ w.name }}</div><div style="font-size:12.5px;color:var(--text2);margin-top:1px">{{ w.meta }}</div></div>
+                  <div style="text-align:right;flex:none"><div style="font-size:15px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums">{{ w.dur }}m</div><div style="font-size:11.5px;color:var(--text2);margin-top:1px">{{ w.when }}</div></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isHabitsFull }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 28px;animation:fadeIn .35s ease">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+              <div onClick="{{ goHome }}" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;background:var(--surface);border:1px solid var(--border)"><svg width="20" height="20" style="fill:none;stroke:var(--text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 5l-5 5 5 5"></path></svg></div>
+              <div style="flex:1;font-size:24px;font-weight:700;letter-spacing:-.025em;color:var(--text)">Habits</div>
+              <span style="width:40px;height:40px;border-radius:13px;background:color-mix(in srgb,var(--teal) 14%,transparent);display:flex;align-items:center;justify-content:center;flex:none"><svg width="22" height="22" style="fill:none;stroke:var(--teal);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="9"></circle><path d="M8 12l2.5 2.5L16 9"></path></svg></span>
+            </div>
+            <div style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:3px;margin-bottom:20px"><sc-for list="{{ segItems }}" as="sg" hint-placeholder-count="4"><div onClick="{{ sg.onClick }}" style="{{ sg.style }}">{{ sg.label }}</div></sc-for></div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:20px;margin-bottom:14px;display:flex;align-items:center;gap:20px">
+              <div style="position:relative;width:124px;height:124px;flex:none;display:flex;align-items:center;justify-content:center">{{ habitRingBig }}<div style="position:absolute;text-align:center"><div style="font-size:32px;font-weight:700;color:var(--text);letter-spacing:-.02em">{{ habitPct }}<span style="font-size:18px">%</span></div><div style="font-size:11px;color:var(--text2);margin-top:-2px">complete</div></div></div>
+              <div style="flex:1">
+                <div style="font-size:15px;font-weight:600;color:var(--text);line-height:1.45">You're on track</div>
+                <div style="font-size:13px;color:var(--text2);margin-top:4px;line-height:1.5">{{ habitCheckins }} habit check-ins {{ rangeWord }}. Keep your water streak alive!</div>
+              </div>
+            </div>
+            <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin:6px 0 12px">Your habits</div>
+            <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
+              <sc-for list="{{ habitDetailRows }}" as="hb" hint-placeholder-count="4">
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:15px 16px">
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:13px">
+                    <span style="{{ hb.dotStyleSmall }}"></span>
+                    <div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600;color:var(--text)">{{ hb.name }}</div><div style="font-size:12px;color:var(--text2)">{{ hb.target }}</div></div>
+                    <div style="{{ hb.chipStyle }}">🔥 {{ hb.streak }}</div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between"><sc-for list="{{ hb.dots }}" as="d" hint-placeholder-count="7"><span style="{{ d.style }}"><sc-if value="{{ d.on }}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" style="fill:none;stroke:#fff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M3 6.5l2 2 4-4.5"></path></svg></sc-if></span></sc-for></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:12px">Last 12 weeks</div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:18px;margin-bottom:16px">
+              <div style="overflow:hidden">{{ habitHeat }}</div>
+              <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:14px;font-size:11px;color:var(--text2)"><span>Less</span><span style="width:11px;height:11px;border-radius:3px;background:color-mix(in srgb,var(--text2) 12%,transparent)"></span><span style="width:11px;height:11px;border-radius:3px;background:color-mix(in srgb,var(--teal) 40%,transparent)"></span><span style="width:11px;height:11px;border-radius:3px;background:color-mix(in srgb,var(--teal) 70%,transparent)"></span><span style="width:11px;height:11px;border-radius:3px;background:var(--teal)"></span><span>More</span></div>
+            </div>
+            <div onClick="{{ openHabit }}" style="display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:16px;border:1.5px dashed color-mix(in srgb,var(--teal) 40%,var(--border));color:var(--teal);font-size:15px;font-weight:600;cursor:pointer;background:color-mix(in srgb,var(--teal) 6%,transparent)" style-active="transform:scale(.99)"><svg width="20" height="20" style="fill:none;stroke:var(--teal);stroke-width:2.2;stroke-linecap:round"><path d="M10 4v12M4 10h12"></path></svg>Add a habit</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSleepFull }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 28px;animation:fadeIn .35s ease">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+              <div onClick="{{ goHome }}" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;background:var(--surface);border:1px solid var(--border)"><svg width="20" height="20" style="fill:none;stroke:var(--text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 5l-5 5 5 5"></path></svg></div>
+              <div style="flex:1;font-size:24px;font-weight:700;letter-spacing:-.025em;color:var(--text)">Sleep</div>
+              <span style="width:40px;height:40px;border-radius:13px;background:color-mix(in srgb,var(--blue) 14%,transparent);display:flex;align-items:center;justify-content:center;flex:none"><svg width="22" height="22" style="fill:none;stroke:var(--blue);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M19 12.3A8 8 0 1 1 9.7 3a6.3 6.3 0 0 0 9.3 9.3Z"></path></svg></span>
+            </div>
+            <div style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:3px;margin-bottom:20px"><sc-for list="{{ segItems }}" as="sg" hint-placeholder-count="4"><div onClick="{{ sg.onClick }}" style="{{ sg.style }}">{{ sg.label }}</div></sc-for></div>
+            <div style="display:flex;gap:12px;margin-bottom:14px">
+              <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:18px"><div style="font-size:12.5px;font-weight:600;color:var(--text2);margin-bottom:6px">Avg duration</div><div style="font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--text)">{{ slAvgH }}<span style="font-size:18px;font-weight:600">h</span> {{ slAvgM }}<span style="font-size:18px;font-weight:600">m</span></div></div>
+              <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:18px"><div style="font-size:12.5px;font-weight:600;color:var(--text2);margin-bottom:6px">Avg quality</div><div style="font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--text)">{{ slAvgQ }}</div><div style="font-size:15px;letter-spacing:1px;color:var(--blue);margin-top:2px">{{ slStarFilled }}<span style="color:var(--border)">{{ slStarEmpty }}</span></div></div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:18px;margin-bottom:14px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><span style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2)">Hours slept</span><span style="font-size:12px;color:var(--text2)">{{ rangeWord }}</span></div>
+              <div style="height:120px">{{ sleepChart }}</div>
+              <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--text2)"><sc-for list="{{ sleepAxis }}" as="a" hint-placeholder-count="7"><span>{{ a.l }}</span></sc-for></div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:16px 18px;margin-bottom:24px;display:flex;align-items:center;gap:13px">
+              <span style="width:40px;height:40px;border-radius:12px;background:color-mix(in srgb,var(--success) 14%,transparent);display:flex;align-items:center;justify-content:center;flex:none"><svg width="22" height="22" style="fill:none;stroke:var(--success);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12l4 4 10-10"></path></svg></span>
+              <div style="flex:1"><div style="font-size:15px;font-weight:600;color:var(--text)">Consistent schedule</div><div style="font-size:12.5px;color:var(--text2);margin-top:1px">Bedtime within ±24 min of 11:15 PM</div></div>
+            </div>
+            <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:12px">Recent nights</div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);overflow:hidden">
+              <sc-for list="{{ nightRows }}" as="n" hint-placeholder-count="5">
+                <div onClick="{{ n.onEdit }}" style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer" style-active="background:var(--bg)">
+                  <span style="width:38px;height:38px;border-radius:11px;flex:none;background:color-mix(in srgb,var(--blue) 13%,transparent);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" style="fill:none;stroke:var(--blue);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M17 11.5A7 7 0 1 1 8.5 3a5.5 5.5 0 0 0 8.5 8.5Z"></path></svg></span>
+                  <div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600;color:var(--text)">{{ n.date }}</div><div style="font-size:13px;letter-spacing:.5px;margin-top:1px"><span style="color:var(--blue)">{{ n.filled }}</span><span style="color:var(--border)">{{ n.empty }}</span></div></div>
+                  <div style="font-size:15px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;flex:none">{{ n.h }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isFinancesFull }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 28px;animation:fadeIn .35s ease">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+              <div onClick="{{ goHome }}" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;background:var(--surface);border:1px solid var(--border)"><svg width="20" height="20" style="fill:none;stroke:var(--text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 5l-5 5 5 5"></path></svg></div>
+              <div style="flex:1;font-size:24px;font-weight:700;letter-spacing:-.025em;color:var(--text)">Finances</div>
+              <span style="width:40px;height:40px;border-radius:13px;background:color-mix(in srgb,var(--emerald) 14%,transparent);display:flex;align-items:center;justify-content:center;flex:none"><svg width="22" height="22" style="fill:none;stroke:var(--emerald);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M11 3v16M14.5 6H9.2a2.7 2.7 0 0 0 0 5.4h3.6a2.7 2.7 0 0 1 0 5.4H7"></path></svg></span>
+            </div>
+            <div style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:3px;margin-bottom:20px"><sc-for list="{{ segItems }}" as="sg" hint-placeholder-count="4"><div onClick="{{ sg.onClick }}" style="{{ sg.style }}">{{ sg.label }}</div></sc-for></div>
+            <div style="background:linear-gradient(135deg,var(--emerald),color-mix(in srgb,var(--emerald) 70%,#34D399));border-radius:22px;padding:22px;margin-bottom:14px;box-shadow:0 14px 30px -12px color-mix(in srgb,var(--emerald) 60%,transparent)">
+              <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,.85)">Net this month</div>
+              <div style="font-size:44px;font-weight:700;letter-spacing:-.03em;color:#fff;margin-top:4px">{{ fNet }}</div>
+              <div style="display:flex;gap:20px;margin-top:14px">
+                <div><div style="font-size:12px;color:rgba(255,255,255,.8)">Income</div><div style="font-size:16px;font-weight:700;color:#fff">{{ fIncome }}</div></div>
+                <div><div style="font-size:12px;color:rgba(255,255,255,.8)">Spent</div><div style="font-size:16px;font-weight:700;color:#fff">{{ fSpent }}</div></div>
+              </div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:18px;margin-bottom:14px">
+              <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:14px">Spending by category</div>
+              <div style="display:flex;align-items:center;gap:16px">
+                <div style="position:relative;width:146px;height:146px;flex:none;display:flex;align-items:center;justify-content:center">{{ fCatDonut }}<div style="position:absolute;text-align:center"><div style="font-size:22px;font-weight:700;color:var(--text)">{{ fSpent }}</div><div style="font-size:11px;color:var(--text2);margin-top:-2px">spent</div></div></div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:11px"><sc-for list="{{ fCatLegend }}" as="lg" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:9px"><span style="{{ lg.dotStyle }}"></span><span style="flex:1;font-size:14px;font-weight:500;color:var(--text)">{{ lg.label }}</span><span style="font-size:14px;font-weight:600;color:var(--text2)">{{ lg.value }}</span></div>
+                </sc-for></div>
+              </div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:18px;margin-bottom:24px">
+              <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:10px">Balance trend</div>
+              <div style="height:108px">{{ fTrendChart }}</div>
+              <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--text2)"><span>Older</span><span>Running balance →</span></div>
+            </div>
+            <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:12px">Recent transactions</div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);overflow:hidden">
+              <sc-for list="{{ txnRows }}" as="t" hint-placeholder-count="6">
+                <div onClick="{{ t.onEdit }}" style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer" style-active="background:var(--bg)">
+                  <span style="{{ t.iconStyle }}">
+                    <sc-if value="{{ t.income }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" style="fill:none;stroke:var(--emerald);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M7 7l6 6M13 7v6H7"></path></svg></sc-if>
+                    <sc-if value="{{ t.expense }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" style="fill:none;stroke:var(--text2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M13 13L7 7M7 13V7h6"></path></svg></sc-if>
+                  </span>
+                  <div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600;color:var(--text)">{{ t.name }}</div><div style="font-size:12.5px;color:var(--text2);margin-top:1px">{{ t.cat }} · {{ t.when }}</div></div>
+                  <div style="{{ t.amountStyle }}">{{ t.amountStr }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isAnalytics }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 28px;animation:fadeIn .35s ease">
+            <div style="margin-bottom:18px"><div style="font-size:26px;font-weight:700;letter-spacing:-.025em;color:var(--text)">Analytics</div><div style="font-size:14px;color:var(--text2);margin-top:2px">{{ analyticsSub }}</div></div>
+            <div style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:3px;margin-bottom:20px"><sc-for list="{{ segItems }}" as="sg" hint-placeholder-count="4"><div onClick="{{ sg.onClick }}" style="{{ sg.style }}">{{ sg.label }}</div></sc-for></div>
+
+            <div onClick="{{ goWorkouts }}" style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:18px;margin-bottom:14px;cursor:pointer" style-active="transform:scale(.99)">
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span style="width:10px;height:10px;border-radius:3px;background:var(--coral);flex:none"></span><span style="flex:1;font-size:16px;font-weight:700;color:var(--text)">Workouts</span><span style="font-size:16px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums">{{ anWMin }}</span><svg width="18" height="18" style="fill:none;stroke:var(--text2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-left:4px"><path d="M7 4l5 5-5 5"></path></svg></div>
+              <div style="height:96px">{{ anWorkoutChart }}</div>
+              <div style="font-size:12.5px;color:var(--text2);margin-top:8px">{{ anWSub }}</div>
+            </div>
+
+            <div onClick="{{ goSleep }}" style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:18px;margin-bottom:14px;cursor:pointer" style-active="transform:scale(.99)">
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span style="width:10px;height:10px;border-radius:3px;background:var(--blue);flex:none"></span><span style="flex:1;font-size:16px;font-weight:700;color:var(--text)">Sleep</span><span style="font-size:16px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums">{{ anSleepStat }}</span><svg width="18" height="18" style="fill:none;stroke:var(--text2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-left:4px"><path d="M7 4l5 5-5 5"></path></svg></div>
+              <div style="height:96px">{{ anSleepChart }}</div>
+              <div style="font-size:12.5px;color:var(--text2);margin-top:8px">{{ anSleepSub }}</div>
+            </div>
+
+            <div onClick="{{ goHabits }}" style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:18px;margin-bottom:14px;cursor:pointer;display:flex;align-items:center;gap:18px" style-active="transform:scale(.99)">
+              <div style="position:relative;width:88px;height:88px;flex:none;display:flex;align-items:center;justify-content:center">{{ anHabitRing }}<div style="position:absolute;font-size:20px;font-weight:700;color:var(--text)">{{ habitPct }}%</div></div>
+              <div style="flex:1">
+                <div style="display:flex;align-items:center;gap:9px;margin-bottom:6px"><span style="width:10px;height:10px;border-radius:3px;background:var(--teal);flex:none"></span><span style="flex:1;font-size:16px;font-weight:700;color:var(--text)">Habits</span><svg width="18" height="18" style="fill:none;stroke:var(--text2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M7 4l5 5-5 5"></path></svg></div>
+                <div style="font-size:12.5px;color:var(--text2);line-height:1.5">{{ anHabitSub }}. Longest streak: 23 days.</div>
+              </div>
+            </div>
+
+            <div onClick="{{ goFinances }}" style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:18px;cursor:pointer" style-active="transform:scale(.99)">
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span style="width:10px;height:10px;border-radius:3px;background:var(--emerald);flex:none"></span><span style="flex:1;font-size:16px;font-weight:700;color:var(--text)">Finances</span><span style="font-size:16px;font-weight:700;color:var(--emerald);font-variant-numeric:tabular-nums">{{ anFinNet }}</span><svg width="18" height="18" style="fill:none;stroke:var(--text2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-left:4px"><path d="M7 4l5 5-5 5"></path></svg></div>
+              <div style="height:96px">{{ anFinanceChart }}</div>
+              <div style="font-size:12.5px;color:var(--text2);margin-top:8px">{{ anFinSub }}</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 28px;animation:fadeIn .35s ease">
+            <div style="font-size:26px;font-weight:700;letter-spacing:-.025em;color:var(--text);margin-bottom:18px">Settings</div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:24px">
+              <div style="width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#6366F1,#A5B4FC);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px;flex:none">A</div>
+              <div style="flex:1;min-width:0"><div style="font-size:17px;font-weight:700;color:var(--text)">Alex Rivera</div><div style="font-size:13px;color:var(--text2);margin-top:1px">alex@orbit.app</div></div>
+              <svg width="20" height="20" style="fill:none;stroke:var(--text2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M8 4l5 6-5 6"></path></svg>
+            </div>
+
+            <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:12px">Appearance</div>
+            <div style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:3px;margin-bottom:24px"><sc-for list="{{ themeSeg }}" as="tm" hint-placeholder-count="3"><div onClick="{{ tm.onClick }}" style="{{ tm.style }}">{{ tm.label }}</div></sc-for></div>
+
+            <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:12px">Manage</div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:24px">
+              <div onClick="{{ goHabits }}" style="display:flex;align-items:center;gap:13px;padding:15px 16px;border-bottom:1px solid var(--border);cursor:pointer"><span style="width:36px;height:36px;border-radius:10px;background:color-mix(in srgb,var(--teal) 13%,transparent);display:flex;align-items:center;justify-content:center;flex:none"><svg width="19" height="19" style="fill:none;stroke:var(--teal);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="9.5" cy="9.5" r="7.5"></circle><path d="M6.5 9.5l2 2 4-4"></path></svg></span><span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Manage habits</span><svg width="18" height="18" style="fill:none;stroke:var(--text2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M7 4l5 5-5 5"></path></svg></div>
+              <div onClick="{{ goFinances }}" style="display:flex;align-items:center;gap:13px;padding:15px 16px;border-bottom:1px solid var(--border);cursor:pointer"><span style="width:36px;height:36px;border-radius:10px;background:color-mix(in srgb,var(--emerald) 13%,transparent);display:flex;align-items:center;justify-content:center;flex:none"><svg width="19" height="19" style="fill:none;stroke:var(--emerald);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M3 6.5h13M3 10h13M6 14h7"></path></svg></span><span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Finance categories</span><svg width="18" height="18" style="fill:none;stroke:var(--text2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M7 4l5 5-5 5"></path></svg></div>
+              <div style="display:flex;align-items:center;gap:13px;padding:15px 16px;cursor:pointer"><span style="width:36px;height:36px;border-radius:10px;background:color-mix(in srgb,var(--indigo) 13%,transparent);display:flex;align-items:center;justify-content:center;flex:none"><svg width="19" height="19" style="fill:none;stroke:var(--indigo);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M9.5 3a4 4 0 0 0-4 4v3l-1.5 2.5h11L13.5 10V7a4 4 0 0 0-4-4ZM7.5 15a2 2 0 0 0 4 0"></path></svg></span><span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Reminders</span><svg width="18" height="18" style="fill:none;stroke:var(--text2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M7 4l5 5-5 5"></path></svg></div>
+            </div>
+
+            <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:12px">Account</div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:24px">
+              <div style="display:flex;align-items:center;gap:13px;padding:15px 16px;border-bottom:1px solid var(--border);cursor:pointer"><span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Privacy & data</span><svg width="18" height="18" style="fill:none;stroke:var(--text2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M7 4l5 5-5 5"></path></svg></div>
+              <div style="display:flex;align-items:center;gap:13px;padding:15px 16px;border-bottom:1px solid var(--border);cursor:pointer"><span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Export data</span><svg width="18" height="18" style="fill:none;stroke:var(--text2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M7 4l5 5-5 5"></path></svg></div>
+              <div style="display:flex;align-items:center;gap:13px;padding:15px 16px;cursor:pointer"><span style="flex:1;font-size:15px;font-weight:600;color:var(--text)">Help & support</span><svg width="18" height="18" style="fill:none;stroke:var(--text2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M7 4l5 5-5 5"></path></svg></div>
+            </div>
+
+            <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:12px">Demo</div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:15px 16px;margin-bottom:24px;display:flex;align-items:center;gap:13px">
+              <div style="flex:1"><div style="font-size:15px;font-weight:600;color:var(--text)">Preview empty states</div><div style="font-size:12.5px;color:var(--text2);margin-top:1px">See first-run screens with no data</div></div>
+              <div onClick="{{ toggleEmpty }}" style="{{ emptyToggleStyle }}"><div style="{{ emptyKnobStyle }}"></div></div>
+            </div>
+            <div onClick="{{ goWelcome }}" style="height:52px;border-radius:16px;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;gap:9px;font-size:15px;font-weight:600;color:var(--danger);cursor:pointer" style-active="transform:scale(.99)"><svg width="19" height="19" style="fill:none;stroke:var(--danger);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M8 4H4v11h4M12 13l3-3.5L12 6M15 9.5H7"></path></svg>Sign out</div>
+            <div style="text-align:center;font-size:12px;color:var(--text2);margin-top:18px;font-family:'Geist Mono',monospace">Orbit v1.0.0 · made with care</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isHomeEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 28px;animation:fadeIn .4s ease">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+              <div><div style="font-size:13px;font-weight:600;color:var(--text2)">{{ todayStr }}</div><div style="font-size:27px;font-weight:700;letter-spacing:-.025em;margin-top:3px;color:var(--text)">Welcome to Orbit</div></div>
+              <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#6366F1,#A5B4FC);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:17px">A</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:34px 10px 30px;gap:16px">
+              <div style="width:104px;height:104px;border-radius:50%;border:2px dashed color-mix(in srgb,var(--indigo) 38%,var(--border));display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--indigo) 7%,transparent)"><svg width="44" height="44" style="fill:none;stroke:var(--indigo);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><ellipse cx="22" cy="22" rx="19" ry="8" transform="rotate(-28 22 22)"></ellipse><circle cx="22" cy="22" r="4.5" style="fill:var(--indigo);stroke:none"></circle></svg></div>
+              <div><div style="font-size:19px;font-weight:700;color:var(--text)">Your day starts here</div><div style="font-size:14px;color:var(--text2);margin-top:6px;line-height:1.55;max-width:264px">Log an activity or build a habit — everything you track turns into beautiful insights.</div></div>
+            </div>
+            <div style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:12px">Start tracking</div>
+            <div style="display:flex;gap:10px">
+              <div onClick="{{ openWorkout }}" style="flex:1;background:color-mix(in srgb,var(--coral) 11%,var(--surface));border:1px solid color-mix(in srgb,var(--coral) 16%,var(--border));border-radius:18px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer" style-active="transform:scale(.96)"><svg width="22" height="22" style="fill:none;stroke:var(--coral);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 8v6M8 6v10M14 6v10M17 8v6M8 11h6"></path></svg><span style="font-size:12px;font-weight:600;color:var(--text)">Workout</span></div>
+              <div onClick="{{ openSleep }}" style="flex:1;background:color-mix(in srgb,var(--blue) 11%,var(--surface));border:1px solid color-mix(in srgb,var(--blue) 16%,var(--border));border-radius:18px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer" style-active="transform:scale(.96)"><svg width="22" height="22" style="fill:none;stroke:var(--blue);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M19 12.3A8 8 0 1 1 9.7 3a6.3 6.3 0 0 0 9.3 9.3Z"></path></svg><span style="font-size:12px;font-weight:600;color:var(--text)">Sleep</span></div>
+              <div onClick="{{ openExpense }}" style="flex:1;background:color-mix(in srgb,var(--emerald) 11%,var(--surface));border:1px solid color-mix(in srgb,var(--emerald) 16%,var(--border));border-radius:18px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer" style-active="transform:scale(.96)"><svg width="22" height="22" style="fill:none;stroke:var(--emerald);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M11 3v16M14.5 6H9.2a2.7 2.7 0 0 0 0 5.4h3.6a2.7 2.7 0 0 1 0 5.4H7"></path></svg><span style="font-size:12px;font-weight:600;color:var(--text)">Expense</span></div>
+              <div onClick="{{ openHabit }}" style="flex:1;background:color-mix(in srgb,var(--teal) 11%,var(--surface));border:1px solid color-mix(in srgb,var(--teal) 16%,var(--border));border-radius:18px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer" style-active="transform:scale(.96)"><svg width="22" height="22" style="fill:none;stroke:var(--teal);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="11" cy="11" r="8"></circle><path d="M7.5 11l2.3 2.3L15 8"></path></svg><span style="font-size:12px;font-weight:600;color:var(--text)">Habit</span></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isWorkoutsEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 28px;animation:fadeIn .35s ease">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><div onClick="{{ goHome }}" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;background:var(--surface);border:1px solid var(--border)"><svg width="20" height="20" style="fill:none;stroke:var(--text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 5l-5 5 5 5"></path></svg></div><div style="flex:1;font-size:24px;font-weight:700;letter-spacing:-.025em;color:var(--text)">Workouts</div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:56px 16px;gap:18px">
+              <div style="width:104px;height:104px;border-radius:50%;border:2px dashed color-mix(in srgb,var(--coral) 38%,var(--border));display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--coral) 7%,transparent)"><svg width="42" height="42" style="fill:none;stroke:var(--coral);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M9 14v14M15 11v20M27 11v20M33 14v14M15 21h12"></path></svg></div>
+              <div><div style="font-size:19px;font-weight:700;color:var(--text)">No workouts yet</div><div style="font-size:14px;color:var(--text2);margin-top:6px;line-height:1.55;max-width:262px">Log your first session to unlock trends, streaks, and your type breakdown.</div></div>
+              <div onClick="{{ openWorkout }}" style="background:var(--coral);color:#fff;height:52px;padding:0 26px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 12px 26px -8px color-mix(in srgb,var(--coral) 55%,transparent)" style-active="transform:scale(.98)"><svg width="19" height="19" style="fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round"><path d="M10 4v11M4 9.5h11"></path></svg>Log a workout</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isHabitsEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 28px;animation:fadeIn .35s ease">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><div onClick="{{ goHome }}" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;background:var(--surface);border:1px solid var(--border)"><svg width="20" height="20" style="fill:none;stroke:var(--text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 5l-5 5 5 5"></path></svg></div><div style="flex:1;font-size:24px;font-weight:700;letter-spacing:-.025em;color:var(--text)">Habits</div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:56px 16px;gap:18px">
+              <div style="width:104px;height:104px;border-radius:50%;border:2px dashed color-mix(in srgb,var(--teal) 38%,var(--border));display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--teal) 7%,transparent)"><svg width="42" height="42" style="fill:none;stroke:var(--teal);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><circle cx="21" cy="21" r="16"></circle><path d="M14 21l5 5 9-10"></path></svg></div>
+              <div><div style="font-size:19px;font-weight:700;color:var(--text)">Build your first habit</div><div style="font-size:14px;color:var(--text2);margin-top:6px;line-height:1.55;max-width:262px">Pick something small and repeatable. Watch your streaks and heatmap grow.</div></div>
+              <div onClick="{{ openHabit }}" style="background:var(--teal);color:#fff;height:52px;padding:0 26px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 12px 26px -8px color-mix(in srgb,var(--teal) 55%,transparent)" style-active="transform:scale(.98)"><svg width="19" height="19" style="fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round"><path d="M10 4v11M4 9.5h11"></path></svg>Add a habit</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSleepEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 28px;animation:fadeIn .35s ease">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><div onClick="{{ goHome }}" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;background:var(--surface);border:1px solid var(--border)"><svg width="20" height="20" style="fill:none;stroke:var(--text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 5l-5 5 5 5"></path></svg></div><div style="flex:1;font-size:24px;font-weight:700;letter-spacing:-.025em;color:var(--text)">Sleep</div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:56px 16px;gap:18px">
+              <div style="width:104px;height:104px;border-radius:50%;border:2px dashed color-mix(in srgb,var(--blue) 38%,var(--border));display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--blue) 7%,transparent)"><svg width="42" height="42" style="fill:none;stroke:var(--blue);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M34 22.5A14 14 0 1 1 17.5 6a11 11 0 0 0 16.5 16.5Z"></path></svg></div>
+              <div><div style="font-size:19px;font-weight:700;color:var(--text)">Track your first night</div><div style="font-size:14px;color:var(--text2);margin-top:6px;line-height:1.55;max-width:262px">Log how you slept to see duration, quality, and consistency over time.</div></div>
+              <div onClick="{{ openSleep }}" style="background:var(--blue);color:#fff;height:52px;padding:0 26px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 12px 26px -8px color-mix(in srgb,var(--blue) 55%,transparent)" style-active="transform:scale(.98)"><svg width="19" height="19" style="fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round"><path d="M10 4v11M4 9.5h11"></path></svg>Log sleep</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isFinancesEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 28px;animation:fadeIn .35s ease">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><div onClick="{{ goHome }}" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;background:var(--surface);border:1px solid var(--border)"><svg width="20" height="20" style="fill:none;stroke:var(--text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 5l-5 5 5 5"></path></svg></div><div style="flex:1;font-size:24px;font-weight:700;letter-spacing:-.025em;color:var(--text)">Finances</div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:56px 16px;gap:18px">
+              <div style="width:104px;height:104px;border-radius:50%;border:2px dashed color-mix(in srgb,var(--emerald) 38%,var(--border));display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--emerald) 7%,transparent)"><svg width="42" height="42" style="fill:none;stroke:var(--emerald);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M19 6v30M27 12H15.5a5 5 0 0 0 0 10h7a5 5 0 0 1 0 10H12"></path></svg></div>
+              <div><div style="font-size:19px;font-weight:700;color:var(--text)">No transactions yet</div><div style="font-size:14px;color:var(--text2);margin-top:6px;line-height:1.55;max-width:262px">Add income or an expense to see your balance, categories, and trends.</div></div>
+              <div onClick="{{ openExpense }}" style="background:var(--emerald);color:#fff;height:52px;padding:0 26px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 12px 26px -8px color-mix(in srgb,var(--emerald) 55%,transparent)" style-active="transform:scale(.98)"><svg width="19" height="19" style="fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round"><path d="M10 4v11M4 9.5h11"></path></svg>Add transaction</div>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:66px;left:50%;transform:translateX(-50%);z-index:95;background:var(--text);color:var(--bg);padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;box-shadow:0 12px 32px rgba(8,9,14,.28);animation:fadeUp .3s ease;display:flex;align-items:center;gap:9px;white-space:nowrap"><svg width="18" height="18" style="fill:none;stroke:var(--success);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"><path d="M4 9.5l3.4 3.4L14 5"></path></svg>{{ toast }}</div>
+      </sc-if>
+
+      <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:none;position:relative;height:84px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:flex-start;padding:11px 0 0;box-shadow:0 -6px 24px rgba(20,21,26,.05);z-index:30">
+          <div onClick="{{ goHome }}" style="{{ tabHomeStyle }}">
+            <svg width="24" height="24" style="fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><path d="M4 11l8-7 8 7M6 9.5V19h4.5v-5h3v5H18V9.5"></path></svg>
+            <span style="font-size:10.5px;font-weight:600">Home</span>
+          </div>
+          <div onClick="{{ goAnalytics }}" style="{{ tabAnalyticsStyle }}">
+            <svg width="24" height="24" style="fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><path d="M4 20V11M10 20V5M16 20v-6M4 20h16"></path></svg>
+            <span style="font-size:10.5px;font-weight:600">Analytics</span>
+          </div>
+          <div style="flex:1;position:relative">
+            <div onClick="{{ openChooser }}" style="position:absolute;top:-25px;left:50%;transform:translateX(-50%);width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#6366F1,#818CF8);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 26px -6px rgba(99,102,241,.6);cursor:pointer;border:4px solid var(--surface)" style-active="transform:translateX(-50%) scale(.94)">
+              <svg width="26" height="26" style="fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round"><path d="M13 6v14M6 13h14"></path></svg>
+            </div>
+          </div>
+          <div onClick="{{ goSettings }}" style="{{ tabSettingsStyle }}">
+            <svg width="24" height="24" style="fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><path d="M4 7h7M17 7h3M4 12h3M13 12h7M4 17h9M19 17h1"></path><circle cx="14" cy="7" r="2.2"></circle><circle cx="10" cy="12" r="2.2"></circle><circle cx="16" cy="17" r="2.2"></circle></svg>
+            <span style="font-size:10.5px;font-weight:600">Settings</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;z-index:90;display:flex;flex-direction:column;justify-content:flex-end">
+          <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(8,9,14,.5);animation:fadeIn .25s ease;backdrop-filter:blur(2px)"></div>
+          <div style="position:relative;background:var(--surface);border-radius:30px 30px 0 0;animation:sheetUp .34s cubic-bezier(.22,1,.36,1);max-height:92%;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(8,9,14,.3)">
+            <div style="display:flex;justify-content:center;padding:10px 0 2px;flex:none"><div style="width:38px;height:4px;border-radius:999px;background:var(--border)"></div></div>
+            <div style="overflow-y:auto">
+
+              <sc-if value="{{ scChooser }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:8px 20px 34px">
+                  <div style="font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--text);margin:6px 4px 16px">Log something</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div onClick="{{ openWorkout }}" style="background:color-mix(in srgb,var(--coral) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--coral) 18%,var(--border));border-radius:20px;padding:18px;cursor:pointer;display:flex;flex-direction:column;gap:12px" style-active="transform:scale(.97)">
+                      <span style="width:42px;height:42px;border-radius:13px;background:color-mix(in srgb,var(--coral) 16%,transparent);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" style="fill:none;stroke:var(--coral);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 8v6M8 6v10M14 6v10M17 8v6M8 11h6"></path></svg></span>
+                      <div><div style="font-size:16px;font-weight:700;color:var(--text)">Workout</div><div style="font-size:12.5px;color:var(--text2);margin-top:2px">Run, lift, walk…</div></div>
+                    </div>
+                    <div onClick="{{ openSleep }}" style="background:color-mix(in srgb,var(--blue) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--blue) 18%,var(--border));border-radius:20px;padding:18px;cursor:pointer;display:flex;flex-direction:column;gap:12px" style-active="transform:scale(.97)">
+                      <span style="width:42px;height:42px;border-radius:13px;background:color-mix(in srgb,var(--blue) 16%,transparent);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" style="fill:none;stroke:var(--blue);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M19 12.3A8 8 0 1 1 9.7 3a6.3 6.3 0 0 0 9.3 9.3Z"></path></svg></span>
+                      <div><div style="font-size:16px;font-weight:700;color:var(--text)">Sleep</div><div style="font-size:12.5px;color:var(--text2);margin-top:2px">Hours & quality</div></div>
+                    </div>
+                    <div onClick="{{ openExpense }}" style="background:color-mix(in srgb,var(--emerald) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--emerald) 18%,var(--border));border-radius:20px;padding:18px;cursor:pointer;display:flex;flex-direction:column;gap:12px" style-active="transform:scale(.97)">
+                      <span style="width:42px;height:42px;border-radius:13px;background:color-mix(in srgb,var(--emerald) 16%,transparent);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" style="fill:none;stroke:var(--emerald);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M11 3v16M14.5 6H9.2a2.7 2.7 0 0 0 0 5.4h3.6a2.7 2.7 0 0 1 0 5.4H7"></path></svg></span>
+                      <div><div style="font-size:16px;font-weight:700;color:var(--text)">Expense</div><div style="font-size:12.5px;color:var(--text2);margin-top:2px">Income or spend</div></div>
+                    </div>
+                    <div onClick="{{ openHabit }}" style="background:color-mix(in srgb,var(--teal) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--teal) 18%,var(--border));border-radius:20px;padding:18px;cursor:pointer;display:flex;flex-direction:column;gap:12px" style-active="transform:scale(.97)">
+                      <span style="width:42px;height:42px;border-radius:13px;background:color-mix(in srgb,var(--teal) 16%,transparent);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" style="fill:none;stroke:var(--teal);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="9"></circle><path d="M8 12l2.5 2.5L16 9"></path></svg></span>
+                      <div><div style="font-size:16px;font-weight:700;color:var(--text)">Habit</div><div style="font-size:12.5px;color:var(--text2);margin-top:2px">Build a routine</div></div>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ scWorkout }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:4px 20px 32px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 20px"><div style="font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--text)">Log workout</div><div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--text2)"><svg width="15" height="15" style="fill:none;stroke:var(--text2);stroke-width:1.8;stroke-linecap:round"><path d="M3 6h9M5 2v2M10 2v2M3 5h9v8H3z"></path></svg>Today</div></div>
+                  <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">Type</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:22px"><sc-for list="{{ wTypeChips }}" as="c" hint-placeholder-count="6"><div onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</div></sc-for></div>
+                  <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">Duration</div>
+                  <div style="display:flex;align-items:center;justify-content:center;gap:24px;background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:22px">
+                    <div onClick="{{ wDurDec }}" style="width:44px;height:44px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none" style-active="transform:scale(.92)"><svg width="20" height="20" style="fill:none;stroke:var(--text);stroke-width:2.4;stroke-linecap:round"><path d="M5 10h10"></path></svg></div>
+                    <div style="text-align:center;min-width:96px"><span style="font-size:40px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums">{{ wDur }}</span><span style="font-size:16px;font-weight:600;color:var(--text2)"> min</span></div>
+                    <div onClick="{{ wDurInc }}" style="width:44px;height:44px;border-radius:50%;background:var(--coral);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;box-shadow:0 6px 16px -4px color-mix(in srgb,var(--coral) 55%,transparent)" style-active="transform:scale(.92)"><svg width="20" height="20" style="fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round"><path d="M10 5v10M5 10h10"></path></svg></div>
+                  </div>
+                  <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">Intensity</div>
+                  <div style="display:flex;gap:9px;margin-bottom:22px"><sc-for list="{{ wIntensityChips }}" as="c" hint-placeholder-count="3"><div onClick="{{ c.onClick }}" style="{{ c.style }};flex:1;text-align:center">{{ c.label }}</div></sc-for></div>
+                  <input placeholder="Add a note (optional)" style="width:100%;height:50px;border-radius:14px;border:1px solid var(--border);background:var(--bg);padding:0 16px;font-size:15px;color:var(--text);outline:none;margin-bottom:18px" style-focus="border-color:var(--coral)"/>
+                  <div onClick="{{ saveWorkout }}" style="background:var(--coral);color:#fff;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;cursor:pointer;box-shadow:0 12px 26px -8px color-mix(in srgb,var(--coral) 55%,transparent)" style-active="transform:scale(.98)">Save workout</div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ scSleep }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:4px 20px 32px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 20px"><div style="font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--text)">Log sleep</div><div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--text2)"><svg width="15" height="15" style="fill:none;stroke:var(--text2);stroke-width:1.8;stroke-linecap:round"><path d="M3 6h9M5 2v2M10 2v2M3 5h9v8H3z"></path></svg>Last night</div></div>
+                  <div style="text-align:center;margin-bottom:8px"><span style="font-size:52px;font-weight:700;letter-spacing:-.03em;color:var(--text);font-variant-numeric:tabular-nums">{{ slHoursLabel }}</span></div>
+                  <input type="range" min="3" max="12" step="0.25" value="{{ slHours }}" onChange="{{ setSlHours }}" style="width:100%;accent-color:var(--blue);height:6px;margin-bottom:6px;cursor:pointer"/>
+                  <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text2);margin-bottom:26px"><span>3h</span><span>12h</span></div>
+                  <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">Quality</div>
+                  <div style="display:flex;justify-content:center;gap:14px;margin-bottom:26px"><sc-for list="{{ sleepStars }}" as="s" hint-placeholder-count="5"><div onClick="{{ s.onClick }}" style="{{ s.style }}" style-active="transform:scale(1.2)">★</div></sc-for></div>
+                  <div onClick="{{ saveSleep }}" style="background:var(--blue);color:#fff;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;cursor:pointer;box-shadow:0 12px 26px -8px color-mix(in srgb,var(--blue) 55%,transparent)" style-active="transform:scale(.98)">Save sleep</div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ scExpense }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:4px 20px 28px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 18px"><div style="font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--text)">Log transaction</div><div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--text2)"><svg width="15" height="15" style="fill:none;stroke:var(--text2);stroke-width:1.8;stroke-linecap:round"><path d="M3 6h9M5 2v2M10 2v2M3 5h9v8H3z"></path></svg>Today</div></div>
+                  <div style="display:flex;gap:2px;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:3px;margin-bottom:18px"><div onClick="{{ setExExpense }}" style="{{ exKindExpenseStyle }}">Expense</div><div onClick="{{ setExIncome }}" style="{{ exKindIncomeStyle }}">Income</div></div>
+                  <div style="text-align:center;margin-bottom:18px"><span style="font-size:30px;font-weight:600;color:var(--text2);vertical-align:top;line-height:1.6">$</span><span style="font-size:52px;font-weight:700;letter-spacing:-.03em;color:{{ exAmountColor }};font-variant-numeric:tabular-nums">{{ exAmountDisplay }}</span></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-bottom:18px"><sc-for list="{{ exCatChips }}" as="c" hint-placeholder-count="6"><div onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</div></sc-for></div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:18px"><sc-for list="{{ exKeys }}" as="k" hint-placeholder-count="12"><div onClick="{{ k.onClick }}" style="height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;color:var(--text);cursor:pointer;background:var(--bg)" style-active="background:var(--border)">{{ k.content }}</div></sc-for></div>
+                  <div onClick="{{ saveExpense }}" style="background:var(--emerald);color:#fff;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;cursor:pointer;box-shadow:0 12px 26px -8px color-mix(in srgb,var(--emerald) 55%,transparent)" style-active="transform:scale(.98)">Save</div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ scHabit }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:4px 20px 32px">
+                  <div style="font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--text);margin:6px 0 20px">Add habit</div>
+                  <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">Name</div>
+                  <input value="{{ nhName }}" onChange="{{ setNhName }}" placeholder="e.g. Morning walk" style="width:100%;height:52px;border-radius:14px;border:1px solid var(--border);background:var(--bg);padding:0 16px;font-size:16px;color:var(--text);outline:none;margin-bottom:22px" style-focus="border-color:var(--teal)"/>
+                  <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">Color</div>
+                  <div style="display:flex;gap:14px;margin-bottom:24px;padding-left:2px"><sc-for list="{{ nhColorSwatches }}" as="s" hint-placeholder-count="5"><div onClick="{{ s.onClick }}" style="{{ s.style }}"></div></sc-for></div>
+                  <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">Target</div>
+                  <div style="display:flex;gap:9px;margin-bottom:8px"><sc-for list="{{ nhTargetChips }}" as="c" hint-placeholder-count="3"><div onClick="{{ c.onClick }}" style="{{ c.style }};flex:1;text-align:center">{{ c.label }}</div></sc-for></div>
+                  <div onClick="{{ saveHabit }}" style="{{ nhCanSaveStyle }}">Create habit</div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ scEdit }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:4px 20px 32px">
+                  <div style="font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--text);margin:6px 0 18px">{{ editTitle }}</div>
+                  <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:15px 16px;margin-bottom:20px;font-size:15px;font-weight:600;color:var(--text)">{{ editSummary }}</div>
+                  <sc-if value="{{ editKindWorkout }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">Type</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:22px"><sc-for list="{{ wTypeChips }}" as="c" hint-placeholder-count="6"><div onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</div></sc-for></div>
+                  <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">Duration</div>
+                  <div style="display:flex;align-items:center;justify-content:center;gap:24px;background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:22px">
+                    <div onClick="{{ wDurDec }}" style="width:44px;height:44px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none" style-active="transform:scale(.92)"><svg width="20" height="20" style="fill:none;stroke:var(--text);stroke-width:2.4;stroke-linecap:round"><path d="M5 10h10"></path></svg></div>
+                    <div style="text-align:center;min-width:96px"><span style="font-size:40px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums">{{ wDur }}</span><span style="font-size:16px;font-weight:600;color:var(--text2)"> min</span></div>
+                    <div onClick="{{ wDurInc }}" style="width:44px;height:44px;border-radius:50%;background:var(--coral);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none" style-active="transform:scale(.92)"><svg width="20" height="20" style="fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round"><path d="M10 5v10M5 10h10"></path></svg></div>
+                  </div>
+                  <div onClick="{{ saveWorkout }}" style="background:var(--coral);color:#fff;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:10px" style-active="transform:scale(.98)">Save changes</div>
+                  </sc-if>
+                  <div onClick="{{ deleteEntry }}" style="height:52px;border-radius:16px;border:1px solid color-mix(in srgb,var(--danger) 35%,var(--border));display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;color:var(--danger);cursor:pointer" style-active="transform:scale(.99)"><svg width="18" height="18" style="fill:none;stroke:var(--danger);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 6h12M8 6V4h4v2M6 6l1 10h6l1-10"></path></svg>Delete entry</div>
+                </div>
+              </sc-if>
+
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+
+  <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#7c808a;letter-spacing:.04em">orbit — tap anything, it's live</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = this.initState();
+
+  initState() {
+    const base = {
+      screen: 'welcome', theme: 'light', sheet: null, signUp: true, email: '',
+      range:'Week', emptyMode:false,
+      wType:'Run', wDur:32, wIntensity:'Moderate',
+      slHours:7.5, slQuality:4,
+      exKind:'expense', exAmount:'', exCat:'Food',
+      nhName:'', nhColor:'teal', nhTarget:'Daily',
+      editKind:null, editId:null, editItem:null, toast:'',
+      ...this.seed(),
+    };
+    try {
+      const raw = (typeof localStorage!=='undefined') && localStorage.getItem('orbit_v1');
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p && p.habits && p.workouts) return { ...base, habits:p.habits, workouts:p.workouts, nights:p.nights, txns:p.txns, theme:p.theme||base.theme };
+      }
+    } catch(e){}
+    return base;
+  }
+
+  seed() {
+    const D = 86400000, now = Date.now(), ago = (d) => now - d*D;
+    return {
+      habits: [
+        { id:'h1', name:'Meditate', color:'teal', done:true, streak:12, week:[1,1,1,0,1,1,1], target:'Daily' },
+        { id:'h2', name:'Read 20 pages', color:'indigo', done:true, streak:5, week:[1,0,1,1,1,0,1], target:'Daily' },
+        { id:'h3', name:'Drink water', color:'blue', done:false, streak:23, week:[1,1,1,1,1,1,0], target:'Daily' },
+        { id:'h4', name:'No phone after 10', color:'coral', done:false, streak:3, week:[0,1,1,0,1,1,0], target:'5 / week' },
+      ],
+      workouts: [
+        { id:'w1', name:'Morning Run', type:'run', dur:32, dist:'5.2 km', kcal:312, ts:ago(0) },
+        { id:'w2', name:'Upper Body', type:'lift', dur:48, kcal:280, ts:ago(1) },
+        { id:'w3', name:'Evening Walk', type:'walk', dur:26, dist:'2.4 km', ts:ago(2) },
+        { id:'w4', name:'Yoga Flow', type:'yoga', dur:35, intensity:'Easy', ts:ago(3) },
+        { id:'w5', name:'Tempo Run', type:'run', dur:28, dist:'4.5 km', kcal:268, ts:ago(5) },
+        { id:'w6', name:'Leg Day', type:'lift', dur:52, kcal:305, ts:ago(6) },
+        { id:'w7', name:'Park Walk', type:'walk', dur:40, dist:'3.6 km', ts:ago(8) },
+        { id:'w8', name:'Long Run', type:'run', dur:46, dist:'8.0 km', kcal:480, ts:ago(10) },
+        { id:'w9', name:'Sunday Cycle', type:'cycle', dur:45, dist:'15 km', ts:ago(12) },
+      ],
+      nights: [
+        { id:'n1', hours:7.4, quality:4, ts:ago(0) },
+        { id:'n2', hours:6.97, quality:3, ts:ago(1) },
+        { id:'n3', hours:7.68, quality:5, ts:ago(2) },
+        { id:'n4', hours:8.03, quality:4, ts:ago(3) },
+        { id:'n5', hours:6.5, quality:3, ts:ago(4) },
+        { id:'n6', hours:7.3, quality:4, ts:ago(5) },
+        { id:'n7', hours:7.1, quality:4, ts:ago(6) },
+        { id:'n8', hours:7.6, quality:5, ts:ago(7) },
+      ],
+      txns: [
+        { id:'t1', name:'Salary', cat:'Income', amount:3200, income:true, ts:ago(18) },
+        { id:'t2', name:'Rent', cat:'Housing', amount:-1400, ts:ago(17) },
+        { id:'t3', name:'Gym membership', cat:'Health', amount:-40, ts:ago(10) },
+        { id:'t4', name:'Freelance', cat:'Income', amount:420, income:true, ts:ago(9) },
+        { id:'t5', name:'Cinema', cat:'Fun', amount:-32, ts:ago(7) },
+        { id:'t6', name:'Uber', cat:'Transport', amount:-23.5, ts:ago(6) },
+        { id:'t7', name:'Whole Foods', cat:'Food', amount:-86.4, ts:ago(5) },
+        { id:'t8', name:'Dinner out', cat:'Fun', amount:-58, ts:ago(3) },
+        { id:'t9', name:'Groceries', cat:'Food', amount:-92, ts:ago(2) },
+        { id:'t10', name:'Coffee', cat:'Food', amount:-5.4, ts:ago(1) },
+      ],
+    };
+  }
+
+  componentDidUpdate() { this.persist(); }
+  persist() {
+    try {
+      const S = this.state;
+      localStorage.setItem('orbit_v1', JSON.stringify({ habits:S.habits, workouts:S.workouts, nights:S.nights, txns:S.txns, theme:S.theme }));
+    } catch(e){}
+  }
+  uid(p){ return p + Math.random().toString(36).slice(2,8); }
+  toast(msg){ this.setState({ toast:msg }); clearTimeout(this._t); this._t = setTimeout(()=>this.setState({ toast:'' }), 2200); }
+  dow(ts){ return ['S','M','T','W','T','F','S'][new Date(ts).getDay()]; }
+  last7DowLabels(){ const a=[], now=Date.now(), D=86400000; for(let i=6;i>=0;i--) a.push(this.dow(now-i*D)); return a; }
+  hm(h){ const m=Math.round(h*60); return `${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}m`; }
+  money(n){ const a=Math.abs(n); return '$'+a.toLocaleString('en-US',{minimumFractionDigits:(a%1)?2:0,maximumFractionDigits:2}); }
+  signMoney(n){ return (n>=0?'+ ':'− ')+this.money(n); }
+  relLabel(ts){
+    const D=86400000, st=new Date(); st.setHours(0,0,0,0);
+    const di=Math.floor((st.getTime()-new Date(ts).setHours(0,0,0,0))/D);
+    if(di<=0) return 'Today'; if(di===1) return 'Yesterday';
+    if(di<7) return new Date(ts).toLocaleDateString('en-US',{weekday:'short'});
+    return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  }
+
+  derive() {
+    const S = this.state, D = 86400000;
+    const st0 = new Date(); st0.setHours(0,0,0,0); const t0 = st0.getTime();
+    const dayIdx = (ts) => Math.floor((t0 - new Date(ts).setHours(0,0,0,0)) / D);
+    const within = (ts, days) => { const di=dayIdx(ts); return di>=0 && di<days; };
+    const buckets7 = (items, valFn) => { const a=[0,0,0,0,0,0,0]; items.forEach(it=>{ const di=dayIdx(it.ts); if(di>=0&&di<7) a[6-di]+=valFn(it); }); return a; };
+    const shades=[100,72,50,33,22,15];
+    const W=S.workouts, N=S.nights, T=S.txns, H=S.habits;
+
+    const wCount=W.length, wTotalMin=W.reduce((s,w)=>s+(w.dur||0),0), wThisWeek=W.filter(w=>within(w.ts,7)).length;
+    const wDays=new Set(W.map(w=>dayIdx(w.ts)).filter(d=>d>=0)); let wStreak=0; while(wDays.has(wStreak)) wStreak++;
+    const typeOrder=['run','lift','walk','yoga','cycle','other'], typeName={run:'Run',lift:'Lift',walk:'Walk',yoga:'Yoga',cycle:'Cycle',other:'Other'};
+    const tc={}; W.forEach(w=>{tc[w.type]=(tc[w.type]||0)+1;});
+    const wTypeSegs=typeOrder.filter(t=>tc[t]).map((t,i)=>({ label:typeName[t], value:tc[t], color:i===0?'var(--coral)':`color-mix(in srgb,var(--coral) ${shades[i]}%,var(--surface))` }));
+    const wMinBuckets=buckets7(W, w=>w.dur||0);
+
+    const nAsc=[...N].sort((a,b)=>a.ts-b.ts), last7N=nAsc.slice(-7);
+    const slAvg=N.length?N.reduce((s,n)=>s+n.hours,0)/N.length:0;
+    const slAvgQ=N.length?N.reduce((s,n)=>s+n.quality,0)/N.length:0;
+    const sleepData=last7N.map(n=>n.hours), sleepLabels=last7N.map(n=>this.dow(n.ts));
+
+    const income=T.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+    const spent=T.filter(t=>t.amount<0).reduce((s,t)=>s-t.amount,0);
+    const net=income-spent;
+    const catSums={}; T.filter(t=>t.amount<0).forEach(t=>{catSums[t.cat]=(catSums[t.cat]||0)+(-t.amount);});
+    const catArr=Object.keys(catSums).map(k=>({cat:k,val:catSums[k]})).sort((a,b)=>b.val-a.val);
+    const fCatSegs=catArr.slice(0,4).map((c,i)=>({ label:c.cat, value:c.val, color:i===0?'var(--emerald)':`color-mix(in srgb,var(--emerald) ${shades[i]}%,var(--surface))` }));
+    const tAsc=[...T].sort((a,b)=>a.ts-b.ts); let run=0; const fTrend=tAsc.map(t=>(run+=t.amount));
+    const weekSpend=T.filter(t=>within(t.ts,7)).reduce((s,t)=>s+t.amount,0);
+    const spendBuckets=buckets7(T.filter(t=>t.amount<0), t=>-t.amount);
+
+    const totalDots=H.reduce((s,h)=>s+h.week.reduce((a,b)=>a+b,0),0), maxDots=H.length*7;
+    const habitPct=maxDots?Math.round(totalDots/maxDots*100):0;
+
+    return { wCount,wTotalMin,wThisWeek,wStreak,wTypeSegs,wMinBuckets,
+      slAvg,slAvgQ,sleepData,sleepLabels,
+      income,spent,net,fCatSegs,fTrend:(fTrend.length?fTrend:[0,0]),weekSpend,spendBuckets,
+      totalDots,maxDots,habitPct, last7Labels:this.last7DowLabels() };
+  }
+
+  el() { return React.createElement.apply(null, arguments); }
+  hv(k) { return 'var(--' + k + ')'; }
+  chip(active, col) {
+    return `padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;border:1.5px solid ${active?col:'var(--border)'};background:${active?`color-mix(in srgb,${col} 12%,transparent)`:'var(--surface)'};color:${active?col:'var(--text2)'}`;
+  }
+  saveSheet(label) {
+    this.setState({ sheet:null, toast:label });
+    setTimeout(() => this.setState({ toast:'' }), 2200);
+  }
+
+  smooth(pts) {
+    if (pts.length < 2) return pts.length ? `M${pts[0][0]} ${pts[0][1]}` : '';
+    let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i-1] || pts[i], p1 = pts[i], p2 = pts[i+1], p3 = pts[i+2] || p2;
+      const c1x = p1[0] + (p2[0]-p0[0])/6, c1y = p1[1] + (p2[1]-p0[1])/6;
+      const c2x = p2[0] - (p3[0]-p1[0])/6, c2y = p2[1] - (p3[1]-p1[1])/6;
+      d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+    }
+    return d;
+  }
+
+  bars(values, key, o = {}) {
+    const w = o.w || 132, h = o.h || 42, e = this.el.bind(this), col = this.hv(key);
+    const max = Math.max.apply(null, values.concat([1])), n = values.length, gap = o.gap || 5;
+    const bw = (w - gap*(n-1)) / n;
+    const rects = values.map((v,i) => {
+      const bh = Math.max(3, (v/max)*(h-3)), x = i*(bw+gap);
+      return e('rect', { key:i, x, y:h-bh, width:bw, height:bh, rx:Math.min(3.5,bw/2), style:{ fill:col, opacity:i===n-1?1:.3 } });
+    });
+    return e('svg', { width:'100%', height:h, viewBox:`0 0 ${w} ${h}`, preserveAspectRatio:'none', style:{display:'block'} }, rects);
+  }
+
+  spark(values, key, o = {}) {
+    const w = o.w || 132, h = o.h || 42, e = this.el.bind(this), col = this.hv(key), area = o.area !== false;
+    const max = Math.max.apply(null, values), min = Math.min.apply(null, values), rng = (max-min)||1, n = values.length;
+    const pts = values.map((v,i) => [ (i/(n-1))*(w-6)+3, h-5-((v-min)/rng)*(h-12) ]);
+    const d = this.smooth(pts), id = 'sp'+(this.gid++), ch = [];
+    if (area) {
+      ch.push(e('defs',{key:'d'}, e('linearGradient',{id,x1:0,y1:0,x2:0,y2:1},
+        e('stop',{offset:'0%',stopColor:col,stopOpacity:.26}), e('stop',{offset:'100%',stopColor:col,stopOpacity:0}))));
+      ch.push(e('path',{key:'a',d:d+` L ${pts[n-1][0].toFixed(1)} ${h} L ${pts[0][0].toFixed(1)} ${h} Z`,fill:`url(#${id})`,stroke:'none'}));
+    }
+    ch.push(e('path',{key:'l',d,fill:'none',stroke:col,strokeWidth:o.sw||2.4,strokeLinecap:'round',strokeLinejoin:'round',vectorEffect:'non-scaling-stroke'}));
+    if (o.dot !== false) ch.push(e('circle',{key:'p',cx:pts[n-1][0],cy:pts[n-1][1],r:3,fill:col}));
+    return e('svg',{width:'100%',height:h,viewBox:`0 0 ${w} ${h}`,preserveAspectRatio:'none',style:{display:'block',overflow:'visible'}},ch);
+  }
+
+  donut(segs, o = {}) {
+    const size = o.size || 148, stroke = o.stroke || 20, e = this.el.bind(this);
+    const total = segs.reduce((a,s)=>a+s.value,0) || 1, r = (size-stroke)/2, c = size/2, circ = 2*Math.PI*r;
+    let off = 0; const gap = circ*0.014;
+    const arcs = segs.map((s,i) => {
+      const frac = s.value/total, len = Math.max(0.001, frac*circ-gap), col = s.color || this.hv(s.key);
+      const el = e('circle',{ key:i, cx:c, cy:c, r, fill:'none', stroke:col, strokeWidth:stroke,
+        strokeDasharray:`${len} ${circ-len}`, strokeDashoffset:-off, strokeLinecap:'round', transform:`rotate(-90 ${c} ${c})` });
+      off += frac*circ; return el;
+    });
+    const track = e('circle',{key:'t',cx:c,cy:c,r,fill:'none',stroke:'var(--border)',strokeWidth:stroke,opacity:.55});
+    return e('svg',{width:size,height:size,viewBox:`0 0 ${size} ${size}`,style:{display:'block'}},[track].concat(arcs));
+  }
+
+  ring(pct, key, o = {}) {
+    const size = o.size || 56, stroke = o.stroke || 7, e = this.el.bind(this);
+    const r = (size-stroke)/2, c = size/2, circ = 2*Math.PI*r, len = circ*pct/100;
+    return e('svg',{width:size,height:size,viewBox:`0 0 ${size} ${size}`,style:{display:'block'}},[
+      e('circle',{key:'t',cx:c,cy:c,r,fill:'none',stroke:'var(--border)',strokeWidth:stroke,opacity:.6}),
+      e('circle',{key:'a',cx:c,cy:c,r,fill:'none',stroke:this.hv(key),strokeWidth:stroke,strokeLinecap:'round',
+        strokeDasharray:`${len} ${circ-len}`, transform:`rotate(-90 ${c} ${c})`}),
+    ]);
+  }
+
+  heatVal(c, r) {
+    const s = Math.sin(c*12.9898 + r*78.233) * 43758.5453, f = s - Math.floor(s);
+    return f<0.16?0 : f<0.4?1 : f<0.62?2 : f<0.84?3 : 4;
+  }
+  heat(key, o = {}) {
+    const cols = o.weeks || 12, rows = 7, cell = o.cell || 13, gap = 4.5, e = this.el.bind(this);
+    const ops = [0,.28,.5,.74,1], rects = [];
+    for (let c=0;c<cols;c++) for (let r=0;r<rows;r++) {
+      const iv = this.heatVal(c,r);
+      const fill = iv===0 ? 'color-mix(in srgb, var(--text2) 12%, transparent)'
+        : `color-mix(in srgb, ${this.hv(key)} ${Math.round(ops[iv]*100)}%, transparent)`;
+      rects.push(e('rect',{key:c+'-'+r,x:c*(cell+gap),y:r*(cell+gap),width:cell,height:cell,rx:3.5,style:{fill}}));
+    }
+    const w = cols*(cell+gap)-gap, h = rows*(cell+gap)-gap;
+    return e('svg',{width:'100%',height:h,viewBox:`0 0 ${w} ${h}`,preserveAspectRatio:'xMinYMid meet',style:{display:'block'}},rects);
+  }
+
+  renderVals() {
+    this.gid = 0;
+    const S = this.state;
+    const d = this.derive();
+    const set = (o) => this.setState(o);
+    const go = (screen) => set({ screen, sheet:null });
+    const open = (sheet) => set({ sheet });
+    const screen = S.screen;
+
+    const homeHabits = S.habits.map(hb => {
+      const col = `var(--${hb.color})`;
+      return {
+        name: hb.name, streak: hb.streak,
+        sub: hb.done ? 'Completed today' : 'Tap to complete',
+        onToggle: () => this.setState(st => ({ habits: st.habits.map(x => x.id===hb.id ? {...x, done:!x.done, streak: x.done ? x.streak-1 : x.streak+1, week:[...x.week.slice(0,6), x.done?0:1]} : x) })),
+        rowStyle: 'display:flex;align-items:center;gap:14px;padding:15px 16px;border-bottom:1px solid var(--border)',
+        checkStyle: `width:30px;height:30px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);border:2px solid ${hb.done?col:'var(--border)'};background:${hb.done?col:'transparent'};box-shadow:${hb.done?'0 5px 14px -3px color-mix(in srgb,'+col+' 50%,transparent)':'none'}`,
+        markStyle: `fill:none;stroke:#fff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;transition:all .3s cubic-bezier(.34,1.56,.64,1);transform:${hb.done?'scale(1)':'scale(.2)'};opacity:${hb.done?1:0}`,
+        chipStyle: `display:flex;align-items:center;gap:3px;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;flex:none;background:color-mix(in srgb,${col} 13%,transparent);color:${col}`,
+      };
+    });
+    const doneCount = S.habits.filter(h=>h.done).length;
+
+    return {
+      theme: S.theme,
+      isWelcome: screen==='welcome', isSignin: screen==='signin', isHome: screen==='home',
+      isAnyDetail: ['workouts','habits','sleep','finances','analytics','settings'].includes(screen),
+      isWorkouts: screen==='workouts', isHabits: screen==='habits', isSleep: screen==='sleep',
+      isFinances: screen==='finances', isAnalytics: screen==='analytics', isSettings: screen==='settings',
+      isHomeFull: screen==='home' && !S.emptyMode, isHomeEmpty: screen==='home' && S.emptyMode,
+      isWorkoutsFull: screen==='workouts' && !S.emptyMode, isWorkoutsEmpty: screen==='workouts' && S.emptyMode,
+      isHabitsFull: screen==='habits' && !S.emptyMode, isHabitsEmpty: screen==='habits' && S.emptyMode,
+      isSleepFull: screen==='sleep' && !S.emptyMode, isSleepEmpty: screen==='sleep' && S.emptyMode,
+      isFinancesFull: screen==='finances' && !S.emptyMode, isFinancesEmpty: screen==='finances' && S.emptyMode,
+      emptyMode: S.emptyMode,
+      toggleEmpty: () => set({ emptyMode: !S.emptyMode }),
+      emptyToggleStyle: `width:48px;height:28px;border-radius:999px;flex:none;cursor:pointer;transition:all .2s;position:relative;background:${S.emptyMode?'var(--indigo)':'var(--border)'}`,
+      emptyKnobStyle: `position:absolute;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:all .25s cubic-bezier(.34,1.56,.64,1);box-shadow:0 1px 3px rgba(0,0,0,.3);left:${S.emptyMode?'23px':'3px'}`,
+      showTabs: ['home','workouts','habits','sleep','finances','analytics','settings'].includes(screen),
+      sheetOpen: !!S.sheet,
+      scChooser: S.sheet==='chooser',
+
+      lightPillStyle: `padding:7px 17px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Geist',sans-serif;border:none;${S.theme==='light'?'background:#14151A;color:#fff':'background:transparent;color:#3a3b42'}`,
+      darkPillStyle: `padding:7px 17px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Geist',sans-serif;border:none;${S.theme==='dark'?'background:#14151A;color:#fff':'background:transparent;color:#3a3b42'}`,
+
+      tabHomeStyle: `flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:${screen==='home'?'var(--indigo)':'var(--text2)'}`,
+      tabAnalyticsStyle: `flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:${screen==='analytics'?'var(--indigo)':'var(--text2)'}`,
+      tabSettingsStyle: `flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:${screen==='settings'?'var(--indigo)':'var(--text2)'}`,
+
+      greeting: (()=>{ const h=new Date().getHours(); return h<12?'Good morning':h<18?'Good afternoon':'Good evening'; })(),
+      todayStr: new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}),
+      habitsDoneLabel: `${doneCount} of ${S.habits.length} done`,
+
+      homeHabits,
+      homeWorkoutBars: this.bars(d.wMinBuckets, 'coral'),
+      homeSleepSpark: this.spark(d.sleepData, 'blue'),
+      homeSpendSpark: this.spark(d.spendBuckets.map(v=>v||0.001), 'emerald'),
+      homeHabitRing: this.ring(d.habitPct, 'teal', { size:56, stroke:7 }),
+      homeWorkoutCount: d.wThisWeek,
+      homeSleepH: Math.floor(d.slAvg), homeSleepM: String(Math.round((d.slAvg%1)*60)).padStart(2,'0'),
+      homeHabitPct: d.habitPct,
+      homeNetSpend: d.weekSpend>=0 ? ('+'+this.money(d.weekSpend)) : ('−'+this.money(d.weekSpend)),
+
+      segItems: ['Week','Month','Year','All'].map(r => ({
+        label: r, onClick: () => set({ range:r }),
+        style: `flex:1;text-align:center;padding:8px 0;border-radius:11px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${S.range===r?'background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(20,21,26,.12)':'color:var(--text2)'}`,
+      })),
+      rangeWord: S.range==='All' ? 'all time' : ('this ' + S.range.toLowerCase()),
+      analyticsSub: S.range==='All' ? 'Everything, all time' : ('Your ' + S.range.toLowerCase() + ' at a glance'),
+
+      themeSeg: [['Light','light'],['Dark','dark'],['System','system']].map(([label,val]) => ({
+        label,
+        onClick: val==='system' ? (()=>set({ theme: (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light' })) : (()=>set({ theme: val })),
+        style: `flex:1;text-align:center;padding:9px 0;border-radius:11px;font-size:13.5px;font-weight:600;cursor:pointer;transition:all .2s;${S.theme===val?'background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(20,21,26,.12)':'color:var(--text2)'}`,
+      })),
+
+      wMinutesChart: this.bars(d.wMinBuckets, 'coral', { w:300, h:120, gap:9 }),
+      wMinAxis: d.last7Labels.map((l,i)=>({ l, key:i })),
+      wTypeDonut: this.donut(d.wTypeSegs, { size:146, stroke:24 }),
+      wCount: d.wCount, wTotalMin: d.wTotalMin, wStreak: d.wStreak,
+      wTypeLegend: d.wTypeSegs.map(s=>({ label:s.label, value:s.value, dotStyle:`width:10px;height:10px;border-radius:3px;flex:none;background:${s.color}` })),
+      sleepChart: this.spark(d.sleepData, 'blue', { w:300, h:120, area:true, sw:2.8 }),
+      sleepAxis: d.sleepLabels.map((l,i)=>({ l, key:i })),
+      slAvgH: Math.floor(d.slAvg), slAvgM: String(Math.round((d.slAvg%1)*60)).padStart(2,'0'),
+      slAvgQ: d.slAvgQ.toFixed(1),
+      slStarFilled: '★'.repeat(Math.round(d.slAvgQ)), slStarEmpty: '★'.repeat(5-Math.round(d.slAvgQ)),
+      fCatDonut: this.donut(d.fCatSegs, { size:146, stroke:24 }),
+      fCatLegend: d.fCatSegs.map(s=>({ label:s.label, value:this.money(s.value), dotStyle:`width:10px;height:10px;border-radius:3px;flex:none;background:${s.color}` })),
+      fNet: this.signMoney(d.net), fIncome: this.money(d.income), fSpent: this.money(d.spent),
+      fTrendChart: this.spark(d.fTrend, 'emerald', { w:300, h:108, area:true, sw:2.8 }),
+      habitRingBig: this.ring(d.habitPct, 'teal', { size:124, stroke:13 }),
+      habitPct: d.habitPct, habitCheckins: `${d.totalDots} of ${d.maxDots}`,
+      habitHeat: this.heat('teal', { weeks:12, cell:13 }),
+      anWMin: d.wTotalMin + ' min', anWSub: `${d.wCount} sessions · ${d.wThisWeek} this week`,
+      anSleepStat: this.hm(d.slAvg), anSleepSub: `Avg quality ${d.slAvgQ.toFixed(1)} · consistent bedtime`,
+      anHabitSub: `${d.totalDots} of ${d.maxDots} check-ins this week`,
+      anFinNet: this.signMoney(d.net), anFinSub: `${this.money(d.income)} in · ${this.money(d.spent)} out`,
+      anWorkoutChart: this.bars(d.wMinBuckets, 'coral', { h:96, w:300, gap:9 }),
+      anSleepChart: this.spark(d.sleepData, 'blue', { w:300, h:96, area:true, sw:2.6 }),
+      anFinanceChart: this.spark(d.fTrend, 'emerald', { w:300, h:96, area:true, sw:2.6 }),
+      anHabitRing: this.ring(d.habitPct, 'teal', { size:88, stroke:10 }),
+
+      scWorkout: S.sheet==='workout', scSleep: S.sheet==='sleep', scExpense: S.sheet==='expense',
+      scHabit: S.sheet==='habit', scEdit: S.sheet==='edit',
+      toast: S.toast, hasToast: !!S.toast,
+
+      wTypeChips: ['Run','Lift','Walk','Yoga','Cycle','Other'].map(t => ({ label:t, onClick:()=>set({wType:t}), style:this.chip(S.wType===t,'var(--coral)') })),
+      wIntensityChips: ['Easy','Moderate','Hard'].map(t => ({ label:t, onClick:()=>set({wIntensity:t}), style:this.chip(S.wIntensity===t,'var(--coral)') })),
+      wDur: S.wDur,
+      wDurDec: () => set({ wDur: Math.max(5, S.wDur-5) }),
+      wDurInc: () => set({ wDur: S.wDur+5 }),
+      saveWorkout: () => {
+        const st=this.state, type=st.wType.toLowerCase();
+        if(st.editKind==='workout'&&st.editId){
+          this.setState({ workouts: st.workouts.map(w=>w.id===st.editId?{...w,dur:st.wDur,type}:w), sheet:null, editKind:null, editId:null });
+          this.toast('Workout updated'); return;
+        }
+        const w={ id:this.uid('w'), name:st.wType, type, dur:st.wDur, intensity:st.wIntensity, ts:Date.now() };
+        this.setState({ workouts:[w,...st.workouts], sheet:null }); this.toast('Workout logged');
+      },
+
+      slHours: S.slHours,
+      slHoursLabel: `${Math.floor(S.slHours)}h ${Math.round((S.slHours%1)*60)}m`,
+      setSlHours: (e)=>set({ slHours: parseFloat(e.target.value) }),
+      sleepStars: [0,1,2,3,4].map(i => ({ filled: i < S.slQuality, onClick:()=>set({slQuality:i+1}), style:`cursor:pointer;font-size:34px;line-height:1;transition:transform .15s;color:${i<S.slQuality?'var(--blue)':'var(--border)'}` })),
+      saveSleep: () => {
+        const st=this.state;
+        const n={ id:this.uid('n'), hours:st.slHours, quality:st.slQuality, ts:Date.now() };
+        this.setState({ nights:[n,...st.nights], sheet:null }); this.toast('Sleep logged');
+      },
+
+      exIncome: S.exKind==='income', exExpense: S.exKind==='expense',
+      exKindIncomeStyle: `flex:1;text-align:center;padding:9px 0;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;${S.exKind==='income'?'background:var(--surface);color:var(--emerald);box-shadow:0 1px 3px rgba(20,21,26,.12)':'color:var(--text2)'}`,
+      exKindExpenseStyle: `flex:1;text-align:center;padding:9px 0;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;${S.exKind==='expense'?'background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(20,21,26,.12)':'color:var(--text2)'}`,
+      setExIncome: ()=>set({exKind:'income'}), setExExpense: ()=>set({exKind:'expense'}),
+      exAmountDisplay: S.exAmount===''?'0':S.exAmount,
+      exAmountColor: S.exKind==='income'?'var(--emerald)':'var(--text)',
+      exKeys: ['1','2','3','4','5','6','7','8','9','.','0','del'].map(k => ({
+        content: k==='del' ? '⌫' : k, notDel:k!=='del',
+        content: k==='del' ? this.el('svg',{width:24,height:24,style:{fill:'none',stroke:'var(--text)',strokeWidth:1.9,strokeLinecap:'round',strokeLinejoin:'round'}}, this.el('path',{d:'M9 5h10v14H9l-6-7 6-7ZM13 9.5l4 5M17 9.5l-4 5'})) : k,
+        onClick: k==='del' ? (()=>set({exAmount:S.exAmount.slice(0,-1)})) : (()=>{
+          let v=S.exAmount; if(k==='.'&&v.includes('.'))return; if(v.replace('.','').length>=7)return;
+          if(v.includes('.')&&v.split('.')[1].length>=2)return; set({exAmount:v+k});
+        }),
+      })),
+      exCatChips: ['Food','Transport','Housing','Fun','Health','Other'].map(c => ({ label:c, onClick:()=>set({exCat:c}), style:this.chip(S.exCat===c,'var(--emerald)') })),
+      saveExpense: () => {
+        const st=this.state, amt=parseFloat(st.exAmount||'0'); if(!amt) return;
+        const income=st.exKind==='income';
+        const t={ id:this.uid('t'), name: income?'Income':st.exCat, cat: income?'Income':st.exCat, amount: income?amt:-amt, income, ts:Date.now() };
+        this.setState({ txns:[t,...st.txns], sheet:null, exAmount:'' }); this.toast(income?'Income logged':'Expense logged');
+      },
+
+      nhName: S.nhName, setNhName: (e)=>set({nhName:e.target.value}),
+      nhColorSwatches: ['teal','indigo','coral','blue','emerald'].map(c => ({
+        onClick:()=>set({nhColor:c}),
+        style:`width:38px;height:38px;border-radius:50%;cursor:pointer;flex:none;background:var(--${c});transition:all .15s;box-shadow:0 0 0 ${S.nhColor===c?'3px var(--surface),0 0 0 5px var(--'+c+')':'0 transparent'}`,
+      })),
+      nhTargetChips: ['Daily','3 / week','5 / week'].map(t => ({ label:t, onClick:()=>set({nhTarget:t}), style:this.chip(S.nhTarget===t,'var(--teal)') })),
+      nhCanSaveStyle: `background:${S.nhName.trim()?'var(--teal)':'color-mix(in srgb,var(--teal) 40%,var(--surface))'};color:#fff;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;cursor:${S.nhName.trim()?'pointer':'default'};margin-top:8px;transition:all .2s`,
+      saveHabit: () => {
+        const st=this.state; if(!st.nhName.trim()) return;
+        const h={ id:this.uid('h'), name:st.nhName.trim(), color:st.nhColor, done:false, streak:0, week:[0,0,0,0,0,0,0], target:st.nhTarget };
+        this.setState({ habits:[...st.habits,h], sheet:null, nhName:'' }); this.toast('Habit added');
+      },
+
+      editKindWorkout: S.editKind==='workout',
+      editTitle: S.editKind==='workout' ? 'Edit workout' : S.editKind==='sleep' ? 'Edit sleep' : S.editKind==='txn' ? 'Edit transaction' : 'Edit entry',
+      editSummary: S.editItem ? (S.editKind==='workout' ? `${S.editItem.name} · ${S.editItem.dur} min` : S.editKind==='sleep' ? `${this.hm(S.editItem.hours)} · ${S.editItem.quality}★` : S.editKind==='txn' ? `${S.editItem.name} · ${this.signMoney(S.editItem.amount)}` : '') : '',
+      deleteEntry: () => {
+        const st=this.state, k=st.editKind, id=st.editId, patch={ sheet:null, editKind:null, editId:null };
+        if(k==='workout') patch.workouts=st.workouts.filter(w=>w.id!==id);
+        else if(k==='sleep') patch.nights=st.nights.filter(n=>n.id!==id);
+        else if(k==='txn') patch.txns=st.txns.filter(t=>t.id!==id);
+        else if(k==='habit') patch.habits=st.habits.filter(h=>h.id!==id);
+        this.setState(patch); this.toast('Entry deleted');
+      },
+
+      workouts: [...S.workouts].sort((a,b)=>b.ts-a.ts).map(w => ({
+        name:w.name, dur:w.dur,
+        meta: w.dist ? (w.dist + (w.kcal?(' · '+w.kcal+' kcal'):'')) : (w.kcal ? (w.kcal+' kcal') : (w.intensity ? (w.intensity+' intensity') : 'Workout')),
+        when: this.relLabel(w.ts),
+        onEdit: ()=>set({ sheet:'edit', editKind:'workout', editId:w.id, editItem:w, wDur:w.dur, wType: w.type.charAt(0).toUpperCase()+w.type.slice(1) }),
+      })),
+      nightRows: [...S.nights].sort((a,b)=>b.ts-a.ts).map(n => ({
+        date:this.relLabel(n.ts), h:this.hm(n.hours), filled:'★'.repeat(n.quality), empty:'☆'.repeat(5-n.quality),
+        onEdit: ()=>set({ sheet:'edit', editKind:'sleep', editId:n.id, editItem:n }),
+      })),
+      txnRows: [...S.txns].sort((a,b)=>b.ts-a.ts).map(t => ({
+        name:t.name, cat:t.cat, when:this.relLabel(t.ts), income:!!t.income, expense:!t.income,
+        amountStr: (t.income?'+ $':'− $') + Math.abs(t.amount).toLocaleString('en-US',{minimumFractionDigits:(Math.abs(t.amount)%1)?2:0, maximumFractionDigits:2}),
+        amountStyle: `font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;flex:none;color:${t.income?'var(--emerald)':'var(--text)'}`,
+        iconStyle: `width:38px;height:38px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;background:${t.income?'color-mix(in srgb,var(--emerald) 13%,transparent)':'var(--bg)'}`,
+        onEdit: ()=>set({ sheet:'edit', editKind:'txn', editId:t.id, editItem:t }),
+      })),
+      habitDetailRows: S.habits.map(hb => {
+        const col = `var(--${hb.color})`;
+        return {
+          name: hb.name, streak: hb.streak, target: hb.target,
+          dotStyleSmall: `width:11px;height:11px;border-radius:50%;flex:none;background:${col}`,
+          chipStyle: `display:flex;align-items:center;gap:3px;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;flex:none;background:color-mix(in srgb,${col} 13%,transparent);color:${col}`,
+          dots: hb.week.map(d => ({ style: `width:26px;height:26px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:${d?col:'transparent'};border:1.5px solid ${d?col:'var(--border)'}` , on:!!d })),
+        };
+      }),
+
+      signTitle: S.signUp ? 'Create your account' : 'Welcome back',
+      signSub: S.signUp ? 'Start tracking in seconds. One field, that\u2019s it.' : 'Sign in to pick up where you left off.',
+      signCta: S.signUp ? 'Create account' : 'Continue',
+      signToggle: S.signUp ? 'Already have an account? Sign in' : 'New here? Create an account',
+
+      setLight: () => set({ theme:'light' }),
+      setDark: () => set({ theme:'dark' }),
+      goWelcome: () => go('welcome'),
+      goSignin: () => set({ screen:'signin', signUp:false }),
+      goSignup: () => set({ screen:'signin', signUp:true }),
+      toggleSign: () => set({ signUp: !S.signUp }),
+      setEmail: (e) => set({ email: e.target.value }),
+      goHome: () => go('home'),
+      goWorkouts: () => go('workouts'),
+      goHabits: () => go('habits'),
+      goSleep: () => go('sleep'),
+      goFinances: () => go('finances'),
+      goAnalytics: () => go('analytics'),
+      goSettings: () => go('settings'),
+      openChooser: () => open('chooser'),
+      closeSheet: () => set({ sheet:null }),
+      openWorkout: () => open('workout'),
+      openSleep: () => open('sleep'),
+      openExpense: () => open('expense'),
+      openHabit: () => open('habit'),
+    };
+  }
+}
+</script>
+</body>
+</html>
