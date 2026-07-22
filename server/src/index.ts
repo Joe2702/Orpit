@@ -135,7 +135,10 @@ const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 async function sendResetEmail(to: string, link: string): Promise<boolean> {
   const key = process.env.BREVO_API_KEY;
   const from = process.env.MAIL_FROM;
-  if (!key || !from) return false;
+  if (!key || !from) {
+    console.log('[reset] Brevo not configured — missing', !key ? 'BREVO_API_KEY' : 'MAIL_FROM');
+    return false;
+  }
   try {
     const r = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
@@ -152,8 +155,15 @@ async function sendResetEmail(to: string, link: string): Promise<boolean> {
         </div>`,
       }),
     });
+    if (!r.ok) {
+      const body = await r.text().catch(() => '');
+      console.log(`[reset] Brevo rejected email (HTTP ${r.status}):`, body);
+    } else {
+      console.log('[reset] Brevo accepted email for', to);
+    }
     return r.ok;
-  } catch {
+  } catch (e) {
+    console.log('[reset] Brevo request threw:', e instanceof Error ? e.message : e);
     return false;
   }
 }
@@ -169,7 +179,11 @@ app.post(
         [email]
       );
       // Only for accounts that actually have a password (not Google-only).
-      if (u && u.password_hash) {
+      if (!u) {
+        console.log('[reset] no account found for', email);
+      } else if (!u.password_hash) {
+        console.log('[reset] account', email, 'has no password (Google-only) — no email sent');
+      } else {
         const token = randomBytes(32).toString('hex');
         const expires = new Date(Date.now() + 60 * 60 * 1000);
         await query('DELETE FROM password_resets WHERE user_id = $1', [u.id]);
@@ -180,6 +194,8 @@ app.post(
         const base = process.env.APP_URL || `https://${req.headers.host}`;
         await sendResetEmail(email, `${base}/reset?token=${token}`);
       }
+    } else {
+      console.log('[reset] rejected malformed email:', JSON.stringify(req.body.email));
     }
     res.json({ ok: true });
   })
