@@ -100,6 +100,7 @@ app.patch(
     if (['light', 'dark'].includes(req.body.theme)) fields.theme = req.body.theme;
     if (typeof req.body.reminders === 'boolean') fields.reminders = req.body.reminders;
     if (typeof req.body.haptics === 'boolean') fields.haptics = req.body.haptics;
+    if (['USD', 'EGP', 'EUR', 'GBP', 'SAR'].includes(req.body.currency)) fields.currency = req.body.currency;
 
     const keys = Object.keys(fields);
     if (keys.length) {

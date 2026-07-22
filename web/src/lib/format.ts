@@ -5,10 +5,31 @@ export function hm(h: number): string {
   return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
 }
 
+export interface CurrencyOpt {
+  code: string;
+  label: string;
+  symbol: string;
+}
+export const CURRENCIES: CurrencyOpt[] = [
+  { code: 'EGP', label: 'Egyptian Pound', symbol: 'E£' },
+  { code: 'USD', label: 'US Dollar', symbol: '$' },
+  { code: 'EUR', label: 'Euro', symbol: '€' },
+  { code: 'GBP', label: 'British Pound', symbol: '£' },
+  { code: 'SAR', label: 'Saudi Riyal', symbol: 'SR ' },
+];
+
+let CURRENT_CURRENCY = 'EGP';
+export function setCurrency(code: string | undefined) {
+  CURRENT_CURRENCY = CURRENCIES.some((c) => c.code === code) ? (code as string) : 'EGP';
+}
+export function moneySymbol(): string {
+  return CURRENCIES.find((c) => c.code === CURRENT_CURRENCY)?.symbol || '$';
+}
+
 export function money(n: number): string {
   const a = Math.abs(n);
   return (
-    '$' +
+    moneySymbol() +
     a.toLocaleString('en-US', {
       minimumFractionDigits: a % 1 ? 2 : 0,
       maximumFractionDigits: 2,

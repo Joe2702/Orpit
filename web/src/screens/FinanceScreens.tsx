@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
 import { api } from '../api';
-import { money, signMoney, fmtDate, relLabel } from '../lib/format';
+import { money, signMoney, fmtDate, relLabel, moneySymbol } from '../lib/format';
 import { FinIcon } from '../lib/iconPaths';
 import { Ring } from '../lib/charts';
 import { BackButton, chip } from '../ui';
@@ -86,7 +86,7 @@ export function FAddTx() {
         <div onClick={() => setKind('income')} style={tab(income, 'var(--emerald)')}>Income</div>
       </div>
       <div style={{ textAlign: 'center', marginBottom: 16 }}>
-        <span style={{ fontSize: 30, fontWeight: 600, color: 'var(--text2)', verticalAlign: 'top', lineHeight: 1.7 }}>$</span>
+        <span style={{ fontSize: 30, fontWeight: 600, color: 'var(--text2)', verticalAlign: 'top', lineHeight: 1.7 }}>{moneySymbol().trim()}</span>
         <span style={{ fontSize: 56, fontWeight: 700, letterSpacing: '-.03em', color: income ? 'var(--emerald)' : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{amount === '' ? '0' : amount}</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 22 }}>

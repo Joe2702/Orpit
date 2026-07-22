@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { api } from '../api';
 import { chip } from '../ui';
+import { moneySymbol } from '../lib/format';
 
 const EXPENSE_CATS = ['Food', 'Transport', 'Housing', 'Fun', 'Health', 'Other'];
 const INCOME_CATS = ['Salary', 'Freelance', 'Investment', 'Gift', 'Refund', 'Other'];
@@ -67,7 +68,7 @@ export function ExpenseSheet() {
       </div>
 
       <div style={{ textAlign: 'center', marginBottom: 18 }}>
-        <span style={{ fontSize: 30, fontWeight: 600, color: 'var(--text2)', verticalAlign: 'top', lineHeight: 1.6 }}>$</span>
+        <span style={{ fontSize: 30, fontWeight: 600, color: 'var(--text2)', verticalAlign: 'top', lineHeight: 1.6 }}>{moneySymbol().trim()}</span>
         <span style={{ fontSize: 52, fontWeight: 700, letterSpacing: '-.03em', color: income ? 'var(--emerald)' : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
           {amount === '' ? '0' : amount}
         </span>

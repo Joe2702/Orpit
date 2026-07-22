@@ -245,7 +245,7 @@ export function derive(state: AppState, range: Range) {
   const Nr = N.filter((n) => inWin(n.ts)).sort((a, b) => a.ts - b.ts);
   const slAvg = Nr.length ? Nr.reduce((s, n) => s + n.hours, 0) / Nr.length : 0;
   const slAvgQ = Nr.length ? Nr.reduce((s, n) => s + n.quality, 0) / Nr.length : 0;
-  const sleepCandles = Nr.map((n) => ({ hours: n.hours, ts: n.ts }));
+  const sleepCandles = Nr.map((n) => ({ hours: n.hours, ts: n.ts, bedH: n.bedH, wakeH: n.wakeH }));
   const slBest = Nr.length ? Math.max.apply(null, Nr.map((n) => n.hours)) : 0;
   const slRangeTotal = Nr.reduce((s, n) => s + n.hours, 0);
   const bedVals = Nr.filter((n) => n.bedH != null).map((n) => (n.bedH! < 12 ? n.bedH! + 24 : n.bedH!));

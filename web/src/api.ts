@@ -62,8 +62,9 @@ export const api = {
     }),
   getState: () => request<AppState>('/state'),
 
-  updateMe: (patch: Partial<Pick<AppState['profile'], 'name' | 'email' | 'theme' | 'reminders' | 'haptics'>>) =>
-    request<AppState>('/me', { method: 'PATCH', body: JSON.stringify(patch) }),
+  updateMe: (
+    patch: Partial<Pick<AppState['profile'], 'name' | 'email' | 'theme' | 'reminders' | 'haptics' | 'currency'>>
+  ) => request<AppState>('/me', { method: 'PATCH', body: JSON.stringify(patch) }),
 
   addHabit: (b: { name: string; color: string; target: string }) =>
     request<AppState>('/habits', { method: 'POST', body: JSON.stringify(b) }),

@@ -7,6 +7,7 @@ export interface Profile {
   reminders: boolean;
   haptics: boolean;
   onboarded: boolean;
+  currency: string;
   createdAt: number;
 }
 

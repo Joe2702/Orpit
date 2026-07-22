@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { api, getToken, setToken, clearToken, ApiError } from './api';
+import { setCurrency } from './lib/format';
 import type { AppState, Range } from './types';
 
 export type Screen =
@@ -238,6 +239,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     applyState,
     haptic,
   };
+
+  // Keep the money formatter in sync with the user's chosen currency.
+  setCurrency(state?.profile.currency);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

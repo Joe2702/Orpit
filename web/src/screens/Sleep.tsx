@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
-import { Candles } from '../lib/charts';
+import { SleepTimeline } from '../lib/charts';
 import { hm, fmtClock, relLabel } from '../lib/format';
 import { DetailHeader, RangeSeg, SectionLabel, rangeWord } from '../ui';
 import { IconSleep } from '../icons';
@@ -48,19 +48,20 @@ export function Sleep() {
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 18, marginBottom: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text2)' }}>Hours slept</span>
+          <span style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text2)' }}>Sleep times</span>
           <span style={{ fontSize: 12, color: 'var(--text2)' }}>{rangeWord(range)}</span>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
-          <div style={{ position: 'relative', width: 24, height: 140, flex: 'none', fontSize: 10, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
-            <span style={{ position: 'absolute', top: -5, right: 0 }}>12h</span>
-            <span style={{ position: 'absolute', top: 'calc(26.6% - 6px)', right: 0 }}>9h</span>
-            <span style={{ position: 'absolute', top: 'calc(42.9% - 6px)', right: 0 }}>7h</span>
-            <span style={{ position: 'absolute', bottom: -5, right: 0 }}>0</span>
+          <div style={{ position: 'relative', width: 30, height: 140, flex: 'none', fontSize: 10, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
+            <span style={{ position: 'absolute', top: -5, right: 0 }}>00:00</span>
+            <span style={{ position: 'absolute', top: 'calc(25% - 6px)', right: 0 }}>06:00</span>
+            <span style={{ position: 'absolute', top: 'calc(50% - 6px)', right: 0 }}>12:00</span>
+            <span style={{ position: 'absolute', top: 'calc(75% - 6px)', right: 0 }}>18:00</span>
+            <span style={{ position: 'absolute', bottom: -5, right: 0 }}>24:00</span>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ height: 140 }}>
-              <Candles items={d.sleepCandles} w={300} h={140} />
+              <SleepTimeline items={d.sleepCandles} w={300} h={140} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: 'var(--text2)' }}>
               {candleLabels.map((l, i, arr) => (

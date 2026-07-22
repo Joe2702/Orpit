@@ -302,3 +302,49 @@ export function Heat({ grid, colorKey, cell = 13 }: { grid: number[][]; colorKey
     </svg>
   );
 }
+
+// Sleep timeline: Y axis is the 24-hour clock (0 at top → 24 at bottom).
+// Each night is a bar spanning bedtime → wake-up; nights that cross midnight
+// render as two segments (bottom near 24, top near 0).
+export function SleepTimeline({
+  items,
+  w = 300,
+  h = 140,
+  maxBar = 18,
+}: {
+  items: { hours: number; bedH: number | null; wakeH: number | null }[];
+  w?: number;
+  h?: number;
+  maxBar?: number;
+}) {
+  const n = items.length;
+  const slotW = n ? w / n : w;
+  const bw = Math.max(2.5, Math.min(maxBar, slotW * 0.62));
+  const y = (hod: number) => (hod / 24) * h; // 0:00 at top, 24:00 at bottom
+  const ch: React.ReactNode[] = [];
+  [6, 12, 18].forEach((g, i) =>
+    ch.push(
+      <line key={'g' + i} x1={0} y1={y(g)} x2={w} y2={y(g)} stroke="var(--border)" strokeWidth={1} strokeDasharray="3 5" vectorEffect="non-scaling-stroke" />
+    )
+  );
+  items.forEach((it, i) => {
+    if (it.bedH == null || it.wakeH == null) return;
+    const cx = slotW * i + slotW / 2;
+    const col = sleepColor(it.hours);
+    const bed = ((it.bedH % 24) + 24) % 24;
+    const wake = ((it.wakeH % 24) + 24) % 24;
+    const segs: [number, number][] = wake > bed ? [[bed, wake]] : [[bed, 24], [0, wake]];
+    segs.forEach(([a, b], si) => {
+      const yA = y(a);
+      const yB = y(b);
+      ch.push(
+        <rect key={i + '-' + si} x={cx - bw / 2} y={yA} width={bw} height={Math.max(2, yB - yA)} rx={Math.min(4, bw / 2)} style={{ fill: col }} />
+      );
+    });
+  });
+  return (
+    <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ display: 'block' }}>
+      {ch}
+    </svg>
+  );
+}
