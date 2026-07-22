@@ -894,6 +894,23 @@ app.post(
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
+// Digital Asset Links — lets the installed Android app (TWA/APK) verify it owns
+// this site, so it opens full-screen with no browser address bar.
+app.get('/.well-known/assetlinks.json', (_req, res) => {
+  res.json([
+    {
+      relation: ['delegate_permission/common.handle_all_urls'],
+      target: {
+        namespace: 'android_app',
+        package_name: 'com.onrender.orbit_x3z7.twa',
+        sha256_cert_fingerprints: [
+          'D8:9F:A8:C8:A6:86:AD:8F:B4:4B:41:E9:D6:C4:E0:38:E2:B1:37:99:38:36:F6:ED:41:3F:49:20:8D:40:D8:76',
+        ],
+      },
+    },
+  ]);
+});
+
 // ---------------- Serve the built frontend (production) ----------------
 // The compiled server lives at server/dist; the web build is at web/dist.
 const webDist = join(__dirname, '../../web/dist');
