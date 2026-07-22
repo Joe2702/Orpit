@@ -71,6 +71,7 @@ interface StoreCtx {
   // auth
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
+  googleAuth: (credential: string) => Promise<void>;
   signOut: () => void;
   // data mutation: pass a function returning the new AppState from the API
   mutate: (fn: () => Promise<AppState>, toast?: string) => Promise<void>;
@@ -166,6 +167,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setScreen('home');
   }, []);
 
+  const googleAuth = useCallback(async (credential: string) => {
+    const { token, state: s } = await api.google(credential);
+    setToken(token);
+    setState(s);
+    setScreen('home');
+  }, []);
+
   const signOut = useCallback(() => {
     clearToken();
     setState(null);
@@ -234,6 +242,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     showToast,
     login,
     signup,
+    googleAuth,
     signOut,
     mutate,
     applyState,

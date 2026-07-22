@@ -16,6 +16,16 @@ CREATE TABLE IF NOT EXISTS users (
 );
 ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarded BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EGP';
+-- Google sign-in users have no password; password reset needs a tokens table.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT;
+ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+
+CREATE TABLE IF NOT EXISTS password_resets (
+  token_hash TEXT PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 CREATE TABLE IF NOT EXISTS habits (
   id         BIGSERIAL PRIMARY KEY,

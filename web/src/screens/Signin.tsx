@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
 import { BackButton } from '../ui';
+import { GoogleButton } from '../GoogleButton';
 
 export function Signin() {
   const { go, authMode, setAuthMode, login, signup } = useStore();
@@ -134,6 +135,8 @@ export function Signin() {
         >
           {busy ? 'Please wait…' : signUp ? 'Create account' : 'Continue'}
         </div>
+
+        <GoogleButton />
       </div>
       <div
         onClick={() => {

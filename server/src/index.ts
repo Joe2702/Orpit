@@ -67,13 +67,64 @@ app.post(
   wrap(async (req, res) => {
     const email = String(req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '');
-    const u = await one<{ id: number; password_hash: string }>(
+    const u = await one<{ id: number; password_hash: string | null }>(
       'SELECT id, password_hash FROM users WHERE email = $1',
       [email]
     );
-    if (!u || !(await bcrypt.compare(password, u.password_hash)))
+    if (!u || !u.password_hash || !(await bcrypt.compare(password, u.password_hash)))
       return res.status(401).json({ error: 'Incorrect email or password' });
     res.json({ token: signToken(u.id), state: await buildState(u.id) });
+  })
+);
+
+// Sign in / sign up with a Google ID token (from Google Identity Services).
+app.post(
+  '/api/auth/google',
+  wrap(async (req, res) => {
+    const credential = String(req.body.credential || '');
+    if (!credential) return res.status(400).json({ error: 'Missing Google credential' });
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) return res.status(500).json({ error: 'Google sign-in is not configured' });
+
+    // Verify the ID token with Google and confirm it was issued for our app.
+    let payload: any;
+    try {
+      const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(credential));
+      payload = await r.json();
+    } catch {
+      return res.status(401).json({ error: 'Could not verify Google sign-in' });
+    }
+    const aud = payload.aud;
+    const iss = payload.iss;
+    if (aud !== clientId || !(iss === 'accounts.google.com' || iss === 'https://accounts.google.com')) {
+      return res.status(401).json({ error: 'Invalid Google sign-in' });
+    }
+    const email = String(payload.email || '').trim().toLowerCase();
+    const googleId = String(payload.sub || '');
+    const name = String(payload.name || email.split('@')[0] || 'Friend');
+    if (!email || !googleId) return res.status(401).json({ error: 'Invalid Google account' });
+
+    // Find by google_id, else by email (link accounts), else create + seed.
+    let user = await one<{ id: number }>('SELECT id FROM users WHERE google_id = $1', [googleId]);
+    if (!user) {
+      const byEmail = await one<{ id: number }>('SELECT id FROM users WHERE email = $1', [email]);
+      if (byEmail) {
+        await query('UPDATE users SET google_id = $1 WHERE id = $2', [googleId, byEmail.id]);
+        user = byEmail;
+      } else {
+        const id = await tx(async (c) => {
+          const { rows } = await c.query(
+            `INSERT INTO users (email, name, google_id, onboarded) VALUES ($1,$2,$3,TRUE) RETURNING id`,
+            [email, name, googleId]
+          );
+          const uid = rows[0].id as number;
+          await seedUser(c, uid);
+          return uid;
+        });
+        user = { id };
+      }
+    }
+    res.json({ token: signToken(user.id), state: await buildState(user.id) });
   })
 );
 
