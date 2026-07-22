@@ -5,6 +5,7 @@ import 'dotenv/config';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
+import { randomBytes, createHash } from 'node:crypto';
 
 import { pool, query, one, tx } from './db.js';
 import { signToken, requireAuth, type AuthedRequest } from './auth.js';
@@ -125,6 +126,83 @@ app.post(
       }
     }
     res.json({ token: signToken(user.id), state: await buildState(user.id) });
+  })
+);
+
+const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
+
+// Send a password-reset email via Brevo (if configured). Returns false if not set up.
+async function sendResetEmail(to: string, link: string): Promise<boolean> {
+  const key = process.env.BREVO_API_KEY;
+  const from = process.env.MAIL_FROM;
+  if (!key || !from) return false;
+  try {
+    const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': key, 'Content-Type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({
+        sender: { email: from, name: 'Orbit' },
+        to: [{ email: to }],
+        subject: 'Reset your Orbit password',
+        htmlContent: `<div style="font-family:sans-serif;font-size:15px;color:#211f1b">
+          <p>Tap the button to set a new password. This link expires in 1 hour.</p>
+          <p><a href="${link}" style="display:inline-block;background:#5c57c9;color:#fff;padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:600">Reset password</a></p>
+          <p style="color:#807a70;font-size:13px">Or paste this link: ${link}</p>
+          <p style="color:#807a70;font-size:13px">If you didn't request this, you can ignore this email.</p>
+        </div>`,
+      }),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
+// Request a reset link (always responds ok, so it can't be used to probe emails).
+app.post(
+  '/api/auth/request-reset',
+  wrap(async (req, res) => {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    if (emailOk(email)) {
+      const u = await one<{ id: number; password_hash: string | null }>(
+        'SELECT id, password_hash FROM users WHERE email = $1',
+        [email]
+      );
+      // Only for accounts that actually have a password (not Google-only).
+      if (u && u.password_hash) {
+        const token = randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 60 * 60 * 1000);
+        await query('DELETE FROM password_resets WHERE user_id = $1', [u.id]);
+        await query(
+          'INSERT INTO password_resets (token_hash, user_id, expires_at) VALUES ($1,$2,$3)',
+          [sha256(token), u.id, expires]
+        );
+        const base = process.env.APP_URL || `https://${req.headers.host}`;
+        await sendResetEmail(email, `${base}/reset?token=${token}`);
+      }
+    }
+    res.json({ ok: true });
+  })
+);
+
+// Set a new password from a reset token, and log the user in.
+app.post(
+  '/api/auth/reset-password',
+  wrap(async (req, res) => {
+    const token = String(req.body.token || '');
+    const password = String(req.body.password || '');
+    if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    const row = await one<{ user_id: number; expires_at: string }>(
+      'SELECT user_id, expires_at FROM password_resets WHERE token_hash = $1',
+      [sha256(token)]
+    );
+    if (!row || new Date(row.expires_at).getTime() < Date.now()) {
+      return res.status(400).json({ error: 'This reset link is invalid or has expired' });
+    }
+    const hash = await bcrypt.hash(password, 10);
+    await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, row.user_id]);
+    await query('DELETE FROM password_resets WHERE user_id = $1', [row.user_id]);
+    res.json({ token: signToken(row.user_id), state: await buildState(row.user_id) });
   })
 );
 

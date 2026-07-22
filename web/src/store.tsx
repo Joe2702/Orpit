@@ -6,6 +6,8 @@ import type { AppState, Range } from './types';
 export type Screen =
   | 'welcome'
   | 'signin'
+  | 'forgot'
+  | 'reset'
   | 'home'
   | 'workouts'
   | 'habits'
@@ -72,6 +74,7 @@ interface StoreCtx {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
   googleAuth: (credential: string) => Promise<void>;
+  resetPassword: (resetToken: string, password: string) => Promise<void>;
   signOut: () => void;
   // data mutation: pass a function returning the new AppState from the API
   mutate: (fn: () => Promise<AppState>, toast?: string) => Promise<void>;
@@ -88,18 +91,24 @@ export function useStore() {
   return v;
 }
 
+// If the user arrived via a password-reset email link (/reset?token=…), grab it.
+const initialResetToken =
+  typeof window !== 'undefined' && window.location.pathname === '/reset'
+    ? new URLSearchParams(window.location.search).get('token')
+    : null;
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [state, setState] = useState<AppState | null>(null);
-  const [screen, setScreen] = useState<Screen>('welcome');
-  const [screenData, setScreenData] = useState<any>(null);
+  const [screen, setScreen] = useState<Screen>(initialResetToken ? 'reset' : 'welcome');
+  const [screenData, setScreenData] = useState<any>(initialResetToken ? { token: initialResetToken } : null);
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [sheetData, setSheetData] = useState<any>(null);
   const [range, setRangeState] = useState<Range>('Week');
   const [emptyMode, setEmptyMode] = useState(false);
   const [toast, setToast] = useState('');
   const [authMode, setAuthMode] = useState<'signup' | 'signin'>('signup');
-  const [booting, setBooting] = useState<boolean>(!!getToken());
+  const [booting, setBooting] = useState<boolean>(!initialResetToken && !!getToken());
   const [bootError, setBootError] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -114,6 +123,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // Restore session on first load — and keep retrying while the (free) server
   // wakes up, instead of dropping a logged-in user back to the welcome screen.
   const restore = useCallback(async () => {
+    // Password-reset link takes priority — show that screen, don't auto-load.
+    if (initialResetToken) {
+      setBooting(false);
+      setReady(true);
+      return;
+    }
     const token = getToken();
     if (!token) {
       setBooting(false);
@@ -172,6 +187,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setToken(token);
     setState(s);
     setScreen('home');
+  }, []);
+
+  const resetPassword = useCallback(async (resetToken: string, password: string) => {
+    const { token, state: s } = await api.resetPassword(resetToken, password);
+    setToken(token);
+    setState(s);
+    setScreen('home');
+    if (typeof window !== 'undefined') window.history.replaceState(null, '', '/');
   }, []);
 
   const signOut = useCallback(() => {
@@ -243,6 +266,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     login,
     signup,
     googleAuth,
+    resetPassword,
     signOut,
     mutate,
     applyState,

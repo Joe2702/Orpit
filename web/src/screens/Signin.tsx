@@ -136,6 +136,15 @@ export function Signin() {
           {busy ? 'Please wait…' : signUp ? 'Create account' : 'Continue'}
         </div>
 
+        {!signUp && (
+          <div
+            onClick={() => go('forgot')}
+            style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: '14px 8px 0', cursor: 'pointer' }}
+          >
+            Forgot password?
+          </div>
+        )}
+
         <GoogleButton />
       </div>
       <div

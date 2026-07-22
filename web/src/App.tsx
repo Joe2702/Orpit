@@ -4,6 +4,7 @@ import { api } from './api';
 
 import { Welcome } from './screens/Welcome';
 import { Signin } from './screens/Signin';
+import { Forgot, Reset } from './screens/ForgotReset';
 import { Home } from './screens/Home';
 import { Workouts } from './screens/Workouts';
 import { Habits } from './screens/Habits';
@@ -35,6 +36,10 @@ function CurrentScreen() {
       return <Welcome />;
     case 'signin':
       return <Signin />;
+    case 'forgot':
+      return <Forgot />;
+    case 'reset':
+      return <Reset />;
     case 'home':
       return emptyMode ? <HomeEmpty /> : <Home />;
     case 'workouts':
