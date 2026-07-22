@@ -8,6 +8,7 @@ export function Signin() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -80,14 +81,32 @@ export function Signin() {
 
         <div style={{ marginTop: 16 }}>
           <div style={labelStyle}>Password</div>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && submit()}
-            placeholder={signUp ? 'At least 6 characters' : 'Your password'}
-            style={inputStyle}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showPw ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && submit()}
+              placeholder={signUp ? 'At least 6 characters' : 'Your password'}
+              style={{ ...inputStyle, paddingRight: 48 }}
+            />
+            <div
+              onClick={() => setShowPw((s) => !s)}
+              style={{ position: 'absolute', right: 6, top: 0, height: 52, width: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              aria-label={showPw ? 'Hide password' : 'Show password'}
+            >
+              {showPw ? (
+                <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+                  <path d="M3 3l16 16M9.5 5.2A6.8 6.8 0 0 1 11 5c5 0 8 6 8 6a13 13 0 0 1-2.2 2.8M6.2 6.2A13 13 0 0 0 3 11s3 6 8 6a6.8 6.8 0 0 0 3.3-.8M9.5 9.5a2.2 2.2 0 0 0 3 3" />
+                </svg>
+              ) : (
+                <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+                  <path d="M3 11s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6Z" />
+                  <circle cx="11" cy="11" r="2.4" />
+                </svg>
+              )}
+            </div>
+          </div>
         </div>
 
         {error && (

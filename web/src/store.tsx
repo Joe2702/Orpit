@@ -45,6 +45,9 @@ export type SheetKind =
 interface StoreCtx {
   // session / data
   ready: boolean;
+  booting: boolean;
+  bootError: boolean;
+  retryBoot: () => void;
   authed: boolean;
   state: AppState | null;
   // navigation
@@ -94,6 +97,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [emptyMode, setEmptyMode] = useState(false);
   const [toast, setToast] = useState('');
   const [authMode, setAuthMode] = useState<'signup' | 'signin'>('signup');
+  const [booting, setBooting] = useState<boolean>(!!getToken());
+  const [bootError, setBootError] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const authed = !!state;
@@ -104,28 +109,45 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     toastTimer.current = setTimeout(() => setToast(''), 2200);
   }, []);
 
-  // Restore session on first load.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const token = getToken();
-      if (token) {
-        try {
-          const s = await api.getState();
-          if (!cancelled) {
-            setState(s);
-            setScreen('home');
-          }
-        } catch (e) {
-          if (e instanceof ApiError && e.status === 401) clearToken();
+  // Restore session on first load — and keep retrying while the (free) server
+  // wakes up, instead of dropping a logged-in user back to the welcome screen.
+  const restore = useCallback(async () => {
+    const token = getToken();
+    if (!token) {
+      setBooting(false);
+      setReady(true);
+      return;
+    }
+    setBooting(true);
+    setBootError(false);
+    const delays = [800, 1500, 2500, 4000, 6000, 8000, 8000, 10000, 10000, 12000, 12000];
+    for (let i = 0; i <= delays.length; i++) {
+      try {
+        const s = await api.getState();
+        setState(s);
+        setScreen('home');
+        setBooting(false);
+        setReady(true);
+        return;
+      } catch (e) {
+        // Only an explicit "bad token" logs the user out; everything else
+        // (server waking up, network blip) is retried.
+        if (e instanceof ApiError && e.status === 401) {
+          clearToken();
+          setBooting(false);
+          setReady(true);
+          return;
         }
+        if (i < delays.length) await new Promise((r) => setTimeout(r, delays[i]));
       }
-      if (!cancelled) setReady(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    }
+    // Server still unreachable after many tries — offer a manual retry.
+    setBootError(true);
   }, []);
+
+  useEffect(() => {
+    restore();
+  }, [restore]);
 
   const applyState = useCallback((s: AppState) => setState(s), []);
 
@@ -189,6 +211,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const value: StoreCtx = {
     ready,
+    booting,
+    bootError,
+    retryBoot: restore,
     authed,
     state,
     screen,

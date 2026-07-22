@@ -6,8 +6,11 @@
   text-rendering: optimizeLegibility;
 }
 
+html,
 body {
   font-family: 'Geist', system-ui, -apple-system, sans-serif;
+  /* No browser pull-to-refresh / rubber-band bounce — behave like a native app. */
+  overscroll-behavior: none;
 }
 
 /* Outer page (device on a soft backdrop), mirrors the prototype's frame stage. */

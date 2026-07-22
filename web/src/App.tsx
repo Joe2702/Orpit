@@ -184,8 +184,32 @@ function TabBar() {
   );
 }
 
+function Splash({ theme, error, onRetry }: { theme: 'light' | 'dark'; error: boolean; onRetry: () => void }) {
+  return (
+    <div className="orbit" data-theme={theme} style={{ position: 'fixed', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 22, color: 'var(--text)' }}>
+      <div style={{ position: 'relative', width: 92, height: 92, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'linear-gradient(155deg,#6A66CF,#524DBA)', boxShadow: '0 20px 44px -16px rgba(40,36,28,.40)' }} />
+        <svg width="92" height="92" style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
+          <ellipse cx="46" cy="46" rx="40" ry="16" transform="rotate(-28 46 46)" style={{ fill: 'none', stroke: 'rgba(255,255,255,.5)', strokeWidth: 2 }} />
+          <circle cx="80" cy="29" r="4.5" style={{ fill: '#fff' }} />
+        </svg>
+        <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#fff', zIndex: 2 }} />
+      </div>
+      <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.03em' }}>Orbit</div>
+      {error ? (
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 14, color: 'var(--text2)', marginBottom: 14 }}>Couldn't reach the server. Give it a moment.</div>
+          <div onClick={onRetry} className="press" style={{ display: 'inline-flex', background: 'var(--indigo)', color: '#fff', height: 46, padding: '0 24px', borderRadius: 14, alignItems: 'center', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>Try again</div>
+        </div>
+      ) : (
+        <div style={{ fontSize: 13, color: 'var(--text2)' }}>Loading your data…</div>
+      )}
+    </div>
+  );
+}
+
 export function App() {
-  const { ready, authed, state, screen, sheet, toast, closeSheet, mutate } = useStore();
+  const { ready, authed, state, screen, sheet, toast, closeSheet, mutate, booting, bootError, retryBoot } = useStore();
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
   const theme = authed && state ? state.profile.theme : localTheme;
 
@@ -210,6 +234,12 @@ export function App() {
 
   const showTabs = APP_SCREENS.includes(screen);
 
+  // While restoring a session (esp. waking the free server), show a branded
+  // splash instead of a blank page or the login screen.
+  if (booting) {
+    return <Splash theme={theme} error={bootError} onRetry={retryBoot} />;
+  }
+
   const pill = (active: boolean): React.CSSProperties => ({
     padding: '7px 17px',
     borderRadius: 999,
@@ -230,7 +260,7 @@ export function App() {
 
       {!mobile && <StatusBar />}
 
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', position: 'relative', WebkitOverflowScrolling: 'touch' }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', position: 'relative', WebkitOverflowScrolling: 'touch' }}>
         {ready ? <CurrentScreen /> : null}
       </div>
 
@@ -270,12 +300,11 @@ export function App() {
         style={{
           position: 'fixed',
           inset: 0,
-          width: '100%',
-          height: '100dvh',
           background: 'var(--bg)',
           color: 'var(--text)',
           display: 'flex',
           flexDirection: 'column',
+          overscrollBehavior: 'none',
           paddingTop: 'env(safe-area-inset-top)',
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
