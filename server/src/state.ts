@@ -5,7 +5,7 @@ const TS = (col: string) => `(EXTRACT(EPOCH FROM ${col}) * 1000)::float8 AS ts`;
 /** Build the full client state bundle for a user. Raw data; the client derives metrics. */
 export async function buildState(userId: number) {
   const profile = await one(
-    `SELECT name, email, theme, reminders, haptics, onboarded, currency,
+    `SELECT name, email, theme, reminders, haptics, onboarded, currency, avatar,
             (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt"
      FROM users WHERE id = $1`,
     [userId]

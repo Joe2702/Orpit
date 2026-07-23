@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
 import { api } from '../api';
-import { avatarInitial, SectionLabel, toggleTrack, toggleKnob } from '../ui';
+import { Avatar, SectionLabel, toggleTrack, toggleKnob } from '../ui';
 import { IconChevron } from '../icons';
 import { CURRENCIES } from '../lib/format';
 
@@ -23,13 +23,7 @@ export function Settings() {
   const memberSince = new Date(earliest).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
   const setTheme = (val: 'light' | 'dark' | 'system') => {
-    const resolved =
-      val === 'system'
-        ? window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-          ? 'dark'
-          : 'light'
-        : val;
-    mutate(() => api.updateMe({ theme: resolved }));
+    mutate(() => api.updateMe({ theme: val }));
   };
 
   const toggle = (key: 'reminders' | 'haptics') => {
@@ -106,16 +100,14 @@ export function Settings() {
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)', marginBottom: 18 }}>Settings</div>
+      <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)', marginBottom: 18 }}>Profile</div>
 
       <div
         onClick={() => open('profile')}
         className="press99"
         style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 16, display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14, cursor: 'pointer' }}
       >
-        <div style={{ width: 54, height: 54, borderRadius: '50%', background: 'var(--indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 20, flex: 'none' }}>
-          {avatarInitial(profile.name)}
-        </div>
+        <Avatar name={profile.name} src={profile.avatar} size={54} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>{profile.name}</div>
           <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{profile.email}</div>
@@ -144,7 +136,7 @@ export function Settings() {
       <SectionLabel>Appearance</SectionLabel>
       <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: 3, marginBottom: 24 }}>
         {themeSeg.map(([label, val]) => {
-          const active = val === 'system' ? false : profile.theme === val;
+          const active = (profile.theme || 'light') === val;
           return (
             <div
               key={val}

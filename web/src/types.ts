@@ -3,11 +3,12 @@ export type ColorKey = 'indigo' | 'coral' | 'teal' | 'blue' | 'emerald';
 export interface Profile {
   name: string;
   email: string;
-  theme: 'light' | 'dark';
+  theme: 'light' | 'dark' | 'system';
   reminders: boolean;
   haptics: boolean;
   onboarded: boolean;
   currency: string;
+  avatar: string | null;
   createdAt: number;
 }
 

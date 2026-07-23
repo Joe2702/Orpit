@@ -190,3 +190,44 @@ export function Card({ children, style }: { children: React.ReactNode; style?: C
 export function avatarInitial(name: string): string {
   return (name || '?').trim().charAt(0).toUpperCase() || '?';
 }
+
+/** Round profile avatar — shows the uploaded photo if there is one, else the initial. */
+export function Avatar({
+  name,
+  src,
+  size = 46,
+  onClick,
+}: {
+  name: string;
+  src?: string | null;
+  size?: number;
+  onClick?: () => void;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className={onClick ? 'press96' : undefined}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        background: 'var(--indigo)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#fff',
+        fontWeight: 700,
+        fontSize: size * 0.38,
+        flex: 'none',
+        overflow: 'hidden',
+        cursor: onClick ? 'pointer' : 'default',
+      }}
+    >
+      {src ? (
+        <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      ) : (
+        avatarInitial(name)
+      )}
+    </div>
+  );
+}

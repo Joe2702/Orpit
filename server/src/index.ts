@@ -16,7 +16,8 @@ import { SCHEMA_SQL } from './schema.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
-app.use(express.json());
+// Larger limit so small profile photos (data URLs) fit.
+app.use(express.json({ limit: '2mb' }));
 app.use(
   cors({
     origin: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(','),
@@ -242,10 +243,15 @@ app.patch(
       if (e && !emailOk(e)) return res.status(400).json({ error: 'Enter a valid email' });
       fields.email = e;
     }
-    if (['light', 'dark'].includes(req.body.theme)) fields.theme = req.body.theme;
+    if (['light', 'dark', 'system'].includes(req.body.theme)) fields.theme = req.body.theme;
     if (typeof req.body.reminders === 'boolean') fields.reminders = req.body.reminders;
     if (typeof req.body.haptics === 'boolean') fields.haptics = req.body.haptics;
     if (['USD', 'EGP', 'EUR', 'GBP', 'SAR'].includes(req.body.currency)) fields.currency = req.body.currency;
+    // Profile photo: a data URL to set it, or null to remove it.
+    if (req.body.avatar === null) fields.avatar = null;
+    else if (typeof req.body.avatar === 'string' && req.body.avatar.startsWith('data:image/')) {
+      fields.avatar = req.body.avatar;
+    }
 
     const keys = Object.keys(fields);
     if (keys.length) {
@@ -475,14 +481,20 @@ app.post(
   requireAuth,
   wrap(async (req, res) => {
     const uid = req.userId!;
+    // Optional explicit timestamp lets the user log a night for a past day.
+    const ts =
+      req.body.ts != null && Number.isFinite(Number(req.body.ts))
+        ? new Date(Number(req.body.ts))
+        : new Date();
     await query(
-      'INSERT INTO nights (user_id, hours, quality, bed_h, wake_h) VALUES ($1,$2,$3,$4,$5)',
+      'INSERT INTO nights (user_id, hours, quality, bed_h, wake_h, ts) VALUES ($1,$2,$3,$4,$5,$6)',
       [
         uid,
         Number(req.body.hours) || 0,
         Number(req.body.quality) || 0,
         req.body.bedH != null ? Number(req.body.bedH) : null,
         req.body.wakeH != null ? Number(req.body.wakeH) : null,
+        ts,
       ]
     );
     res.json(await buildState(uid));

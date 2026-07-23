@@ -3,11 +3,19 @@ import { useStore } from '../store';
 import { api } from '../api';
 import { parseClock } from '../lib/format';
 
+// Local YYYY-MM-DD (not UTC) for the date input's default.
+function todayISO(): string {
+  const d = new Date();
+  const off = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - off).toISOString().slice(0, 10);
+}
+
 export function SleepSheet() {
   const { closeSheet, mutate, haptic } = useStore();
   const [quality, setQuality] = useState(8);
   const [bed, setBed] = useState('23:00');
   const [wake, setWake] = useState('06:45');
+  const [day, setDay] = useState(todayISO());
 
   // Duration is derived from bedtime → wake-up.
   const hours = (() => {
@@ -19,8 +27,10 @@ export function SleepSheet() {
 
   const save = async () => {
     haptic();
+    // Timestamp the night at the wake-up moment on the chosen morning.
+    const ts = new Date(`${day}T${wake || '08:00'}`).getTime();
     await mutate(
-      () => api.addNight({ hours, quality, bedH: parseClock(bed), wakeH: parseClock(wake) }),
+      () => api.addNight({ hours, quality, bedH: parseClock(bed), wakeH: parseClock(wake), ts }),
       'Sleep logged'
     );
     closeSheet();
@@ -46,7 +56,20 @@ export function SleepSheet() {
     <div style={{ padding: '4px 20px 32px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '6px 0 20px' }}>
         <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>Log sleep</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>Last night</div>
+        <label style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 7, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+          <svg width="15" height="15" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+            <rect x="2" y="3" width="11" height="10" rx="2" />
+            <path d="M2 6h11M5 1.5v3M10 1.5v3" />
+          </svg>
+          {day === todayISO() ? 'Today' : new Date(`${day}T00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          <input
+            type="date"
+            value={day}
+            max={todayISO()}
+            onChange={(e) => e.target.value && setDay(e.target.value)}
+            style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', border: 'none', cursor: 'pointer' }}
+          />
+        </label>
       </div>
 
       <div style={{ textAlign: 'center', margin: '2px 0 22px' }}>

@@ -4,7 +4,7 @@ import { useData } from '../hooks';
 import { api } from '../api';
 import { greeting, todayStr, money, cNum, counterTotals } from '../lib/format';
 import { Bars, Spark, Ring } from '../lib/charts';
-import { avatarInitial, SectionLabel } from '../ui';
+import { Avatar, SectionLabel } from '../ui';
 import { IconWorkout, IconSleep, IconExpense, IconHabit } from '../icons';
 
 function QuickAdd() {
@@ -58,9 +58,7 @@ export function Home() {
             {greeting()}
           </div>
         </div>
-        <div style={{ width: 46, height: 46, borderRadius: '50%', background: 'var(--indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 17 }}>
-          {avatarInitial(profile.name)}
-        </div>
+        <Avatar name={profile.name} src={profile.avatar} size={46} onClick={() => go('settings')} />
       </div>
 
       <SectionLabel style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

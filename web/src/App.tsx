@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from './store';
 import { api } from './api';
 
@@ -178,12 +178,10 @@ function TabBar() {
       </div>
       <div onClick={() => go('settings')} style={tab('settings')}>
         <svg width="24" height="24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-          <path d="M4 7h7M17 7h3M4 12h3M13 12h7M4 17h9M19 17h1" />
-          <circle cx="14" cy="7" r="2.2" />
-          <circle cx="10" cy="12" r="2.2" />
-          <circle cx="16" cy="17" r="2.2" />
+          <circle cx="12" cy="8" r="3.4" />
+          <path d="M5.5 19a6.5 6.5 0 0 1 13 0" />
         </svg>
-        <span style={{ fontSize: 10.5, fontWeight: 600 }}>Settings</span>
+        <span style={{ fontSize: 10.5, fontWeight: 600 }}>Profile</span>
       </div>
     </div>
   );
@@ -214,9 +212,22 @@ function Splash({ theme, error, onRetry }: { theme: 'light' | 'dark'; error: boo
 }
 
 export function App() {
-  const { ready, authed, state, screen, sheet, toast, closeSheet, mutate, booting, bootError, retryBoot } = useStore();
+  const { ready, authed, state, screen, sheet, toast, closeSheet, mutate, booting, bootError, retryBoot, go } = useStore();
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
-  const theme = authed && state ? state.profile.theme : localTheme;
+
+  // Track the phone's own light/dark setting so "System" can follow it live.
+  const [sysDark, setSysDark] = useState<boolean>(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const on = () => setSysDark(mq.matches);
+    mq.addEventListener?.('change', on);
+    return () => mq.removeEventListener?.('change', on);
+  }, []);
+
+  const rawTheme = authed && state ? state.profile.theme : localTheme;
+  const theme: 'light' | 'dark' = rawTheme === 'system' ? (sysDark ? 'dark' : 'light') : rawTheme;
 
   const setTheme = (t: 'light' | 'dark') => {
     if (authed) mutate(() => api.updateMe({ theme: t }));
@@ -238,6 +249,46 @@ export function App() {
   }, []);
 
   const showTabs = APP_SCREENS.includes(screen);
+
+  // ---- Android hardware "Back" button handling ----
+  // Back should navigate inside the app; only at the top level does it ask
+  // "exit Orbit?" — like a real installed app, instead of instantly closing.
+  const [exitPrompt, setExitPrompt] = useState(false);
+  const nav = useRef({ screen, sheet, authed });
+  nav.current = { screen, sheet, authed };
+  const rootScreens = ['home', 'welcome', 'signin'];
+
+  useEffect(() => {
+    // Seed one history entry so the first Back press is caught, not an instant exit.
+    window.history.pushState({ orbit: true }, '');
+    const onPop = () => {
+      const { screen: sc, sheet: sh } = nav.current;
+      if (sh) {
+        closeSheet();
+        window.history.pushState({ orbit: true }, ''); // re-arm
+        return;
+      }
+      if (!rootScreens.includes(sc)) {
+        go('home');
+        window.history.pushState({ orbit: true }, ''); // re-arm
+        return;
+      }
+      // At the top level: ask before leaving. Don't re-arm yet — the choice decides.
+      setExitPrompt(true);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const cancelExit = () => {
+    setExitPrompt(false);
+    window.history.pushState({ orbit: true }, ''); // re-arm so Back keeps being caught
+  };
+  const confirmExit = () => {
+    setExitPrompt(false);
+    window.history.back(); // no sentinel armed → this leaves the app
+  };
 
   // While restoring a session (esp. waking the free server), show a branded
   // splash instead of a blank page or the login screen.
@@ -289,6 +340,24 @@ export function App() {
             </div>
             <div style={{ overflowY: 'auto', paddingBottom: mobile ? 'env(safe-area-inset-bottom)' : 0 }}>
               <SheetBody />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {exitPrompt && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 98, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
+          <div onClick={cancelExit} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.5)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(2px)' }} />
+          <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 24, padding: '26px 22px 20px', width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(8,9,14,.35)', animation: 'fadeUp .25s ease', textAlign: 'center' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>Exit Orbit?</div>
+            <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>Are you sure you want to close the app?</div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+              <div onClick={cancelExit} className="press" style={{ flex: 1, height: 48, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+                Stay
+              </div>
+              <div onClick={confirmExit} className="press" style={{ flex: 1, height: 48, borderRadius: 14, background: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
+                Exit
+              </div>
             </div>
           </div>
         </div>

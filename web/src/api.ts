@@ -78,7 +78,7 @@ export const api = {
   getState: () => request<AppState>('/state'),
 
   updateMe: (
-    patch: Partial<Pick<AppState['profile'], 'name' | 'email' | 'theme' | 'reminders' | 'haptics' | 'currency'>>
+    patch: Partial<Pick<AppState['profile'], 'name' | 'email' | 'theme' | 'reminders' | 'haptics' | 'currency' | 'avatar'>>
   ) => request<AppState>('/me', { method: 'PATCH', body: JSON.stringify(patch) }),
 
   addHabit: (b: { name: string; color: string; target: string }) =>
@@ -108,7 +108,7 @@ export const api = {
   ) => request<AppState>(`/workouts/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteWorkout: (id: string) => request<AppState>(`/workouts/${id}`, { method: 'DELETE' }),
 
-  addNight: (b: { hours: number; quality: number; bedH: number | null; wakeH: number | null }) =>
+  addNight: (b: { hours: number; quality: number; bedH: number | null; wakeH: number | null; ts?: number }) =>
     request<AppState>('/nights', { method: 'POST', body: JSON.stringify(b) }),
   deleteNight: (id: string) => request<AppState>(`/nights/${id}`, { method: 'DELETE' }),
 

@@ -11,6 +11,20 @@ body {
   font-family: 'Geist', system-ui, -apple-system, sans-serif;
   /* No browser pull-to-refresh / rubber-band bounce — behave like a native app. */
   overscroll-behavior: none;
+  /* Native-app feel: no blue tap flash, no long-press callout menus,
+     no accidental text selection, no double-tap-to-zoom delay. */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+/* Real text fields must still be selectable and editable. */
+.orbit input,
+.orbit textarea {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* Outer page (device on a soft backdrop), mirrors the prototype's frame stage. */
@@ -36,9 +50,9 @@ body {
   --success: #5e9b79;
   --warning: #c79a52;
   --danger: #c25b53;
-  --bg: #f4f2ee;
-  --surface: #fcfbf9;
-  --surface2: #f7f5f1;
+  --bg: #efe9dc;
+  --surface: #faf6ef;
+  --surface2: #f3ede2;
   --text: #211f1b;
   --text2: #807a70;
   --border: #e9e5de;

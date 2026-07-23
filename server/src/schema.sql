@@ -17,6 +17,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EGP';
 -- Google sign-in users have no password; password reset needs a tokens table.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT;
 ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+-- Optional profile photo, stored as a small data URL.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT;
 
 CREATE TABLE IF NOT EXISTS password_resets (
   token_hash TEXT PRIMARY KEY,
