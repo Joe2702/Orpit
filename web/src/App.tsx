@@ -187,12 +187,11 @@ function TabBar() {
   );
 }
 
-function Splash({ theme, error, onRetry }: { theme: 'light' | 'dark'; error: boolean; onRetry: () => void }) {
-  const dark = theme === 'dark';
+function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; onRetry: () => void }) {
+  // Always brand-indigo so it flows seamlessly out of the app's launch icon —
+  // no cheap color mismatch before the animation appears.
   return (
     <div
-      className="orbit"
-      data-theme={theme}
       style={{
         position: 'fixed',
         inset: 0,
@@ -200,35 +199,33 @@ function Splash({ theme, error, onRetry }: { theme: 'light' | 'dark'; error: boo
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        color: 'var(--text)',
-        background: dark
-          ? 'radial-gradient(120% 80% at 50% 30%, #221f2e 0%, #16140f 62%)'
-          : 'radial-gradient(120% 80% at 50% 30%, #f7f3ea 0%, #ece4d6 64%)',
+        color: '#fff',
+        background: 'radial-gradient(125% 85% at 50% 32%, #605ac9 0%, #4a45a6 46%, #3b3789 100%)',
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', animation: 'fadeUp .6s ease' }}>
-        {/* Orbit mark: soft glow, breathing planet, one dot circling the ring. */}
-        <div style={{ position: 'relative', width: 116, height: 116, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 30 }}>
-          <div style={{ position: 'absolute', width: 116, height: 116, borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,102,207,.45), transparent 68%)', animation: 'glowPulse 3.2s ease-in-out infinite' }} />
-          <div style={{ position: 'absolute', width: 128, height: 128, animation: 'orbitSpin 3.6s linear infinite' }}>
-            <svg width="128" height="128" style={{ overflow: 'visible' }}>
-              <ellipse cx="64" cy="64" rx="56" ry="22" transform="rotate(-26 64 64)" style={{ fill: 'none', stroke: dark ? 'rgba(160,155,220,.4)' : 'rgba(92,87,201,.32)', strokeWidth: 2 }} />
-              <circle cx="112" cy="40" r="6" style={{ fill: '#6c66cf', filter: 'drop-shadow(0 0 6px rgba(108,102,207,.8))' }} />
+        {/* Orbit mark: soft glow, a breathing pale planet, one dot circling the ring. */}
+        <div style={{ position: 'relative', width: 120, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 30 }}>
+          <div style={{ position: 'absolute', width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,.35), transparent 66%)', animation: 'glowPulse 3.2s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', width: 132, height: 132, animation: 'orbitSpin 3.6s linear infinite' }}>
+            <svg width="132" height="132" style={{ overflow: 'visible' }}>
+              <ellipse cx="66" cy="66" rx="58" ry="23" transform="rotate(-26 66 66)" style={{ fill: 'none', stroke: 'rgba(255,255,255,.5)', strokeWidth: 2 }} />
+              <circle cx="115" cy="41" r="6.5" style={{ fill: '#fff', filter: 'drop-shadow(0 0 7px rgba(255,255,255,.9))' }} />
             </svg>
           </div>
-          <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'linear-gradient(155deg,#6f6ad4,#514cba)', boxShadow: '0 16px 40px -12px rgba(81,76,186,.7), inset 0 -6px 14px rgba(0,0,0,.18)', animation: 'breathe 3.2s ease-in-out infinite' }} />
+          <div style={{ width: 62, height: 62, borderRadius: '50%', background: 'linear-gradient(155deg,#ffffff,#dcd9f5)', boxShadow: '0 16px 40px -10px rgba(0,0,0,.4), inset 0 -6px 14px rgba(90,84,180,.35)', animation: 'breathe 3.2s ease-in-out infinite' }} />
         </div>
 
-        <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-.04em' }}>Orbit</div>
+        <div style={{ fontSize: 33, fontWeight: 700, letterSpacing: '-.04em' }}>Orbit</div>
 
         {error ? (
           <div style={{ textAlign: 'center', marginTop: 18 }}>
-            <div style={{ fontSize: 14, color: 'var(--text2)', marginBottom: 16, maxWidth: 240 }}>Taking a moment to wake up. Thanks for your patience.</div>
-            <div onClick={onRetry} className="press" style={{ display: 'inline-flex', background: 'var(--indigo)', color: '#fff', height: 46, padding: '0 26px', borderRadius: 14, alignItems: 'center', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 10px 24px -10px rgba(81,76,186,.6)' }}>Try again</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,.8)', marginBottom: 16, maxWidth: 240 }}>Taking a moment to wake up. Thanks for your patience.</div>
+            <div onClick={onRetry} className="press" style={{ display: 'inline-flex', background: '#fff', color: '#4a45a6', height: 46, padding: '0 26px', borderRadius: 14, alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px -10px rgba(0,0,0,.4)' }}>Try again</div>
           </div>
         ) : (
-          <div style={{ width: 120, height: 3, borderRadius: 999, overflow: 'hidden', marginTop: 26, background: dark ? 'rgba(255,255,255,.1)' : 'rgba(81,76,186,.14)' }}>
-            <div style={{ width: '40%', height: '100%', borderRadius: 999, background: 'var(--indigo)', animation: 'loadBar 1.3s ease-in-out infinite' }} />
+          <div style={{ width: 120, height: 3, borderRadius: 999, overflow: 'hidden', marginTop: 26, background: 'rgba(255,255,255,.2)' }}>
+            <div style={{ width: '40%', height: '100%', borderRadius: 999, background: '#fff', animation: 'loadBar 1.3s ease-in-out infinite' }} />
           </div>
         )}
       </div>

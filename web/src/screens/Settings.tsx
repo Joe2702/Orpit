@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useStore } from '../store';
 import { api } from '../api';
 import { Avatar, SectionLabel, toggleTrack, toggleKnob } from '../ui';
@@ -8,8 +8,6 @@ import { CURRENCIES } from '../lib/format';
 export function Settings() {
   const { state, go, open, mutate, signOut, showToast, haptic } = useStore();
   const profile = state!.profile;
-  const [confirmReset, setConfirmReset] = useState(false);
-  const resetTimer = React.useRef<ReturnType<typeof setTimeout>>();
 
   const dataTs = [...state!.workouts, ...state!.nights, ...state!.txns].map((x) => x.ts);
   const earliest = dataTs.length ? Math.min(...dataTs) : profile.createdAt;
@@ -57,19 +55,6 @@ export function Settings() {
     } catch {
       showToast('Export unavailable here');
     }
-  };
-
-  const reset = () => {
-    if (!confirmReset) {
-      setConfirmReset(true);
-      showToast('Tap again to reset all data');
-      clearTimeout(resetTimer.current);
-      resetTimer.current = setTimeout(() => setConfirmReset(false), 3200);
-      return;
-    }
-    clearTimeout(resetTimer.current);
-    setConfirmReset(false);
-    mutate(() => api.reset(), 'All data reset');
   };
 
   const themeSeg: ['Light' | 'Dark' | 'System', 'light' | 'dark' | 'system'][] = [
@@ -275,17 +260,6 @@ export function Settings() {
           </div>
           <EmptyToggle />
         </div>
-      </div>
-
-      <div
-        onClick={reset}
-        className="press99"
-        style={{ height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginBottom: 14 }}
-      >
-        <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--danger)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-          <path d="M4 6h12M8 6V4h4v2M6 6l1 10h6l1-10" />
-        </svg>
-        {confirmReset ? 'Tap again to confirm reset' : 'Reset all data'}
       </div>
 
       <div

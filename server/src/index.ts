@@ -904,7 +904,17 @@ app.post(
   })
 );
 
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
+app.get('/api/health', async (_req, res) => {
+  // Touch the database too, so the keep-awake pinger keeps BOTH the server and
+  // the (free, auto-sleeping) Postgres warm — otherwise the first action after
+  // idle waits for the database to wake up.
+  try {
+    await pool.query('SELECT 1');
+    res.json({ ok: true, db: true });
+  } catch {
+    res.json({ ok: true, db: false });
+  }
+});
 
 // Digital Asset Links — lets the installed Android app (TWA/APK) verify it owns
 // this site, so it opens full-screen with no browser address bar.

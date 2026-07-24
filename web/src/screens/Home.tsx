@@ -44,10 +44,26 @@ function QuickAdd() {
 }
 
 export function Home() {
-  const { state, go, mutate, open } = useStore();
+  const { state, go, mutate, open, applyState, haptic } = useStore();
   const { d, h } = useData();
   const profile = state!.profile;
   const doneCount = h.habits.filter((x) => x.done).length;
+
+  // Flip the checkbox instantly, then sync with the server in the background
+  // (revert if it fails). Makes tapping feel immediate instead of laggy.
+  const toggleHabit = (id: string) => {
+    const key = new Date().toISOString().slice(0, 10);
+    const has = state!.checkins.some((c) => c.habitId === id && c.day === key);
+    const prev = state!;
+    applyState({
+      ...state!,
+      checkins: has
+        ? state!.checkins.filter((c) => !(c.habitId === id && c.day === key))
+        : [...state!.checkins, { habitId: id, day: key }],
+    });
+    haptic();
+    mutate(() => api.toggleHabit(id)).catch(() => applyState(prev));
+  };
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .4s ease' }}>
@@ -74,7 +90,7 @@ export function Home() {
           return (
             <div key={hb.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px', borderBottom: '1px solid var(--border)' }}>
               <div
-                onClick={() => mutate(() => api.toggleHabit(hb.id))}
+                onClick={() => toggleHabit(hb.id)}
                 style={{
                   width: 30,
                   height: 30,
