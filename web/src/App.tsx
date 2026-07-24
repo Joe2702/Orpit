@@ -153,35 +153,78 @@ function TabBar() {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
     cursor: 'pointer',
     color: screen === s ? 'var(--indigo)' : 'var(--text2)',
+    transition: 'color .2s',
+  });
+  const iconWrap = (active: boolean): React.CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 40,
+    height: 28,
+    borderRadius: 10,
+    background: active ? 'color-mix(in srgb,var(--indigo) 18%,transparent)' : 'transparent',
+    transition: 'background .2s',
   });
   return (
-    <div style={{ flex: 'none', position: 'relative', height: 84, background: 'var(--surface)', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', padding: '11px 0 0', boxShadow: '0 -6px 24px rgba(20,21,26,.05)', zIndex: 30 }}>
-      <div onClick={() => go('home')} style={tab('home')}>
-        <svg width="24" height="24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-          <path d="M4 11l8-7 8 7M6 9.5V19h4.5v-5h3v5H18V9.5" />
-        </svg>
-        <span style={{ fontSize: 10.5, fontWeight: 600 }}>Home</span>
-      </div>
-      <div onClick={() => go('analytics')} style={tab('analytics')}>
-        <svg width="24" height="24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-          <path d="M4 20V11M10 20V5M16 20v-6M4 20h16" />
-        </svg>
-        <span style={{ fontSize: 10.5, fontWeight: 600 }}>Analytics</span>
-      </div>
-      <div style={{ flex: 1, position: 'relative' }}>
-        <div onClick={() => open('chooser')} className="press" style={{ position: 'absolute', top: -25, left: '50%', transform: 'translateX(-50%)', width: 60, height: 60, borderRadius: '50%', background: 'var(--indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px -8px rgba(40,36,28,.32)', cursor: 'pointer', border: '4px solid var(--surface)' }}>
-          <svg width="26" height="26" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M13 6v14M6 13h14" /></svg>
+    <div style={{ flex: 'none', position: 'relative', padding: '4px 16px 14px', zIndex: 30 }}>
+      <div
+        style={{
+          position: 'relative',
+          height: 66,
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 26,
+          boxShadow: 'var(--shadow)',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 6px',
+        }}
+      >
+        <div onClick={() => go('home')} style={tab('home')}>
+          <div style={iconWrap(screen === 'home')}>
+            <svg width="23" height="23" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+              <path d="M4 11l8-7 8 7M6 9.5V19h4.5v-5h3v5H18V9.5" />
+            </svg>
+          </div>
+          <span style={{ fontSize: 10, fontWeight: 600 }}>Home</span>
         </div>
-      </div>
-      <div onClick={() => go('settings')} style={tab('settings')}>
-        <svg width="24" height="24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-          <circle cx="12" cy="8" r="3.4" />
-          <path d="M5.5 19a6.5 6.5 0 0 1 13 0" />
-        </svg>
-        <span style={{ fontSize: 10.5, fontWeight: 600 }}>Profile</span>
+        <div onClick={() => go('analytics')} style={tab('analytics')}>
+          <div style={iconWrap(screen === 'analytics')}>
+            <svg width="23" height="23" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+              <path d="M4 20V11M10 20V5M16 20v-6M4 20h16" />
+            </svg>
+          </div>
+          <span style={{ fontSize: 10, fontWeight: 600 }}>Analytics</span>
+        </div>
+        <div style={{ flex: 1, position: 'relative' }}>
+          <div
+            onClick={() => open('chooser')}
+            className="press"
+            style={{ position: 'absolute', top: -30, left: '50%', transform: 'translateX(-50%)', width: 58, height: 58, borderRadius: 20, background: 'linear-gradient(155deg,var(--blue),var(--indigo))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--glow)', cursor: 'pointer', border: '3px solid color-mix(in srgb,var(--surface) 60%,transparent)' }}
+          >
+            <svg width="26" height="26" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M13 6v14M6 13h14" /></svg>
+          </div>
+        </div>
+        <div onClick={() => go('workouts')} style={tab('workouts')}>
+          <div style={iconWrap(screen === 'workouts')}>
+            <svg width="23" height="23" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+              <path d="M5 8v8M8 6v12M14 6v12M17 8v8M8 12h6" />
+            </svg>
+          </div>
+          <span style={{ fontSize: 10, fontWeight: 600 }}>Activity</span>
+        </div>
+        <div onClick={() => go('settings')} style={tab('settings')}>
+          <div style={iconWrap(screen === 'settings')}>
+            <svg width="23" height="23" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+              <circle cx="12" cy="8" r="3.4" />
+              <path d="M5.5 19a6.5 6.5 0 0 1 13 0" />
+            </svg>
+          </div>
+          <span style={{ fontSize: 10, fontWeight: 600 }}>Profile</span>
+        </div>
       </div>
     </div>
   );
@@ -396,7 +439,7 @@ export function App() {
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'var(--bg)',
+          background: 'var(--app-bg)',
           color: 'var(--text)',
           display: 'flex',
           flexDirection: 'column',
@@ -419,7 +462,7 @@ export function App() {
       </div>
 
       <div style={{ width: 414, height: 868, background: '#08080a', borderRadius: 56, padding: 12, boxShadow: '0 60px 120px -30px rgba(15,16,24,.6), 0 0 0 2px rgba(255,255,255,.05) inset', flex: 'none' }}>
-        <div className="orbit" data-theme={theme} style={{ position: 'relative', width: 390, height: 844, borderRadius: 44, overflow: 'hidden', background: 'var(--bg)', display: 'flex', flexDirection: 'column', color: 'var(--text)' }}>
+        <div className="orbit" data-theme={theme} style={{ position: 'relative', width: 390, height: 844, borderRadius: 44, overflow: 'hidden', background: 'var(--app-bg)', display: 'flex', flexDirection: 'column', color: 'var(--text)' }}>
           {appInner}
         </div>
       </div>
