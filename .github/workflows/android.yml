@@ -12,6 +12,10 @@ on:
         description: 'Backend URL the app should talk to (e.g. https://orbit.onrender.com)'
         required: true
         type: string
+      google_client_id:
+        description: 'Google Web OAuth client ID for Sign-in (optional; leave blank to hide the Google button)'
+        required: false
+        type: string
   push:
     branches: [main]
     paths:
@@ -41,9 +45,10 @@ jobs:
       - name: Build web bundle
         working-directory: web
         env:
-          # Manual runs supply the URL; pushes fall back to the repo variable
-          # VITE_API_BASE (Settings → Secrets and variables → Actions → Variables).
+          # Manual runs supply these; pushes fall back to repo variables
+          # (Settings → Secrets and variables → Actions → Variables).
           VITE_API_BASE: ${{ github.event.inputs.api_base || vars.VITE_API_BASE }}
+          VITE_GOOGLE_CLIENT_ID: ${{ github.event.inputs.google_client_id || vars.VITE_GOOGLE_CLIENT_ID }}
         run: |
           if [ -z "$VITE_API_BASE" ]; then
             echo "::warning::VITE_API_BASE is empty — the built app won't reach a backend. Set the repo variable VITE_API_BASE or run the workflow manually with the URL."
