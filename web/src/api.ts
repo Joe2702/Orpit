@@ -55,6 +55,15 @@ interface AuthResp {
   state: AppState;
 }
 
+export interface FeedbackItem {
+  id: string;
+  kind: string;
+  message: string;
+  createdAt: number;
+  name: string;
+  email: string;
+}
+
 export const api = {
   signup: (email: string, password: string, name: string) =>
     request<AuthResp>('/auth/signup', {
@@ -92,6 +101,7 @@ export const api = {
   pushSubscribe: (sub: unknown) =>
     request<{ ok: boolean }>('/push/subscribe', { method: 'POST', body: JSON.stringify({ sub }) }),
   pushTest: () => request<{ ok: boolean; sent: number }>('/push/test', { method: 'POST' }),
+  adminFeedback: () => request<{ items: FeedbackItem[] }>('/admin/feedback'),
 
   addHabit: (b: { name: string; color: string; target: string; days: string }) =>
     request<AppState>('/habits', { method: 'POST', body: JSON.stringify(b) }),

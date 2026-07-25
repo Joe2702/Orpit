@@ -47,7 +47,7 @@ function QuickAdd() {
 }
 
 export function Home() {
-  const { state, go, mutate, open, applyState, haptic } = useStore();
+  const { state, go, mutate, mutateOpt, open, haptic } = useStore();
   const { d, h } = useData();
   const profile = state!.profile;
   // Only show habits scheduled for today's weekday (Sun=0 … Sat=6).
@@ -57,20 +57,21 @@ export function Home() {
   const badges = computeBadges(state!);
   const badgeCount = badges.filter((b) => b.unlocked).length;
 
-  // Flip the checkbox instantly, then sync with the server in the background
-  // (revert if it fails). Makes tapping feel immediate instead of laggy.
+  // Flip the checkbox instantly, then sync with the server in the background.
+  // mutateOpt computes each toggle from the latest state and orders the server
+  // responses, so mashing several habits quickly stays visually stable.
   const toggleHabit = (id: string) => {
     const key = new Date().toISOString().slice(0, 10);
-    const has = state!.checkins.some((c) => c.habitId === id && c.day === key);
-    const prev = state!;
-    applyState({
-      ...state!,
-      checkins: has
-        ? state!.checkins.filter((c) => !(c.habitId === id && c.day === key))
-        : [...state!.checkins, { habitId: id, day: key }],
-    });
     haptic();
-    mutate(() => api.toggleHabit(id)).catch(() => applyState(prev));
+    mutateOpt((s) => {
+      const has = s.checkins.some((c) => c.habitId === id && c.day === key);
+      return {
+        ...s,
+        checkins: has
+          ? s.checkins.filter((c) => !(c.habitId === id && c.day === key))
+          : [...s.checkins, { habitId: id, day: key }],
+      };
+    }, () => api.toggleHabit(id)).catch(() => {});
   };
 
   // ---- Movable dashboard blocks ----

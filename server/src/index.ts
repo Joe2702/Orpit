@@ -1050,6 +1050,45 @@ app.post(
   })
 );
 
+// ---- Owner-only feedback inbox ----
+// Lets the app owner read everything testers submit, straight from the app.
+// Access is restricted to the account whose email matches ADMIN_EMAIL.
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'youssif_mohammed@aucegypt.edu').toLowerCase();
+
+app.get(
+  '/api/admin/feedback',
+  requireAuth,
+  wrap(async (req, res) => {
+    const me = await one<{ email: string }>('SELECT email FROM users WHERE id = $1', [req.userId!]);
+    if (!me || me.email.toLowerCase() !== ADMIN_EMAIL) {
+      return res.status(403).json({ error: 'Not allowed' });
+    }
+    const rows = await query<{
+      id: string;
+      kind: string;
+      message: string;
+      created_at: string;
+      name: string;
+      email: string;
+    }>(
+      `SELECT f.id, f.kind, f.message, f.created_at, u.name, u.email
+         FROM feedback f JOIN users u ON u.id = f.user_id
+        ORDER BY f.created_at DESC
+        LIMIT 500`
+    );
+    res.json({
+      items: rows.map((r) => ({
+        id: String(r.id),
+        kind: r.kind,
+        message: r.message,
+        createdAt: new Date(r.created_at).getTime(),
+        name: r.name,
+        email: r.email,
+      })),
+    });
+  })
+);
+
 app.get('/api/health', async (_req, res) => {
   // Touch the database too, so the keep-awake pinger keeps BOTH the server and
   // the (free, auto-sleeping) Postgres warm — otherwise the first action after

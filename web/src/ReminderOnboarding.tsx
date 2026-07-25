@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useStore } from './store';
 import { api } from './api';
-import { enablePush, deviceTimezone, pushSupported } from './lib/push';
+import { deviceTimezone } from './lib/push';
+import { enableReminders } from './lib/notify';
 
 const DISMISS_KEY = 'orbit_reminder_dismissed';
 
@@ -23,14 +24,10 @@ export function ReminderOnboarding() {
     setBusy(true);
     try {
       await mutate(() => api.updateMe({ reminderTime: time, reminderTz: deviceTimezone(), reminders: true }));
-      if (pushSupported()) {
-        const status = await enablePush();
-        if (status === 'ok') showToast('Daily reminder is on 🌙');
-        else if (status === 'denied') showToast('Allow notifications to get reminders');
-        else showToast('Reminder time saved');
-      } else {
-        showToast('Reminder time saved');
-      }
+      const status = await enableReminders(time);
+      if (status === 'ok') showToast('Daily reminder is on 🌙');
+      else if (status === 'denied') showToast('Allow notifications to get reminders');
+      else showToast('Reminder time saved');
     } catch {
       showToast('Could not save — try again');
       setBusy(false);

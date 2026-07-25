@@ -16,7 +16,22 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // A fixed keystore (checked in) so the app's signing fingerprint stays the
+    // same on every CI build. Google Sign-In is tied to this SHA-1, so it must
+    // not change between builds. This is a debug/testing key, not a production
+    // Play Store release key.
+    signingConfigs {
+        debug {
+            storeFile file('../orbit.keystore')
+            storePassword 'orbitdebug'
+            keyAlias 'orbit'
+            keyPassword 'orbitdebug'
+        }
+    }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

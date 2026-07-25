@@ -24,7 +24,8 @@ export type Screen =
   | 'fbudgets'
   | 'fgoals'
   | 'frecurring'
-  | 'finsights';
+  | 'finsights'
+  | 'feedbackInbox';
 
 export type SheetKind =
   | 'chooser'
@@ -80,6 +81,15 @@ interface StoreCtx {
   signOut: () => void;
   // data mutation: pass a function returning the new AppState from the API
   mutate: (fn: () => Promise<AppState>, toast?: string) => Promise<void>;
+  // Optimistic mutation: apply a predicted state instantly, then reconcile with
+  // the server. Rapid successive calls are ordered so a slow earlier response
+  // can't clobber a newer one (fixes fast-tap flicker on habit check-offs and
+  // makes theme/currency switches feel instant).
+  mutateOpt: (
+    optimistic: (s: AppState) => AppState,
+    fn: () => Promise<AppState>,
+    toast?: string
+  ) => Promise<void>;
   applyState: (s: AppState) => void;
   // fire device vibration when the user has haptics enabled (no-op otherwise)
   haptic: (pattern?: number | number[]) => void;
@@ -113,6 +123,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [booting, setBooting] = useState<boolean>(!initialResetToken && !!getToken());
   const [bootError, setBootError] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
+  // Latest committed state (for optimistic rollback) and a monotonic counter so
+  // out-of-order server responses from rapid mutations don't overwrite newer UI.
+  const stateRef = useRef<AppState | null>(null);
+  const seqRef = useRef(0);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const authed = !!state;
 
@@ -222,6 +239,31 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [showToast]
   );
 
+  const mutateOpt = useCallback(
+    async (
+      optimistic: (s: AppState) => AppState,
+      fn: () => Promise<AppState>,
+      toastMsg?: string
+    ) => {
+      const mySeq = ++seqRef.current;
+      const prev = stateRef.current;
+      // Apply the predicted state immediately for instant feedback.
+      setState((cur) => (cur ? optimistic(cur) : cur));
+      try {
+        const s = await fn();
+        // Reconcile with the server only if we're still the latest mutation.
+        setState((cur) => (seqRef.current === mySeq ? s : cur));
+        if (toastMsg) showToast(toastMsg);
+      } catch (e) {
+        // Roll back to the pre-mutation state, unless something newer supersedes.
+        setState((cur) => (seqRef.current === mySeq ? prev : cur));
+        showToast(e instanceof Error ? e.message : 'Something went wrong');
+        throw e;
+      }
+    },
+    [showToast]
+  );
+
   const haptic = useCallback(
     (pattern: number | number[] = 12) => {
       if (state?.profile.haptics && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -271,6 +313,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     resetPassword,
     signOut,
     mutate,
+    mutateOpt,
     applyState,
     haptic,
   };
