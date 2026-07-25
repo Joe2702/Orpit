@@ -9,6 +9,7 @@ export interface Profile {
   onboarded: boolean;
   currency: string;
   avatar: string | null;
+  layout: string | null;
   createdAt: number;
 }
 

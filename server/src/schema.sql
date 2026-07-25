@@ -19,6 +19,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT;
 ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
 -- Optional profile photo, stored as a small data URL.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT;
+-- Per-screen widget order (JSON), so the customized dashboard syncs across devices.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS layout TEXT;
 
 CREATE TABLE IF NOT EXISTS password_resets (
   token_hash TEXT PRIMARY KEY,

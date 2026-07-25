@@ -252,6 +252,8 @@ app.patch(
     else if (typeof req.body.avatar === 'string' && req.body.avatar.startsWith('data:image/')) {
       fields.avatar = req.body.avatar;
     }
+    // Dashboard layout (JSON string of per-screen block order).
+    if (typeof req.body.layout === 'string') fields.layout = req.body.layout.slice(0, 4000);
 
     const keys = Object.keys(fields);
     if (keys.length) {

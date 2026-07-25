@@ -78,7 +78,7 @@ export const api = {
   getState: () => request<AppState>('/state'),
 
   updateMe: (
-    patch: Partial<Pick<AppState['profile'], 'name' | 'email' | 'theme' | 'reminders' | 'haptics' | 'currency' | 'avatar'>>
+    patch: Partial<Pick<AppState['profile'], 'name' | 'email' | 'theme' | 'reminders' | 'haptics' | 'currency' | 'avatar' | 'layout'>>
   ) => request<AppState>('/me', { method: 'PATCH', body: JSON.stringify(patch) }),
 
   addHabit: (b: { name: string; color: string; target: string; days: string }) =>
