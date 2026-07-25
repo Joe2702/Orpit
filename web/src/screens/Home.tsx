@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import { useData } from '../hooks';
 import { api } from '../api';
 import { greeting, todayStr, weekOfYear, money, cNum, counterTotals } from '../lib/format';
+import { computeBadges } from '../lib/badges';
 import { Bars, Spark, Ring } from '../lib/charts';
 import { Avatar, SectionLabel } from '../ui';
 import { IconWorkout, IconSleep, IconExpense, IconHabit } from '../icons';
@@ -51,6 +52,8 @@ export function Home() {
   const dow = new Date().getDay();
   const todaysHabits = h.habits.filter((hb) => (hb.days || '1111111')[dow] === '1');
   const doneCount = todaysHabits.filter((x) => x.done).length;
+  const badges = computeBadges(state!);
+  const badgeCount = badges.filter((b) => b.unlocked).length;
 
   // Flip the checkbox instantly, then sync with the server in the background
   // (revert if it fails). Makes tapping feel immediate instead of laggy.
@@ -79,7 +82,19 @@ export function Home() {
             {greeting()}
           </div>
         </div>
-        <Avatar name={profile.name} src={profile.avatar} size={46} onClick={() => go('settings')} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
+            onClick={() => go('achievements')}
+            className="press96"
+            style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 999, padding: '7px 11px', cursor: 'pointer', boxShadow: 'var(--shadow)' }}
+          >
+            <span style={{ fontSize: 15, lineHeight: 1 }}>🏆</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+              {badgeCount}<span style={{ color: 'var(--text2)', fontWeight: 600 }}>/{badges.length}</span>
+            </span>
+          </div>
+          <Avatar name={profile.name} src={profile.avatar} size={46} onClick={() => go('settings')} />
+        </div>
       </div>
 
       <SectionLabel style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

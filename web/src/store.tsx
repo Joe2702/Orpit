@@ -16,6 +16,7 @@ export type Screen =
   | 'analytics'
   | 'settings'
   | 'counters'
+  | 'achievements'
   | 'faddtx'
   | 'ftxns'
   | 'faccounts'

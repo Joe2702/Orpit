@@ -14,6 +14,7 @@ import { Analytics } from './screens/Analytics';
 import { Settings } from './screens/Settings';
 import { HomeEmpty, WorkoutsEmpty, HabitsEmpty, SleepEmpty, FinancesEmpty } from './screens/Empty';
 import { Counters } from './screens/Counters';
+import { Achievements } from './screens/Achievements';
 import { FAddTx, FTxns, FBudgets, FGoals, FAccounts, FRecurring, FCats, FInsights } from './screens/FinanceScreens';
 
 import { Chooser } from './sheets/Chooser';
@@ -28,7 +29,7 @@ import { WCatsSheet, WCatSheet } from './sheets/CategorySheets';
 import { ProfileSheet } from './sheets/ProfileSheet';
 import { FeedbackSheet } from './sheets/FeedbackSheet';
 
-const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters'];
+const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
 
 function CurrentScreen() {
   const { screen, emptyMode } = useStore();
@@ -57,6 +58,8 @@ function CurrentScreen() {
       return <Settings />;
     case 'counters':
       return <Counters />;
+    case 'achievements':
+      return <Achievements />;
     case 'faddtx':
       return <FAddTx />;
     case 'ftxns':
