@@ -1,5 +1,11 @@
 import type { AppState } from './types';
 
+// On the web the frontend is served by the same server as the API, so a
+// relative path works. Inside a native (Capacitor) build the app runs from a
+// local origin on the device, so it needs the absolute backend URL, supplied
+// at build time via VITE_API_BASE (e.g. https://orbit.onrender.com).
+const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
+
 const TOKEN_KEY = 'orbit_token';
 
 export function getToken(): string | null {
@@ -22,7 +28,7 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const token = getToken();
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_BASE}/api${path}`, {
     ...opts,
     headers: {
       'Content-Type': 'application/json',

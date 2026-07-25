@@ -19,9 +19,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 // Larger limit so small profile photos (data URLs) fit.
 app.use(express.json({ limit: '2mb' }));
+// Origins allowed to call the API. The web dev server plus the origins a
+// Capacitor native shell serves the app from (iOS uses capacitor://localhost,
+// Android uses http://localhost / https://localhost). Requests with no Origin
+// header (e.g. curl, some native WebViews) are allowed through as well.
+const allowedOrigins = [
+  ...(process.env.CORS_ORIGIN || 'http://localhost:5173').split(','),
+  'capacitor://localhost',
+  'http://localhost',
+  'https://localhost',
+].map((o) => o.trim());
 app.use(
   cors({
-    origin: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(','),
+    origin: (origin, cb) =>
+      cb(null, !origin || allowedOrigins.includes(origin)),
   })
 );
 
