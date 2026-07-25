@@ -36,6 +36,10 @@ CREATE TABLE IF NOT EXISTS habits (
   sort       INT NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- locked = the permanent "Daily Check-In" habit (can't be edited/deleted).
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS locked BOOLEAN NOT NULL DEFAULT FALSE;
+-- days = 7-char mask, Sun..Sat, '1' = tracked that weekday.
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS days TEXT NOT NULL DEFAULT '1111111';
 
 -- One row per habit per day it was completed. Powers streaks + heatmap from real data.
 CREATE TABLE IF NOT EXISTS habit_checkins (
@@ -172,3 +176,11 @@ CREATE TABLE IF NOT EXISTS count_logs (
   ts         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS count_logs_user_ts ON count_logs(user_id, ts);
+
+CREATE TABLE IF NOT EXISTS feedback (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind       TEXT NOT NULL DEFAULT 'suggestion',
+  message    TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

@@ -81,10 +81,12 @@ export const api = {
     patch: Partial<Pick<AppState['profile'], 'name' | 'email' | 'theme' | 'reminders' | 'haptics' | 'currency' | 'avatar'>>
   ) => request<AppState>('/me', { method: 'PATCH', body: JSON.stringify(patch) }),
 
-  addHabit: (b: { name: string; color: string; target: string }) =>
+  addHabit: (b: { name: string; color: string; target: string; days: string }) =>
     request<AppState>('/habits', { method: 'POST', body: JSON.stringify(b) }),
-  editHabit: (id: string, b: { name: string; color: string; target: string }) =>
+  editHabit: (id: string, b: { name: string; color: string; target: string; days: string }) =>
     request<AppState>(`/habits/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+  sendFeedback: (kind: string, message: string) =>
+    request<{ ok: boolean }>('/feedback', { method: 'POST', body: JSON.stringify({ kind, message }) }),
   deleteHabit: (id: string) => request<AppState>(`/habits/${id}`, { method: 'DELETE' }),
   toggleHabit: (id: string, day?: string) =>
     request<AppState>(`/habits/${id}/toggle`, { method: 'POST', body: JSON.stringify({ day }) }),

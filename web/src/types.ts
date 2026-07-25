@@ -17,6 +17,8 @@ export interface Habit {
   name: string;
   color: string;
   target: string;
+  locked: boolean;
+  days: string; // 7-char mask, Sun..Sat, '1' = tracked
 }
 
 export interface Checkin {

@@ -7,7 +7,14 @@ import type { PoolClient } from 'pg';
  * Everything the user then adds is their own real data.
  */
 export async function seedUser(c: PoolClient, userId: number) {
-  // --- Starter habits (no check-ins → zero streaks, empty heatmap) ---
+  // --- Permanent "Daily Check-In" habit (locked: can't be edited or deleted) ---
+  await c.query(
+    `INSERT INTO habits (user_id, name, color, target, days, locked, sort)
+     VALUES ($1,$2,$3,$4,$5,TRUE,$6)`,
+    [userId, 'Daily Check-In', 'indigo', 'Daily', '1111111', -1]
+  );
+
+  // --- Starter habits (no check-ins → empty heatmap) ---
   const habits = [
     { name: 'Drink water', color: 'blue', target: 'Daily' },
     { name: 'Walk', color: 'teal', target: 'Daily' },
@@ -17,16 +24,17 @@ export async function seedUser(c: PoolClient, userId: number) {
   let sort = 0;
   for (const h of habits) {
     await c.query(
-      `INSERT INTO habits (user_id, name, color, target, sort) VALUES ($1,$2,$3,$4,$5)`,
-      [userId, h.name, h.color, h.target, sort++]
+      `INSERT INTO habits (user_id, name, color, target, days, sort) VALUES ($1,$2,$3,$4,$5,$6)`,
+      [userId, h.name, h.color, h.target, '1111111', sort++]
     );
   }
 
   // --- Workout categories (structural — needed to log a workout) ---
   const wCats = [
-    { name: 'Run', color: 'coral' },
-    { name: 'Lift', color: 'indigo' },
-    { name: 'Cardio', color: 'blue' },
+    { name: 'Push', color: 'coral' },
+    { name: 'Pull', color: 'indigo' },
+    { name: 'Legs', color: 'teal' },
+    { name: 'Run', color: 'blue' },
   ];
   sort = 0;
   for (const cat of wCats) {

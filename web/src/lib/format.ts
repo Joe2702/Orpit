@@ -85,6 +85,13 @@ export function todayStr(): string {
   });
 }
 
+// Which week of the year we're in (1–53), counting from Jan 1.
+export function weekOfYear(d = new Date()): number {
+  const start = new Date(d.getFullYear(), 0, 1);
+  const days = Math.floor((d.getTime() - start.getTime()) / 86400000);
+  return Math.min(52, Math.floor((days + start.getDay()) / 7) + 1);
+}
+
 export const cssVar = (key: string) => `var(--${key})`;
 
 // Counter number: one decimal only when needed.

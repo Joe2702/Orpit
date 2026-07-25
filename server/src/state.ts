@@ -12,8 +12,8 @@ export async function buildState(userId: number) {
   );
 
   const habits = await query(
-    `SELECT id::text, name, color, target FROM habits
-     WHERE user_id = $1 ORDER BY sort, id`,
+    `SELECT id::text, name, color, target, locked, days FROM habits
+     WHERE user_id = $1 ORDER BY locked DESC, sort, id`,
     [userId]
   );
 

@@ -52,9 +52,9 @@ export function Habits() {
           return (
             <div
               key={hb.id}
-              onClick={() => open('habit', { id: hb.id, name: hb.name, color: hb.color, target: hb.target })}
-              className="press99"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: 'pointer' }}
+              onClick={() => !hb.locked && open('habit', { id: hb.id, name: hb.name, color: hb.color, target: hb.target, days: hb.days })}
+              className={hb.locked ? undefined : 'press99'}
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: hb.locked ? 'default' : 'pointer' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 13 }}>
                 <span style={{ width: 11, height: 11, borderRadius: '50%', flex: 'none', background: col }} />
@@ -63,9 +63,16 @@ export function Habits() {
                   <div style={{ fontSize: 12, color: 'var(--text2)' }}>{hb.target}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, fontWeight: 700, padding: '4px 9px', borderRadius: 999, flex: 'none', background: `color-mix(in srgb,${col} 13%,transparent)`, color: col }}>
-                  {hb.streak}<span style={{ opacity: 0.55, fontWeight: 600, marginLeft: 1 }}>d</span>
+                  {hb.total}<span style={{ opacity: 0.55, fontWeight: 600, marginLeft: 2 }}>days</span>
                 </div>
-                <IconPencil />
+                {hb.locked ? (
+                  <svg width="15" height="15" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+                    <rect x="3" y="6.5" width="9" height="6.5" rx="1.5" />
+                    <path d="M5 6.5V5a2.5 2.5 0 0 1 5 0v1.5" />
+                  </svg>
+                ) : (
+                  <IconPencil />
+                )}
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 {hb.week.map((on, i) => (

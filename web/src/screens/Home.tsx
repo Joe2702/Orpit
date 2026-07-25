@@ -2,7 +2,7 @@ import React from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
 import { api } from '../api';
-import { greeting, todayStr, money, cNum, counterTotals } from '../lib/format';
+import { greeting, todayStr, weekOfYear, money, cNum, counterTotals } from '../lib/format';
 import { Bars, Spark, Ring } from '../lib/charts';
 import { Avatar, SectionLabel } from '../ui';
 import { IconWorkout, IconSleep, IconExpense, IconHabit } from '../icons';
@@ -47,7 +47,10 @@ export function Home() {
   const { state, go, mutate, open, applyState, haptic } = useStore();
   const { d, h } = useData();
   const profile = state!.profile;
-  const doneCount = h.habits.filter((x) => x.done).length;
+  // Only show habits scheduled for today's weekday (Sun=0 … Sat=6).
+  const dow = new Date().getDay();
+  const todaysHabits = h.habits.filter((hb) => (hb.days || '1111111')[dow] === '1');
+  const doneCount = todaysHabits.filter((x) => x.done).length;
 
   // Flip the checkbox instantly, then sync with the server in the background
   // (revert if it fails). Makes tapping feel immediate instead of laggy.
@@ -69,7 +72,9 @@ export function Home() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .4s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', letterSpacing: '.01em' }}>{todayStr()}</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', letterSpacing: '.01em' }}>
+            {todayStr()} · Week {weekOfYear()} of 52
+          </div>
           <div style={{ fontSize: 27, fontWeight: 700, letterSpacing: '-.025em', marginTop: 3, color: 'var(--text)' }}>
             {greeting()}
           </div>
@@ -80,12 +85,12 @@ export function Home() {
       <SectionLabel style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ whiteSpace: 'nowrap' }}>Today's habits</span>
         <span style={{ color: 'var(--text2)', fontWeight: 500, textTransform: 'none', letterSpacing: 0, fontSize: 13 }}>
-          {doneCount} of {h.habits.length} done
+          {doneCount} of {todaysHabits.length} done
         </span>
       </SectionLabel>
 
       <div style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 28 }}>
-        {h.habits.map((hb) => {
+        {todaysHabits.map((hb) => {
           const col = `var(--${hb.color})`;
           return (
             <div key={hb.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px', borderBottom: '1px solid var(--border)' }}>
@@ -130,8 +135,8 @@ export function Home() {
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, fontWeight: 700, padding: '4px 9px', borderRadius: 999, flex: 'none', background: `color-mix(in srgb,${col} 13%,transparent)`, color: col }}>
-                {hb.streak}
-                <span style={{ opacity: 0.55, fontWeight: 600, marginLeft: 1 }}>d</span>
+                {hb.total}
+                <span style={{ opacity: 0.55, fontWeight: 600, marginLeft: 2 }}>days</span>
               </div>
             </div>
           );

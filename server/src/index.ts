@@ -278,13 +278,14 @@ app.post(
     if (!name) return res.status(400).json({ error: 'Name required' });
     const color = String(req.body.color || 'teal');
     const target = String(req.body.target || 'Daily');
+    const days = /^[01]{7}$/.test(req.body.days) ? req.body.days : '1111111';
     const max = await one<{ m: number }>(
       'SELECT COALESCE(MAX(sort), -1) + 1 AS m FROM habits WHERE user_id = $1',
       [uid]
     );
     await query(
-      'INSERT INTO habits (user_id, name, color, target, sort) VALUES ($1,$2,$3,$4,$5)',
-      [uid, name, color, target, max!.m]
+      'INSERT INTO habits (user_id, name, color, target, days, sort) VALUES ($1,$2,$3,$4,$5,$6)',
+      [uid, name, color, target, days, max!.m]
     );
     res.json(await buildState(uid));
   })
@@ -297,9 +298,16 @@ app.patch(
     const uid = req.userId!;
     const name = String(req.body.name || '').trim();
     if (!name) return res.status(400).json({ error: 'Name required' });
+    const owned = await one<{ locked: boolean }>(
+      'SELECT locked FROM habits WHERE id = $1 AND user_id = $2',
+      [req.params.id, uid]
+    );
+    if (!owned) return res.status(404).json({ error: 'Habit not found' });
+    if (owned.locked) return res.status(400).json({ error: 'This habit is permanent and can’t be edited' });
+    const days = /^[01]{7}$/.test(req.body.days) ? req.body.days : '1111111';
     await query(
-      'UPDATE habits SET name = $1, color = $2, target = $3 WHERE id = $4 AND user_id = $5',
-      [name, String(req.body.color || 'teal'), String(req.body.target || 'Daily'), req.params.id, uid]
+      'UPDATE habits SET name = $1, color = $2, target = $3, days = $4 WHERE id = $5 AND user_id = $6',
+      [name, String(req.body.color || 'teal'), String(req.body.target || 'Daily'), days, req.params.id, uid]
     );
     res.json(await buildState(uid));
   })
@@ -310,6 +318,11 @@ app.delete(
   requireAuth,
   wrap(async (req, res) => {
     const uid = req.userId!;
+    const owned = await one<{ locked: boolean }>(
+      'SELECT locked FROM habits WHERE id = $1 AND user_id = $2',
+      [req.params.id, uid]
+    );
+    if (owned?.locked) return res.status(400).json({ error: 'This habit is permanent and can’t be deleted' });
     await query('DELETE FROM habits WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
     res.json(await buildState(uid));
   })
@@ -904,6 +917,43 @@ app.post(
   })
 );
 
+// ---------------- Feedback ----------------
+
+app.post(
+  '/api/feedback',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const kind = ['suggestion', 'bug', 'complaint', 'other'].includes(req.body.kind)
+      ? req.body.kind
+      : 'suggestion';
+    const message = String(req.body.message || '').trim().slice(0, 4000);
+    if (!message) return res.status(400).json({ error: 'Write a message first' });
+    await query('INSERT INTO feedback (user_id, kind, message) VALUES ($1,$2,$3)', [uid, kind, message]);
+    // Email it to the app owner too, reusing the password-reset mail setup.
+    const to = process.env.MAIL_FROM;
+    const key = process.env.BREVO_API_KEY;
+    if (to && key) {
+      const u = await one<{ email: string; name: string }>(
+        'SELECT email, name FROM users WHERE id = $1',
+        [uid]
+      );
+      fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'api-key': key, 'Content-Type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({
+          sender: { email: to, name: 'Orbit' },
+          to: [{ email: to }],
+          replyTo: u?.email ? { email: u.email } : undefined,
+          subject: `Orbit ${kind} from ${u?.name || 'a user'}`,
+          textContent: `From: ${u?.name || 'user'} <${u?.email || 'unknown'}>\nType: ${kind}\n\n${message}`,
+        }),
+      }).catch(() => {});
+    }
+    res.json({ ok: true });
+  })
+);
+
 app.get('/api/health', async (_req, res) => {
   // Touch the database too, so the keep-awake pinger keeps BOTH the server and
   // the (free, auto-sleeping) Postgres warm — otherwise the first action after
@@ -950,6 +1000,12 @@ const PORT = Number(process.env.PORT) || 4000;
 async function start() {
   // Create/upgrade tables on boot (idempotent) — no separate migrate step needed in the cloud.
   await pool.query(SCHEMA_SQL);
+  // Ensure every existing account has the permanent "Daily Check-In" habit.
+  await pool.query(
+    `INSERT INTO habits (user_id, name, color, target, days, locked, sort)
+     SELECT u.id, 'Daily Check-In', 'indigo', 'Daily', '1111111', TRUE, -1 FROM users u
+     WHERE NOT EXISTS (SELECT 1 FROM habits h WHERE h.user_id = u.id AND h.locked = TRUE)`
+  );
   app.listen(PORT, () => console.log(`Orbit API listening on port ${PORT}`));
 }
 

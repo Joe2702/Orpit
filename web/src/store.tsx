@@ -43,6 +43,7 @@ export type SheetKind =
   | 'budget'
   | 'goal'
   | 'recurring'
+  | 'feedback'
   | null;
 
 interface StoreCtx {

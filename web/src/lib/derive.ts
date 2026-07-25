@@ -134,7 +134,10 @@ export interface HabitDerived {
   name: string;
   color: string;
   target: string;
+  locked: boolean;
+  days: string;
   done: boolean;
+  total: number; // total days ever completed (replaces streaks)
   streak: number;
   week: number[];
 }
@@ -151,7 +154,7 @@ export function deriveHabits(state: AppState) {
   const habits: HabitDerived[] = state.habits.map((h) => {
     const set = byHabit.get(h.id)!;
     const done = set.has(dayStr(nowMs));
-    // Current streak: start today (or yesterday if today not done) and walk back.
+    // Current streak (kept for internal stats, no longer shown to the user).
     let streak = 0;
     let cursor = done ? nowMs : nowMs - D;
     while (set.has(dayStr(cursor))) {
@@ -160,7 +163,18 @@ export function deriveHabits(state: AppState) {
     }
     const week: number[] = [];
     for (let i = 6; i >= 0; i--) week.push(set.has(dayStr(nowMs - i * D)) ? 1 : 0);
-    return { id: h.id, name: h.name, color: h.color, target: h.target, done, streak, week };
+    return {
+      id: h.id,
+      name: h.name,
+      color: h.color,
+      target: h.target,
+      locked: h.locked,
+      days: h.days,
+      done,
+      total: set.size, // total days ever completed
+      streak,
+      week,
+    };
   });
 
   // Longest streak across ALL habits (real, replaces the hardcoded "23 days").
@@ -199,7 +213,8 @@ export function deriveHabits(state: AppState) {
   const maxDots = habits.length * 7;
   const habitPct = maxDots ? Math.round((totalDots / maxDots) * 100) : 0;
 
-  return { habits, longestStreak, grid, totalDots, maxDots, habitPct };
+  const totalCompleted = state.checkins.length; // all-time check-ins across habits
+  return { habits, longestStreak, totalCompleted, grid, totalDots, maxDots, habitPct };
 }
 
 export function derive(state: AppState, range: Range) {

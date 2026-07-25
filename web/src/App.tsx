@@ -26,6 +26,7 @@ import { HabitSheet } from './sheets/HabitSheet';
 import { EditSheet } from './sheets/EditSheet';
 import { WCatsSheet, WCatSheet } from './sheets/CategorySheets';
 import { ProfileSheet } from './sheets/ProfileSheet';
+import { FeedbackSheet } from './sheets/FeedbackSheet';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters'];
 
@@ -114,6 +115,8 @@ function SheetBody() {
       return <GoalSheet />;
     case 'recurring':
       return <RecurringSheet />;
+    case 'feedback':
+      return <FeedbackSheet />;
     default:
       return null;
   }

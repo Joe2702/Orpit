@@ -6,6 +6,7 @@ import { IconTrash } from '../icons';
 
 const COLORS = ['teal', 'indigo', 'coral', 'blue', 'emerald'];
 const TARGETS = ['Daily', '3 / week', '5 / week'];
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Sun..Sat
 
 export function HabitSheet() {
   const { sheetData, closeSheet, mutate, haptic } = useStore();
@@ -13,13 +14,23 @@ export function HabitSheet() {
   const [name, setName] = useState<string>(sheetData?.name ?? '');
   const [color, setColor] = useState<string>(sheetData?.color ?? 'teal');
   const [target, setTarget] = useState<string>(sheetData?.target ?? 'Daily');
+  const [days, setDays] = useState<string>(
+    /^[01]{7}$/.test(sheetData?.days) ? sheetData.days : '1111111'
+  );
+
+  const toggleDay = (i: number) => {
+    const arr = days.split('');
+    arr[i] = arr[i] === '1' ? '0' : '1';
+    const next = arr.join('');
+    if (next.includes('1')) setDays(next); // keep at least one day on
+  };
 
   const canSave = !!name.trim();
 
   const save = async () => {
     if (!canSave) return;
     haptic();
-    const body = { name: name.trim(), color, target };
+    const body = { name: name.trim(), color, target, days };
     await mutate(
       () => (editId ? api.editHabit(editId, body) : api.addHabit(body)),
       editId ? 'Habit updated' : 'Habit added'
@@ -60,12 +71,45 @@ export function HabitSheet() {
       </div>
 
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Target</div>
-      <div style={{ display: 'flex', gap: 9, marginBottom: 8 }}>
+      <div style={{ display: 'flex', gap: 9, marginBottom: 24 }}>
         {TARGETS.map((t) => (
           <div key={t} onClick={() => setTarget(t)} style={{ ...chip(target === t, 'var(--teal)'), flex: 1, textAlign: 'center' }}>
             {t}
           </div>
         ))}
+      </div>
+
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Days of the week</div>
+      <div style={{ display: 'flex', gap: 7, marginBottom: 8 }}>
+        {DAY_LABELS.map((lbl, i) => {
+          const on = days[i] === '1';
+          return (
+            <div
+              key={i}
+              onClick={() => toggleDay(i)}
+              style={{
+                flex: 1,
+                height: 42,
+                borderRadius: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all .15s',
+                border: `1.5px solid ${on ? 'var(--teal)' : 'var(--border)'}`,
+                background: on ? 'var(--teal)' : 'var(--surface)',
+                color: on ? '#fff' : 'var(--text2)',
+              }}
+            >
+              {lbl}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 8 }}>
+        This habit only appears on the days you pick.
       </div>
 
       <div

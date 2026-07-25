@@ -262,6 +262,22 @@ export function Settings() {
         </div>
       </div>
 
+      <SectionLabel>Support</SectionLabel>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+        <div onClick={() => open('feedback')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
+          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+              <path d="M4 4h12v9H8l-4 3.5V4Z" />
+            </svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Send feedback</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Ideas, bugs, or suggestions</div>
+          </div>
+          <IconChevron />
+        </div>
+      </div>
+
       <div
         onClick={signOut}
         className="press99"
