@@ -215,14 +215,6 @@ function TabBar() {
             <svg width="26" height="26" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M13 6v14M6 13h14" /></svg>
           </div>
         </div>
-        <div onClick={() => go('workouts')} style={tab('workouts')}>
-          <div style={iconWrap(screen === 'workouts')}>
-            <svg width="23" height="23" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-              <path d="M5 8v8M8 6v12M14 6v12M17 8v8M8 12h6" />
-            </svg>
-          </div>
-          <span style={{ fontSize: 10, fontWeight: 600 }}>Activity</span>
-        </div>
         <div onClick={() => go('settings')} style={tab('settings')}>
           <div style={iconWrap(screen === 'settings')}>
             <svg width="23" height="23" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>

@@ -9,8 +9,6 @@ export function WorkoutSheet() {
   const [catId, setCatId] = useState(cats[0]?.id || '');
   const [dur, setDur] = useState(32);
   const [intensity, setIntensity] = useState('Moderate');
-  const [dist, setDist] = useState('');
-  const [kcal, setKcal] = useState('');
 
   const save = async () => {
     if (!catId) return;
@@ -20,8 +18,8 @@ export function WorkoutSheet() {
         api.addWorkout({
           catId,
           dur,
-          dist: dist.trim() || null,
-          kcal: kcal ? Number(kcal) : null,
+          dist: null,
+          kcal: null,
           intensity,
         }),
       'Workout logged'
@@ -32,17 +30,6 @@ export function WorkoutSheet() {
   const label = (t: string) => (
     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t}</div>
   );
-  const fieldInput: React.CSSProperties = {
-    width: '100%',
-    height: 50,
-    borderRadius: 14,
-    border: '1px solid var(--border)',
-    background: 'var(--bg)',
-    padding: '0 16px',
-    fontSize: 15,
-    color: 'var(--text)',
-    outline: 'none',
-  };
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
@@ -84,17 +71,6 @@ export function WorkoutSheet() {
             {t}
           </div>
         ))}
-      </div>
-
-      <div style={{ display: 'flex', gap: 12, marginBottom: 22 }}>
-        <div style={{ flex: 1 }}>
-          {label('Distance')}
-          <input value={dist} onChange={(e) => setDist(e.target.value)} placeholder="e.g. 5.2 km" style={fieldInput} />
-        </div>
-        <div style={{ flex: 1 }}>
-          {label('Calories')}
-          <input value={kcal} onChange={(e) => setKcal(e.target.value.replace(/[^0-9]/g, ''))} inputMode="numeric" placeholder="e.g. 312" style={fieldInput} />
-        </div>
       </div>
 
       <div onClick={save} className="press" style={{ background: 'var(--coral)', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>

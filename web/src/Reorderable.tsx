@@ -6,9 +6,11 @@ interface Item {
 }
 
 /**
- * A vertical list whose blocks can be reordered by long-pressing and dragging.
- * Touch-friendly: a normal tap/scroll passes through; only a ~300ms hold starts
- * a drag. On drop it reports the new order via onReorder.
+ * A vertical list whose blocks can be reordered by pressing-and-holding, then
+ * dragging. A normal tap or scroll passes straight through; only a ~320ms hold
+ * (with the finger roughly still) starts a drag. Uses pointer capture so the
+ * drag can't be stolen by the page scroll, and handles pointercancel so a scroll
+ * gesture never accidentally triggers a reorder.
  */
 export function Reorderable({ items, onReorder }: { items: Item[]; onReorder: (ids: string[]) => void }) {
   const idsKey = items.map((i) => i.id).join('|');
@@ -17,12 +19,20 @@ export function Reorderable({ items, onReorder }: { items: Item[]; onReorder: (i
 
   const byId = new Map(items.map((i) => [i.id, i.node]));
   const wrapRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-
-  const pending = useRef<{ id: string; startY: number } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>();
+  const pending = useRef<{ id: string; startY: number; el: HTMLDivElement; pointerId: number } | null>(null);
   const info = useRef<
-    | { id: string; startY: number; slots: { id: string; top: number; height: number }[]; dIdx: number; height: number; T: number }
     | null
+    | {
+        id: string;
+        startY: number;
+        el: HTMLDivElement;
+        pointerId: number;
+        slots: { id: string; top: number; height: number }[];
+        dIdx: number;
+        height: number;
+        T: number;
+      }
   >(null);
 
   const [dragId, setDragId] = useState<string | null>(null);
@@ -34,17 +44,39 @@ export function Reorderable({ items, onReorder }: { items: Item[]; onReorder: (i
     pending.current = null;
   };
 
+  const activate = () => {
+    const p = pending.current;
+    if (!p) return;
+    pending.current = null;
+    const slots = order.map((sid) => {
+      const r = wrapRefs.current.get(sid)!.getBoundingClientRect();
+      return { id: sid, top: r.top, height: r.height };
+    });
+    const dIdx = order.indexOf(p.id);
+    if (dIdx < 0) return;
+    try {
+      p.el.setPointerCapture(p.pointerId);
+    } catch {
+      /* ignore */
+    }
+    info.current = { ...p, slots, dIdx, height: slots[dIdx].height, T: dIdx };
+    setDragId(p.id);
+    setDragDY(0);
+    setShift({});
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(18);
+  };
+
   const doDrag = (clientY: number) => {
     const inf = info.current;
     if (!inf) return;
     const dy = clientY - inf.startY;
     setDragDY(dy);
     const dragged = inf.slots[inf.dIdx];
-    const draggedCenter = dragged.top + dragged.height / 2 + dy;
+    const dc = dragged.top + dragged.height / 2 + dy;
     let T = 0;
     inf.slots.forEach((s, i) => {
       if (i === inf.dIdx) return;
-      if (draggedCenter > s.top + s.height / 2) T++;
+      if (dc > s.top + s.height / 2) T++;
     });
     inf.T = T;
     const sh: Record<string, number> = {};
@@ -58,71 +90,49 @@ export function Reorderable({ items, onReorder }: { items: Item[]; onReorder: (i
     setShift(sh);
   };
 
-  const onWinMove = (e: PointerEvent) => {
-    if (info.current) {
-      e.preventDefault();
-      doDrag(e.clientY);
-    }
-  };
-  const onWinUp = () => endDrag();
-
-  const endDrag = () => {
-    window.removeEventListener('pointermove', onWinMove);
-    window.removeEventListener('pointerup', onWinUp);
-    window.removeEventListener('pointercancel', onWinUp);
+  const finish = () => {
+    clearTimeout(timer.current);
     const inf = info.current;
+    if (inf) {
+      try {
+        inf.el.releasePointerCapture(inf.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
     info.current = null;
+    pending.current = null;
     setDragId(null);
     setDragDY(0);
     setShift({});
-    if (!inf) return;
-    const others = order.filter((x) => x !== inf.id);
-    others.splice(inf.T, 0, inf.id);
-    if (others.join('|') !== order.join('|')) {
-      setOrder(others);
-      onReorder(others);
+    if (inf) {
+      const others = order.filter((x) => x !== inf.id);
+      others.splice(inf.T, 0, inf.id);
+      if (others.join('|') !== order.join('|')) {
+        setOrder(others);
+        onReorder(others);
+      }
     }
-  };
-
-  const activate = (id: string) => {
-    if (!pending.current || pending.current.id !== id) return;
-    const startY = pending.current.startY;
-    pending.current = null;
-    const slots = order.map((sid) => {
-      const el = wrapRefs.current.get(sid)!;
-      const r = el.getBoundingClientRect();
-      return { id: sid, top: r.top, height: r.height };
-    });
-    const dIdx = order.indexOf(id);
-    info.current = { id, startY, slots, dIdx, height: slots[dIdx].height, T: dIdx };
-    setDragId(id);
-    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(15);
-    window.addEventListener('pointermove', onWinMove, { passive: false });
-    window.addEventListener('pointerup', onWinUp);
-    window.addEventListener('pointercancel', onWinUp);
   };
 
   const onDown = (e: React.PointerEvent, id: string) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    pending.current = { id, startY: e.clientY };
+    pending.current = { id, startY: e.clientY, el: e.currentTarget as HTMLDivElement, pointerId: e.pointerId };
     clearTimeout(timer.current);
-    timer.current = setTimeout(() => activate(id), 300);
+    timer.current = setTimeout(activate, 320);
   };
-  const onItemMove = (e: React.PointerEvent) => {
-    // Moved before the hold completed → it's a scroll, not a drag.
-    if (!info.current && pending.current && Math.abs(e.clientY - pending.current.startY) > 10) {
-      clearPending();
+  const onMove = (e: React.PointerEvent) => {
+    if (info.current) {
+      doDrag(e.clientY);
+      return;
     }
+    // Finger moved before the hold completed → it's a scroll, not a drag.
+    if (pending.current && Math.abs(e.clientY - pending.current.startY) > 12) clearPending();
   };
-  const onItemUp = () => {
-    if (!info.current) clearPending();
-  };
+  const onUp = () => finish();
+  const onCancel = () => finish();
 
-  useEffect(() => () => {
-    window.removeEventListener('pointermove', onWinMove);
-    window.removeEventListener('pointerup', onWinUp);
-    window.removeEventListener('pointercancel', onWinUp);
-  }, []);
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   return (
     <div style={{ touchAction: dragId ? 'none' : undefined }}>
@@ -136,17 +146,18 @@ export function Reorderable({ items, onReorder }: { items: Item[]; onReorder: (i
               if (el) wrapRefs.current.set(id, el);
             }}
             onPointerDown={(e) => onDown(e, id)}
-            onPointerMove={onItemMove}
-            onPointerUp={onItemUp}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerCancel={onCancel}
             style={{
               position: 'relative',
               transform: `translateY(${tY}px)${isDragged ? ' scale(1.02)' : ''}`,
               transition: isDragged ? 'none' : 'transform .2s cubic-bezier(.2,.8,.3,1)',
               zIndex: isDragged ? 6 : 1,
-              borderRadius: 20,
               boxShadow: isDragged ? '0 16px 36px -10px rgba(8,9,14,.4)' : undefined,
+              borderRadius: 20,
               opacity: isDragged ? 0.98 : 1,
-              touchAction: dragId ? 'none' : undefined,
+              touchAction: isDragged ? 'none' : undefined,
             }}
           >
             {byId.get(id)}
