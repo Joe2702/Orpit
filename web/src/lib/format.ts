@@ -85,6 +85,17 @@ export function todayStr(): string {
   });
 }
 
+// Human-readable schedule from a 7-char day mask (Sun..Sat).
+const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+export function daysLabel(days: string): string {
+  if (!/^[01]{7}$/.test(days) || days === '1111111') return 'Every day';
+  if (days === '0111110') return 'Weekdays';
+  if (days === '1000001') return 'Weekends';
+  const sel: string[] = [];
+  for (let i = 0; i < 7; i++) if (days[i] === '1') sel.push(DAY_ABBR[i]);
+  return sel.join(', ');
+}
+
 // Which week of the year we're in (1–53), counting from Jan 1.
 export function weekOfYear(d = new Date()): number {
   const start = new Date(d.getFullYear(), 0, 1);

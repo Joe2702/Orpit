@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import { useData } from '../hooks';
 import { Ring, Heat } from '../lib/charts';
 import { DetailHeader, RangeSeg, SectionLabel, rangeWord } from '../ui';
+import { daysLabel } from '../lib/format';
 import { IconPencil } from '../icons';
 
 export function Habits() {
@@ -60,7 +61,7 @@ export function Habits() {
                 <span style={{ width: 11, height: 11, borderRadius: '50%', flex: 'none', background: col }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{hb.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text2)' }}>{hb.target}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text2)' }}>{daysLabel(hb.days)}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, fontWeight: 700, padding: '4px 9px', borderRadius: 999, flex: 'none', background: `color-mix(in srgb,${col} 13%,transparent)`, color: col }}>
                   {hb.total}<span style={{ opacity: 0.55, fontWeight: 600, marginLeft: 2 }}>days</span>

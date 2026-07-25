@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
 import { api } from '../api';
-import { chip } from '../ui';
+import { daysLabel } from '../lib/format';
 import { IconTrash } from '../icons';
 
 const COLORS = ['teal', 'indigo', 'coral', 'blue', 'emerald'];
-const TARGETS = ['Daily', '3 / week', '5 / week'];
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Sun..Sat
 
 export function HabitSheet() {
@@ -13,7 +12,6 @@ export function HabitSheet() {
   const editId: string | null = sheetData?.id ?? null;
   const [name, setName] = useState<string>(sheetData?.name ?? '');
   const [color, setColor] = useState<string>(sheetData?.color ?? 'teal');
-  const [target, setTarget] = useState<string>(sheetData?.target ?? 'Daily');
   const [days, setDays] = useState<string>(
     /^[01]{7}$/.test(sheetData?.days) ? sheetData.days : '1111111'
   );
@@ -30,7 +28,8 @@ export function HabitSheet() {
   const save = async () => {
     if (!canSave) return;
     haptic();
-    const body = { name: name.trim(), color, target, days };
+    // The schedule label is derived from the chosen days (replaces the old target picker).
+    const body = { name: name.trim(), color, target: daysLabel(days), days };
     await mutate(
       () => (editId ? api.editHabit(editId, body) : api.addHabit(body)),
       editId ? 'Habit updated' : 'Habit added'
@@ -67,15 +66,6 @@ export function HabitSheet() {
             onClick={() => setColor(c)}
             style={{ width: 38, height: 38, borderRadius: '50%', cursor: 'pointer', flex: 'none', background: `var(--${c})`, transition: 'all .15s', boxShadow: color === c ? `0 0 0 3px var(--surface),0 0 0 5px var(--${c})` : '0 0 0 0 transparent' }}
           />
-        ))}
-      </div>
-
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Target</div>
-      <div style={{ display: 'flex', gap: 9, marginBottom: 24 }}>
-        {TARGETS.map((t) => (
-          <div key={t} onClick={() => setTarget(t)} style={{ ...chip(target === t, 'var(--teal)'), flex: 1, textAlign: 'center' }}>
-            {t}
-          </div>
         ))}
       </div>
 
