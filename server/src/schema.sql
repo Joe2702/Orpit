@@ -21,6 +21,9 @@ ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT;
 -- Per-screen widget order (JSON), so the customized dashboard syncs across devices.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS layout TEXT;
+-- Daily reminder: local time (HH:MM) + IANA timezone to fire it correctly.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS reminder_time TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS reminder_tz TEXT;
 
 CREATE TABLE IF NOT EXISTS password_resets (
   token_hash TEXT PRIMARY KEY,
@@ -178,6 +181,17 @@ CREATE TABLE IF NOT EXISTS count_logs (
   ts         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS count_logs_user_ts ON count_logs(user_id, ts);
+
+-- Web-push subscriptions (one per installed device). last_sent = the tz-local
+-- date (YYYY-MM-DD) we last fired a reminder, so we never double-send in a day.
+CREATE TABLE IF NOT EXISTS push_subs (
+  endpoint   TEXT PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sub        TEXT NOT NULL,
+  last_sent  TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS push_subs_user ON push_subs(user_id);
 
 CREATE TABLE IF NOT EXISTS feedback (
   id         BIGSERIAL PRIMARY KEY,

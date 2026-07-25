@@ -4,6 +4,7 @@ import { api } from '../api';
 import { Avatar, SectionLabel, toggleTrack, toggleKnob } from '../ui';
 import { IconChevron } from '../icons';
 import { CURRENCIES } from '../lib/format';
+import { enablePush, deviceTimezone, pushSupported } from '../lib/push';
 
 export function Settings() {
   const { state, go, open, mutate, signOut, showToast, haptic } = useStore();
@@ -28,6 +29,38 @@ export function Settings() {
     const next = !profile[key];
     if (key === 'haptics' && next && 'vibrate' in navigator) navigator.vibrate(18);
     mutate(() => api.updateMe({ [key]: next }));
+  };
+
+  // Turning reminders on also asks for notification permission + subscribes.
+  const toggleReminders = async () => {
+    const next = !profile.reminders;
+    if (next) {
+      await mutate(() =>
+        api.updateMe({ reminders: true, reminderTz: deviceTimezone(), reminderTime: profile.reminderTime || '21:00' })
+      );
+      if (pushSupported()) {
+        const st = await enablePush();
+        if (st === 'denied') showToast('Allow notifications in your phone settings');
+        else if (st === 'ok') showToast('Daily reminder on 🌙');
+        else if (st === 'unsupported') showToast('Reminders not supported on this device');
+      }
+    } else {
+      mutate(() => api.updateMe({ reminders: false }));
+    }
+  };
+
+  const setReminderTime = (t: string) => {
+    if (!/^\d{2}:\d{2}$/.test(t)) return;
+    mutate(() => api.updateMe({ reminderTime: t, reminderTz: deviceTimezone() }));
+  };
+
+  const sendTest = async () => {
+    try {
+      const r = await api.pushTest();
+      showToast(r.sent ? 'Test sent 🎉 check your notifications' : 'No device is subscribed yet');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not send test');
+    }
   };
 
   const exportData = () => {
@@ -177,9 +210,9 @@ export function Settings() {
         <PrefRow
           iconKey="indigo"
           title="Daily reminders"
-          sub="Nudge me to log each day"
+          sub="A gentle nudge to log your day"
           on={profile.reminders}
-          onToggle={() => toggle('reminders')}
+          onToggle={toggleReminders}
           icon={
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M9.5 3a4 4 0 0 0-4 4v3l-1.5 2.5h11L13.5 10V7a4 4 0 0 0-4-4ZM7.5 15a2 2 0 0 0 4 0" />
@@ -187,6 +220,32 @@ export function Settings() {
           }
           border
         />
+        {profile.reminders && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)' }}>
+            <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+              <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+                <circle cx="9.5" cy="10" r="7" />
+                <path d="M9.5 6v4l2.5 1.5" />
+              </svg>
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Reminder time</div>
+              <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>End of day works best</div>
+            </div>
+            <input
+              type="time"
+              value={profile.reminderTime || '21:00'}
+              onChange={(e) => setReminderTime(e.target.value)}
+              style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '8px 12px', outline: 'none', fontVariantNumeric: 'tabular-nums' }}
+            />
+          </div>
+        )}
+        {profile.reminders && (
+          <div onClick={sendTest} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+            <span style={{ width: 36, flex: 'none' }} />
+            <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--indigo)' }}>Send a test notification</div>
+          </div>
+        )}
         <PrefRow
           iconKey="coral"
           title="Haptic feedback"

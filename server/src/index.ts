@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { randomBytes, createHash } from 'node:crypto';
+import webpush from 'web-push';
 
 import { pool, query, one, tx } from './db.js';
 import { signToken, requireAuth, type AuthedRequest } from './auth.js';
@@ -33,6 +34,29 @@ const wrap =
     });
 
 const emailOk = (e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
+
+// ---- Web Push (daily reminders) ----
+// Public key is safe to ship; only the private key must be a secret env var.
+const VAPID_PUBLIC =
+  process.env.VAPID_PUBLIC ||
+  'BMIgmf32_561c9TFt8EHWPQ4z3sufBEYboGA7rs5xtqx5sp5EACgoIndkpaQi47Ws-fo-5RO7FZ1K_vEBB92YSg';
+const VAPID_PRIVATE = process.env.VAPID_PRIVATE || '';
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:youssif_mohammed@aucegypt.edu';
+const pushReady = !!VAPID_PRIVATE;
+if (pushReady) {
+  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+}
+
+// Warm, rotating reminder copy — a different line each day.
+const REMINDER_MESSAGES = [
+  'How did today go? Take a moment to log it 🌙',
+  'Time to reflect on your day — it only takes about 2 minutes ✨',
+  "Before the day's over, jot down how it went 📝",
+  'A quick check-in keeps your streak of growth going 🌱',
+  "Two minutes now, a clearer picture later. Log today's day 💫",
+  'Wind down and capture your day — you’ve got this 🌇',
+  'Your future self will thank you. Log today in ~2 minutes 🙌',
+];
 
 // ---------------- Auth ----------------
 
@@ -254,6 +278,14 @@ app.patch(
     }
     // Dashboard layout (JSON string of per-screen block order).
     if (typeof req.body.layout === 'string') fields.layout = req.body.layout.slice(0, 4000);
+    // Daily reminder time (HH:MM) + the device's timezone.
+    if (req.body.reminderTime === null) fields.reminder_time = null;
+    else if (typeof req.body.reminderTime === 'string' && /^\d{2}:\d{2}$/.test(req.body.reminderTime)) {
+      fields.reminder_time = req.body.reminderTime;
+    }
+    if (typeof req.body.reminderTz === 'string' && req.body.reminderTz.length < 64) {
+      fields.reminder_tz = req.body.reminderTz;
+    }
 
     const keys = Object.keys(fields);
     if (keys.length) {
@@ -919,6 +951,57 @@ app.post(
   })
 );
 
+// ---------------- Push notifications ----------------
+
+// The browser needs the public key to create a subscription.
+app.get('/api/push/key', (_req, res) => res.json({ key: VAPID_PUBLIC }));
+
+app.post(
+  '/api/push/subscribe',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const sub = req.body.sub;
+    if (!sub || typeof sub.endpoint !== 'string') return res.status(400).json({ error: 'Bad subscription' });
+    await query(
+      `INSERT INTO push_subs (endpoint, user_id, sub) VALUES ($1,$2,$3)
+       ON CONFLICT (endpoint) DO UPDATE SET user_id = EXCLUDED.user_id, sub = EXCLUDED.sub, last_sent = NULL`,
+      [sub.endpoint, uid, JSON.stringify(sub)]
+    );
+    res.json({ ok: true });
+  })
+);
+
+// Fire a one-off notification so the user can confirm it works.
+app.post(
+  '/api/push/test',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    if (!pushReady) return res.status(400).json({ error: 'Push not configured on the server yet' });
+    const subs = await query<{ endpoint: string; sub: string }>(
+      'SELECT endpoint, sub FROM push_subs WHERE user_id = $1',
+      [uid]
+    );
+    if (!subs.length) return res.status(400).json({ error: 'No device is subscribed yet' });
+    let sent = 0;
+    for (const s of subs) {
+      try {
+        await webpush.sendNotification(
+          JSON.parse(s.sub),
+          JSON.stringify({ title: 'Orbit', body: 'Reminders are on 🎉 This is a test.', url: '/' })
+        );
+        sent++;
+      } catch (e: any) {
+        if (e?.statusCode === 404 || e?.statusCode === 410) {
+          await query('DELETE FROM push_subs WHERE endpoint = $1', [s.endpoint]);
+        }
+      }
+    }
+    res.json({ ok: true, sent });
+  })
+);
+
 // ---------------- Feedback ----------------
 
 app.post(
@@ -999,6 +1082,54 @@ if (existsSync(webDist)) {
 
 const PORT = Number(process.env.PORT) || 4000;
 
+// Every minute, fire due daily reminders (each at the user's local time).
+async function runReminders() {
+  if (!pushReady) return;
+  try {
+    const rows = await query<{
+      reminder_time: string;
+      reminder_tz: string | null;
+      endpoint: string;
+      sub: string;
+      last_sent: string | null;
+    }>(
+      `SELECT u.reminder_time, u.reminder_tz, p.endpoint, p.sub, p.last_sent
+       FROM users u JOIN push_subs p ON p.user_id = u.id
+       WHERE u.reminders = TRUE AND u.reminder_time IS NOT NULL`
+    );
+    if (!rows.length) return;
+    const now = new Date();
+    for (const r of rows) {
+      const tz = r.reminder_tz || 'UTC';
+      let localHM: string;
+      let localDay: string;
+      try {
+        localHM = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+        localDay = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(now);
+      } catch {
+        continue; // bad timezone string
+      }
+      if (localHM !== r.reminder_time) continue;
+      if (r.last_sent === localDay) continue;
+      const body = REMINDER_MESSAGES[dayOfYear(now) % REMINDER_MESSAGES.length];
+      try {
+        await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title: 'Orbit', body, url: '/' }));
+      } catch (e: any) {
+        if (e?.statusCode === 404 || e?.statusCode === 410) {
+          await query('DELETE FROM push_subs WHERE endpoint = $1', [r.endpoint]);
+          continue;
+        }
+      }
+      await query('UPDATE push_subs SET last_sent = $1 WHERE endpoint = $2', [localDay, r.endpoint]);
+    }
+  } catch (e) {
+    console.error('[reminders]', e);
+  }
+}
+function dayOfYear(d: Date): number {
+  return Math.floor((d.getTime() - new Date(d.getFullYear(), 0, 0).getTime()) / 86400000);
+}
+
 async function start() {
   // Create/upgrade tables on boot (idempotent) — no separate migrate step needed in the cloud.
   await pool.query(SCHEMA_SQL);
@@ -1009,6 +1140,8 @@ async function start() {
      WHERE NOT EXISTS (SELECT 1 FROM habits h WHERE h.user_id = u.id AND h.locked = TRUE)`
   );
   app.listen(PORT, () => console.log(`Orbit API listening on port ${PORT}`));
+  console.log(pushReady ? 'Daily reminders: ON' : 'Daily reminders: OFF (set VAPID_PRIVATE to enable)');
+  setInterval(runReminders, 60 * 1000);
 }
 
 start().catch((e) => {

@@ -28,6 +28,7 @@ import { EditSheet } from './sheets/EditSheet';
 import { WCatsSheet, WCatSheet } from './sheets/CategorySheets';
 import { ProfileSheet } from './sheets/ProfileSheet';
 import { FeedbackSheet } from './sheets/FeedbackSheet';
+import { ReminderOnboarding } from './ReminderOnboarding';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
 
@@ -433,6 +434,8 @@ export function App() {
           </div>
         </div>
       )}
+
+      {authed && <ReminderOnboarding />}
     </>
   );
 

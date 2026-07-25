@@ -10,6 +10,8 @@ export interface Profile {
   currency: string;
   avatar: string | null;
   layout: string | null;
+  reminderTime: string | null;
+  reminderTz: string | null;
   createdAt: number;
 }
 

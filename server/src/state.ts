@@ -6,6 +6,7 @@ const TS = (col: string) => `(EXTRACT(EPOCH FROM ${col}) * 1000)::float8 AS ts`;
 export async function buildState(userId: number) {
   const profile = await one(
     `SELECT name, email, theme, reminders, haptics, onboarded, currency, avatar, layout,
+            reminder_time AS "reminderTime", reminder_tz AS "reminderTz",
             (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt"
      FROM users WHERE id = $1`,
     [userId]
