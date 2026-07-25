@@ -1,8 +1,11 @@
 import React from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
+import { api } from '../api';
 import { Bars, Candles, Spark, Ring } from '../lib/charts';
 import { hm, money, signMoney, cNum } from '../lib/format';
+import { parseLayout, reconcile } from '../lib/layout';
+import { Reorderable } from '../Reorderable';
 import { RangeSeg } from '../ui';
 
 function Arrow() {
@@ -14,20 +17,13 @@ function Arrow() {
 }
 
 export function Analytics() {
-  const { state, go, range } = useStore();
+  const { state, go, mutate, range } = useStore();
   const { d, h } = useData();
+  const profile = state!.profile;
 
-  return (
-    <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>Analytics</div>
-        <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 2 }}>
-          {range === 'All' ? 'Everything, all time' : 'Your ' + range.toLowerCase() + ' at a glance'}
-        </div>
-      </div>
-      <RangeSeg />
-
-      <div onClick={() => go('workouts')} className="press99" style={card}>
+  const blocks: Record<string, React.ReactNode> = {
+    workouts: (
+      <div onClick={() => go('workouts')} className="press99" style={cardB}>
         <div style={rowHead}>
           <span style={dot('coral')} />
           <span style={title}>Workouts</span>
@@ -39,8 +35,9 @@ export function Analytics() {
         </div>
         <div style={sub}>{d.wCount} sessions · {d.wActiveDays} active days</div>
       </div>
-
-      <div onClick={() => go('sleep')} className="press99" style={card}>
+    ),
+    sleep: (
+      <div onClick={() => go('sleep')} className="press99" style={cardB}>
         <div style={rowHead}>
           <span style={dot('blue')} />
           <span style={title}>Sleep</span>
@@ -52,8 +49,9 @@ export function Analytics() {
         </div>
         <div style={sub}>Avg quality {d.slAvgQ.toFixed(1)} / 10 · {d.slNights} nights</div>
       </div>
-
-      <div onClick={() => go('habits')} className="press99" style={{ ...card, display: 'flex', alignItems: 'center', gap: 18 }}>
+    ),
+    habits: (
+      <div onClick={() => go('habits')} className="press99" style={{ ...cardB, display: 'flex', alignItems: 'center', gap: 18 }}>
         <div style={{ position: 'relative', width: 88, height: 88, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Ring pct={h.habitPct} colorKey="teal" size={88} stroke={10} />
           <div style={{ position: 'absolute', fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{h.habitPct}%</div>
@@ -69,8 +67,9 @@ export function Analytics() {
           </div>
         </div>
       </div>
-
-      <div onClick={() => go('finances')} className="press99" style={{ ...card, marginBottom: 0 }}>
+    ),
+    finances: (
+      <div onClick={() => go('finances')} className="press99" style={cardB}>
         <div style={rowHead}>
           <span style={dot('emerald')} />
           <span style={title}>Finances</span>
@@ -82,37 +81,61 @@ export function Analytics() {
         </div>
         <div style={sub}>{money(d.income)} in · {money(d.spent)} out</div>
       </div>
-
-      {state!.counters.length > 0 && (
-        <div onClick={() => go('counters')} className="press99" style={{ ...card, marginTop: 14, marginBottom: 0 }}>
-          <div style={{ ...rowHead, marginBottom: 14 }}>
-            <span style={dot('indigo')} />
-            <span style={title}>Counters</span>
-            <Arrow />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {d.counterRange.map((c) => (
-              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                <span style={dot(c.color)} />
-                <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{c.name}</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{cNum(c.val)} {c.unit}</span>
-              </div>
-            ))}
-          </div>
-          <div style={sub}>{d.countLogsWin} logs {range === 'All' ? 'all time' : 'this ' + range.toLowerCase()}</div>
+    ),
+    counters: (
+      <div onClick={() => go('counters')} className="press99" style={cardB}>
+        <div style={{ ...rowHead, marginBottom: 14 }}>
+          <span style={dot('indigo')} />
+          <span style={title}>Counters</span>
+          <Arrow />
         </div>
-      )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {d.counterRange.map((c) => (
+            <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+              <span style={dot(c.color)} />
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{c.name}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{cNum(c.val)} {c.unit}</span>
+            </div>
+          ))}
+        </div>
+        <div style={sub}>{d.countLogsWin} logs {range === 'All' ? 'all time' : 'this ' + range.toLowerCase()}</div>
+      </div>
+    ),
+  };
+
+  const blockList = ['workouts', 'sleep', 'habits', 'finances', ...(state!.counters.length > 0 ? ['counters'] : [])];
+  const order = reconcile(parseLayout(profile.layout).analytics, blockList);
+  const items = order.map((id) => ({ id, node: <div style={{ marginBottom: 14 }}>{blocks[id]}</div> }));
+  const saveOrder = (ids: string[]) => {
+    const next = { ...parseLayout(profile.layout), analytics: ids };
+    mutate(() => api.updateMe({ layout: JSON.stringify(next) }));
+  };
+
+  return (
+    <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>Analytics</div>
+        <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 2 }}>
+          {range === 'All' ? 'Everything, all time' : 'Your ' + range.toLowerCase() + ' at a glance'}
+        </div>
+      </div>
+      <RangeSeg />
+
+      <div style={{ fontSize: 11.5, color: 'var(--text2)', textAlign: 'center', margin: '2px 0 14px', opacity: 0.75 }}>
+        Hold &amp; drag a card to rearrange
+      </div>
+
+      <Reorderable items={items} onReorder={saveOrder} />
     </div>
   );
 }
 
-const card: React.CSSProperties = {
+const cardB: React.CSSProperties = {
   background: 'var(--surface)',
   border: '1px solid var(--border)',
   borderRadius: 20,
   boxShadow: 'var(--shadow)',
   padding: 18,
-  marginBottom: 14,
   cursor: 'pointer',
 };
 const rowHead: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 };
