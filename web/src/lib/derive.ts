@@ -139,10 +139,54 @@ export interface HabitDerived {
   done: boolean;
   total: number; // total days ever completed (replaces streaks)
   streak: number;
-  week: number[];
+  // One 0/1 per *scheduled* weekday in the current week (Sun→Sat order);
+  // 1 = checked in that day, 0 = missed or still upcoming. Length equals the
+  // number of days the habit is assigned per week.
+  weekSlots: number[];
 }
 
-export function deriveHabits(state: AppState) {
+// Count scheduled vs. completed habit-days over the last `nDays` (today back).
+// Anchored on Date.now() like the check-in keys, so it matches how the server
+// stores days regardless of timezone. `mask` is the 7-char Sun..Sat schedule.
+function scheduledStats(mask: string, set: Set<string>, nDays: number) {
+  const m = /^[01]{7}$/.test(mask) ? mask : '1111111';
+  const now = Date.now();
+  let scheduled = 0,
+    done = 0;
+  for (let i = 0; i < nDays; i++) {
+    const t = now - i * D;
+    if (m[new Date(t).getDay()] === '1') {
+      scheduled++;
+      if (set.has(dayStr(t))) done++;
+    }
+  }
+  return { scheduled, done };
+}
+
+// How many days back the selected range covers (inclusive of today).
+function rangeDays(range: Range, earliestMs: number): number {
+  const today = sod(Date.now());
+  if (range === 'Week') return 7;
+  if (range === 'Month') return 30;
+  if (range === 'Year') return Math.floor((today - sod(monthStart(11))) / D) + 1;
+  return Math.max(1, Math.floor((today - sod(earliestMs)) / D) + 1); // All
+}
+
+// The current week's scheduled days as 0/1, Sun→Sat; upcoming days stay 0.
+function weekSlotsFor(mask: string, set: Set<string>): number[] {
+  const m = /^[01]{7}$/.test(mask) ? mask : '1111111';
+  const now = Date.now();
+  const todayDow = new Date(now).getDay();
+  const out: number[] = [];
+  for (let wd = 0; wd < 7; wd++) {
+    if (m[wd] !== '1') continue;
+    const offset = todayDow - wd; // >0 earlier this week, 0 today, <0 upcoming
+    out.push(offset >= 0 && set.has(dayStr(now - offset * D)) ? 1 : 0);
+  }
+  return out;
+}
+
+export function deriveHabits(state: AppState, range: Range) {
   const today = sod(Date.now());
   const byHabit = new Map<string, Set<string>>();
   state.habits.forEach((h) => byHabit.set(h.id, new Set()));
@@ -161,8 +205,6 @@ export function deriveHabits(state: AppState) {
       streak++;
       cursor -= D;
     }
-    const week: number[] = [];
-    for (let i = 6; i >= 0; i--) week.push(set.has(dayStr(nowMs - i * D)) ? 1 : 0);
     return {
       id: h.id,
       name: h.name,
@@ -173,7 +215,7 @@ export function deriveHabits(state: AppState) {
       done,
       total: set.size, // total days ever completed
       streak,
-      week,
+      weekSlots: weekSlotsFor(h.days, set),
     };
   });
 
@@ -209,12 +251,31 @@ export function deriveHabits(state: AppState) {
     grid[col][row] = count === 0 ? 0 : Math.min(4, Math.max(1, Math.round(ratio * 4)));
   });
 
-  const totalDots = habits.reduce((s, h) => s + h.week.reduce((a, b) => a + b, 0), 0);
-  const maxDots = habits.length * 7;
-  const habitPct = maxDots ? Math.round((totalDots / maxDots) * 100) : 0;
+  // Progress against each habit's real schedule. `range*` follows the selected
+  // range (Week/Month/Year/All) for the Habits screen; `habitPct` is pinned to
+  // the current week so Home and Analytics stay a stable "this week" number.
+  const earliestMs = state.checkins.length
+    ? Math.min(...state.checkins.map((c) => new Date(c.day + 'T00:00:00').getTime()))
+    : Date.now();
+  const nRange = rangeDays(range, earliestMs);
+  let rangeDone = 0,
+    rangeTotal = 0,
+    weekDone = 0,
+    weekTotal = 0;
+  state.habits.forEach((h) => {
+    const set = byHabit.get(h.id)!;
+    const r = scheduledStats(h.days, set, nRange);
+    rangeDone += r.done;
+    rangeTotal += r.scheduled;
+    const w = scheduledStats(h.days, set, 7);
+    weekDone += w.done;
+    weekTotal += w.scheduled;
+  });
+  const rangePct = rangeTotal ? Math.round((rangeDone / rangeTotal) * 100) : 0;
+  const habitPct = weekTotal ? Math.round((weekDone / weekTotal) * 100) : 0;
 
   const totalCompleted = state.checkins.length; // all-time check-ins across habits
-  return { habits, longestStreak, totalCompleted, grid, totalDots, maxDots, habitPct };
+  return { habits, longestStreak, totalCompleted, grid, habitPct, weekDone, weekTotal, rangeDone, rangeTotal, rangePct };
 }
 
 export function derive(state: AppState, range: Range) {

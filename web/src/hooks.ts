@@ -8,6 +8,6 @@ export function useData() {
   const { state, range } = useStore();
   const s = state as AppState;
   const d = useMemo(() => derive(s, range), [s, range]);
-  const h = useMemo(() => deriveHabits(s), [s]);
+  const h = useMemo(() => deriveHabits(s, range), [s, range]);
   return { state: s, d, h };
 }

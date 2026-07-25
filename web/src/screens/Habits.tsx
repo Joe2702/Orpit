@@ -30,10 +30,10 @@ export function Habits() {
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 20, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 20 }}>
         <div style={{ position: 'relative', width: 124, height: 124, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Ring pct={h.habitPct} colorKey="teal" size={124} stroke={13} />
+          <Ring pct={h.rangePct} colorKey="teal" size={124} stroke={13} />
           <div style={{ position: 'absolute', textAlign: 'center' }}>
             <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.02em' }}>
-              {h.habitPct}<span style={{ fontSize: 18 }}>%</span>
+              {h.rangePct}<span style={{ fontSize: 18 }}>%</span>
             </div>
             <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: -2 }}>complete</div>
           </div>
@@ -41,7 +41,7 @@ export function Habits() {
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.45 }}>You're on track</div>
           <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4, lineHeight: 1.5 }}>
-            {h.totalDots} of {h.maxDots} habit check-ins {rangeWord(range)}. Keep it up!
+            {h.rangeDone} of {h.rangeTotal} habit check-ins {rangeWord(range)}. Keep it up!
           </div>
         </div>
       </div>
@@ -75,8 +75,8 @@ export function Habits() {
                   <IconPencil />
                 )}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                {hb.week.map((on, i) => (
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {hb.weekSlots.map((on, i) => (
                   <span
                     key={i}
                     style={{
