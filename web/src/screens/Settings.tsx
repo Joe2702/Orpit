@@ -4,11 +4,17 @@ import { api } from '../api';
 import { Avatar, SectionLabel, toggleTrack, toggleKnob } from '../ui';
 import { IconChevron } from '../icons';
 import { CURRENCIES } from '../lib/format';
-import { enablePush, deviceTimezone, pushSupported } from '../lib/push';
+import { deviceTimezone } from '../lib/push';
+import { enableReminders, disableReminders, updateReminderTime, sendTestNotification } from '../lib/notify';
+
+// The account allowed to read the in-app feedback inbox. Keep in sync with the
+// server's ADMIN_EMAIL env var if you change it there.
+const ADMIN_EMAIL = 'youssif_mohammed@aucegypt.edu';
 
 export function Settings() {
-  const { state, go, open, mutate, signOut, showToast, haptic } = useStore();
+  const { state, go, open, mutate, mutateOpt, signOut, showToast, haptic } = useStore();
   const profile = state!.profile;
+  const isAdmin = (profile.email || '').toLowerCase() === ADMIN_EMAIL;
 
   const dataTs = [...state!.workouts, ...state!.nights, ...state!.txns].map((x) => x.ts);
   const earliest = dataTs.length ? Math.min(...dataTs) : profile.createdAt;
@@ -21,30 +27,30 @@ export function Settings() {
     state!.countLogs.length;
   const memberSince = new Date(earliest).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
+  // Theme applies instantly (optimistic), then persists in the background.
   const setTheme = (val: 'light' | 'dark' | 'system') => {
-    mutate(() => api.updateMe({ theme: val }));
+    mutateOpt((s) => ({ ...s, profile: { ...s.profile, theme: val } }), () => api.updateMe({ theme: val }));
   };
 
   const toggle = (key: 'reminders' | 'haptics') => {
     const next = !profile[key];
     if (key === 'haptics' && next && 'vibrate' in navigator) navigator.vibrate(18);
-    mutate(() => api.updateMe({ [key]: next }));
+    mutateOpt((s) => ({ ...s, profile: { ...s.profile, [key]: next } }), () => api.updateMe({ [key]: next }));
   };
 
-  // Turning reminders on also asks for notification permission + subscribes.
+  // Turning reminders on asks for notification permission and (native) schedules
+  // the on-device daily reminder, or (web) subscribes to push.
   const toggleReminders = async () => {
     const next = !profile.reminders;
     if (next) {
-      await mutate(() =>
-        api.updateMe({ reminders: true, reminderTz: deviceTimezone(), reminderTime: profile.reminderTime || '21:00' })
-      );
-      if (pushSupported()) {
-        const st = await enablePush();
-        if (st === 'denied') showToast('Allow notifications in your phone settings');
-        else if (st === 'ok') showToast('Daily reminder on 🌙');
-        else if (st === 'unsupported') showToast('Reminders not supported on this device');
-      }
+      const time = profile.reminderTime || '21:00';
+      await mutate(() => api.updateMe({ reminders: true, reminderTz: deviceTimezone(), reminderTime: time }));
+      const st = await enableReminders(time);
+      if (st === 'denied') showToast('Allow notifications in your phone settings');
+      else if (st === 'ok') showToast('Daily reminder on 🌙');
+      else if (st === 'unsupported') showToast('Reminders not supported on this device');
     } else {
+      await disableReminders();
       mutate(() => api.updateMe({ reminders: false }));
     }
   };
@@ -52,15 +58,15 @@ export function Settings() {
   const setReminderTime = (t: string) => {
     if (!/^\d{2}:\d{2}$/.test(t)) return;
     mutate(() => api.updateMe({ reminderTime: t, reminderTz: deviceTimezone() }));
+    updateReminderTime(t); // reschedule the native reminder to the new time
   };
 
   const sendTest = async () => {
-    try {
-      const r = await api.pushTest();
-      showToast(r.sent ? 'Test sent 🎉 check your notifications' : 'No device is subscribed yet');
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Could not send test');
-    }
+    const r = await sendTestNotification();
+    if (r === 'sent') showToast('Test sent 🎉 check your notifications');
+    else if (r === 'denied') showToast('Allow notifications in your phone settings');
+    else if (r === 'none') showToast('Turn on reminders first');
+    else showToast('Could not send test');
   };
 
   const exportData = () => {
@@ -186,7 +192,12 @@ export function Settings() {
           return (
             <div
               key={c.code}
-              onClick={() => mutate(() => api.updateMe({ currency: c.code }))}
+              onClick={() =>
+                mutateOpt(
+                  (s) => ({ ...s, profile: { ...s.profile, currency: c.code } }),
+                  () => api.updateMe({ currency: c.code })
+                )
+              }
               style={{
                 padding: '10px 14px',
                 borderRadius: 12,
@@ -300,7 +311,7 @@ export function Settings() {
 
       <SectionLabel>Data</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 14 }}>
-        <div onClick={exportData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+        <div onClick={exportData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
           <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--blue) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M10 3v9M6.5 8.5L10 12l3.5-3.5M4 14v2h12v-2" />
@@ -312,18 +323,11 @@ export function Settings() {
           </div>
           <IconChevron />
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px' }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Preview empty states</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>See first-run screens with no data</div>
-          </div>
-          <EmptyToggle />
-        </div>
       </div>
 
       <SectionLabel>Support</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
-        <div onClick={() => open('feedback')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
+        <div onClick={() => open('feedback')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: isAdmin ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}>
           <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M4 4h12v9H8l-4 3.5V4Z" />
@@ -335,6 +339,20 @@ export function Settings() {
           </div>
           <IconChevron />
         </div>
+        {isAdmin && (
+          <div onClick={() => go('feedbackInbox')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
+            <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--emerald) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+              <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--emerald)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+                <path d="M3 5h14v10H3zM3 6l7 5 7-5" />
+              </svg>
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Feedback inbox</div>
+              <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Read what your testers sent</div>
+            </div>
+            <IconChevron />
+          </div>
+        )}
       </div>
 
       <div
@@ -348,7 +366,7 @@ export function Settings() {
         Sign out
       </div>
       <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text2)', marginTop: 18, fontFamily: "'Geist Mono',monospace" }}>
-        Orbit v1.0.0 · made with care
+        Orbit v2.0.0 · made with care
       </div>
     </div>
   );
@@ -383,15 +401,6 @@ function PrefRow({
       <div onClick={onToggle} style={toggleTrack(on)}>
         <div style={toggleKnob(on)} />
       </div>
-    </div>
-  );
-}
-
-function EmptyToggle() {
-  const { emptyMode, setEmptyMode } = useStore();
-  return (
-    <div onClick={() => setEmptyMode(!emptyMode)} style={toggleTrack(emptyMode)}>
-      <div style={toggleKnob(emptyMode)} />
     </div>
   );
 }

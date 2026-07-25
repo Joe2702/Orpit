@@ -16,6 +16,7 @@ import { HomeEmpty, WorkoutsEmpty, HabitsEmpty, SleepEmpty, FinancesEmpty } from
 import { Counters } from './screens/Counters';
 import { Achievements } from './screens/Achievements';
 import { FAddTx, FTxns, FBudgets, FGoals, FAccounts, FRecurring, FCats, FInsights } from './screens/FinanceScreens';
+import { FeedbackInbox } from './screens/FeedbackInbox';
 
 import { Chooser } from './sheets/Chooser';
 import { CounterSheet, CountLogSheet, CountPickSheet } from './sheets/CounterSheets';
@@ -77,6 +78,8 @@ function CurrentScreen() {
       return <FRecurring />;
     case 'finsights':
       return <FInsights />;
+    case 'feedbackInbox':
+      return <FeedbackInbox />;
     default:
       return null;
   }
@@ -181,8 +184,12 @@ function TabBar() {
         style={{
           position: 'relative',
           height: 66,
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
+          // Frosted glass instead of a solid card, so the screen shows through
+          // around and behind the bar rather than sitting on an opaque block.
+          background: 'color-mix(in srgb, var(--surface) 62%, transparent)',
+          backdropFilter: 'blur(20px) saturate(1.6)',
+          WebkitBackdropFilter: 'blur(20px) saturate(1.6)',
+          border: '1px solid color-mix(in srgb, var(--border) 55%, transparent)',
           borderRadius: 26,
           boxShadow: 'var(--shadow)',
           display: 'flex',
@@ -276,7 +283,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 }
 
 export function App() {
-  const { ready, authed, state, screen, sheet, toast, closeSheet, mutate, booting, bootError, retryBoot, go } = useStore();
+  const { ready, authed, state, screen, sheet, toast, closeSheet, mutateOpt, booting, bootError, retryBoot, go } = useStore();
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
 
   // Track the phone's own light/dark setting so "System" can follow it live.
@@ -294,7 +301,8 @@ export function App() {
   const theme: 'light' | 'dark' = rawTheme === 'system' ? (sysDark ? 'dark' : 'light') : rawTheme;
 
   const setTheme = (t: 'light' | 'dark') => {
-    if (authed) mutate(() => api.updateMe({ theme: t }));
+    if (authed)
+      mutateOpt((s) => ({ ...s, profile: { ...s.profile, theme: t } }), () => api.updateMe({ theme: t }));
     else setLocalTheme(t);
   };
 
