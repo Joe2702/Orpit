@@ -7,13 +7,13 @@ import { CIcon, CTR_ICONS } from '../lib/iconPaths';
 import { cNum, counterTotals } from '../lib/format';
 import { COUNTER_PRESETS } from '../lib/presets';
 
-const COLORS = ['indigo', 'coral', 'teal', 'blue', 'emerald'];
+const COLORS = ['indigo', 'coral', 'teal', 'blue', 'emerald', 'purple', 'pink', 'amber', 'cyan', 'rose'];
 const UNITS = ['reps', 'pages', 'hours', 'min', 'km', 'cups'];
 const STEPS = [1, 5, 10, 25];
 
 // --- Create / edit a counter ---
 export function CounterSheet() {
-  const { sheetData, closeSheet, mutateOpt, haptic } = useStore();
+  const { sheetData, closeSheet, mutateOpt, haptic, confirm } = useStore();
   const editId: string | null = sheetData?.id ?? null;
   const [name, setName] = useState<string>(sheetData?.name ?? '');
   const [unit, setUnit] = useState<string>(sheetData?.unit ?? 'reps');
@@ -44,8 +44,9 @@ export function CounterSheet() {
     }
     closeSheet();
   };
-  const del = () => {
+  const del = async () => {
     if (!editId) return;
+    if (!(await confirm({ title: 'Delete this counter?', message: 'It and all its logs will be removed.' }))) return;
     haptic();
     mutateOpt(
       (s) => ({
@@ -105,7 +106,7 @@ export function CounterSheet() {
         ))}
       </div>
       {label('Color')}
-      <div style={{ display: 'flex', gap: 14, marginBottom: 20, paddingLeft: 2 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20, paddingLeft: 2 }}>
         {COLORS.map((c) => (
           <div key={c} onClick={() => setColor(c)} style={{ width: 38, height: 38, borderRadius: '50%', cursor: 'pointer', flex: 'none', background: `var(--${c})`, transition: 'all .15s', boxShadow: color === c ? `0 0 0 3px var(--surface),0 0 0 5px var(--${c})` : '0 0 0 0 transparent' }} />
         ))}

@@ -5,11 +5,11 @@ import { daysLabel } from '../lib/format';
 import { HABIT_PRESETS } from '../lib/presets';
 import { IconTrash } from '../icons';
 
-const COLORS = ['teal', 'indigo', 'coral', 'blue', 'emerald'];
+const COLORS = ['teal', 'indigo', 'coral', 'blue', 'emerald', 'purple', 'pink', 'amber', 'cyan', 'rose'];
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Sun..Sat
 
 export function HabitSheet() {
-  const { sheetData, closeSheet, mutate, haptic } = useStore();
+  const { sheetData, closeSheet, mutateOpt, haptic, confirm } = useStore();
   const editId: string | null = sheetData?.id ?? null;
   const [name, setName] = useState<string>(sheetData?.name ?? '');
   const [color, setColor] = useState<string>(sheetData?.color ?? 'teal');
@@ -26,22 +26,41 @@ export function HabitSheet() {
 
   const canSave = !!name.trim();
 
-  const save = async () => {
+  // The schedule label is derived from the chosen days (replaces the old target picker).
+  const save = () => {
     if (!canSave) return;
     haptic();
-    // The schedule label is derived from the chosen days (replaces the old target picker).
     const body = { name: name.trim(), color, target: daysLabel(days), days };
-    await mutate(
-      () => (editId ? api.editHabit(editId, body) : api.addHabit(body)),
-      editId ? 'Habit updated' : 'Habit added'
-    );
+    if (editId) {
+      mutateOpt(
+        (s) => ({ ...s, habits: s.habits.map((hb) => (hb.id === editId ? { ...hb, ...body } : hb)) }),
+        () => api.editHabit(editId, body),
+        'Habit updated'
+      ).catch(() => {});
+    } else {
+      const tempId = 'tmp_' + Date.now();
+      mutateOpt(
+        (s) => ({ ...s, habits: [...s.habits, { id: tempId, ...body, locked: false }] }),
+        () => api.addHabit(body),
+        'Habit added'
+      ).catch(() => {});
+    }
     closeSheet();
   };
 
   const del = async () => {
     if (!editId) return;
+    if (!(await confirm({ title: 'Delete this habit?', message: 'It and all its check-ins will be removed.' }))) return;
     haptic();
-    await mutate(() => api.deleteHabit(editId), 'Habit deleted');
+    mutateOpt(
+      (s) => ({
+        ...s,
+        habits: s.habits.filter((hb) => hb.id !== editId),
+        checkins: s.checkins.filter((c) => c.habitId !== editId),
+      }),
+      () => api.deleteHabit(editId),
+      'Habit deleted'
+    ).catch(() => {});
     closeSheet();
   };
 
@@ -82,7 +101,7 @@ export function HabitSheet() {
       )}
 
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>Color</div>
-      <div style={{ display: 'flex', gap: 14, marginBottom: 24, paddingLeft: 2 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, paddingLeft: 2 }}>
         {COLORS.map((c) => (
           <div
             key={c}

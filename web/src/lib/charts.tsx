@@ -326,8 +326,14 @@ export function SleepTimeline({
   const n = items.length;
   const slotW = n ? w / n : w;
   const bw = Math.max(2.5, Math.min(maxBar, slotW * 0.62));
-  const y = (hod: number) => (hod / 24) * h; // 0:00 at top, 24:00 at bottom
+  // Night-centered axis: 18:00 (evening) at the top → 18:00 next day at the
+  // bottom, so a normal night like 23:00 → 07:00 is ONE continuous block
+  // instead of splitting across midnight. `s` is "hours since 18:00" (0..24).
+  const ANCHOR = 18;
+  const shift = (hod: number) => ((((hod - ANCHOR) % 24) + 24) % 24);
+  const y = (s: number) => (s / 24) * h;
   const ch: React.ReactNode[] = [];
+  // Gridlines at 00:00, 06:00, 12:00 (shifted positions 6, 12, 18).
   [6, 12, 18].forEach((g, i) =>
     ch.push(
       <line key={'g' + i} x1={0} y1={y(g)} x2={w} y2={y(g)} stroke="var(--border)" strokeWidth={1} strokeDasharray="3 5" vectorEffect="non-scaling-stroke" />
@@ -337,8 +343,8 @@ export function SleepTimeline({
     if (it.bedH == null || it.wakeH == null) return;
     const cx = slotW * i + slotW / 2;
     const col = sleepColor(it.hours);
-    const bed = ((it.bedH % 24) + 24) % 24;
-    const wake = ((it.wakeH % 24) + 24) % 24;
+    const bed = shift(it.bedH);
+    const wake = shift(it.wakeH);
     const segs: [number, number][] = wake > bed ? [[bed, wake]] : [[bed, 24], [0, wake]];
     segs.forEach(([a, b], si) => {
       const yA = y(a);

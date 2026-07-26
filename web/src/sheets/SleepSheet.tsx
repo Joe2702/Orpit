@@ -11,7 +11,7 @@ function todayISO(): string {
 }
 
 export function SleepSheet() {
-  const { closeSheet, mutate, haptic } = useStore();
+  const { closeSheet, mutateOpt, haptic } = useStore();
   const [quality, setQuality] = useState(8);
   const [bed, setBed] = useState('23:00');
   const [wake, setWake] = useState('06:45');
@@ -25,14 +25,18 @@ export function SleepSheet() {
   })();
   const durLabel = `${Math.floor(hours)}h ${String(Math.round((hours % 1) * 60)).padStart(2, '0')}m`;
 
-  const save = async () => {
+  const save = () => {
     haptic();
     // Timestamp the night at the wake-up moment on the chosen morning.
     const ts = new Date(`${day}T${wake || '08:00'}`).getTime();
-    await mutate(
-      () => api.addNight({ hours, quality, bedH: parseClock(bed), wakeH: parseClock(wake), ts }),
+    const bedH = parseClock(bed),
+      wakeH = parseClock(wake);
+    const tempId = 'tmp_' + Date.now();
+    mutateOpt(
+      (s) => ({ ...s, nights: [...s.nights, { id: tempId, hours, quality, bedH, wakeH, ts }] }),
+      () => api.addNight({ hours, quality, bedH, wakeH, ts }),
       'Sleep logged'
-    );
+    ).catch(() => {});
     closeSheet();
   };
 

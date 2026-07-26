@@ -4,10 +4,10 @@ import { api } from '../api';
 import { chip } from '../ui';
 import { IconTrash } from '../icons';
 import { hm, signMoney } from '../lib/format';
-import type { Workout, Night, Txn } from '../types';
+import type { Workout, Night, Txn, AppState } from '../types';
 
 export function EditSheet() {
-  const { state, sheetData, open, closeSheet, mutate, haptic } = useStore();
+  const { state, sheetData, open, closeSheet, mutateOpt, haptic, confirm } = useStore();
   const kind: 'workout' | 'sleep' | 'txn' = sheetData?.kind;
   const item = sheetData?.item;
 
@@ -28,21 +28,31 @@ export function EditSheet() {
       ? `${(item as Txn).name} · ${signMoney((item as Txn).amount)}`
       : '';
 
-  const saveWorkout = async () => {
+  const saveWorkout = () => {
     haptic();
-    await mutate(
-      () => api.editWorkout(w!.id, { dur, catId, dist: dist.trim() || null, kcal: kcal ? Number(kcal) : null }),
+    const patch = { dur, catId, dist: dist.trim() || null, kcal: kcal ? Number(kcal) : null };
+    mutateOpt(
+      (s) => ({ ...s, workouts: s.workouts.map((x) => (x.id === w!.id ? { ...x, ...patch } : x)) }),
+      () => api.editWorkout(w!.id, patch),
       'Workout updated'
-    );
+    ).catch(() => {});
     closeSheet();
   };
 
   const del = async () => {
-    haptic();
     const id = (item as { id: string }).id;
+    const noun = kind === 'workout' ? 'workout' : kind === 'sleep' ? 'sleep entry' : 'transaction';
+    if (!(await confirm({ title: `Delete this ${noun}?`, message: "This can't be undone." }))) return;
+    haptic();
     const fn =
       kind === 'workout' ? () => api.deleteWorkout(id) : kind === 'sleep' ? () => api.deleteNight(id) : () => api.deleteTxn(id);
-    await mutate(fn, 'Entry deleted');
+    const optimistic = (s: AppState): AppState =>
+      kind === 'workout'
+        ? { ...s, workouts: s.workouts.filter((x) => x.id !== id) }
+        : kind === 'sleep'
+        ? { ...s, nights: s.nights.filter((x) => x.id !== id) }
+        : { ...s, txns: s.txns.filter((x) => x.id !== id) };
+    mutateOpt(optimistic, fn, 'Entry deleted').catch(() => {});
     closeSheet();
   };
 

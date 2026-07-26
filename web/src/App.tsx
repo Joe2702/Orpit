@@ -29,7 +29,9 @@ import { EditSheet } from './sheets/EditSheet';
 import { WCatsSheet, WCatSheet } from './sheets/CategorySheets';
 import { ProfileSheet } from './sheets/ProfileSheet';
 import { FeedbackSheet } from './sheets/FeedbackSheet';
+import { HabitCalendarSheet } from './sheets/HabitCalendarSheet';
 import { ReminderOnboarding } from './ReminderOnboarding';
+import { syncReminders } from './lib/notify';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
 
@@ -124,6 +126,8 @@ function SheetBody() {
       return <RecurringSheet />;
     case 'feedback':
       return <FeedbackSheet />;
+    case 'habitcal':
+      return <HabitCalendarSheet />;
     default:
       return null;
   }
@@ -264,7 +268,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 }
 
 export function App() {
-  const { ready, authed, state, screen, sheet, toast, closeSheet, mutateOpt, booting, bootError, retryBoot, go } = useStore();
+  const { ready, authed, state, screen, sheet, toast, closeSheet, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm } = useStore();
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
 
   // Track the phone's own light/dark setting so "System" can follow it live.
@@ -277,6 +281,14 @@ export function App() {
     mq.addEventListener?.('change', on);
     return () => mq.removeEventListener?.('change', on);
   }, []);
+
+  // On the native app, make sure the daily reminder is actually scheduled on
+  // this device whenever the account has reminders enabled.
+  const remOn = authed && state ? !!state.profile.reminders : false;
+  const remTime = authed && state ? state.profile.reminderTime || '21:00' : '21:00';
+  useEffect(() => {
+    if (remOn) syncReminders(true, remTime);
+  }, [remOn, remTime]);
 
   const rawTheme = authed && state ? state.profile.theme : localTheme;
   const theme: 'light' | 'dark' = rawTheme === 'system' ? (sysDark ? 'dark' : 'light') : rawTheme;
@@ -410,6 +422,26 @@ export function App() {
               </div>
               <div onClick={confirmExit} className="press" style={{ flex: 1, height: 48, borderRadius: 14, background: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
                 Exit
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmState && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
+          <div onClick={() => closeConfirm(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.5)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(2px)' }} />
+          <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 24, padding: '26px 22px 20px', width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(8,9,14,.35)', animation: 'fadeUp .25s ease', textAlign: 'center' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>{confirmState.title}</div>
+            {confirmState.message && (
+              <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>{confirmState.message}</div>
+            )}
+            <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+              <div onClick={() => closeConfirm(false)} className="press" style={{ flex: 1, height: 48, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+                Cancel
+              </div>
+              <div onClick={() => closeConfirm(true)} className="press" style={{ flex: 1, height: 48, borderRadius: 14, background: confirmState.danger === false ? 'var(--indigo)' : 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
+                {confirmState.confirmLabel || 'Delete'}
               </div>
             </div>
           </div>

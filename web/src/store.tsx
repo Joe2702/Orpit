@@ -46,6 +46,7 @@ export type SheetKind =
   | 'goal'
   | 'recurring'
   | 'feedback'
+  | 'habitcal'
   | null;
 
 interface StoreCtx {
@@ -95,11 +96,22 @@ interface StoreCtx {
   // in localStorage; drives the red count on the trophy and the reveal state.
   claimedBadges: string[];
   claimBadge: (id: string) => void;
+  // Reusable confirmation dialog. Resolves true if the user confirms.
+  confirm: (opts: ConfirmOpts) => Promise<boolean>;
+  confirmState: (ConfirmOpts & { resolve: (v: boolean) => void }) | null;
+  closeConfirm: (v: boolean) => void;
   // fire device vibration when the user has haptics enabled (no-op otherwise)
   haptic: (pattern?: number | number[]) => void;
 }
 
 const CLAIMED_KEY = 'orbit_claimed_badges';
+
+export interface ConfirmOpts {
+  title: string;
+  message?: string;
+  confirmLabel?: string;
+  danger?: boolean;
+}
 
 const Ctx = createContext<StoreCtx | null>(null);
 
@@ -200,6 +212,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [restore]);
 
   const applyState = useCallback((s: AppState) => setState(s), []);
+
+  const [confirmState, setConfirmState] = useState<(ConfirmOpts & { resolve: (v: boolean) => void }) | null>(null);
+  const confirm = useCallback(
+    (opts: ConfirmOpts) => new Promise<boolean>((resolve) => setConfirmState({ ...opts, resolve })),
+    []
+  );
+  const closeConfirm = useCallback((v: boolean) => {
+    setConfirmState((cur) => {
+      cur?.resolve(v);
+      return null;
+    });
+  }, []);
 
   const claimBadge = useCallback((id: string) => {
     setClaimedBadges((prev) => {
@@ -344,6 +368,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     applyState,
     claimedBadges,
     claimBadge,
+    confirm,
+    confirmState,
+    closeConfirm,
     haptic,
   };
 
