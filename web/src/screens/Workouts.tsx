@@ -6,10 +6,20 @@ import { relLabel } from '../lib/format';
 import { DetailHeader, RangeSeg, SectionLabel, rangeWord } from '../ui';
 import { IconWorkout } from '../icons';
 
+// Round a minutes value up to a clean axis maximum (15/30/45/60/90/120…), so the
+// y-axis reads sensibly instead of arbitrary numbers like "47m".
+function niceMinutes(v: number): number {
+  if (v <= 0) return 30;
+  const steps = [15, 30, 45, 60, 90, 120, 180, 240, 300, 420, 600, 720];
+  for (const s of steps) if (v <= s) return s;
+  return Math.ceil(v / 120) * 120;
+}
+
 export function Workouts() {
   const { state, open, range } = useStore();
   const { d } = useData();
   const cat = (id: string | null) => (id ? d.catById[id] : undefined);
+  const yMax = niceMinutes(d.wYMax);
 
   const tri = (a: React.ReactNode, b: React.ReactNode, c: React.ReactNode) => (
     <div style={{ display: 'flex' }}>
@@ -50,13 +60,13 @@ export function Workouts() {
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <div style={{ position: 'relative', width: 30, height: 120, flex: 'none', fontSize: 10, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
-            <span style={{ position: 'absolute', top: -5, right: 0 }}>{d.wYMax}m</span>
-            <span style={{ position: 'absolute', top: 'calc(50% - 6px)', right: 0 }}>{Math.round(d.wYMax / 2)}m</span>
+            <span style={{ position: 'absolute', top: -5, right: 0 }}>{yMax}m</span>
+            <span style={{ position: 'absolute', top: 'calc(50% - 6px)', right: 0 }}>{Math.round(yMax / 2)}m</span>
             <span style={{ position: 'absolute', bottom: -5, right: 0 }}>0</span>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ height: 120 }}>
-              <Bars values={d.wMinSeries} colorKey="coral" w={300} h={120} gap={9} />
+              <Bars values={d.wMinSeries} colorKey="coral" w={300} h={120} gap={9} max={yMax} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
               {d.xLabels.map((l, i) => (

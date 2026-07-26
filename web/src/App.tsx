@@ -184,12 +184,8 @@ function TabBar() {
         style={{
           position: 'relative',
           height: 66,
-          // A soft frosted float — no border, no shadow, no card. Just a gentle
-          // blur so the icons stay legible while the screen shows through.
-          background: 'color-mix(in srgb, var(--surface) 42%, transparent)',
-          backdropFilter: 'blur(22px) saturate(1.6)',
-          WebkitBackdropFilter: 'blur(22px) saturate(1.6)',
-          borderRadius: 26,
+          // No background at all — the icons and center button simply float over
+          // the screen; nothing behind them.
           display: 'flex',
           alignItems: 'center',
           padding: '0 6px',

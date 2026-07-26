@@ -13,7 +13,7 @@ const STEPS = [1, 5, 10, 25];
 
 // --- Create / edit a counter ---
 export function CounterSheet() {
-  const { sheetData, closeSheet, mutate, haptic } = useStore();
+  const { sheetData, closeSheet, mutateOpt, haptic } = useStore();
   const editId: string | null = sheetData?.id ?? null;
   const [name, setName] = useState<string>(sheetData?.name ?? '');
   const [unit, setUnit] = useState<string>(sheetData?.unit ?? 'reps');
@@ -22,17 +22,40 @@ export function CounterSheet() {
   const [step, setStep] = useState<number>(sheetData?.step ?? 5);
   const canSave = !!name.trim();
 
-  const save = async () => {
+  // Apply the change to the UI immediately and close; the server call reconciles
+  // in the background (rolls back on failure). Avoids the ~2s wait on the free host.
+  const save = () => {
     if (!canSave) return;
     haptic();
     const body = { name: name.trim(), unit: unit.trim() || 'count', color, icon, step };
-    await mutate(() => (editId ? api.editCounter(editId, body) : api.addCounter(body)), editId ? 'Counter updated' : 'Counter created');
+    if (editId) {
+      mutateOpt(
+        (s) => ({ ...s, counters: s.counters.map((c) => (c.id === editId ? { ...c, ...body } : c)) }),
+        () => api.editCounter(editId, body),
+        'Counter updated'
+      ).catch(() => {});
+    } else {
+      const tempId = 'tmp_' + Date.now();
+      mutateOpt(
+        (s) => ({ ...s, counters: [...s.counters, { id: tempId, ...body }] }),
+        () => api.addCounter(body),
+        'Counter created'
+      ).catch(() => {});
+    }
     closeSheet();
   };
-  const del = async () => {
+  const del = () => {
     if (!editId) return;
     haptic();
-    await mutate(() => api.deleteCounter(editId), 'Counter deleted');
+    mutateOpt(
+      (s) => ({
+        ...s,
+        counters: s.counters.filter((c) => c.id !== editId),
+        countLogs: s.countLogs.filter((l) => l.counterId !== editId),
+      }),
+      () => api.deleteCounter(editId),
+      'Counter deleted'
+    ).catch(() => {});
     closeSheet();
   };
 
@@ -141,19 +164,26 @@ export function CountPickSheet() {
 
 // --- Log an amount against a counter ---
 export function CountLogSheet() {
-  const { state, sheetData, closeSheet, mutate, haptic, showToast } = useStore();
+  const { state, sheetData, closeSheet, mutateOpt, haptic, showToast } = useStore();
   const counter = state!.counters.find((c) => c.id === sheetData?.counterId);
   const step = counter?.step || 1;
   const col = `var(--${counter?.color || 'indigo'})`;
   const [amount, setAmount] = useState<number>(sheetData?.amount ?? step);
 
-  const save = async () => {
+  const save = () => {
     if (amount <= 0) {
       showToast('Add an amount');
       return;
     }
     haptic();
-    await mutate(() => api.logCounter(counter!.id, amount), `Logged ${cNum(amount)} ${counter?.unit || ''}`);
+    const cid = counter!.id;
+    const tempId = 'tmp_' + Date.now();
+    // Log instantly in the UI, sync in the background.
+    mutateOpt(
+      (s) => ({ ...s, countLogs: [...s.countLogs, { id: tempId, counterId: cid, amount, ts: Date.now() }] }),
+      () => api.logCounter(cid, amount),
+      `Logged ${cNum(amount)} ${counter?.unit || ''}`
+    ).catch(() => {});
     closeSheet();
   };
 
