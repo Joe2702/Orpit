@@ -28,17 +28,23 @@ export function Bars({
   w = 132,
   h = 42,
   gap = 5,
+  max: maxProp,
 }: {
   values: number[];
   colorKey: string;
   w?: number;
   h?: number;
   gap?: number;
+  // Fixed y-axis maximum. When omitted, bars scale to their own peak.
+  max?: number;
 }) {
   const col = cssVar(colorKey);
-  const max = Math.max.apply(null, values.concat([1]));
+  const max = maxProp && maxProp > 0 ? maxProp : Math.max.apply(null, values.concat([1]));
   const n = values.length;
-  const bw = (w - gap * (n - 1)) / n;
+  // Cap the gap so many buckets (e.g. a 30-day month) don't shrink the bars to
+  // slivers — the gap never takes more than ~40% of each bar's slot.
+  const g = Math.min(gap, (w / Math.max(n, 1)) * 0.4);
+  const bw = (w - g * (n - 1)) / n;
   return (
     <svg
       width="100%"
@@ -48,8 +54,8 @@ export function Bars({
       style={{ display: 'block' }}
     >
       {values.map((v, i) => {
-        const bh = Math.max(3, (v / max) * (h - 3));
-        const x = i * (bw + gap);
+        const bh = Math.max(v > 0 ? 3 : 0, (v / max) * (h - 3));
+        const x = i * (bw + g);
         return (
           <rect
             key={i}
