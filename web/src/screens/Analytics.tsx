@@ -17,7 +17,7 @@ function Arrow() {
 }
 
 export function Analytics() {
-  const { state, go, mutate, range } = useStore();
+  const { state, go, mutate, range, open } = useStore();
   const { d, h } = useData();
   const profile = state!.profile;
 
@@ -51,21 +51,45 @@ export function Analytics() {
       </div>
     ),
     habits: (
-      <div onClick={() => go('habits')} className="press99" style={{ ...cardB, display: 'flex', alignItems: 'center', gap: 18 }}>
-        <div style={{ position: 'relative', width: 88, height: 88, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Ring pct={h.habitPct} colorKey="teal" size={88} stroke={10} />
-          <div style={{ position: 'absolute', fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{h.habitPct}%</div>
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ ...rowHead, marginBottom: 6 }}>
-            <span style={dot('teal')} />
-            <span style={title}>Habits</span>
-            <Arrow />
+      <div style={cardB}>
+        <div onClick={() => go('habits')} className="press" style={{ display: 'flex', alignItems: 'center', gap: 18, cursor: 'pointer' }}>
+          <div style={{ position: 'relative', width: 72, height: 72, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Ring pct={h.habitPct} colorKey="teal" size={72} stroke={9} />
+            <div style={{ position: 'absolute', fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>{h.habitPct}%</div>
           </div>
-          <div style={{ fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.5 }}>
-            {h.weekDone} of {h.weekTotal} check-ins this week. {h.totalCompleted} completed all-time.
+          <div style={{ flex: 1 }}>
+            <div style={{ ...rowHead, marginBottom: 6 }}>
+              <span style={dot('teal')} />
+              <span style={title}>Habits</span>
+              <Arrow />
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.5 }}>
+              {h.weekDone} of {h.weekTotal} check-ins this week. {h.totalCompleted} all-time.
+            </div>
           </div>
         </div>
+        {h.habits.length > 0 && (
+          <div style={{ marginTop: 14, paddingTop: 6, borderTop: '1px solid var(--border)' }}>
+            {h.habits.map((hb) => {
+              const count = state!.checkins.filter((c) => c.habitId === hb.id).length;
+              return (
+                <div
+                  key={hb.id}
+                  onClick={() => open('habitcal', { habitId: hb.id })}
+                  className="pressRow"
+                  style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 4px', cursor: 'pointer' }}
+                >
+                  <span style={{ width: 9, height: 9, borderRadius: '50%', background: `var(--${hb.color})`, flex: 'none' }} />
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{hb.name}</span>
+                  <span style={{ fontSize: 12.5, color: 'var(--text2)' }}>{count} days</span>
+                  <svg width="16" height="16" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', flex: 'none' }}>
+                    <path d="M6 3l5 5-5 5" />
+                  </svg>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     ),
     finances: (

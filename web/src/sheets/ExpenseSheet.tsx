@@ -15,7 +15,7 @@ function todayISO(): string {
 }
 
 export function ExpenseSheet() {
-  const { state, closeSheet, mutate, haptic } = useStore();
+  const { state, closeSheet, mutateOpt, haptic } = useStore();
   const [kind, setKind] = useState<'expense' | 'income'>('expense');
   const [amount, setAmount] = useState('');
   const [exCat, setExCat] = useState('Food');
@@ -38,15 +38,18 @@ export function ExpenseSheet() {
     });
   };
 
-  const save = async () => {
+  const save = () => {
     const amt = parseFloat(amount || '0');
     if (!amt) return;
     haptic();
     const ts = new Date(`${day}T12:00:00`).getTime();
-    await mutate(
-      () => api.addTxn({ name: cat, cat, amount: amt, income, accId: state!.accounts[0]?.id ?? null, ts }),
+    const accId = state!.accounts[0]?.id ?? null;
+    const tempId = 'tmp_' + Date.now();
+    mutateOpt(
+      (s) => ({ ...s, txns: [...s.txns, { id: tempId, name: cat, cat, amount: income ? amt : -amt, income, accId, note: null, ts }] }),
+      () => api.addTxn({ name: cat, cat, amount: amt, income, accId, ts }),
       income ? 'Income logged' : 'Expense logged'
-    );
+    ).catch(() => {});
     closeSheet();
   };
 

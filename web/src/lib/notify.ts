@@ -21,6 +21,23 @@ async function LN() {
   return mod.LocalNotifications;
 }
 
+const CHANNEL_ID = 'orbit-reminders';
+
+// Android 8+ requires a notification channel; create it up front (no-op on iOS).
+async function ensureChannel(ln: Awaited<ReturnType<typeof LN>>): Promise<void> {
+  try {
+    await ln.createChannel({
+      id: CHANNEL_ID,
+      name: 'Reminders',
+      description: 'Daily check-in reminders',
+      importance: 5,
+      visibility: 1,
+    });
+  } catch {
+    /* not supported on this platform */
+  }
+}
+
 function parseTime(time: string): { hour: number; minute: number } {
   const [h, m] = (time || '21:00').split(':').map((n) => parseInt(n, 10));
   return { hour: isNaN(h) ? 21 : h, minute: isNaN(m) ? 0 : m };
@@ -28,6 +45,7 @@ function parseTime(time: string): { hour: number; minute: number } {
 
 async function scheduleDaily(time: string): Promise<void> {
   const ln = await LN();
+  await ensureChannel(ln);
   const { hour, minute } = parseTime(time);
   // Replace any existing schedule so changing the time doesn't stack reminders.
   await ln.cancel({ notifications: [{ id: REMINDER_ID }] }).catch(() => {});
@@ -38,9 +56,32 @@ async function scheduleDaily(time: string): Promise<void> {
         title: 'Orbit',
         body: 'How did today go? Take a moment to log it 🌙',
         schedule: { on: { hour, minute }, allowWhileIdle: true },
+        channelId: CHANNEL_ID,
       },
     ],
   });
+}
+
+/**
+ * Called on app launch: if the account has reminders on, make sure the daily
+ * notification is actually scheduled on THIS device (permissions were granted
+ * on the web or a prior install, so it may never have been set here).
+ */
+export async function syncReminders(enabled: boolean, time: string): Promise<void> {
+  if (!isNative()) return;
+  try {
+    if (!enabled) {
+      await disableReminders();
+      return;
+    }
+    const ln = await LN();
+    let perm = await ln.checkPermissions();
+    if (perm.display !== 'granted') perm = await ln.requestPermissions();
+    if (perm.display !== 'granted') return;
+    await scheduleDaily(time);
+  } catch {
+    /* ignore */
+  }
 }
 
 /**
@@ -95,6 +136,7 @@ export async function sendTestNotification(): Promise<'sent' | 'denied' | 'error
       const ln = await LN();
       const perm = await ln.requestPermissions();
       if (perm.display !== 'granted') return 'denied';
+      await ensureChannel(ln);
       await ln.schedule({
         notifications: [
           {
@@ -102,6 +144,7 @@ export async function sendTestNotification(): Promise<'sent' | 'denied' | 'error
             title: 'Orbit',
             body: 'Test notification 🎉 Your reminders are working.',
             schedule: { at: new Date(Date.now() + 1500) },
+            channelId: CHANNEL_ID,
           },
         ],
       });

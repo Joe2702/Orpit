@@ -4,26 +4,25 @@ import { api } from '../api';
 import { chip } from '../ui';
 
 export function WorkoutSheet() {
-  const { state, open, closeSheet, mutate, haptic } = useStore();
+  const { state, open, closeSheet, mutateOpt, haptic } = useStore();
   const cats = state!.wCats;
   const [catId, setCatId] = useState(cats[0]?.id || '');
   const [dur, setDur] = useState(32);
   const [intensity, setIntensity] = useState('Moderate');
 
-  const save = async () => {
+  const save = () => {
     if (!catId) return;
     haptic();
-    await mutate(
-      () =>
-        api.addWorkout({
-          catId,
-          dur,
-          dist: null,
-          kcal: null,
-          intensity,
-        }),
+    const catName = cats.find((c) => c.id === catId)?.name || 'Workout';
+    const tempId = 'tmp_' + Date.now();
+    mutateOpt(
+      (s) => ({
+        ...s,
+        workouts: [...s.workouts, { id: tempId, name: catName, catId, dur, dist: null, kcal: null, intensity, ts: Date.now() }],
+      }),
+      () => api.addWorkout({ catId, dur, dist: null, kcal: null, intensity }),
       'Workout logged'
-    );
+    ).catch(() => {});
     closeSheet();
   };
 

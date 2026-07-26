@@ -25,6 +25,11 @@ export function Sleep() {
       <DetailHeader title="Sleep" iconColor="blue" icon={<IconSleep size={22} />} />
       <RangeSeg />
 
+      <div onClick={() => open('sleep')} className="press99" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, background: 'var(--blue)', color: '#fff', height: 52, borderRadius: 16, fontSize: 15, fontWeight: 700, cursor: 'pointer', marginBottom: 16, boxShadow: '0 10px 22px -12px rgba(40,36,28,.30)' }}>
+        <svg width="20" height="20" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M10 4v12M4 10h12" /></svg>
+        Log sleep
+      </div>
+
       <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
         <div style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 18 }}>
           <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)', marginBottom: 6 }}>Avg duration</div>
@@ -53,11 +58,11 @@ export function Sleep() {
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <div style={{ position: 'relative', width: 30, height: 140, flex: 'none', fontSize: 10, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
-            <span style={{ position: 'absolute', top: -5, right: 0 }}>00:00</span>
-            <span style={{ position: 'absolute', top: 'calc(25% - 6px)', right: 0 }}>06:00</span>
-            <span style={{ position: 'absolute', top: 'calc(50% - 6px)', right: 0 }}>12:00</span>
-            <span style={{ position: 'absolute', top: 'calc(75% - 6px)', right: 0 }}>18:00</span>
-            <span style={{ position: 'absolute', bottom: -5, right: 0 }}>24:00</span>
+            <span style={{ position: 'absolute', top: -5, right: 0 }}>6 PM</span>
+            <span style={{ position: 'absolute', top: 'calc(25% - 6px)', right: 0 }}>12 AM</span>
+            <span style={{ position: 'absolute', top: 'calc(50% - 6px)', right: 0 }}>6 AM</span>
+            <span style={{ position: 'absolute', top: 'calc(75% - 6px)', right: 0 }}>12 PM</span>
+            <span style={{ position: 'absolute', bottom: -5, right: 0 }}>6 PM</span>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ height: 140 }}>

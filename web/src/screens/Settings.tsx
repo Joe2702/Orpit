@@ -24,7 +24,18 @@ export function Settings() {
     state!.txns.length +
     state!.habits.length +
     state!.countLogs.length;
-  const memberSince = new Date(earliest).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  // Account age — time elapsed since the account was created, counting up.
+  const ageDays = Math.max(0, Math.floor((Date.now() - profile.createdAt) / 86400000));
+  const accountAge =
+    ageDays < 1
+      ? 'Today'
+      : ageDays < 7
+      ? `${ageDays}d`
+      : ageDays < 30
+      ? `${Math.floor(ageDays / 7)}w`
+      : ageDays < 365
+      ? `${Math.floor(ageDays / 30)}mo`
+      : `${(ageDays / 365).toFixed(1)}y`;
 
   // Theme applies instantly (optimistic), then persists in the background.
   const setTheme = (val: 'light' | 'dark' | 'system') => {
@@ -144,7 +155,7 @@ export function Settings() {
         {[
           [String(daysTracked), 'Days tracked'],
           [String(entries), 'Entries'],
-          [memberSince, 'Member since'],
+          [accountAge, 'Account age'],
         ].map(([v, l], i) => (
           <React.Fragment key={l}>
             {i > 0 && <div style={{ width: 1, background: 'var(--border)' }} />}

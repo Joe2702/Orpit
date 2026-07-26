@@ -42,6 +42,11 @@ export function Workouts() {
       <DetailHeader title="Workouts" iconColor="coral" icon={<IconWorkout size={22} />} />
       <RangeSeg />
 
+      <div onClick={() => open('workout')} className="press99" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, background: 'var(--coral)', color: '#fff', height: 52, borderRadius: 16, fontSize: 15, fontWeight: 700, cursor: 'pointer', marginBottom: 16, boxShadow: '0 10px 22px -12px rgba(40,36,28,.30)' }}>
+        <svg width="20" height="20" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M10 4v12M4 10h12" /></svg>
+        Log workout
+      </div>
+
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '18px 8px', marginBottom: 14 }}>
         {tri(stat(d.wCount, 'Workouts'), stat(d.wTotalMin, 'Minutes'), stat(d.wStreak, 'Day streak', 'var(--coral)'))}
       </div>

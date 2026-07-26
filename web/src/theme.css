@@ -48,6 +48,11 @@ body {
   --teal: #2bb6a3;
   --blue: #3f7bff;
   --emerald: #22b07a;
+  --purple: #8b5cf6;
+  --pink: #db4c96;
+  --amber: #e0932c;
+  --cyan: #1aa5c4;
+  --rose: #e0556b;
   --success: #22b07a;
   --warning: #d9a13c;
   --danger: #e2564e;
@@ -71,6 +76,11 @@ body {
   --teal: #3fd2bd;
   --blue: #5a92ff;
   --emerald: #34c78d;
+  --purple: #a78bfa;
+  --pink: #f06fb0;
+  --amber: #f0a840;
+  --cyan: #3cc0dd;
+  --rose: #ff6f83;
   --success: #34c78d;
   --warning: #e5b657;
   --danger: #ff6b62;
