@@ -22,7 +22,10 @@ export async function nativeGoogleSignIn(): Promise<string> {
     await SocialLogin.initialize({ google: { webClientId: WEB_CLIENT_ID } });
     initialized = true;
   }
-  const res = await SocialLogin.login({ provider: 'google', options: { scopes: ['email', 'profile'] } });
+  // Basic sign-in only — no custom `scopes`. The plugin already requests
+  // email/profile/openid; passing extra scopes would require native
+  // MainActivity changes. The returned idToken carries the email + name.
+  const res = await SocialLogin.login({ provider: 'google', options: {} });
   const idToken = (res.result as { idToken?: string | null } | undefined)?.idToken;
   if (!idToken) throw new Error('Google did not return a token');
   return idToken;

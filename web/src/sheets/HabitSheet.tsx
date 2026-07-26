@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { api } from '../api';
 import { daysLabel } from '../lib/format';
+import { HABIT_PRESETS } from '../lib/presets';
 import { IconTrash } from '../icons';
 
 const COLORS = ['teal', 'indigo', 'coral', 'blue', 'emerald'];
@@ -55,8 +56,30 @@ export function HabitSheet() {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="e.g. Morning walk"
-        style={{ width: '100%', height: 52, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginBottom: 22 }}
+        style={{ width: '100%', height: 52, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginBottom: editId ? 22 : 14 }}
       />
+
+      {!editId && (
+        <>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Suggestions</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
+            {HABIT_PRESETS.map((p) => (
+              <div
+                key={p.name}
+                onClick={() => {
+                  setName(p.name);
+                  setColor(p.color);
+                  setDays(p.days);
+                }}
+                className="pressRow"
+                style={{ padding: '8px 13px', borderRadius: 999, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', border: `1.5px solid color-mix(in srgb,var(--${p.color}) 45%,var(--border))`, background: `color-mix(in srgb,var(--${p.color}) 10%,transparent)`, color: `var(--${p.color})` }}
+              >
+                {p.name}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>Color</div>
       <div style={{ display: 'flex', gap: 14, marginBottom: 24, paddingLeft: 2 }}>

@@ -124,6 +124,20 @@ body {
     transform: translateY(0);
   }
 }
+/* Light reveal when an achievement is claimed. */
+@keyframes badgePop {
+  0% {
+    transform: scale(0.82);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 @keyframes fadeIn {
   from {
     opacity: 0;

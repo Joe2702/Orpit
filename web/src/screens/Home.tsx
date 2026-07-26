@@ -47,7 +47,7 @@ function QuickAdd() {
 }
 
 export function Home() {
-  const { state, go, mutate, mutateOpt, open, haptic } = useStore();
+  const { state, go, mutate, mutateOpt, open, haptic, claimedBadges } = useStore();
   const { d, h } = useData();
   const profile = state!.profile;
   // Only show habits scheduled for today's weekday (Sun=0 … Sat=6).
@@ -56,6 +56,8 @@ export function Home() {
   const doneCount = todaysHabits.filter((x) => x.done).length;
   const badges = computeBadges(state!);
   const badgeCount = badges.filter((b) => b.unlocked).length;
+  // Earned-but-not-yet-claimed badges — shown as a red count on the trophy.
+  const claimable = badges.filter((b) => b.unlocked && !claimedBadges.includes(b.id)).length;
 
   // Flip the checkbox instantly, then sync with the server in the background.
   // mutateOpt computes each toggle from the latest state and orders the server
@@ -270,12 +272,17 @@ export function Home() {
           <div
             onClick={() => go('achievements')}
             className="press96"
-            style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 999, padding: '7px 11px', cursor: 'pointer', boxShadow: 'var(--shadow)' }}
+            style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 5, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 999, padding: '7px 11px', cursor: 'pointer', boxShadow: 'var(--shadow)' }}
           >
             <span style={{ fontSize: 15, lineHeight: 1 }}>🏆</span>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
               {badgeCount}<span style={{ color: 'var(--text2)', fontWeight: 600 }}>/{badges.length}</span>
             </span>
+            {claimable > 0 && (
+              <span style={{ position: 'absolute', top: -5, right: -5, minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: 'var(--danger)', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--app-bg)', boxShadow: '0 2px 6px rgba(0,0,0,.25)' }}>
+                {claimable}
+              </span>
+            )}
           </div>
           <Avatar name={profile.name} src={profile.avatar} size={46} onClick={() => go('settings')} />
         </div>

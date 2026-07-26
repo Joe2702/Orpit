@@ -1,15 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../store';
 import { Ring } from '../lib/charts';
 import { BackButton } from '../ui';
 import { computeBadges, type Badge } from '../lib/badges';
 
 export function Achievements() {
-  const { state, go } = useStore();
+  const { state, go, claimedBadges, claimBadge, haptic } = useStore();
+  const [justClaimed, setJustClaimed] = useState<string | null>(null);
+  const claimed = new Set(claimedBadges);
+
   const badges = computeBadges(state!);
   const unlocked = badges.filter((b) => b.unlocked);
   const total = badges.length;
   const pct = Math.round((unlocked.length / total) * 100);
+  const claimable = unlocked.filter((b) => !claimed.has(b.id));
+
+  const onClaim = (id: string) => {
+    haptic();
+    claimBadge(id);
+    setJustClaimed(id);
+  };
 
   // Locked badges closest to being earned — a little nudge.
   const almost = badges
@@ -25,7 +35,7 @@ export function Achievements() {
       </div>
 
       {/* Summary */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 20, marginBottom: 22, display: 'flex', alignItems: 'center', gap: 20 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 20, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 20 }}>
         <div style={{ position: 'relative', width: 104, height: 104, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Ring pct={pct} colorKey="indigo" size={104} stroke={12} />
           <div style={{ position: 'absolute', textAlign: 'center' }}>
@@ -44,6 +54,15 @@ export function Achievements() {
           </div>
         </div>
       </div>
+
+      {claimable.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'color-mix(in srgb,var(--warning) 14%,var(--surface))', border: '1px solid color-mix(in srgb,var(--warning) 40%,var(--border))', borderRadius: 16, padding: '13px 15px', marginBottom: 22 }}>
+          <span style={{ fontSize: 22, lineHeight: 1 }}>🎉</span>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
+            {claimable.length} new {claimable.length === 1 ? 'badge' : 'badges'} ready — tap the glowing ones below to reveal.
+          </div>
+        </div>
+      )}
 
       {almost.length > 0 && (
         <>
@@ -73,26 +92,59 @@ export function Achievements() {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {badges.map((b) => (
-          <BadgeTile key={b.id} b={b} />
+          <BadgeTile
+            key={b.id}
+            b={b}
+            claimed={claimed.has(b.id)}
+            justClaimed={justClaimed === b.id}
+            onClaim={onClaim}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function BadgeTile({ b }: { b: Badge }) {
-  if (b.unlocked) {
+function BadgeTile({
+  b,
+  claimed,
+  justClaimed,
+  onClaim,
+}: {
+  b: Badge;
+  claimed: boolean;
+  justClaimed: boolean;
+  onClaim: (id: string) => void;
+}) {
+  // Earned but not yet claimed — a glowing mystery tile inviting a tap to reveal.
+  if (b.unlocked && !claimed) {
     return (
-      <div style={{ background: `color-mix(in srgb,var(--${b.color}) 12%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${b.color}) 30%,var(--border))`, borderRadius: 18, boxShadow: 'var(--shadow)', padding: '16px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8, minHeight: 138, justifyContent: 'center' }}>
+      <div
+        onClick={() => onClaim(b.id)}
+        className="press"
+        style={{ position: 'relative', overflow: 'hidden', background: `color-mix(in srgb,var(--${b.color}) 14%,var(--surface))`, border: `1.5px solid color-mix(in srgb,var(--${b.color}) 45%,var(--border))`, borderRadius: 18, boxShadow: 'var(--shadow)', padding: '16px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8, minHeight: 138, justifyContent: 'center', cursor: 'pointer' }}
+      >
+        <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 50% 40%, color-mix(in srgb,var(--${b.color}) 32%,transparent), transparent 68%)`, animation: 'glowPulse 2.6s ease-in-out infinite' }} />
+        <div style={{ position: 'relative', width: 56, height: 56, borderRadius: '50%', background: `color-mix(in srgb,var(--${b.color}) 24%,var(--surface))`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>
+          🎁
+        </div>
+        <div style={{ position: 'relative', fontSize: 13, fontWeight: 700, color: `var(--${b.color})` }}>Tap to reveal</div>
+      </div>
+    );
+  }
+  // Claimed — revealed with what was achieved.
+  if (b.unlocked && claimed) {
+    return (
+      <div style={{ background: `color-mix(in srgb,var(--${b.color}) 12%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${b.color}) 30%,var(--border))`, borderRadius: 18, boxShadow: 'var(--shadow)', padding: '16px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 7, minHeight: 138, justifyContent: 'center', animation: justClaimed ? 'badgePop .45s ease' : undefined }}>
         <div style={{ width: 56, height: 56, borderRadius: '50%', background: `color-mix(in srgb,var(--${b.color}) 22%,var(--surface))`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, boxShadow: `0 6px 16px -6px color-mix(in srgb,var(--${b.color}) 60%,transparent)` }}>
           {b.emoji}
         </div>
         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>{b.name}</div>
-        <div style={{ fontSize: 11, fontWeight: 600, color: `var(--${b.color})`, textTransform: 'uppercase', letterSpacing: '.05em' }}>Unlocked</div>
+        <div style={{ fontSize: 11.5, color: 'var(--text2)', lineHeight: 1.3 }}>{b.desc}</div>
       </div>
     );
   }
-  // Locked — the badge itself stays a mystery, but the requirement + progress show.
+  // Locked — the badge stays a mystery, but the requirement + progress show.
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '16px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8, minHeight: 138, justifyContent: 'center', opacity: 0.92 }}>
       <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'color-mix(in srgb,var(--text2) 12%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

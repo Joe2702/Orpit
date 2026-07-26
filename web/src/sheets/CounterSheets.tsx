@@ -5,6 +5,7 @@ import { chip } from '../ui';
 import { IconTrash } from '../icons';
 import { CIcon, CTR_ICONS } from '../lib/iconPaths';
 import { cNum, counterTotals } from '../lib/format';
+import { COUNTER_PRESETS } from '../lib/presets';
 
 const COLORS = ['indigo', 'coral', 'teal', 'blue', 'emerald'];
 const UNITS = ['reps', 'pages', 'hours', 'min', 'km', 'cups'];
@@ -42,7 +43,31 @@ export function CounterSheet() {
     <div style={{ padding: '4px 20px 32px' }}>
       <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 20px' }}>{editId ? 'Edit counter' : 'New counter'}</div>
       {label('Name')}
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Pull-ups" style={{ ...input, marginBottom: 20 }} />
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Pull-ups" style={{ ...input, marginBottom: editId ? 20 : 14 }} />
+      {!editId && (
+        <>
+          {label('Suggestions')}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+            {COUNTER_PRESETS.map((p) => (
+              <div
+                key={p.name}
+                onClick={() => {
+                  setName(p.name);
+                  setUnit(p.unit);
+                  setIcon(p.icon);
+                  setColor(p.color);
+                  setStep(p.step);
+                }}
+                className="pressRow"
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 13px', borderRadius: 999, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', border: `1.5px solid color-mix(in srgb,var(--${p.color}) 45%,var(--border))`, background: `color-mix(in srgb,var(--${p.color}) 10%,transparent)`, color: `var(--${p.color})` }}
+              >
+                <CIcon icon={p.icon} color={`var(--${p.color})`} size={16} />
+                {p.name}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
       {label('Unit')}
       <input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="e.g. reps" style={{ ...input, marginBottom: 12 }} />
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 20 }}>

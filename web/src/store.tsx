@@ -91,9 +91,15 @@ interface StoreCtx {
     toast?: string
   ) => Promise<void>;
   applyState: (s: AppState) => void;
+  // Achievement badges the user has "claimed" (revealed). Persisted per-device
+  // in localStorage; drives the red count on the trophy and the reveal state.
+  claimedBadges: string[];
+  claimBadge: (id: string) => void;
   // fire device vibration when the user has haptics enabled (no-op otherwise)
   haptic: (pattern?: number | number[]) => void;
 }
+
+const CLAIMED_KEY = 'orbit_claimed_badges';
 
 const Ctx = createContext<StoreCtx | null>(null);
 
@@ -122,6 +128,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [authMode, setAuthMode] = useState<'signup' | 'signin'>('signup');
   const [booting, setBooting] = useState<boolean>(!initialResetToken && !!getToken());
   const [bootError, setBootError] = useState(false);
+  const [claimedBadges, setClaimedBadges] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(CLAIMED_KEY);
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
   // Latest committed state (for optimistic rollback) and a monotonic counter so
   // out-of-order server responses from rapid mutations don't overwrite newer UI.
@@ -186,6 +200,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [restore]);
 
   const applyState = useCallback((s: AppState) => setState(s), []);
+
+  const claimBadge = useCallback((id: string) => {
+    setClaimedBadges((prev) => {
+      if (prev.includes(id)) return prev;
+      const next = [...prev, id];
+      try {
+        localStorage.setItem(CLAIMED_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore quota/availability errors */
+      }
+      return next;
+    });
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     const { token, state: s } = await api.login(email, password);
@@ -315,6 +342,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     mutate,
     mutateOpt,
     applyState,
+    claimedBadges,
+    claimBadge,
     haptic,
   };
 
