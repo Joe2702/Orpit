@@ -158,73 +158,60 @@ function StatusBar() {
 
 function TabBar() {
   const { screen, go, open } = useStore();
-  const tab = (s: string): React.CSSProperties => ({
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 3,
-    cursor: 'pointer',
-    color: screen === s ? 'var(--indigo)' : 'var(--text2)',
-    transition: 'color .2s',
-  });
-  const iconWrap = (active: boolean): React.CSSProperties => ({
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 40,
-    height: 28,
-    borderRadius: 10,
-    background: active ? 'color-mix(in srgb,var(--indigo) 18%,transparent)' : 'transparent',
-    transition: 'background .2s',
-  });
+
+  // A floating rounded-pill nav: a solid light bar that hovers over the screen,
+  // with the active destination marked by a pill behind its icon. Icons only.
+  const item = (active: boolean, onClick: () => void, path: React.ReactNode) => (
+    <div onClick={onClick} className="press92" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 58,
+          height: 44,
+          borderRadius: 999,
+          color: active ? 'var(--indigo)' : 'var(--text2)',
+          background: active ? 'color-mix(in srgb,var(--indigo) 15%,transparent)' : 'transparent',
+          transition: 'background .2s, color .2s',
+        }}
+      >
+        <svg width="24" height="24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+          {path}
+        </svg>
+      </div>
+    </div>
+  );
+
   return (
-    <div style={{ flex: 'none', position: 'relative', padding: '4px 16px 14px', zIndex: 30 }}>
+    <div style={{ flex: 'none', position: 'relative', padding: '0 16px 16px', zIndex: 30 }}>
       <div
         style={{
           position: 'relative',
-          height: 66,
-          // No background at all — the icons and center button simply float over
-          // the screen; nothing behind them.
+          height: 64,
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 999,
+          boxShadow: '0 12px 30px -8px rgba(8,9,14,.30), 0 2px 8px rgba(8,9,14,.10)',
           display: 'flex',
           alignItems: 'center',
-          padding: '0 6px',
+          padding: '0 8px',
         }}
       >
-        <div onClick={() => go('home')} style={tab('home')}>
-          <div style={iconWrap(screen === 'home')}>
-            <svg width="23" height="23" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-              <path d="M4 11l8-7 8 7M6 9.5V19h4.5v-5h3v5H18V9.5" />
-            </svg>
-          </div>
-          <span style={{ fontSize: 10, fontWeight: 600 }}>Home</span>
-        </div>
-        <div onClick={() => go('analytics')} style={tab('analytics')}>
-          <div style={iconWrap(screen === 'analytics')}>
-            <svg width="23" height="23" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-              <path d="M4 20V11M10 20V5M16 20v-6M4 20h16" />
-            </svg>
-          </div>
-          <span style={{ fontSize: 10, fontWeight: 600 }}>Analytics</span>
-        </div>
-        <div style={{ flex: 1, position: 'relative' }}>
-          <div
-            onClick={() => open('chooser')}
-            className="press"
-            style={{ position: 'absolute', top: -30, left: '50%', transform: 'translateX(-50%)', width: 58, height: 58, borderRadius: 20, background: 'linear-gradient(155deg,var(--blue),var(--indigo))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--glow)', cursor: 'pointer', border: '3px solid color-mix(in srgb,var(--surface) 60%,transparent)' }}
-          >
-            <svg width="26" height="26" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M13 6v14M6 13h14" /></svg>
+        {item(screen === 'home', () => go('home'), <path d="M4 11l8-7 8 7M6 9.5V19h4.5v-5h3v5H18V9.5" />)}
+        {item(screen === 'analytics', () => go('analytics'), <path d="M4 20V11M10 20V5M16 20v-6M4 20h16" />)}
+        {/* Add — the primary create action; accented but flat within the bar. */}
+        <div onClick={() => open('chooser')} className="press92" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <div style={{ width: 46, height: 46, borderRadius: 15, background: 'linear-gradient(155deg,var(--blue),var(--indigo))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--glow)' }}>
+            <svg width="24" height="24" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M12 5v14M5 12h14" /></svg>
           </div>
         </div>
-        <div onClick={() => go('settings')} style={tab('settings')}>
-          <div style={iconWrap(screen === 'settings')}>
-            <svg width="23" height="23" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-              <circle cx="12" cy="8" r="3.4" />
-              <path d="M5.5 19a6.5 6.5 0 0 1 13 0" />
-            </svg>
-          </div>
-          <span style={{ fontSize: 10, fontWeight: 600 }}>Profile</span>
-        </div>
+        {item(screen === 'settings', () => go('settings'), (
+          <>
+            <circle cx="12" cy="8" r="3.4" />
+            <path d="M5.5 19a6.5 6.5 0 0 1 13 0" />
+          </>
+        ))}
       </div>
     </div>
   );
