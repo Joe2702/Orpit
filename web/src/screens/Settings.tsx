@@ -3,7 +3,6 @@ import { useStore } from '../store';
 import { api } from '../api';
 import { Avatar, SectionLabel, toggleTrack, toggleKnob } from '../ui';
 import { IconChevron } from '../icons';
-import { CURRENCIES } from '../lib/format';
 import { deviceTimezone } from '../lib/push';
 import { enableReminders, disableReminders, updateReminderTime, sendTestNotification } from '../lib/notify';
 
@@ -180,37 +179,6 @@ export function Settings() {
               }}
             >
               {label}
-            </div>
-          );
-        })}
-      </div>
-
-      <SectionLabel>Currency</SectionLabel>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 24 }}>
-        {CURRENCIES.map((c) => {
-          const active = (profile.currency || 'EGP') === c.code;
-          return (
-            <div
-              key={c.code}
-              onClick={() =>
-                mutateOpt(
-                  (s) => ({ ...s, profile: { ...s.profile, currency: c.code } }),
-                  () => api.updateMe({ currency: c.code })
-                )
-              }
-              style={{
-                padding: '10px 14px',
-                borderRadius: 12,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all .15s',
-                border: `1.5px solid ${active ? 'var(--indigo)' : 'var(--border)'}`,
-                background: active ? 'color-mix(in srgb,var(--indigo) 12%,transparent)' : 'var(--surface)',
-                color: active ? 'var(--indigo)' : 'var(--text2)',
-              }}
-            >
-              {c.symbol.trim()} {c.code}
             </div>
           );
         })}

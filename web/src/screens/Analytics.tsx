@@ -63,7 +63,7 @@ export function Analytics() {
             <Arrow />
           </div>
           <div style={{ fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.5 }}>
-            {h.totalDots} of {h.maxDots} check-ins this week. {h.totalCompleted} completed all-time.
+            {h.weekDone} of {h.weekTotal} check-ins this week. {h.totalCompleted} completed all-time.
           </div>
         </div>
       </div>

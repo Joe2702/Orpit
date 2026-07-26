@@ -2,9 +2,10 @@ import React from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
 import { Donut, Spark } from '../lib/charts';
-import { money, signMoney, relLabel } from '../lib/format';
+import { money, signMoney, relLabel, CURRENCIES } from '../lib/format';
 import { DetailHeader, RangeSeg, SectionLabel } from '../ui';
 import { IconExpense } from '../icons';
+import { api } from '../api';
 
 const HUB: { label: string; color: string; icon: string; screen: any; desc: (d: any, s: any) => string }[] = [
   { label: 'Transactions', color: 'blue', icon: 'M4 6h12M4 10h12M4 14h8', screen: 'ftxns', desc: (d) => d.txnCount + ' entries' },
@@ -17,7 +18,7 @@ const HUB: { label: string; color: string; icon: string; screen: any; desc: (d: 
 ];
 
 export function Finances() {
-  const { state, go, range, setRange } = useStore();
+  const { state, go, range, setRange, mutateOpt } = useStore();
   const { d } = useData();
   const spendMax = money(Math.max(...d.spendSeries.concat([1])));
 
@@ -121,6 +122,37 @@ export function Finances() {
             </div>
           </div>
         </div>
+      </div>
+
+      <SectionLabel>Currency</SectionLabel>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 24 }}>
+        {CURRENCIES.map((c) => {
+          const active = (state!.profile.currency || 'EGP') === c.code;
+          return (
+            <div
+              key={c.code}
+              onClick={() =>
+                mutateOpt(
+                  (s) => ({ ...s, profile: { ...s.profile, currency: c.code } }),
+                  () => api.updateMe({ currency: c.code })
+                )
+              }
+              style={{
+                padding: '10px 14px',
+                borderRadius: 12,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all .15s',
+                border: `1.5px solid ${active ? 'var(--emerald)' : 'var(--border)'}`,
+                background: active ? 'color-mix(in srgb,var(--emerald) 12%,transparent)' : 'var(--surface)',
+                color: active ? 'var(--emerald)' : 'var(--text2)',
+              }}
+            >
+              {c.symbol.trim()} {c.code}
+            </div>
+          );
+        })}
       </div>
 
       <SectionLabel>Manage</SectionLabel>

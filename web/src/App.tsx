@@ -184,14 +184,12 @@ function TabBar() {
         style={{
           position: 'relative',
           height: 66,
-          // Frosted glass instead of a solid card, so the screen shows through
-          // around and behind the bar rather than sitting on an opaque block.
-          background: 'color-mix(in srgb, var(--surface) 62%, transparent)',
-          backdropFilter: 'blur(20px) saturate(1.6)',
-          WebkitBackdropFilter: 'blur(20px) saturate(1.6)',
-          border: '1px solid color-mix(in srgb, var(--border) 55%, transparent)',
+          // A soft frosted float — no border, no shadow, no card. Just a gentle
+          // blur so the icons stay legible while the screen shows through.
+          background: 'color-mix(in srgb, var(--surface) 42%, transparent)',
+          backdropFilter: 'blur(22px) saturate(1.6)',
+          WebkitBackdropFilter: 'blur(22px) saturate(1.6)',
           borderRadius: 26,
-          boxShadow: 'var(--shadow)',
           display: 'flex',
           alignItems: 'center',
           padding: '0 6px',

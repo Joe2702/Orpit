@@ -210,29 +210,44 @@ export function Home() {
                 <path d="M5 3l-.8 8M9 3l-.8 8M3 6h8M2.5 9h8" />
               </svg>
             </span>
-            <span style={{ flex: 1, fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>Counters · this month</span>
+            <span style={{ flex: 1, fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>
+              {state!.counters.length ? 'Counters · this month' : 'Counters'}
+            </span>
             <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M7 4l5 5-5 5" /></svg>
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {state!.counters.slice(0, 3).map((c) => {
-              const t = counterTotals(state!.countLogs, c.id);
-              return (
-                <div key={c.id} style={{ flex: 1, minWidth: 0, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: '11px 12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-                    <span style={{ width: 9, height: 9, borderRadius: 3, flex: 'none', background: `var(--${c.color})` }} />
-                    <span style={{ fontSize: 11.5, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+          {state!.counters.length ? (
+            <div style={{ display: 'flex', gap: 10 }}>
+              {state!.counters.slice(0, 3).map((c) => {
+                const t = counterTotals(state!.countLogs, c.id);
+                return (
+                  <div key={c.id} style={{ flex: 1, minWidth: 0, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: '11px 12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                      <span style={{ width: 9, height: 9, borderRadius: 3, flex: 'none', background: `var(--${c.color})` }} />
+                      <span style={{ fontSize: 11.5, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                    </div>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em', whiteSpace: 'nowrap' }}>{cNum(t.month)} {c.unit}</div>
                   </div>
-                  <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em', whiteSpace: 'nowrap' }}>{cNum(t.month)} {c.unit}</div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            // Empty state: nudge people to create their first counter.
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg)', border: '1px dashed color-mix(in srgb,var(--indigo) 32%,var(--border))', borderRadius: 14, padding: '13px 14px' }}>
+              <span style={{ width: 34, height: 34, borderRadius: 10, flex: 'none', background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M9 4v10M4 9h10" /></svg>
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Start a counter</div>
+                <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>Track water, steps, pages — anything you want to count.</div>
+              </div>
+            </div>
+          )}
         </div>
       </>
     ),
   };
 
-  const blockList = ['habits', 'quick', 'week', ...(state!.counters.length > 0 ? ['counters'] : [])];
+  const blockList = ['habits', 'quick', 'week', 'counters'];
   const order = reconcile(parseLayout(profile.layout).home, blockList);
   const items = order.map((id) => ({ id, node: <div style={{ marginBottom: 22 }}>{blocks[id]}</div> }));
   const saveOrder = (ids: string[]) => {
