@@ -46,6 +46,33 @@ const wrap =
 
 const emailOk = (e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
 
+// ---- Simple in-memory rate limiting ----
+// Enough to stop password guessing and signup spam on a single instance.
+const hits = new Map<string, { n: number; until: number }>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of hits) if (v.until < now) hits.delete(k);
+}, 60_000).unref?.();
+
+function rateLimit(bucket: string, max: number, windowMs: number) {
+  return (req: AuthedRequest, res: express.Response, next: express.NextFunction) => {
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown';
+    const key = `${bucket}:${ip}`;
+    const now = Date.now();
+    const cur = hits.get(key);
+    if (!cur || cur.until < now) {
+      hits.set(key, { n: 1, until: now + windowMs });
+      return next();
+    }
+    cur.n++;
+    if (cur.n > max) {
+      const secs = Math.ceil((cur.until - now) / 1000);
+      return res.status(429).json({ error: `Too many attempts. Try again in ${secs}s.` });
+    }
+    next();
+  };
+}
+
 // ---- Web Push (daily reminders) ----
 // Public key is safe to ship; only the private key must be a secret env var.
 const VAPID_PUBLIC =
@@ -73,13 +100,14 @@ const REMINDER_MESSAGES = [
 
 app.post(
   '/api/auth/signup',
+  rateLimit('signup', 10, 60 * 60 * 1000),
   wrap(async (req, res) => {
     const email = String(req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '');
     const name = String(req.body.name || '').trim() || 'Alex Rivera';
     if (!emailOk(email)) return res.status(400).json({ error: 'Enter a valid email' });
-    if (password.length < 6)
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    if (password.length < 8)
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
 
     const existing = await one('SELECT id FROM users WHERE email = $1', [email]);
     if (existing) return res.status(409).json({ error: 'That email is already registered' });
@@ -101,6 +129,7 @@ app.post(
 
 app.post(
   '/api/auth/login',
+  rateLimit('login', 10, 10 * 60 * 1000),
   wrap(async (req, res) => {
     const email = String(req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '');
@@ -207,6 +236,7 @@ async function sendResetEmail(to: string, link: string): Promise<boolean> {
 // Request a reset link (always responds ok, so it can't be used to probe emails).
 app.post(
   '/api/auth/request-reset',
+  rateLimit('reset', 5, 60 * 60 * 1000),
   wrap(async (req, res) => {
     const email = String(req.body.email || '').trim().toLowerCase();
     if (emailOk(email)) {
@@ -240,6 +270,7 @@ app.post(
 // Set a new password from a reset token, and log the user in.
 app.post(
   '/api/auth/reset-password',
+  rateLimit('reset-pw', 10, 60 * 60 * 1000),
   wrap(async (req, res) => {
     const token = String(req.body.token || '');
     const password = String(req.body.password || '');
@@ -975,6 +1006,49 @@ app.post(
   })
 );
 
+// Permanently delete the account and everything in it. Required by the app
+// stores, and the honest counterpart to "your data is yours".
+app.delete(
+  '/api/me',
+  requireAuth,
+  wrap(async (req, res) => {
+    // Every table references users(id) ON DELETE CASCADE, so one delete is enough.
+    await query('DELETE FROM users WHERE id = $1', [req.userId!]);
+    res.json({ ok: true });
+  })
+);
+
+// ---------------- Client error reports ----------------
+// A tiny built-in crash reporter: the app posts unhandled errors here so they
+// show up in the feedback inbox instead of vanishing on a tester's phone.
+app.post(
+  '/api/client-error',
+  wrap(async (req, res) => {
+    const message = String(req.body.message || '').slice(0, 500);
+    if (!message) return res.json({ ok: true });
+    const stack = String(req.body.stack || '').slice(0, 2000);
+    const build = String(req.body.build || '').slice(0, 40);
+    const platform = String(req.body.platform || '').slice(0, 120);
+    // Attach the user when the request happens to carry a valid token.
+    let uid: number | null = null;
+    try {
+      const hdr = req.headers.authorization || '';
+      if (hdr.startsWith('Bearer ')) {
+        const jwt = (await import('jsonwebtoken')).default;
+        const payload = jwt.verify(hdr.slice(7), process.env.JWT_SECRET || 'dev-secret-change-me') as { uid: number };
+        uid = payload.uid;
+      }
+    } catch {
+      /* anonymous report */
+    }
+    await query(
+      'INSERT INTO client_errors (user_id, message, stack, build, platform) VALUES ($1,$2,$3,$4,$5)',
+      [uid, message, stack, build, platform]
+    );
+    res.json({ ok: true });
+  })
+);
+
 // ---------------- Push notifications ----------------
 
 // The browser needs the public key to create a subscription.
@@ -1075,20 +1149,60 @@ app.post(
   })
 );
 
-// ---- Password-protected feedback inbox ----
-// Any signed-in user who supplies the correct password (x-admin-password
-// header) can read everything testers submit. Override the default via the
-// ADMIN_PASSWORD env var on the server for real security (it's a public repo).
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '01027909082';
+// ---- Password-protected owner inbox ----
+// The password MUST come from the ADMIN_PASSWORD env var. There is deliberately
+// no fallback: this repo is public, so a hardcoded default would be no
+// protection at all. If it isn't set, the endpoints stay closed.
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+if (!ADMIN_PASSWORD) {
+  console.warn('[admin] ADMIN_PASSWORD is not set — the feedback/error inbox is disabled.');
+}
+
+function adminOk(req: AuthedRequest): boolean {
+  return !!ADMIN_PASSWORD && String(req.headers['x-admin-password'] || '') === ADMIN_PASSWORD;
+}
+
+// Recent client crash reports, newest first.
+app.get(
+  '/api/admin/errors',
+  requireAuth,
+  wrap(async (req, res) => {
+    if (!ADMIN_PASSWORD) return res.status(503).json({ error: 'Inbox not configured on the server' });
+    if (!adminOk(req)) return res.status(403).json({ error: 'Wrong password' });
+    const rows = await query<{
+      id: string;
+      message: string;
+      stack: string | null;
+      build: string | null;
+      platform: string | null;
+      created_at: string;
+      email: string | null;
+    }>(
+      `SELECT e.id, e.message, e.stack, e.build, e.platform, e.created_at, u.email
+         FROM client_errors e LEFT JOIN users u ON u.id = e.user_id
+        ORDER BY e.created_at DESC
+        LIMIT 200`
+    );
+    res.json({
+      items: rows.map((r) => ({
+        id: String(r.id),
+        message: r.message,
+        stack: r.stack || '',
+        build: r.build || '',
+        platform: r.platform || '',
+        createdAt: new Date(r.created_at).getTime(),
+        email: r.email || 'anonymous',
+      })),
+    });
+  })
+);
 
 app.get(
   '/api/admin/feedback',
   requireAuth,
   wrap(async (req, res) => {
-    const pw = String(req.headers['x-admin-password'] || '');
-    if (pw !== ADMIN_PASSWORD) {
-      return res.status(403).json({ error: 'Wrong password' });
-    }
+    if (!ADMIN_PASSWORD) return res.status(503).json({ error: 'Inbox not configured on the server' });
+    if (!adminOk(req)) return res.status(403).json({ error: 'Wrong password' });
     const rows = await query<{
       id: string;
       kind: string;

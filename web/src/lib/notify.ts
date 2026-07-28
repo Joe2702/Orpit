@@ -11,6 +11,7 @@ import { api } from '../api';
 
 const REMINDER_ID = 1001; // stable id for the repeating daily reminder
 const TEST_ID = 1002;
+const WEEKLY_ID = 1003; // Sunday evening "your week is ready" nudge
 
 export function isNative(): boolean {
   return Capacitor.isNativePlatform();
@@ -43,7 +44,20 @@ function parseTime(time: string): { hour: number; minute: number } {
   return { hour: isNaN(h) ? 21 : h, minute: isNaN(m) ? 0 : m };
 }
 
-async function scheduleDaily(time: string): Promise<void> {
+/**
+ * Reminder copy tailored to where the user actually is today, instead of the
+ * same sentence forever. `remaining` is how many scheduled habits are still
+ * unchecked; -1 means "unknown".
+ */
+function reminderBody(remaining: number): string {
+  if (remaining < 0) return 'How did today go? Take a moment to log it 🌙';
+  if (remaining === 0) return "Everything's checked off today — log the rest of your day? ✨";
+  if (remaining === 1) return 'Just one habit left today — finish strong 🌱';
+  if (remaining <= 3) return `${remaining} habits left today — a couple of taps 💫`;
+  return `${remaining} habits waiting. Two minutes now, a clearer picture later 🙌`;
+}
+
+async function scheduleDaily(time: string, remaining = -1): Promise<void> {
   const ln = await LN();
   await ensureChannel(ln);
   const { hour, minute } = parseTime(time);
@@ -54,8 +68,30 @@ async function scheduleDaily(time: string): Promise<void> {
       {
         id: REMINDER_ID,
         title: 'Orbit',
-        body: 'How did today go? Take a moment to log it 🌙',
+        body: reminderBody(remaining),
         schedule: { on: { hour, minute }, allowWhileIdle: true },
+        channelId: CHANNEL_ID,
+      },
+    ],
+  });
+}
+
+/**
+ * A weekly nudge on Sunday evening pointing at the story report — the ritual
+ * that brings people back after the novelty of daily logging fades.
+ */
+async function scheduleWeekly(): Promise<void> {
+  const ln = await LN();
+  await ensureChannel(ln);
+  await ln.cancel({ notifications: [{ id: WEEKLY_ID }] }).catch(() => {});
+  await ln.schedule({
+    notifications: [
+      {
+        id: WEEKLY_ID,
+        title: 'Your week on Orbit',
+        body: 'Your weekly report is ready — see how the week went 🗓️',
+        // weekday 1 = Sunday in the plugin's schedule format.
+        schedule: { on: { weekday: 1, hour: 19, minute: 0 }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
       },
     ],
@@ -67,7 +103,7 @@ async function scheduleDaily(time: string): Promise<void> {
  * notification is actually scheduled on THIS device (permissions were granted
  * on the web or a prior install, so it may never have been set here).
  */
-export async function syncReminders(enabled: boolean, time: string): Promise<void> {
+export async function syncReminders(enabled: boolean, time: string, remaining = -1): Promise<void> {
   if (!isNative()) return;
   try {
     if (!enabled) {
@@ -78,7 +114,8 @@ export async function syncReminders(enabled: boolean, time: string): Promise<voi
     let perm = await ln.checkPermissions();
     if (perm.display !== 'granted') perm = await ln.requestPermissions();
     if (perm.display !== 'granted') return;
-    await scheduleDaily(time);
+    await scheduleDaily(time, remaining);
+    await scheduleWeekly();
     api.pushUnsubscribeAll().catch(() => {});
   } catch {
     /* ignore */
@@ -89,13 +126,14 @@ export async function syncReminders(enabled: boolean, time: string): Promise<voi
  * Turn reminders on: ask permission and (native) schedule the daily notification,
  * or (web) subscribe to push. Returns a status the UI can message on.
  */
-export async function enableReminders(time: string): Promise<'ok' | 'denied' | 'unsupported' | 'error'> {
+export async function enableReminders(time: string, remaining = -1): Promise<'ok' | 'denied' | 'unsupported' | 'error'> {
   if (isNative()) {
     try {
       const ln = await LN();
       const perm = await ln.requestPermissions();
       if (perm.display !== 'granted') return 'denied';
-      await scheduleDaily(time);
+      await scheduleDaily(time, remaining);
+      await scheduleWeekly();
       // The device now handles reminders itself — drop any server-side web-push
       // subscription so the two can't both fire and double-notify.
       api.pushUnsubscribeAll().catch(() => {});
@@ -123,7 +161,7 @@ export async function disableReminders(): Promise<void> {
   if (!isNative()) return;
   try {
     const ln = await LN();
-    await ln.cancel({ notifications: [{ id: REMINDER_ID }] });
+    await ln.cancel({ notifications: [{ id: REMINDER_ID }, { id: WEEKLY_ID }] });
   } catch {
     /* ignore */
   }

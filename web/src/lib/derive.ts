@@ -274,8 +274,61 @@ export function deriveHabits(state: AppState, range: Range) {
   const rangePct = rangeTotal ? Math.round((rangeDone / rangeTotal) * 100) : 0;
   const habitPct = weekTotal ? Math.round((weekDone / weekTotal) * 100) : 0;
 
+  // ---- Forgiving weekly streak ----
+  // Daily streaks punish a single missed day, which is why people quit. This
+  // counts *weeks* instead: a week "counts" if you completed at least 70% of
+  // what you scheduled. The current (incomplete) week never breaks it.
+  const GOOD = 0.7;
+  const weekScore = (weekStart: number) => {
+    let done = 0,
+      sched = 0;
+    for (let i = 0; i < 7; i++) {
+      const t = weekStart + i * D;
+      if (t > Date.now()) break; // ignore days that haven't happened
+      const dow = new Date(t).getDay();
+      const ds = dayStr(t);
+      state.habits.forEach((h) => {
+        const mask = /^[01]{7}$/.test(h.days) ? h.days : '1111111';
+        if (mask[dow] !== '1') return;
+        sched++;
+        if (byHabit.get(h.id)?.has(ds)) done++;
+      });
+    }
+    return { done, sched, ok: sched > 0 && done / sched >= GOOD };
+  };
+
+  const thisWeekStart = startOfWeek(today);
+  let weekStreak = 0;
+  // Start from last week; a good current week adds to it, a weak one doesn't break it.
+  for (let w = 1; w < 104; w++) {
+    const s = weekScore(thisWeekStart - w * 7 * D);
+    if (!s.sched) break; // no data that far back
+    if (!s.ok) break;
+    weekStreak++;
+  }
+  const thisWeek = weekScore(thisWeekStart);
+  if (thisWeek.ok) weekStreak++;
+  // How many more check-ins would make the current week "count".
+  const weekGoal = Math.ceil(weekTotal * GOOD);
+  const weekToGo = Math.max(0, weekGoal - weekDone);
+
   const totalCompleted = state.checkins.length; // all-time check-ins across habits
-  return { habits, longestStreak, totalCompleted, grid, habitPct, weekDone, weekTotal, rangeDone, rangeTotal, rangePct };
+  return {
+    habits,
+    longestStreak,
+    totalCompleted,
+    grid,
+    habitPct,
+    weekDone,
+    weekTotal,
+    weekStreak,
+    weekGoal,
+    weekToGo,
+    weekSecured: thisWeek.ok,
+    rangeDone,
+    rangeTotal,
+    rangePct,
+  };
 }
 
 export function derive(state: AppState, range: Range) {

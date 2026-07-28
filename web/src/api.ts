@@ -55,6 +55,16 @@ interface AuthResp {
   state: AppState;
 }
 
+export interface ClientErrorItem {
+  id: string;
+  message: string;
+  stack: string;
+  build: string;
+  platform: string;
+  createdAt: number;
+  email: string;
+}
+
 export interface FeedbackItem {
   id: string;
   kind: string;
@@ -207,4 +217,8 @@ export const api = {
     request<AppState>(`/counters/${id}/log`, { method: 'POST', body: JSON.stringify({ amount }) }),
 
   reset: () => request<AppState>('/reset', { method: 'POST' }),
+  // Deletes the whole user account (not a finance account — see deleteAccount).
+  deleteMyAccount: () => request<{ ok: boolean }>('/me', { method: 'DELETE' }),
+  adminErrors: (password: string) =>
+    request<{ items: ClientErrorItem[] }>('/admin/errors', { headers: { 'x-admin-password': password } }),
 };

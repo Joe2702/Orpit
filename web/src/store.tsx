@@ -25,7 +25,8 @@ export type Screen =
   | 'fgoals'
   | 'frecurring'
   | 'finsights'
-  | 'feedbackInbox';
+  | 'feedbackInbox'
+  | 'privacy';
 
 export type SheetKind =
   | 'chooser'

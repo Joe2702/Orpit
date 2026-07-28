@@ -76,6 +76,19 @@ export function Home() {
     }, () => api.toggleHabit(id)).catch(() => {});
   };
 
+  // ---- Getting started ----
+  // A brand-new account has empty charts everywhere, which feels like a void.
+  // This gives immediate, visible progress (the first step is already done just
+  // by signing up) and disappears for good once every step is complete.
+  const steps = [
+    { label: 'Create your account', done: true },
+    { label: 'Check off a habit', done: state!.checkins.length > 0 },
+    { label: 'Log a workout or a night of sleep', done: state!.workouts.length > 0 || state!.nights.length > 0 },
+    { label: 'Add your first transaction', done: state!.txns.length > 0 },
+  ];
+  const stepsDone = steps.filter((s) => s.done).length;
+  const showChecklist = stepsDone < steps.length;
+
   // ---- Movable dashboard blocks ----
   const blocks: Record<string, React.ReactNode> = {
     habits: (
@@ -287,6 +300,34 @@ export function Home() {
           <Avatar name={profile.name} src={profile.avatar} size={46} onClick={() => go('settings')} />
         </div>
       </div>
+
+      {showChecklist && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '16px 18px', marginBottom: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', flex: 1 }}>Getting started</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--indigo)' }}>{stepsDone} of {steps.length}</span>
+          </div>
+          <div style={{ height: 6, borderRadius: 999, background: 'var(--bg)', overflow: 'hidden', marginBottom: 14 }}>
+            <div style={{ width: `${(stepsDone / steps.length) * 100}%`, height: '100%', borderRadius: 999, background: 'var(--indigo)', transition: 'width .4s' }} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+            {steps.map((s) => (
+              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span
+                  style={{ width: 19, height: 19, borderRadius: '50%', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: s.done ? 'var(--indigo)' : 'transparent', border: `1.5px solid ${s.done ? 'var(--indigo)' : 'var(--border)'}` }}
+                >
+                  {s.done && (
+                    <svg width="11" height="11" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.8, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+                      <path d="M2.5 5.8l2.2 2.2L9 3.4" />
+                    </svg>
+                  )}
+                </span>
+                <span style={{ fontSize: 13.5, color: s.done ? 'var(--text2)' : 'var(--text)', textDecoration: s.done ? 'line-through' : 'none' }}>{s.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ fontSize: 11.5, color: 'var(--text2)', textAlign: 'center', marginBottom: 14, opacity: 0.75 }}>
         Hold &amp; drag a section to rearrange

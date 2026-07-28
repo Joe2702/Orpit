@@ -103,6 +103,30 @@ export function Settings() {
     mutate(() => api.reset(), 'All data erased').catch(() => {});
   };
 
+  // Permanently delete the account (app-store requirement, and the honest
+  // counterpart to "your data is yours"). Two confirmations, then sign out.
+  const deleteAccount = async () => {
+    const ok = await confirm({
+      title: 'Delete your account?',
+      message: 'Your account and everything in it will be permanently removed. This cannot be undone.',
+      confirmLabel: 'Delete account',
+    });
+    if (!ok) return;
+    const sure = await confirm({
+      title: 'This is permanent',
+      message: 'Export your data first if you want to keep a copy. Continue?',
+      confirmLabel: 'Delete forever',
+    });
+    if (!sure) return;
+    try {
+      await api.deleteMyAccount();
+      showToast('Account deleted');
+      signOut();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not delete the account');
+    }
+  };
+
   const exportData = () => {
     try {
       const data = {
@@ -341,6 +365,18 @@ export function Settings() {
 
       <SectionLabel>Support</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+        <div onClick={() => go('privacy')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--blue) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+              <path d="M10 2.5l6 2.5v5c0 3.4-2.5 6.4-6 7.5-3.5-1.1-6-4.1-6-7.5V5l6-2.5Z" />
+            </svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Privacy</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>What Orbit stores, and what it doesn't</div>
+          </div>
+          <IconChevron />
+        </div>
         <div onClick={() => open('feedback')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
           <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
@@ -353,6 +389,15 @@ export function Settings() {
           </div>
           <IconChevron />
         </div>
+      </div>
+
+      <div
+        onClick={deleteAccount}
+        className="press99"
+        role="button"
+        style={{ height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginBottom: 10 }}
+      >
+        Delete my account
       </div>
 
       <div

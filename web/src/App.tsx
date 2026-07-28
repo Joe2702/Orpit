@@ -17,6 +17,7 @@ import { Counters } from './screens/Counters';
 import { Achievements } from './screens/Achievements';
 import { FAddTx, FTxns, FBudgets, FGoals, FAccounts, FRecurring, FCats, FInsights } from './screens/FinanceScreens';
 import { FeedbackInbox } from './screens/FeedbackInbox';
+import { Privacy } from './screens/Privacy';
 
 import { Chooser } from './sheets/Chooser';
 import { CounterSheet, CountLogSheet, CountPickSheet } from './sheets/CounterSheets';
@@ -34,6 +35,7 @@ import { ReminderOnboarding } from './ReminderOnboarding';
 import { StoryReport } from './screens/StoryReport';
 import { Intro } from './screens/Intro';
 import { syncReminders } from './lib/notify';
+import { dayKey } from './lib/format';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
 
@@ -84,6 +86,8 @@ function CurrentScreen() {
       return <FInsights />;
     case 'feedbackInbox':
       return <FeedbackInbox />;
+    case 'privacy':
+      return <Privacy />;
     default:
       return null;
   }
@@ -323,9 +327,19 @@ export function App() {
   // this device whenever the account has reminders enabled.
   const remOn = authed && state ? !!state.profile.reminders : false;
   const remTime = authed && state ? state.profile.reminderTime || '21:00' : '21:00';
+  // How many of today's scheduled habits are still unchecked — the reminder
+  // text is built from this so it isn't the same sentence every day.
+  const remainingToday = React.useMemo(() => {
+    if (!state) return -1;
+    const today = dayKey();
+    const dow = new Date().getDay();
+    const due = state.habits.filter((h) => (/^[01]{7}$/.test(h.days) ? h.days : '1111111')[dow] === '1');
+    const done = new Set(state.checkins.filter((c) => c.day === today).map((c) => c.habitId));
+    return due.filter((h) => !done.has(h.id)).length;
+  }, [state]);
   useEffect(() => {
-    if (remOn) syncReminders(true, remTime);
-  }, [remOn, remTime]);
+    if (remOn) syncReminders(true, remTime, remainingToday);
+  }, [remOn, remTime, remainingToday]);
 
   const rawTheme = authed && state ? state.profile.theme : localTheme;
   const theme: 'light' | 'dark' = rawTheme === 'system' ? (sysDark ? 'dark' : 'light') : rawTheme;

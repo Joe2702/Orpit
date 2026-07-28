@@ -12,3 +12,7 @@ web/android/app/src/main/assets/public/
 web/android/app/src/main/assets/capacitor.config.json
 web/android/app/src/main/assets/capacitor.plugins.json
 .gradle/
+
+# Play Store signing key — must never be committed (CI injects it from a secret)
+web/android/release.keystore
+*.jks
