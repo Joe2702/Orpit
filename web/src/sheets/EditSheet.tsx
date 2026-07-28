@@ -7,7 +7,7 @@ import { hm, signMoney } from '../lib/format';
 import type { Workout, Night, Txn, AppState } from '../types';
 
 export function EditSheet() {
-  const { state, sheetData, open, closeSheet, mutateOpt, haptic, confirm } = useStore();
+  const { state, sheetData, open, closeSheet, mutate, mutateOpt, haptic, confirm, showToast } = useStore();
   const kind: 'workout' | 'sleep' | 'txn' = sheetData?.kind;
   const item = sheetData?.item;
 
@@ -41,8 +41,12 @@ export function EditSheet() {
 
   const del = async () => {
     const id = (item as { id: string }).id;
+    if (id.startsWith('tmp_')) {
+      showToast('Still saving — try again in a moment');
+      return;
+    }
     const noun = kind === 'workout' ? 'workout' : kind === 'sleep' ? 'sleep entry' : 'transaction';
-    if (!(await confirm({ title: `Delete this ${noun}?`, message: "This can't be undone." }))) return;
+    if (!(await confirm({ title: `Delete this ${noun}?`, message: 'You can undo this right after.' }))) return;
     haptic();
     const fn =
       kind === 'workout' ? () => api.deleteWorkout(id) : kind === 'sleep' ? () => api.deleteNight(id) : () => api.deleteTxn(id);
@@ -52,7 +56,22 @@ export function EditSheet() {
         : kind === 'sleep'
         ? { ...s, nights: s.nights.filter((x) => x.id !== id) }
         : { ...s, txns: s.txns.filter((x) => x.id !== id) };
-    mutateOpt(optimistic, fn, 'Entry deleted').catch(() => {});
+
+    // Undo re-creates the entry from the snapshot we still hold in `item`.
+    const restore = () => {
+      if (kind === 'workout') {
+        const x = item as Workout;
+        mutate(() => api.addWorkout({ catId: x.catId || '', dur: x.dur, dist: x.dist, kcal: x.kcal, intensity: x.intensity, ts: x.ts }), 'Restored').catch(() => {});
+      } else if (kind === 'sleep') {
+        const x = item as Night;
+        mutate(() => api.addNight({ hours: x.hours, quality: x.quality, bedH: x.bedH, wakeH: x.wakeH, ts: x.ts }), 'Restored').catch(() => {});
+      } else {
+        const x = item as Txn;
+        mutate(() => api.addTxn({ name: x.name, cat: x.cat, amount: Math.abs(x.amount), income: x.income, accId: x.accId, note: x.note, ts: x.ts }), 'Restored').catch(() => {});
+      }
+    };
+
+    mutateOpt(optimistic, fn).then(() => showToast('Entry deleted', restore)).catch(() => {});
     closeSheet();
   };
 

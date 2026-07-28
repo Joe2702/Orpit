@@ -73,7 +73,10 @@ interface StoreCtx {
   closeSheet: () => void;
   setRange: (r: Range) => void;
   setEmptyMode: (b: boolean) => void;
-  showToast: (msg: string) => void;
+  // Pass `undo` to offer an Undo action in the toast.
+  showToast: (msg: string, undo?: () => void) => void;
+  toastUndo?: () => void;
+  runUndo: () => void;
   // auth
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
@@ -92,17 +95,17 @@ interface StoreCtx {
     toast?: string
   ) => Promise<void>;
   applyState: (s: AppState) => void;
-  // Achievement badges the user has "claimed" (revealed). Persisted per-device
-  // in localStorage; drives the red count on the trophy and the reveal state.
+  // Achievement badges the user has "claimed" (revealed). Stored on the account
+  // so reveals follow the user across devices and reinstalls.
   claimedBadges: string[];
   claimBadge: (id: string) => void;
   // Reusable confirmation dialog. Resolves true if the user confirms.
   confirm: (opts: ConfirmOpts) => Promise<boolean>;
   confirmState: (ConfirmOpts & { resolve: (v: boolean) => void }) | null;
   closeConfirm: (v: boolean) => void;
-  // Full-screen story report ('week' | 'month'), or null when closed.
-  report: 'week' | 'month' | null;
-  openReport: (k: 'week' | 'month') => void;
+  // Full-screen story report; offset 0 = current period, 1 = previous, …
+  report: { kind: 'week' | 'month'; offset: number } | null;
+  openReport: (k: 'week' | 'month', offset?: number) => void;
   closeReport: () => void;
   // fire device vibration when the user has haptics enabled (no-op otherwise)
   haptic: (pattern?: number | number[]) => void;
@@ -141,17 +144,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [range, setRangeState] = useState<Range>('Week');
   const [emptyMode, setEmptyMode] = useState(false);
   const [toast, setToast] = useState('');
+  const [toastUndo, setToastUndo] = useState<(() => void) | undefined>(undefined);
+  const toastUndoRef = useRef<(() => void) | undefined>(undefined);
+  toastUndoRef.current = toastUndo;
   const [authMode, setAuthMode] = useState<'signup' | 'signin'>('signup');
   const [booting, setBooting] = useState<boolean>(!initialResetToken && !!getToken());
   const [bootError, setBootError] = useState(false);
-  const [claimedBadges, setClaimedBadges] = useState<string[]>(() => {
-    try {
-      const raw = localStorage.getItem(CLAIMED_KEY);
-      return raw ? (JSON.parse(raw) as string[]) : [];
-    } catch {
-      return [];
-    }
-  });
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
   // Latest committed state (for optimistic rollback) and a monotonic counter so
   // out-of-order server responses from rapid mutations don't overwrite newer UI.
@@ -163,10 +161,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const authed = !!state;
 
-  const showToast = useCallback((msg: string) => {
+  const showToast = useCallback((msg: string, undo?: () => void) => {
     setToast(msg);
+    setToastUndo(() => undo);
     clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(''), 2200);
+    // Undo toasts linger a little so there's time to hit them.
+    toastTimer.current = setTimeout(
+      () => {
+        setToast('');
+        setToastUndo(undefined);
+      },
+      undo ? 5000 : 2200
+    );
+  }, []);
+
+  const runUndo = useCallback(() => {
+    const fn = toastUndoRef.current;
+    setToast('');
+    setToastUndo(undefined);
+    clearTimeout(toastTimer.current);
+    fn?.();
   }, []);
 
   // Restore session on first load — and keep retrying while the (free) server
@@ -217,8 +231,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const applyState = useCallback((s: AppState) => setState(s), []);
 
-  const [report, setReport] = useState<'week' | 'month' | null>(null);
-  const openReport = useCallback((k: 'week' | 'month') => setReport(k), []);
+  const [report, setReport] = useState<{ kind: 'week' | 'month'; offset: number } | null>(null);
+  const openReport = useCallback((kind: 'week' | 'month', offset = 0) => setReport({ kind, offset }), []);
   const closeReport = useCallback(() => setReport(null), []);
 
   const [confirmState, setConfirmState] = useState<(ConfirmOpts & { resolve: (v: boolean) => void }) | null>(null);
@@ -233,18 +247,42 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const claimBadge = useCallback((id: string) => {
-    setClaimedBadges((prev) => {
-      if (prev.includes(id)) return prev;
-      const next = [...prev, id];
-      try {
-        localStorage.setItem(CLAIMED_KEY, JSON.stringify(next));
-      } catch {
-        /* ignore quota/availability errors */
-      }
-      return next;
-    });
-  }, []);
+  // Claimed badges live on the account. Reveal instantly, persist in the
+  // background, and migrate anything claimed before this synced (localStorage).
+  const claimedBadges = state?.profile.claimedBadges ?? [];
+  const claimBadge = useCallback(
+    (id: string) => {
+      const cur = stateRef.current?.profile.claimedBadges ?? [];
+      if (cur.includes(id)) return;
+      const next = [...cur, id];
+      setState((s) => (s ? { ...s, profile: { ...s.profile, claimedBadges: next } } : s));
+      api.updateMe({ claimedBadges: next }).catch(() => {});
+    },
+    []
+  );
+
+  // One-time migration: fold any locally-claimed badges into the account.
+  const migratedRef = useRef(false);
+  useEffect(() => {
+    if (migratedRef.current || !state) return;
+    migratedRef.current = true;
+    let local: string[] = [];
+    try {
+      local = JSON.parse(localStorage.getItem(CLAIMED_KEY) || '[]');
+    } catch {
+      /* ignore */
+    }
+    if (!Array.isArray(local) || !local.length) return;
+    const merged = Array.from(new Set([...(state.profile.claimedBadges || []), ...local]));
+    if (merged.length === (state.profile.claimedBadges || []).length) return;
+    setState((s) => (s ? { ...s, profile: { ...s.profile, claimedBadges: merged } } : s));
+    api.updateMe({ claimedBadges: merged }).catch(() => {});
+    try {
+      localStorage.removeItem(CLAIMED_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, [state]);
 
   const login = useCallback(async (email: string, password: string) => {
     const { token, state: s } = await api.login(email, password);
@@ -366,6 +404,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setRange,
     setEmptyMode,
     showToast,
+    toastUndo,
+    runUndo,
     login,
     signup,
     googleAuth,

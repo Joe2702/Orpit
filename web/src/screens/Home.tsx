@@ -2,7 +2,7 @@ import React from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
 import { api } from '../api';
-import { greeting, todayStr, weekOfYear, money, cNum, counterTotals } from '../lib/format';
+import { greeting, todayStr, weekOfYear, money, cNum, counterTotals, dayKey } from '../lib/format';
 import { computeBadges } from '../lib/badges';
 import { parseLayout, reconcile } from '../lib/layout';
 import { Reorderable } from '../Reorderable';
@@ -63,7 +63,7 @@ export function Home() {
   // mutateOpt computes each toggle from the latest state and orders the server
   // responses, so mashing several habits quickly stays visually stable.
   const toggleHabit = (id: string) => {
-    const key = new Date().toISOString().slice(0, 10);
+    const key = dayKey();
     haptic();
     mutateOpt((s) => {
       const has = s.checkins.some((c) => c.habitId === id && c.day === key);

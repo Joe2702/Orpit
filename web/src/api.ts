@@ -94,13 +94,28 @@ export const api = {
 
   updateMe: (
     patch: Partial<
-      Pick<AppState['profile'], 'name' | 'email' | 'theme' | 'reminders' | 'haptics' | 'currency' | 'avatar' | 'layout' | 'reminderTime' | 'reminderTz'>
+      Pick<
+        AppState['profile'],
+        | 'name'
+        | 'email'
+        | 'theme'
+        | 'reminders'
+        | 'haptics'
+        | 'currency'
+        | 'avatar'
+        | 'layout'
+        | 'reminderTime'
+        | 'reminderTz'
+        | 'claimedBadges'
+        | 'introDone'
+      >
     >
   ) => request<AppState>('/me', { method: 'PATCH', body: JSON.stringify(patch) }),
   pushKey: () => request<{ key: string }>('/push/key'),
   pushSubscribe: (sub: unknown) =>
     request<{ ok: boolean }>('/push/subscribe', { method: 'POST', body: JSON.stringify({ sub }) }),
   pushTest: () => request<{ ok: boolean; sent: number }>('/push/test', { method: 'POST' }),
+  pushUnsubscribeAll: () => request<{ ok: boolean }>('/push/unsubscribe-all', { method: 'POST' }),
   adminFeedback: (password: string) =>
     request<{ items: FeedbackItem[] }>('/admin/feedback', { headers: { 'x-admin-password': password } }),
 

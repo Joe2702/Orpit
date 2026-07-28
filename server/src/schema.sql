@@ -200,3 +200,10 @@ CREATE TABLE IF NOT EXISTS feedback (
   message    TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Achievement badges the user has claimed (JSON array of ids), so the reveal
+-- state follows the account across devices instead of living in localStorage.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS claimed_badges TEXT;
+-- Whether the user finished the first-run intro. Defaults TRUE so existing
+-- accounts aren't shown the tour; signup explicitly sets it FALSE.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS intro_done BOOLEAN NOT NULL DEFAULT TRUE;

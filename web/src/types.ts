@@ -12,6 +12,10 @@ export interface Profile {
   layout: string | null;
   reminderTime: string | null;
   reminderTz: string | null;
+  // Achievement badges already revealed, synced with the account.
+  claimedBadges: string[];
+  // Whether the first-run intro has been completed.
+  introDone: boolean;
   createdAt: number;
 }
 

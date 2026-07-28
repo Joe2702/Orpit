@@ -13,8 +13,9 @@ const STEPS = [1, 5, 10, 25];
 
 // --- Create / edit a counter ---
 export function CounterSheet() {
-  const { sheetData, closeSheet, mutateOpt, haptic, confirm } = useStore();
+  const { sheetData, closeSheet, mutateOpt, haptic, confirm, showToast } = useStore();
   const editId: string | null = sheetData?.id ?? null;
+  const pending = !!editId && editId.startsWith('tmp_');
   const [name, setName] = useState<string>(sheetData?.name ?? '');
   const [unit, setUnit] = useState<string>(sheetData?.unit ?? 'reps');
   const [color, setColor] = useState<string>(sheetData?.color ?? 'indigo');
@@ -26,6 +27,10 @@ export function CounterSheet() {
   // in the background (rolls back on failure). Avoids the ~2s wait on the free host.
   const save = () => {
     if (!canSave) return;
+    if (pending) {
+      showToast('Still saving — try again in a moment');
+      return;
+    }
     haptic();
     const body = { name: name.trim(), unit: unit.trim() || 'count', color, icon, step };
     if (editId) {
@@ -46,6 +51,10 @@ export function CounterSheet() {
   };
   const del = async () => {
     if (!editId) return;
+    if (pending) {
+      showToast('Still saving — try again in a moment');
+      return;
+    }
     if (!(await confirm({ title: 'Delete this counter?', message: 'It and all its logs will be removed.' }))) return;
     haptic();
     mutateOpt(
@@ -170,6 +179,14 @@ export function CountLogSheet() {
   const step = counter?.step || 1;
   const col = `var(--${counter?.color || 'indigo'})`;
   const [amount, setAmount] = useState<number>(sheetData?.amount ?? step);
+  // How much this counter has recorded in total — you can't remove more than
+  // that, so the running total can never go negative.
+  const runningTotal = state!.countLogs
+    .filter((l) => l.counterId === counter?.id)
+    .reduce((a, l) => a + l.amount, 0);
+  const setClamped = (v: number) => setAmount(Math.max(-runningTotal, v));
+  // Quick-add chips scale with the counter's own step instead of a fixed 1/5/10/25.
+  const chips = Array.from(new Set([step, step * 2, step * 5, step * 10])).slice(0, 4);
 
   const save = () => {
     if (amount === 0) {
@@ -200,18 +217,23 @@ export function CountLogSheet() {
         <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text2)', marginLeft: 8 }}>{counter?.unit}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 26, marginBottom: 20 }}>
-        <div onClick={() => setAmount(amount - step)} className="press92" style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
-          <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M5 11h12" /></svg>
+        <div onClick={() => setClamped(amount - step)} className="press92" role="button" aria-label={`Decrease by ${step}`} style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
+          <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2.4, strokeLinecap: 'round' }} aria-hidden><path d="M5 11h12" /></svg>
         </div>
-        <div onClick={() => setAmount(amount + step)} className="press92" style={{ width: 52, height: 52, borderRadius: '50%', background: col, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none', boxShadow: '0 6px 12px -6px rgba(40,36,28,.22)' }}>
-          <svg width="22" height="22" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M11 5v12M5 11h12" /></svg>
+        <div onClick={() => setClamped(amount + step)} className="press92" role="button" aria-label={`Increase by ${step}`} style={{ width: 52, height: 52, borderRadius: '50%', background: col, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none', boxShadow: '0 6px 12px -6px rgba(40,36,28,.22)' }}>
+          <svg width="22" height="22" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }} aria-hidden><path d="M11 5v12M5 11h12" /></svg>
         </div>
       </div>
       <div style={{ display: 'flex', gap: 9, marginBottom: 8 }}>
-        {[1, 5, 10, 25].map((n) => (
-          <div key={n} onClick={() => setAmount(amount + n)} className="pressRow" style={{ flex: 1, textAlign: 'center', padding: '11px 0', borderRadius: 12, fontSize: 14, fontWeight: 600, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', cursor: 'pointer' }}>+{n}</div>
+        {chips.map((n) => (
+          <div key={n} onClick={() => setClamped(amount + n)} className="pressRow" role="button" style={{ flex: 1, textAlign: 'center', padding: '11px 0', borderRadius: 12, fontSize: 14, fontWeight: 600, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', cursor: 'pointer' }}>+{cNum(n)}</div>
         ))}
       </div>
+      {amount < 0 && (
+        <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text2)', marginBottom: 8 }}>
+          Removing {cNum(-amount)} of {cNum(runningTotal)} {counter?.unit} logged
+        </div>
+      )}
       <div style={{ textAlign: 'center', marginBottom: 18 }}>
         <span onClick={() => setAmount(0)} style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', padding: 6 }}>Reset</span>
       </div>

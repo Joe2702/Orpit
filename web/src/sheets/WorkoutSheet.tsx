@@ -14,7 +14,7 @@ export function WorkoutSheet() {
   const { state, open, closeSheet, mutateOpt, haptic } = useStore();
   const cats = state!.wCats;
   const [catId, setCatId] = useState(cats[0]?.id || '');
-  const [dur, setDur] = useState(32);
+  const [dur, setDur] = useState(30);
   const [intensity, setIntensity] = useState('Moderate');
   const [day, setDay] = useState(todayISO());
 

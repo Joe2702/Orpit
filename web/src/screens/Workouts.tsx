@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
 import { Bars, Donut } from '../lib/charts';
@@ -18,6 +18,8 @@ function niceMinutes(v: number): number {
 export function Workouts() {
   const { state, open, range } = useStore();
   const { d } = useData();
+  // Render a page at a time so hundreds of entries don't stall the screen.
+  const [shown, setShown] = useState(50);
   const cat = (id: string | null) => (id ? d.catById[id] : undefined);
   const yMax = niceMinutes(d.wYMax);
 
@@ -109,7 +111,7 @@ export function Workouts() {
 
       <SectionLabel>Recent</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
-        {[...state!.workouts].sort((a, b) => b.ts - a.ts).map((w) => {
+        {[...state!.workouts].sort((a, b) => b.ts - a.ts).slice(0, shown).map((w) => {
           const c = cat(w.catId);
           const cc = c?.color || 'coral';
           const meta =
@@ -144,6 +146,11 @@ export function Workouts() {
           );
         })}
       </div>
+      {state!.workouts.length > shown && (
+        <div onClick={() => setShown(shown + 50)} className="press99" role="button" style={{ marginTop: 12, height: 48, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
+          Show older ({state!.workouts.length - shown} more)
+        </div>
+      )}
     </div>
   );
 }

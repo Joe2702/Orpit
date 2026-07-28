@@ -79,6 +79,7 @@ export async function syncReminders(enabled: boolean, time: string): Promise<voi
     if (perm.display !== 'granted') perm = await ln.requestPermissions();
     if (perm.display !== 'granted') return;
     await scheduleDaily(time);
+    api.pushUnsubscribeAll().catch(() => {});
   } catch {
     /* ignore */
   }
@@ -95,6 +96,9 @@ export async function enableReminders(time: string): Promise<'ok' | 'denied' | '
       const perm = await ln.requestPermissions();
       if (perm.display !== 'granted') return 'denied';
       await scheduleDaily(time);
+      // The device now handles reminders itself — drop any server-side web-push
+      // subscription so the two can't both fire and double-notify.
+      api.pushUnsubscribeAll().catch(() => {});
       return 'ok';
     } catch {
       return 'error';

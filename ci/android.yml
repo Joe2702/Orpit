@@ -49,6 +49,8 @@ jobs:
           # (Settings → Secrets and variables → Actions → Variables).
           VITE_API_BASE: ${{ github.event.inputs.api_base || vars.VITE_API_BASE }}
           VITE_GOOGLE_CLIENT_ID: ${{ github.event.inputs.google_client_id || vars.VITE_GOOGLE_CLIENT_ID }}
+          # Shown in Settings so a tester can tell you exactly which build they have.
+          VITE_BUILD_ID: ${{ github.run_number }}
         run: |
           if [ -z "$VITE_API_BASE" ]; then
             echo "::warning::VITE_API_BASE is empty — the built app won't reach a backend. Set the repo variable VITE_API_BASE or run the workflow manually with the URL."

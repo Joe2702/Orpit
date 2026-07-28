@@ -137,15 +137,18 @@ export function FTxns() {
   const [fcat, setFcat] = useState('All');
   const [facc, setFacc] = useState('All');
 
-  const list = [...state!.txns]
+  const [shown, setShown] = useState(80);
+  const matched = [...state!.txns]
     .sort((a, b) => b.ts - a.ts)
     .filter((t) => {
       const ql = q.toLowerCase();
-      if (ql && !(t.name.toLowerCase().includes(ql) || t.cat.toLowerCase().includes(ql))) return false;
+      if (ql && !(t.name.toLowerCase().includes(ql) || t.cat.toLowerCase().includes(ql) || (t.note || '').toLowerCase().includes(ql))) return false;
       if (fcat !== 'All' && t.cat !== fcat) return false;
       if (facc !== 'All' && accById[t.accId || '']?.name !== facc) return false;
       return true;
     });
+  // Render a page at a time — a year of transactions shouldn't stall the screen.
+  const list = matched.slice(0, shown);
   const groups: { label: string; items: Txn[] }[] = [];
   const byDay: Record<string, Txn[]> = {};
   list.forEach((t) => {
@@ -195,6 +198,16 @@ export function FTxns() {
           </div>
         ))}
       </div>
+      {matched.length > shown && (
+        <div onClick={() => setShown(shown + 80)} className="press99" role="button" style={{ marginTop: 16, height: 48, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
+          Show older ({matched.length - shown} more)
+        </div>
+      )}
+      {matched.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>
+          No transactions match your search.
+        </div>
+      )}
     </div>
   );
 }
@@ -230,8 +243,10 @@ export function FBudgets() {
               <div style={{ height: 9, borderRadius: 999, background: 'var(--bg)', overflow: 'hidden', marginBottom: 8 }}>
                 <div style={{ height: '100%', borderRadius: 999, width: `${Math.min(100, b.pct)}%`, background: b.color, transition: 'width .4s' }} />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>{b.pct}% used</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>
+                  {b.pct}% used · <span style={{ color: b.color }}>{b.status}</span>
+                </span>
                 <span style={{ fontSize: 12.5, fontWeight: 600, color: b.remaining >= 0 ? 'var(--text2)' : 'var(--danger)' }}>{b.remaining >= 0 ? money(b.remaining) + ' left' : money(-b.remaining) + ' over'}</span>
               </div>
             </div>

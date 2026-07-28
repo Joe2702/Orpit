@@ -3,9 +3,9 @@ import { useStore } from '../store';
 import { buildReport } from '../lib/report';
 
 // A full-screen, tap-through "story" summary of the user's week or month.
-export function StoryReport({ kind, onClose }: { kind: 'week' | 'month'; onClose: () => void }) {
+export function StoryReport({ kind, offset = 0, onClose }: { kind: 'week' | 'month'; offset?: number; onClose: () => void }) {
   const { state } = useStore();
-  const slides = buildReport(state!, kind);
+  const slides = buildReport(state!, kind, offset);
   const [i, setI] = useState(0);
   const slide = slides[i];
 

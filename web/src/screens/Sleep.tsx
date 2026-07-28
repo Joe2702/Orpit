@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
 import { SleepTimeline } from '../lib/charts';
@@ -9,6 +9,8 @@ import { IconSleep } from '../icons';
 export function Sleep() {
   const { state, open, range } = useStore();
   const { d } = useData();
+  // Render a page at a time so hundreds of nights don't stall the screen.
+  const [shown, setShown] = useState(50);
 
   const miniStat = (val: React.ReactNode, label: string) => (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '14px 16px' }}>
@@ -109,7 +111,7 @@ export function Sleep() {
 
       <SectionLabel>Recent nights</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
-        {[...state!.nights].sort((a, b) => b.ts - a.ts).map((n) => (
+        {[...state!.nights].sort((a, b) => b.ts - a.ts).slice(0, shown).map((n) => (
           <div
             key={n.id}
             onClick={() => open('edit', { kind: 'sleep', item: n })}
@@ -127,6 +129,11 @@ export function Sleep() {
           </div>
         ))}
       </div>
+      {state!.nights.length > shown && (
+        <div onClick={() => setShown(shown + 50)} className="press99" role="button" style={{ marginTop: 12, height: 48, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
+          Show older ({state!.nights.length - shown} more)
+        </div>
+      )}
     </div>
   );
 }

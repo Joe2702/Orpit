@@ -27,6 +27,25 @@ body {
   -webkit-user-select: text;
 }
 
+/* Accessibility: a visible focus ring for keyboard/switch navigation. */
+.orbit :focus-visible {
+  outline: 2px solid var(--indigo);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Respect "reduce motion" — stop the decorative loops for users who get
+   motion sickness or simply asked the OS for less animation. */
+@media (prefers-reduced-motion: reduce) {
+  .orbit *,
+  .orbit *::before,
+  .orbit *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
 /* Outer page (device on a soft backdrop), mirrors the prototype's frame stage. */
 .stage {
   min-height: 100vh;

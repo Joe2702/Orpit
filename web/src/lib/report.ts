@@ -1,5 +1,5 @@
 import type { AppState } from '../types';
-import { money } from './format';
+import { money, dayKey } from './format';
 
 export interface ReportSlide {
   key: string;
@@ -14,14 +14,40 @@ const D = 86400000;
 
 // Build a set of "story" slides summarising the user's last week or month.
 // Monthly goes deeper (top category, best habit, savings rate, …).
-export function buildReport(s: AppState, kind: 'week' | 'month'): ReportSlide[] {
-  const days = kind === 'week' ? 7 : 30;
-  const now = Date.now();
-  const start = now - days * D;
-  const inWin = (ts: number) => ts >= start && ts <= now;
+export function buildReport(s: AppState, kind: 'week' | 'month', offset = 0): ReportSlide[] {
+  // Calendar periods, not rolling windows: "your week" means Mon–Sun and
+  // "your month" means the actual month. offset=0 is the current period,
+  // 1 is the previous one, and so on.
+  const now = new Date();
+  let start: Date;
+  let end: Date; // exclusive
+  if (kind === 'week') {
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    const dow = (d.getDay() + 6) % 7; // Monday = 0
+    d.setDate(d.getDate() - dow - offset * 7);
+    start = d;
+    end = new Date(d);
+    end.setDate(end.getDate() + 7);
+  } else {
+    start = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+    end = new Date(now.getFullYear(), now.getMonth() - offset + 1, 1);
+  }
+  const startMs = start.getTime();
+  const endMs = Math.min(end.getTime(), Date.now() + 1);
+  const inWin = (ts: number) => ts >= startMs && ts < endMs;
 
   const winDays = new Set<string>();
-  for (let i = 0; i < days; i++) winDays.add(new Date(now - i * D).toISOString().slice(0, 10));
+  for (let t = startMs; t < endMs; t += D) winDays.add(dayKey(t));
+  const days = Math.max(1, Math.round((endMs - startMs) / D));
+  const periodLabel =
+    kind === 'week'
+      ? offset === 0
+        ? 'this week'
+        : offset === 1
+        ? 'last week'
+        : `${offset} weeks ago`
+      : start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   const workouts = s.workouts.filter((w) => inWin(w.ts));
   const wMin = workouts.reduce((a, w) => a + (w.dur || 0), 0);
@@ -74,16 +100,20 @@ export function buildReport(s: AppState, kind: 'week' | 'month'): ReportSlide[] 
     }
   });
 
-  const label = kind === 'week' ? 'this week' : 'this month';
+  const label = periodLabel;
   const slides: ReportSlide[] = [];
 
+  const range =
+    kind === 'week'
+      ? `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(endMs - D).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+      : periodLabel;
   slides.push({
     key: 'intro',
     color: 'indigo',
     emoji: kind === 'week' ? '🗓️' : '🌙',
     headline: kind === 'week' ? 'Your week' : 'Your month',
     value: '',
-    caption: `A look back at your last ${days} days on Orbit`,
+    caption: range,
   });
 
   slides.push({

@@ -87,7 +87,7 @@ app.post(
     const hash = await bcrypt.hash(password, 10);
     const user = await tx(async (c) => {
       const { rows } = await c.query(
-        `INSERT INTO users (email, password_hash, name, onboarded) VALUES ($1,$2,$3,TRUE) RETURNING id`,
+        `INSERT INTO users (email, password_hash, name, onboarded, intro_done) VALUES ($1,$2,$3,TRUE,FALSE) RETURNING id`,
         [email, hash, name]
       );
       const id = rows[0].id as number;
@@ -151,7 +151,7 @@ app.post(
       } else {
         const id = await tx(async (c) => {
           const { rows } = await c.query(
-            `INSERT INTO users (email, name, google_id, onboarded) VALUES ($1,$2,$3,TRUE) RETURNING id`,
+            `INSERT INTO users (email, name, google_id, onboarded, intro_done) VALUES ($1,$2,$3,TRUE,FALSE) RETURNING id`,
             [email, name, googleId]
           );
           const uid = rows[0].id as number;
@@ -297,6 +297,12 @@ app.patch(
     if (typeof req.body.reminderTz === 'string' && req.body.reminderTz.length < 64) {
       fields.reminder_tz = req.body.reminderTz;
     }
+    // Claimed achievement badges — synced so reveals follow the account.
+    if (Array.isArray(req.body.claimedBadges)) {
+      const ids = req.body.claimedBadges.filter((x: unknown) => typeof x === 'string').slice(0, 200);
+      fields.claimed_badges = JSON.stringify(ids);
+    }
+    if (typeof req.body.introDone === 'boolean') fields.intro_done = req.body.introDone;
 
     const keys = Object.keys(fields);
     if (keys.length) {
@@ -990,6 +996,18 @@ app.post(
   })
 );
 
+// Drop every web-push subscription for this user. The native app calls this
+// when it schedules on-device reminders, so the server's push scheduler and the
+// local notification can't both fire and double-notify.
+app.post(
+  '/api/push/unsubscribe-all',
+  requireAuth,
+  wrap(async (req, res) => {
+    await query('DELETE FROM push_subs WHERE user_id = $1', [req.userId!]);
+    res.json({ ok: true });
+  })
+);
+
 // Fire a one-off notification so the user can confirm it works.
 app.post(
   '/api/push/test',
@@ -1188,6 +1206,57 @@ function dayOfYear(d: Date): number {
   return Math.floor((d.getTime() - new Date(d.getFullYear(), 0, 0).getTime()) / 86400000);
 }
 
+/** Advance a recurring entry's due date by one period. */
+function advance(from: Date, freq: string): Date {
+  const d = new Date(from);
+  if (freq === 'Weekly') d.setDate(d.getDate() + 7);
+  else if (freq === 'Yearly') d.setFullYear(d.getFullYear() + 1);
+  else d.setMonth(d.getMonth() + 1); // Monthly (default)
+  return d;
+}
+
+/**
+ * Turn due recurring entries into real transactions. Runs periodically; catches
+ * up if the server was asleep (loops until the next date is in the future).
+ */
+async function runRecurring() {
+  try {
+    const due = await query<{
+      id: string;
+      user_id: number;
+      name: string;
+      cat: string;
+      acc_id: string | null;
+      amount: number;
+      freq: string;
+      next_ts: string;
+    }>(
+      `SELECT id::text, user_id, name, cat, acc_id::text, amount, freq, next_ts
+         FROM recurring
+        WHERE next_ts IS NOT NULL AND next_ts <= now()`
+    );
+    for (const r of due) {
+      let next = new Date(r.next_ts);
+      let guard = 0;
+      // Insert one transaction per missed period (bounded so a very old date
+      // can't spin forever).
+      while (next.getTime() <= Date.now() && guard++ < 60) {
+        // Recurring entries are expenses (stored positive), so post them as
+        // negative amounts with income = false, matching POST /api/txns.
+        await query(
+          `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts)
+           VALUES ($1,$2,$3,$4,FALSE,$5,$6,$7)`,
+          [r.user_id, r.name, r.cat, -Math.abs(r.amount), r.acc_id, 'Recurring', next]
+        );
+        next = advance(next, r.freq);
+      }
+      await query('UPDATE recurring SET next_ts = $1 WHERE id = $2', [next, r.id]);
+    }
+  } catch (e) {
+    console.error('[recurring]', e);
+  }
+}
+
 async function start() {
   // Create/upgrade tables on boot (idempotent) — no separate migrate step needed in the cloud.
   await pool.query(SCHEMA_SQL);
@@ -1200,6 +1269,9 @@ async function start() {
   app.listen(PORT, () => console.log(`Orbit API listening on port ${PORT}`));
   console.log(pushReady ? 'Daily reminders: ON' : 'Daily reminders: OFF (set VAPID_PRIVATE to enable)');
   setInterval(runReminders, 60 * 1000);
+  // Post due recurring transactions on boot, then hourly.
+  runRecurring();
+  setInterval(runRecurring, 60 * 60 * 1000);
 }
 
 start().catch((e) => {

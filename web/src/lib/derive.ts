@@ -1,4 +1,5 @@
 import type { AppState, Range } from '../types';
+import { dayKey } from './format';
 
 const D = 86400000;
 const shades = [100, 72, 50, 33, 22, 15];
@@ -125,9 +126,8 @@ function startOfWeek(ts: number): number {
   return d.getTime();
 }
 
-function dayStr(ts: number): string {
-  return new Date(ts).toISOString().slice(0, 10);
-}
+// Local calendar day — must match how check-ins are keyed everywhere else.
+const dayStr = dayKey;
 
 export interface HabitDerived {
   id: string;
@@ -385,7 +385,10 @@ export function derive(state: AppState, range: Range) {
   const budgets = state.budgets.map((b) => {
     const sp = catMonthSpent[b.cat] || 0;
     const pct = b.limit > 0 ? Math.round((sp / b.limit) * 100) : 0;
-    return { ...b, spent: sp, pct, remaining: b.limit - sp, color: budgetColor(pct) };
+    // `status` carries the same meaning as `color` in words, so budget health
+    // isn't communicated by colour alone.
+    const status = pct >= 100 ? 'Over budget' : pct >= 80 ? 'Close to limit' : 'On track';
+    return { ...b, spent: sp, pct, remaining: b.limit - sp, color: budgetColor(pct), status };
   });
   const budgetTotal = budgets.reduce((s, b) => s + b.limit, 0),
     budgetSpent = budgets.reduce((s, b) => s + b.spent, 0);
