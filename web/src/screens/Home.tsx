@@ -47,6 +47,22 @@ function QuickAdd() {
   );
 }
 
+
+/** ↑/↓ vs the previous week. `lowerIsBetter` flips the colour (e.g. spending). */
+function Delta({ pct, lowerIsBetter }: { pct: number | null; lowerIsBetter?: boolean }) {
+  if (pct == null || pct === 0) return null;
+  const up = pct > 0;
+  const good = lowerIsBetter ? !up : up;
+  return (
+    <span
+      style={{ fontSize: 11.5, fontWeight: 700, color: good ? 'var(--success)' : 'var(--danger)', marginLeft: 6, whiteSpace: 'nowrap' }}
+      aria-label={`${up ? 'up' : 'down'} ${Math.abs(pct)} percent vs last week`}
+    >
+      {up ? '↑' : '↓'}{Math.abs(pct)}%
+    </span>
+  );
+}
+
 export function Home() {
   const { state, go, mutate, mutateOpt, open, haptic, claimedBadges } = useStore();
   const { d, h } = useData();
@@ -181,7 +197,9 @@ export function Home() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <StatCard onClick={() => go('workouts')} label="Workouts" iconKey="coral" icon={<IconWorkout c="var(--coral)" size={14} sw={2.1} />}>
             <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', lineHeight: 1.05 }}>{d.homeWorkoutCount}</div>
-            <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: -2 }}>sessions this week</div>
+            <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: -2 }}>
+              sessions this week<Delta pct={d.deltas.workouts} />
+            </div>
             <div style={{ height: 42, marginTop: 4 }}>
               <Bars values={d.homeWorkoutSeries} colorKey="coral" />
             </div>
@@ -192,7 +210,9 @@ export function Home() {
               {Math.floor(d.homeSlAvg)}<span style={{ fontSize: 20, fontWeight: 600 }}>h</span>{' '}
               {String(Math.round((d.homeSlAvg % 1) * 60)).padStart(2, '0')}<span style={{ fontSize: 20, fontWeight: 600 }}>m</span>
             </div>
-            <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: -2 }}>nightly average</div>
+            <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: -2 }}>
+              nightly average<Delta pct={d.deltas.sleep} />
+            </div>
             <div style={{ height: 42, marginTop: 4 }}>
               <Spark values={d.homeSleepData.length > 1 ? d.homeSleepData : [0, 0]} colorKey="blue" />
             </div>
@@ -204,7 +224,9 @@ export function Home() {
               <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', lineHeight: 1.05 }}>
                 {h.habitPct}<span style={{ fontSize: 20, fontWeight: 600 }}>%</span>
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: -2 }}>completion</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: -2 }}>
+                completion<Delta pct={d.deltas.habits} />
+              </div>
             </div>
             <div style={{ position: 'relative', width: 56, height: 56, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Ring pct={h.habitPct} colorKey="teal" size={56} stroke={7} />
@@ -215,7 +237,9 @@ export function Home() {
             <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', lineHeight: 1.05 }}>
               {money(d.homeWeekSpend)}
             </div>
-            <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: -2 }}>this week</div>
+            <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: -2 }}>
+              this week<Delta pct={d.deltas.spend} lowerIsBetter />
+            </div>
             <div style={{ height: 42, marginTop: 4 }}>
               <Spark values={d.homeSpendSeries.map((v) => v || 0.001)} colorKey="emerald" />
             </div>
@@ -301,6 +325,18 @@ export function Home() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
+            onClick={() => go('search')}
+            className="press96"
+            role="button"
+            aria-label="Search"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer', boxShadow: 'var(--shadow)' }}
+          >
+            <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+              <circle cx="8.5" cy="8.5" r="5.5" />
+              <path d="M13 13l3 3" />
+            </svg>
+          </div>
           <div
             onClick={() => go('achievements')}
             className="press96"

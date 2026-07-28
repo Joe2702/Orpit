@@ -102,6 +102,7 @@ async function scheduleWeekly(): Promise<void> {
 // with the daily (1001) / test (1002) / weekly (1003) notifications.
 const HABIT_BASE = 2000;
 const BILL_BASE = 3000;
+const WINDDOWN_ID = 1004;
 const stableId = (base: number, key: string) => {
   let h = 0;
   for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
@@ -114,7 +115,8 @@ const stableId = (base: number, key: string) => {
  */
 export async function scheduleExtras(
   habits: { id: string; name: string; reminderTime: string | null; paused: boolean; archived: boolean }[],
-  bills: { id: string; name: string; nextTs: number | null; income: boolean }[]
+  bills: { id: string; name: string; nextTs: number | null; income: boolean }[],
+  windDown?: { on: boolean; bedHour: number | null }
 ): Promise<void> {
   if (!isNative()) return;
   try {
@@ -155,6 +157,18 @@ export async function scheduleExtras(
           channelId: CHANNEL_ID,
         });
       });
+    // Wind-down: 30 minutes before the user's usual bedtime.
+    await ln.cancel({ notifications: [{ id: WINDDOWN_ID }] }).catch(() => {});
+    if (windDown?.on && windDown.bedHour != null) {
+      const t = (windDown.bedHour - 0.5 + 24) % 24;
+      notifications.push({
+        id: WINDDOWN_ID,
+        title: 'Time to wind down',
+        body: 'Bed in about 30 minutes — start slowing things down 🌙',
+        schedule: { on: { hour: Math.floor(t), minute: Math.round((t % 1) * 60) }, allowWhileIdle: true },
+        channelId: CHANNEL_ID,
+      });
+    }
     if (notifications.length) await ln.schedule({ notifications });
   } catch {
     /* reminders are best-effort — never break the app over them */

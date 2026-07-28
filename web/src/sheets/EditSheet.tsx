@@ -39,6 +39,23 @@ export function EditSheet() {
     closeSheet();
   };
 
+  // Duplicate: re-log the same entry with today's date — quicker than retyping
+  // a repeat meal, expense or session.
+  const duplicate = () => {
+    haptic();
+    if (kind === 'workout') {
+      const x = item as Workout;
+      mutate(() => api.addWorkout({ catId: x.catId || '', dur: x.dur, dist: x.dist, kcal: x.kcal, intensity: x.intensity, note: x.note, ts: Date.now() }), 'Duplicated to today').catch(() => {});
+    } else if (kind === 'sleep') {
+      const x = item as Night;
+      mutate(() => api.addNight({ hours: x.hours, quality: x.quality, bedH: x.bedH, wakeH: x.wakeH, note: x.note, ts: Date.now() }), 'Duplicated to today').catch(() => {});
+    } else {
+      const x = item as Txn;
+      mutate(() => api.addTxn({ name: x.name, cat: x.cat, amount: Math.abs(x.amount), income: x.income, accId: x.accId, note: x.note, ts: Date.now() }), 'Duplicated to today').catch(() => {});
+    }
+    closeSheet();
+  };
+
   const del = async () => {
     const id = (item as { id: string }).id;
     if (id.startsWith('tmp_')) {
@@ -139,6 +156,14 @@ export function EditSheet() {
           </div>
         </>
       )}
+
+      <div onClick={duplicate} className="press99" role="button" style={{ height: 52, borderRadius: 16, border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', marginBottom: 10 }}>
+        <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+          <rect x="6" y="6" width="10" height="10" rx="2" />
+          <path d="M12 4H4v8" />
+        </svg>
+        Duplicate to today
+      </div>
 
       <div onClick={del} className="press99" style={{ height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer' }}>
         <IconTrash />

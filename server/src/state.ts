@@ -8,7 +8,7 @@ export async function buildState(userId: number) {
     `SELECT name, email, theme, reminders, haptics, onboarded, currency, avatar, layout,
             reminder_time AS "reminderTime", reminder_tz AS "reminderTz",
             claimed_badges AS "claimedBadgesRaw", intro_done AS "introDone",
-            accent, modules AS "modulesRaw",
+            accent, modules AS "modulesRaw", text_scale AS "textScale", wind_down AS "windDown",
             (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt"
      FROM users WHERE id = $1`,
     [userId]
@@ -66,7 +66,7 @@ export async function buildState(userId: number) {
   );
 
   const budgets = await query(
-    `SELECT id::text, cat, limit_amt AS "limit" FROM budgets
+    `SELECT id::text, cat, limit_amt AS "limit", rollover FROM budgets
      WHERE user_id = $1 ORDER BY sort, id`,
     [userId]
   );

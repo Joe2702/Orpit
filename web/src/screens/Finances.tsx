@@ -21,6 +21,9 @@ export function Finances() {
   const { state, go, range, setRange, mutateOpt } = useStore();
   const { d } = useData();
   const spendMax = money(Math.max(...d.spendSeries.concat([1])));
+  // Change across the whole net-worth window (6 months ago → now).
+  const nw = d.netWorthSeries;
+  const nwChange = nw.length > 1 ? nw[nw.length - 1] - nw[0] : 0;
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
@@ -55,6 +58,30 @@ export function Finances() {
             </div>
           </React.Fragment>
         ))}
+      </div>
+
+      {/* Net worth over time — opening balances plus every transaction, month by
+          month. The number people actually care about, and the one the running
+          "balance trend" below can't show because it only covers the range. */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 18, marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
+          <SectionLabel style={{ marginBottom: 0 }}>Net worth</SectionLabel>
+          <span style={{ fontSize: 11.5, color: 'var(--text2)' }}>last 6 months</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 14 }}>
+          <span style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)' }}>{money(d.netWorth)}</span>
+          {nwChange !== 0 && (
+            <span style={{ fontSize: 13, fontWeight: 700, color: nwChange > 0 ? 'var(--emerald)' : 'var(--danger)' }}>
+              {nwChange > 0 ? '↑' : '↓'} {money(Math.abs(nwChange))}
+            </span>
+          )}
+        </div>
+        <div style={{ height: 96 }}>
+          <Spark values={d.netWorthSeries} colorKey={nwChange < 0 ? 'coral' : 'emerald'} w={300} h={96} area sw={2.8} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: 'var(--text2)' }}>
+          {d.netWorthLabels.map((l: string, i: number) => (<span key={i}>{l}</span>))}
+        </div>
       </div>
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 18, marginBottom: 14 }}>

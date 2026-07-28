@@ -17,6 +17,9 @@ export interface Profile {
   // Accent colour token and which trackers the user wants visible (null = all).
   accent: string;
   modules: string[] | null;
+  // In-app text size multiplier and the optional wind-down nudge.
+  textScale: number;
+  windDown: boolean;
   // Whether the first-run intro has been completed.
   introDone: boolean;
   createdAt: number;
@@ -99,6 +102,8 @@ export interface Budget {
   id: string;
   cat: string;
   limit: number;
+  // Unused budget carries into next month.
+  rollover: boolean;
 }
 
 export interface Goal {

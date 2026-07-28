@@ -27,7 +27,8 @@ export type Screen =
   | 'finsights'
   | 'feedbackInbox'
   | 'privacy'
-  | 'insights';
+  | 'insights'
+  | 'search';
 
 export type SheetKind =
   | 'chooser'
@@ -49,6 +50,7 @@ export type SheetKind =
   | 'recurring'
   | 'feedback'
   | 'habitcal'
+  | 'catchup'
   | null;
 
 interface StoreCtx {

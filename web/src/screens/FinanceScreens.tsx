@@ -234,12 +234,17 @@ export function FBudgets() {
         {d.budgets.map((b) => {
           const fc = fcatByName(state!.fcats, b.cat);
           return (
-            <div key={b.id} onClick={() => open('budget', { id: b.id, cat: b.cat, limit: b.limit })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: 'pointer' }}>
+            <div key={b.id} onClick={() => open('budget', { id: b.id, cat: b.cat, limit: b.limit, rollover: b.rollover })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: 'pointer' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 12 }}>
                 <span style={{ width: 34, height: 34, borderRadius: 10, flex: 'none', background: `color-mix(in srgb,var(--${fc.color}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FinIcon icon={fc.icon} color={`var(--${fc.color})`} size={18} /></span>
                 <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{b.cat}</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{money(b.spent)} / {money(b.limit)}</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{money(b.spent)} / {money(b.effLimit)}</span>
               </div>
+              {b.carried > 0 && (
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--emerald)', marginTop: -6, marginBottom: 8 }}>
+                  +{money(b.carried)} rolled over from last month
+                </div>
+              )}
               <div style={{ height: 9, borderRadius: 999, background: 'var(--bg)', overflow: 'hidden', marginBottom: 8 }}>
                 <div style={{ height: '100%', borderRadius: 999, width: `${Math.min(100, b.pct)}%`, background: b.color, transition: 'width .4s' }} />
               </div>

@@ -19,6 +19,7 @@ import { FAddTx, FTxns, FBudgets, FGoals, FAccounts, FRecurring, FCats, FInsight
 import { FeedbackInbox } from './screens/FeedbackInbox';
 import { Privacy } from './screens/Privacy';
 import { Insights } from './screens/Insights';
+import { Search } from './screens/Search';
 
 import { Chooser } from './sheets/Chooser';
 import { CounterSheet, CountLogSheet, CountPickSheet } from './sheets/CounterSheets';
@@ -32,6 +33,7 @@ import { WCatsSheet, WCatSheet } from './sheets/CategorySheets';
 import { ProfileSheet } from './sheets/ProfileSheet';
 import { FeedbackSheet } from './sheets/FeedbackSheet';
 import { HabitCalendarSheet } from './sheets/HabitCalendarSheet';
+import { CatchUpSheet } from './sheets/CatchUpSheet';
 import { ReminderOnboarding } from './ReminderOnboarding';
 import { StoryReport } from './screens/StoryReport';
 import { Intro } from './screens/Intro';
@@ -91,6 +93,8 @@ function CurrentScreen() {
       return <Privacy />;
     case 'insights':
       return <Insights />;
+    case 'search':
+      return <Search />;
     default:
       return null;
   }
@@ -137,6 +141,8 @@ function SheetBody() {
       return <FeedbackSheet />;
     case 'habitcal':
       return <HabitCalendarSheet />;
+    case 'catchup':
+      return <CatchUpSheet />;
     default:
       return null;
   }
@@ -348,9 +354,16 @@ export function App() {
   const habitsKey = state ? state.habits.map((h) => `${h.id}:${h.reminderTime}:${h.paused}:${h.archived}`).join(',') : '';
   const billsKey = state ? state.recurring.map((r) => `${r.id}:${r.nextTs}:${r.income}`).join(',') : '';
   useEffect(() => {
-    if (remOn && state) scheduleExtras(state.habits, state.recurring);
+    if (remOn && state) {
+      // Usual bedtime from the last 14 logged nights.
+      const recent = state.nights.filter((n) => n.bedH != null).slice(0, 14);
+      const bedHour = recent.length
+        ? recent.reduce((a, n) => a + (n.bedH! < 12 ? n.bedH! + 24 : n.bedH!), 0) / recent.length
+        : null;
+      scheduleExtras(state.habits, state.recurring, { on: !!state.profile.windDown, bedHour });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remOn, habitsKey, billsKey]);
+  }, [remOn, habitsKey, billsKey, state?.profile.windDown]);
 
   // The chosen accent replaces the app's primary colour everywhere by remapping
   // the --indigo token the UI already uses.
@@ -361,6 +374,16 @@ export function App() {
     if (accent === 'indigo') root.style.removeProperty('--indigo');
     else root.style.setProperty('--indigo', `var(--${accent})`);
   }, [accent, authed]);
+
+  // Text size: the UI uses fixed pixel sizes, so scale the whole app with
+  // `zoom` (supported in the Android WebView and Chrome) rather than rewriting
+  // every size. Layout stays proportional.
+  const textScale = (authed && state ? state.profile.textScale : 1) || 1;
+  useEffect(() => {
+    const root = document.querySelector('.orbit') as HTMLElement | null;
+    if (!root) return;
+    root.style.setProperty('zoom', String(textScale));
+  }, [textScale, authed]);
 
   const rawTheme = authed && state ? state.profile.theme : localTheme;
   const theme: 'light' | 'dark' = rawTheme === 'system' ? (sysDark ? 'dark' : 'light') : rawTheme;

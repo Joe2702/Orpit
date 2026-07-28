@@ -445,7 +445,14 @@ export function derive(state: AppState, range: Range) {
   );
   const budgets = state.budgets.map((b) => {
     const sp = catMonthSpent[b.cat] || 0;
-    const pct = b.limit > 0 ? Math.round((sp / b.limit) * 100) : 0;
+    // Rollover: whatever went unspent last month is added to this month's limit.
+    const prevStart = monthStart(1);
+    const prevEnd = monthStart(0);
+    const prevSpent = T.filter((t) => t.amount < 0 && t.cat === b.cat && t.ts >= prevStart && t.ts < prevEnd)
+      .reduce((a, t) => a - t.amount, 0);
+    const carried = b.rollover ? Math.max(0, b.limit - prevSpent) : 0;
+    const effLimit = b.limit + carried;
+    const pct = effLimit > 0 ? Math.round((sp / effLimit) * 100) : 0;
     // `status` carries the same meaning as `color` in words, so budget health
     // isn't communicated by colour alone.
     const status = pct >= 100 ? 'Over budget' : pct >= 80 ? 'Close to limit' : 'On track';
@@ -455,11 +462,26 @@ export function derive(state: AppState, range: Range) {
     const dayOfMonth = nowD.getDate();
     const daysInMonth = new Date(nowD.getFullYear(), nowD.getMonth() + 1, 0).getDate();
     const projected = dayOfMonth > 2 ? Math.round((sp / dayOfMonth) * daysInMonth) : null;
-    const willExceed = projected != null && b.limit > 0 && projected > b.limit && pct < 100;
-    return { ...b, spent: sp, pct, remaining: b.limit - sp, color: budgetColor(pct), status, projected, willExceed };
+    const willExceed = projected != null && effLimit > 0 && projected > effLimit && pct < 100;
+    return { ...b, spent: sp, pct, remaining: effLimit - sp, color: budgetColor(pct), status, projected, willExceed, carried, effLimit };
   });
   const budgetTotal = budgets.reduce((s, b) => s + b.limit, 0),
     budgetSpent = budgets.reduce((s, b) => s + b.spent, 0);
+
+  // Net worth over time: opening balances plus every transaction up to each point.
+  const openingTotal = state.accounts.reduce((a, x) => a + (x.opening || 0), 0);
+  const sortedT = [...T].sort((a, b) => a.ts - b.ts);
+  const netWorthSeries: number[] = [];
+  const netWorthLabels: string[] = [];
+  {
+    const months = 6;
+    for (let i = months - 1; i >= 0; i--) {
+      const cutoff = monthStart(i - 1); // end of that month
+      const bal = openingTotal + sortedT.filter((t) => t.ts < cutoff).reduce((a, t) => a + t.amount, 0);
+      netWorthSeries.push(bal);
+      netWorthLabels.push('JFMAMJJASOND'[new Date(monthStart(i)).getMonth()]);
+    }
+  }
 
   const accounts = state.accounts.map((a) => {
     const bal = (a.opening || 0) + T.filter((t) => t.accId === a.id).reduce((s, t) => s + t.amount, 0);
@@ -537,6 +559,31 @@ export function derive(state: AppState, range: Range) {
   // "Spent" this week (total expenses, positive number)
   const homeWeekSpend = T.filter((t) => t.amount < 0 && t.ts >= hStart).reduce((s, t) => s - t.amount, 0);
 
+  // ---- Week-over-week deltas ----
+  // Compare the last 7 days with the 7 before them, so every headline stat can
+  // show whether it's moving up or down. `null` = not enough history to compare.
+  const pStart = hStart - 7 * D;
+  const prevW = W.filter((w) => w.ts >= pStart && w.ts < hStart);
+  const prevN = N.filter((n) => n.ts >= pStart && n.ts < hStart);
+  const prevSpend = T.filter((t) => t.amount < 0 && t.ts >= pStart && t.ts < hStart).reduce((s, t) => s - t.amount, 0);
+  const prevChecks = state.checkins.filter((c) => {
+    const t = new Date(c.day + 'T12:00:00').getTime();
+    return t >= pStart && t < hStart;
+  }).length;
+  const thisChecks = state.checkins.filter((c) => {
+    const t = new Date(c.day + 'T12:00:00').getTime();
+    return t >= hStart;
+  }).length;
+  const prevSlAvg = prevN.length ? prevN.reduce((a, n) => a + n.hours, 0) / prevN.length : 0;
+  const delta = (now: number, before: number): number | null =>
+    before === 0 ? null : Math.round(((now - before) / before) * 100);
+  const deltas = {
+    workouts: delta(homeWorkoutCount, prevW.length),
+    sleep: delta(homeSlAvg, prevSlAvg),
+    spend: delta(homeWeekSpend, prevSpend),
+    habits: delta(thisChecks, prevChecks),
+  };
+
   return {
     range,
     xLabels,
@@ -546,6 +593,7 @@ export function derive(state: AppState, range: Range) {
     homeSlAvg,
     homeSpendSeries,
     homeWeekSpend,
+    deltas,
     wCount,
     wTotalMin,
     wStreak,
@@ -588,6 +636,8 @@ export function derive(state: AppState, range: Range) {
     incPrevMonth,
     catMonthSpent,
     budgets,
+    netWorthSeries,
+    netWorthLabels,
     budgetTotal,
     budgetSpent,
     accounts,

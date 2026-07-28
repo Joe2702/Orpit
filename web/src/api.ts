@@ -131,6 +131,8 @@ export const api = {
         | 'introDone'
         | 'accent'
         | 'modules'
+        | 'textScale'
+        | 'windDown'
       >
     >
   ) => request<AppState>('/me', { method: 'PATCH', body: JSON.stringify(patch) }),
@@ -148,6 +150,8 @@ export const api = {
   sendFeedback: (kind: string, message: string) =>
     request<{ ok: boolean }>('/feedback', { method: 'POST', body: JSON.stringify({ kind, message }) }),
   deleteHabit: (id: string) => request<AppState>(`/habits/${id}`, { method: 'DELETE' }),
+  reorderHabits: (ids: string[]) =>
+    request<AppState>('/habits/order', { method: 'PATCH', body: JSON.stringify({ ids }) }),
   toggleHabit: (id: string, day?: string) =>
     request<AppState>(`/habits/${id}/toggle`, { method: 'POST', body: JSON.stringify({ day }) }),
 
@@ -203,9 +207,9 @@ export const api = {
     request<AppState>(`/fcats/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteFcat: (id: string) => request<AppState>(`/fcats/${id}`, { method: 'DELETE' }),
 
-  addBudget: (b: { cat: string; limit: number }) =>
+  addBudget: (b: { cat: string; limit: number; rollover?: boolean }) =>
     request<AppState>('/budgets', { method: 'POST', body: JSON.stringify(b) }),
-  editBudget: (id: string, b: { cat: string; limit: number }) =>
+  editBudget: (id: string, b: { cat: string; limit: number; rollover?: boolean }) =>
     request<AppState>(`/budgets/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteBudget: (id: string) => request<AppState>(`/budgets/${id}`, { method: 'DELETE' }),
 

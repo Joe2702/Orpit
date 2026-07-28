@@ -335,6 +335,10 @@ app.patch(
       fields.claimed_badges = JSON.stringify(ids);
     }
     if (typeof req.body.introDone === 'boolean') fields.intro_done = req.body.introDone;
+    if (Number.isFinite(Number(req.body.textScale))) {
+      fields.text_scale = Math.min(1.4, Math.max(0.85, Number(req.body.textScale)));
+    }
+    if (typeof req.body.windDown === 'boolean') fields.wind_down = req.body.windDown;
     // Accent colour + which trackers to show.
     if (typeof req.body.accent === 'string' && req.body.accent.length < 20) fields.accent = req.body.accent;
     if (Array.isArray(req.body.modules)) {
@@ -453,6 +457,22 @@ app.post(
         [req.params.id, uid, day]
       );
     }
+    res.json(await buildState(uid));
+  })
+);
+
+// Persist a new habit order (drag-to-sort).
+app.patch(
+  '/api/habits/order',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const ids = Array.isArray(req.body.ids) ? req.body.ids.slice(0, 200) : [];
+    await tx(async (c) => {
+      for (let i = 0; i < ids.length; i++) {
+        await c.query('UPDATE habits SET sort = $1 WHERE id = $2 AND user_id = $3', [i, ids[i], uid]);
+      }
+    });
     res.json(await buildState(uid));
   })
 );
@@ -805,11 +825,12 @@ app.post(
       'SELECT COALESCE(MAX(sort), -1) + 1 AS m FROM budgets WHERE user_id = $1',
       [uid]
     );
-    await query('INSERT INTO budgets (user_id, cat, limit_amt, sort) VALUES ($1,$2,$3,$4)', [
+    await query('INSERT INTO budgets (user_id, cat, limit_amt, sort, rollover) VALUES ($1,$2,$3,$4,$5)', [
       uid,
       cat,
       Number(req.body.limit) || 0,
       max!.m,
+      !!req.body.rollover,
     ]);
     res.json(await buildState(uid));
   })
@@ -820,11 +841,12 @@ app.patch(
   requireAuth,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    await query('UPDATE budgets SET cat=$1, limit_amt=$2 WHERE id=$3 AND user_id=$4', [
+    await query('UPDATE budgets SET cat=$1, limit_amt=$2, rollover=$5 WHERE id=$3 AND user_id=$4', [
       String(req.body.cat || '').trim(),
       Number(req.body.limit) || 0,
       req.params.id,
       uid,
+      !!req.body.rollover,
     ]);
     res.json(await buildState(uid));
   })

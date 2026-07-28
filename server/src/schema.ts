@@ -256,4 +256,12 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS accent TEXT NOT NULL DEFAULT 'indigo'
 ALTER TABLE users ADD COLUMN IF NOT EXISTS modules TEXT;
 -- Bumped to invalidate tokens on other devices ("sign out everywhere else").
 ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INT NOT NULL DEFAULT 0;
+
+-- ===== v3.1: quick wins =====
+-- Unused budget can carry into next month.
+ALTER TABLE budgets ADD COLUMN IF NOT EXISTS rollover BOOLEAN NOT NULL DEFAULT FALSE;
+-- In-app text size multiplier (0.9 / 1 / 1.1 / 1.2).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS text_scale REAL NOT NULL DEFAULT 1;
+-- Optional "start winding down" nudge before the usual bedtime.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS wind_down BOOLEAN NOT NULL DEFAULT FALSE;
 `;

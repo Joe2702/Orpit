@@ -351,6 +351,23 @@ export function Settings() {
         })}
       </div>
 
+      <SectionLabel>Text size</SectionLabel>
+      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: 3, marginBottom: 24 }}>
+        {([['Small', 0.9], ['Default', 1], ['Large', 1.1], ['Largest', 1.2]] as const).map(([lbl, v]) => {
+          const active = Math.abs((profile.textScale || 1) - v) < 0.01;
+          return (
+            <div
+              key={lbl}
+              onClick={() => mutateOpt((st) => ({ ...st, profile: { ...st.profile, textScale: v } }), () => api.updateMe({ textScale: v }))}
+              role="button"
+              style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 11, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(active ? { background: 'var(--surface)', color: 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
+            >
+              {lbl}
+            </div>
+          );
+        })}
+      </div>
+
       <SectionLabel>Preferences</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         <PrefRow
@@ -392,6 +409,24 @@ export function Settings() {
             <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--indigo)' }}>Send a test notification</div>
           </div>
         )}
+        <PrefRow
+          iconKey="blue"
+          title="Wind-down nudge"
+          sub="30 min before your usual bedtime"
+          on={profile.windDown}
+          onToggle={() =>
+            mutateOpt(
+              (st) => ({ ...st, profile: { ...st.profile, windDown: !profile.windDown } }),
+              () => api.updateMe({ windDown: !profile.windDown })
+            )
+          }
+          icon={
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+              <path d="M16 10.5A6.5 6.5 0 1 1 7.5 2a5 5 0 0 0 8.5 8.5Z" />
+            </svg>
+          }
+          border
+        />
         <PrefRow
           iconKey="coral"
           title="Haptic feedback"
