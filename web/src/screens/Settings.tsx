@@ -6,14 +6,9 @@ import { IconChevron } from '../icons';
 import { deviceTimezone } from '../lib/push';
 import { enableReminders, disableReminders, updateReminderTime, sendTestNotification } from '../lib/notify';
 
-// The account allowed to read the in-app feedback inbox. Keep in sync with the
-// server's ADMIN_EMAIL env var if you change it there.
-const ADMIN_EMAIL = 'youssif_mohammed@aucegypt.edu';
-
 export function Settings() {
   const { state, go, open, mutate, mutateOpt, signOut, showToast, haptic } = useStore();
   const profile = state!.profile;
-  const isAdmin = (profile.email || '').toLowerCase() === ADMIN_EMAIL;
 
   const dataTs = [...state!.workouts, ...state!.nights, ...state!.txns].map((x) => x.ts);
   const earliest = dataTs.length ? Math.min(...dataTs) : profile.createdAt;
@@ -306,7 +301,7 @@ export function Settings() {
 
       <SectionLabel>Support</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
-        <div onClick={() => open('feedback')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: isAdmin ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}>
+        <div onClick={() => open('feedback')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
           <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M4 4h12v9H8l-4 3.5V4Z" />
@@ -318,7 +313,7 @@ export function Settings() {
           </div>
           <IconChevron />
         </div>
-        {isAdmin && (
+        {(
           <div onClick={() => go('feedbackInbox')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
             <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--emerald) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
               <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--emerald)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>

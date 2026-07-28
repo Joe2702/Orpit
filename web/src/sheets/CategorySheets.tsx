@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import { api } from '../api';
 import { IconPencil, IconTrash } from '../icons';
 
-const COLORS = ['coral', 'indigo', 'teal', 'blue', 'emerald'];
+const COLORS = ['coral', 'indigo', 'teal', 'blue', 'emerald', 'purple', 'pink', 'amber', 'cyan', 'rose'];
 
 // List of categories with add/edit affordances.
 export function WCatsSheet() {
@@ -41,20 +41,30 @@ export function WCatsSheet() {
 
 // Add/edit a single category.
 export function WCatSheet() {
-  const { sheetData, open, closeSheet, mutate, state, haptic, showToast } = useStore();
+  const { sheetData, open, mutateOpt, state, haptic, showToast, confirm } = useStore();
   const editId: string | null = sheetData?.id ?? null;
   const [name, setName] = useState<string>(sheetData?.name ?? '');
   const [color, setColor] = useState<string>(sheetData?.color ?? 'coral');
   const canSave = !!name.trim();
 
-  const save = async () => {
+  const save = () => {
     if (!canSave) return;
     haptic();
     const body = { name: name.trim(), color };
-    await mutate(
-      () => (editId ? api.editCategory(editId, body) : api.addCategory(body)),
-      editId ? 'Category updated' : 'Category added'
-    );
+    if (editId) {
+      mutateOpt(
+        (s) => ({ ...s, wCats: s.wCats.map((c) => (c.id === editId ? { ...c, ...body } : c)) }),
+        () => api.editCategory(editId, body),
+        'Category updated'
+      ).catch(() => {});
+    } else {
+      const tempId = 'tmp_' + Date.now();
+      mutateOpt(
+        (s) => ({ ...s, wCats: [...s.wCats, { id: tempId, ...body }] }),
+        () => api.addCategory(body),
+        'Category added'
+      ).catch(() => {});
+    }
     open('wcats');
   };
 
@@ -64,8 +74,13 @@ export function WCatSheet() {
       showToast('Keep at least one category');
       return;
     }
+    if (!(await confirm({ title: 'Delete this category?', message: 'Workouts in it become uncategorised.' }))) return;
     haptic();
-    await mutate(() => api.deleteCategory(editId), 'Category deleted');
+    mutateOpt(
+      (s) => ({ ...s, wCats: s.wCats.filter((c) => c.id !== editId) }),
+      () => api.deleteCategory(editId),
+      'Category deleted'
+    ).catch(() => {});
     open('wcats');
   };
 
@@ -82,7 +97,7 @@ export function WCatSheet() {
         style={{ width: '100%', height: 52, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 22 }}
       />
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>Color</div>
-      <div style={{ display: 'flex', gap: 14, marginBottom: 24, paddingLeft: 2 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, paddingLeft: 2 }}>
         {COLORS.map((c) => (
           <div
             key={c}

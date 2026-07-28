@@ -172,18 +172,19 @@ export function CountLogSheet() {
   const [amount, setAmount] = useState<number>(sheetData?.amount ?? step);
 
   const save = () => {
-    if (amount <= 0) {
-      showToast('Add an amount');
+    if (amount === 0) {
+      showToast('Adjust the amount first');
       return;
     }
     haptic();
     const cid = counter!.id;
     const tempId = 'tmp_' + Date.now();
-    // Log instantly in the UI, sync in the background.
+    const unit = counter?.unit || '';
+    // Log instantly in the UI, sync in the background. A negative amount removes.
     mutateOpt(
       (s) => ({ ...s, countLogs: [...s.countLogs, { id: tempId, counterId: cid, amount, ts: Date.now() }] }),
       () => api.logCounter(cid, amount),
-      `Logged ${cNum(amount)} ${counter?.unit || ''}`
+      amount > 0 ? `Logged ${cNum(amount)} ${unit}` : `Removed ${cNum(-amount)} ${unit}`
     ).catch(() => {});
     closeSheet();
   };
@@ -195,11 +196,11 @@ export function CountLogSheet() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>Today</div>
       </div>
       <div style={{ textAlign: 'center', marginBottom: 20 }}>
-        <span style={{ fontSize: 60, fontWeight: 700, letterSpacing: '-.03em', color: col, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{cNum(amount)}</span>
+        <span style={{ fontSize: 60, fontWeight: 700, letterSpacing: '-.03em', color: amount < 0 ? 'var(--danger)' : col, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{cNum(amount)}</span>
         <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text2)', marginLeft: 8 }}>{counter?.unit}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 26, marginBottom: 20 }}>
-        <div onClick={() => setAmount(Math.max(0, amount - step))} className="press92" style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
+        <div onClick={() => setAmount(amount - step)} className="press92" style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
           <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M5 11h12" /></svg>
         </div>
         <div onClick={() => setAmount(amount + step)} className="press92" style={{ width: 52, height: 52, borderRadius: '50%', background: col, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none', boxShadow: '0 6px 12px -6px rgba(40,36,28,.22)' }}>
@@ -214,7 +215,7 @@ export function CountLogSheet() {
       <div style={{ textAlign: 'center', marginBottom: 18 }}>
         <span onClick={() => setAmount(0)} style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', padding: 6 }}>Reset</span>
       </div>
-      <div onClick={save} style={{ background: amount > 0 ? col : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: amount > 0 ? 'pointer' : 'default', marginTop: 6, transition: 'all .2s' }}>Save log</div>
+      <div onClick={save} style={{ background: amount === 0 ? 'color-mix(in srgb,var(--indigo) 40%,var(--surface))' : amount < 0 ? 'var(--danger)' : col, color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: amount === 0 ? 'default' : 'pointer', marginTop: 6, transition: 'all .2s' }}>{amount < 0 ? 'Remove' : 'Save log'}</div>
     </div>
   );
 }

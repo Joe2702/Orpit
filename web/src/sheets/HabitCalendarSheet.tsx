@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
+import { api } from '../api';
 
 const WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const pad = (n: number) => String(n).padStart(2, '0');
 
 // A month-by-month calendar of a single habit's check-ins, opened from Analytics.
+// Tap any past day to fill in (or clear) a missed check-in.
 export function HabitCalendarSheet() {
-  const { state, sheetData } = useStore();
+  const { state, sheetData, mutateOpt, haptic } = useStore();
   const habitId: string = sheetData?.habitId;
   const habit = state!.habits.find((h) => h.id === habitId);
   const col = `var(--${habit?.color || 'teal'})`;
@@ -25,6 +27,25 @@ export function HabitCalendarSheet() {
 
   let count = 0;
   for (let d = 1; d <= daysInMonth; d++) if (doneDays.has(`${year}-${pad(mo + 1)}-${pad(d)}`)) count++;
+
+  // Tap a past (or today's) day to toggle its check-in — lets users backfill days
+  // they missed. Optimistic so it flips instantly.
+  const toggle = (ds: string) => {
+    if (ds > todayStr) return; // can't check off the future
+    haptic();
+    mutateOpt(
+      (s) => {
+        const has = s.checkins.some((c) => c.habitId === habitId && c.day === ds);
+        return {
+          ...s,
+          checkins: has
+            ? s.checkins.filter((c) => !(c.habitId === habitId && c.day === ds))
+            : [...s.checkins, { habitId, day: ds }],
+        };
+      },
+      () => api.toggleHabit(habitId, ds)
+    ).catch(() => {});
+  };
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
@@ -66,9 +87,12 @@ export function HabitCalendarSheet() {
           const done = doneDays.has(ds);
           const isToday = ds === todayStr;
           const scheduled = (habit?.days || '1111111')[new Date(year, mo, day).getDay()] === '1';
+          const future = ds > todayStr;
           return (
             <div
               key={i}
+              onClick={() => toggle(ds)}
+              className={future ? undefined : 'press92'}
               style={{
                 aspectRatio: '1',
                 borderRadius: 10,
@@ -77,10 +101,11 @@ export function HabitCalendarSheet() {
                 justifyContent: 'center',
                 fontSize: 13,
                 fontWeight: 600,
+                cursor: future ? 'default' : 'pointer',
                 background: done ? col : 'var(--bg)',
                 color: done ? '#fff' : 'var(--text)',
                 border: isToday && !done ? `1.5px solid ${col}` : '1px solid var(--border)',
-                opacity: done || scheduled ? 1 : 0.45,
+                opacity: future ? 0.35 : done || scheduled ? 1 : 0.55,
               }}
             >
               {done ? (
@@ -93,8 +118,8 @@ export function HabitCalendarSheet() {
         })}
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 16, textAlign: 'center' }}>
-        Filled days are check-ins · dimmed days aren't scheduled for this habit
+      <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 16, textAlign: 'center', lineHeight: 1.5 }}>
+        Tap any day to check it off or clear it — backfill days you missed.
       </div>
     </div>
   );

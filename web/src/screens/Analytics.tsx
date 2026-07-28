@@ -17,7 +17,7 @@ function Arrow() {
 }
 
 export function Analytics() {
-  const { state, go, mutate, range, open } = useStore();
+  const { state, go, mutate, range, open, openReport } = useStore();
   const { d, h } = useData();
   const profile = state!.profile;
 
@@ -144,6 +144,20 @@ export function Analytics() {
         </div>
       </div>
       <RangeSeg />
+
+      <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+        {([['week', 'Your week', 'indigo', '🗓️'], ['month', 'Your month', 'coral', '🌙']] as const).map(([k, label, color, emoji]) => (
+          <div
+            key={k}
+            onClick={() => openReport(k)}
+            className="press99"
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 16, background: `color-mix(in srgb,var(--${color}) 14%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${color}) 30%,var(--border))`, cursor: 'pointer' }}
+          >
+            <span style={{ fontSize: 18 }}>{emoji}</span>
+            <span style={{ fontSize: 14.5, fontWeight: 700, color: `var(--${color})` }}>{label}</span>
+          </div>
+        ))}
+      </div>
 
       <div style={{ fontSize: 11.5, color: 'var(--text2)', textAlign: 'center', margin: '2px 0 14px', opacity: 0.75 }}>
         Hold &amp; drag a card to rearrange

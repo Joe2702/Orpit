@@ -100,6 +100,10 @@ interface StoreCtx {
   confirm: (opts: ConfirmOpts) => Promise<boolean>;
   confirmState: (ConfirmOpts & { resolve: (v: boolean) => void }) | null;
   closeConfirm: (v: boolean) => void;
+  // Full-screen story report ('week' | 'month'), or null when closed.
+  report: 'week' | 'month' | null;
+  openReport: (k: 'week' | 'month') => void;
+  closeReport: () => void;
   // fire device vibration when the user has haptics enabled (no-op otherwise)
   haptic: (pattern?: number | number[]) => void;
 }
@@ -212,6 +216,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [restore]);
 
   const applyState = useCallback((s: AppState) => setState(s), []);
+
+  const [report, setReport] = useState<'week' | 'month' | null>(null);
+  const openReport = useCallback((k: 'week' | 'month') => setReport(k), []);
+  const closeReport = useCallback(() => setReport(null), []);
 
   const [confirmState, setConfirmState] = useState<(ConfirmOpts & { resolve: (v: boolean) => void }) | null>(null);
   const confirm = useCallback(
@@ -371,6 +379,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     confirm,
     confirmState,
     closeConfirm,
+    report,
+    openReport,
+    closeReport,
     haptic,
   };
 
