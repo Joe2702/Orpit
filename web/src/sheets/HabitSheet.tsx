@@ -9,7 +9,7 @@ const COLORS = ['teal', 'indigo', 'coral', 'blue', 'emerald', 'purple', 'pink', 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Sun..Sat
 
 export function HabitSheet() {
-  const { sheetData, closeSheet, mutateOpt, haptic, confirm } = useStore();
+  const { sheetData, closeSheet, mutateOpt, haptic, confirm, showToast } = useStore();
   const editId: string | null = sheetData?.id ?? null;
   const [name, setName] = useState<string>(sheetData?.name ?? '');
   const [color, setColor] = useState<string>(sheetData?.color ?? 'teal');
@@ -27,8 +27,16 @@ export function HabitSheet() {
   const canSave = !!name.trim();
 
   // The schedule label is derived from the chosen days (replaces the old target picker).
+  // An optimistic row still carries a temporary id until the server replies —
+  // editing it then would hit a record that doesn't exist yet.
+  const pending = !!editId && editId.startsWith('tmp_');
+
   const save = () => {
     if (!canSave) return;
+    if (pending) {
+      showToast('Still saving — try again in a moment');
+      return;
+    }
     haptic();
     const body = { name: name.trim(), color, target: daysLabel(days), days };
     if (editId) {
@@ -50,6 +58,10 @@ export function HabitSheet() {
 
   const del = async () => {
     if (!editId) return;
+    if (pending) {
+      showToast('Still saving — try again in a moment');
+      return;
+    }
     if (!(await confirm({ title: 'Delete this habit?', message: 'It and all its check-ins will be removed.' }))) return;
     haptic();
     mutateOpt(

@@ -12,7 +12,7 @@ function todayISO(): string {
 
 export function SleepSheet() {
   const { closeSheet, mutateOpt, haptic } = useStore();
-  const [quality, setQuality] = useState(8);
+  const [quality, setQuality] = useState(7);
   const [bed, setBed] = useState('23:00');
   const [wake, setWake] = useState('06:45');
   const [day, setDay] = useState(todayISO());

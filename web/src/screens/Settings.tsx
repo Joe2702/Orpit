@@ -7,8 +7,18 @@ import { deviceTimezone } from '../lib/push';
 import { enableReminders, disableReminders, updateReminderTime, sendTestNotification } from '../lib/notify';
 
 export function Settings() {
-  const { state, go, open, mutate, mutateOpt, signOut, showToast, haptic } = useStore();
+  const { state, go, open, mutate, mutateOpt, signOut, showToast, haptic, confirm } = useStore();
   const profile = state!.profile;
+
+  // Long-press (1.2s) on the version string opens the feedback inbox.
+  const holdTimer = React.useRef<ReturnType<typeof setTimeout>>();
+  const startHold = () => {
+    holdTimer.current = setTimeout(() => {
+      haptic();
+      go('feedbackInbox');
+    }, 1200);
+  };
+  const cancelHold = () => clearTimeout(holdTimer.current);
 
   const dataTs = [...state!.workouts, ...state!.nights, ...state!.txns].map((x) => x.ts);
   const earliest = dataTs.length ? Math.min(...dataTs) : profile.createdAt;
@@ -72,6 +82,49 @@ export function Settings() {
     else if (r === 'denied') showToast('Allow notifications in your phone settings');
     else if (r === 'none') showToast('Turn on reminders first');
     else showToast('Could not send test');
+  };
+
+  // Wipe every entry (habits/workouts/sleep/finances/counters) after a
+  // deliberate double confirmation — this can't be undone.
+  const resetData = async () => {
+    const ok = await confirm({
+      title: 'Erase all your data?',
+      message: 'Every workout, night, transaction, habit check-in and counter log will be deleted. This cannot be undone.',
+      confirmLabel: 'Erase everything',
+    });
+    if (!ok) return;
+    const sure = await confirm({
+      title: 'Really sure?',
+      message: 'Consider exporting your data first. There is no way back.',
+      confirmLabel: 'Yes, erase it',
+    });
+    if (!sure) return;
+    haptic();
+    mutate(() => api.reset(), 'All data erased').catch(() => {});
+  };
+
+  // Permanently delete the account (app-store requirement, and the honest
+  // counterpart to "your data is yours"). Two confirmations, then sign out.
+  const deleteAccount = async () => {
+    const ok = await confirm({
+      title: 'Delete your account?',
+      message: 'Your account and everything in it will be permanently removed. This cannot be undone.',
+      confirmLabel: 'Delete account',
+    });
+    if (!ok) return;
+    const sure = await confirm({
+      title: 'This is permanent',
+      message: 'Export your data first if you want to keep a copy. Continue?',
+      confirmLabel: 'Delete forever',
+    });
+    if (!sure) return;
+    try {
+      await api.deleteMyAccount();
+      showToast('Account deleted');
+      signOut();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not delete the account');
+    }
   };
 
   const exportData = () => {
@@ -297,11 +350,34 @@ export function Settings() {
           </div>
           <IconChevron />
         </div>
+        <div onClick={resetData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderTop: '1px solid var(--border)', cursor: 'pointer' }}>
+          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--danger) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--danger)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+              <path d="M4 6h12M8 6V4.5h4V6M6.5 6l.7 10h5.6l.7-10" />
+            </svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--danger)' }}>Reset all data</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Erase every entry and start fresh</div>
+          </div>
+        </div>
       </div>
 
       <SectionLabel>Support</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
-        <div onClick={() => open('feedback')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+        <div onClick={() => go('privacy')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--blue) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+              <path d="M10 2.5l6 2.5v5c0 3.4-2.5 6.4-6 7.5-3.5-1.1-6-4.1-6-7.5V5l6-2.5Z" />
+            </svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Privacy</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>What Orbit stores, and what it doesn't</div>
+          </div>
+          <IconChevron />
+        </div>
+        <div onClick={() => open('feedback')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
           <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M4 4h12v9H8l-4 3.5V4Z" />
@@ -313,20 +389,15 @@ export function Settings() {
           </div>
           <IconChevron />
         </div>
-        {(
-          <div onClick={() => go('feedbackInbox')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
-            <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--emerald) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-              <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--emerald)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-                <path d="M3 5h14v10H3zM3 6l7 5 7-5" />
-              </svg>
-            </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Feedback inbox</div>
-              <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Read what your testers sent</div>
-            </div>
-            <IconChevron />
-          </div>
-        )}
+      </div>
+
+      <div
+        onClick={deleteAccount}
+        className="press99"
+        role="button"
+        style={{ height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginBottom: 10 }}
+      >
+        Delete my account
       </div>
 
       <div
@@ -339,8 +410,14 @@ export function Settings() {
         </svg>
         Sign out
       </div>
-      <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text2)', marginTop: 18, fontFamily: "'Geist Mono',monospace" }}>
-        Orbit v2.0.0 · made with care
+      {/* Long-press the version to reach the (password-protected) feedback inbox. */}
+      <div
+        onPointerDown={startHold}
+        onPointerUp={cancelHold}
+        onPointerLeave={cancelHold}
+        style={{ textAlign: 'center', fontSize: 12, color: 'var(--text2)', marginTop: 18, fontFamily: "'Geist Mono',monospace", userSelect: 'none', cursor: 'default' }}
+      >
+        Orbit · build {__BUILD_ID__} · {__BUILT_AT__}
       </div>
     </div>
   );

@@ -39,9 +39,25 @@ export function Habits() {
           </div>
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.45 }}>You're on track</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.45 }}>
+            {h.weekSecured ? 'This week counts ✓' : h.weekToGo > 0 ? `${h.weekToGo} more to secure this week` : "You're on track"}
+          </div>
           <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4, lineHeight: 1.5 }}>
-            {h.rangeDone} of {h.rangeTotal} habit check-ins {rangeWord(range)}. Keep it up!
+            {h.rangeDone} of {h.rangeTotal} habit check-ins {rangeWord(range)}.
+          </div>
+        </div>
+      </div>
+
+      {/* Weekly streak — forgiving by design: a week counts at 70%, and a slow
+          week never wipes out the run. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '16px 18px', marginBottom: 22 }}>
+        <span style={{ fontSize: 26, lineHeight: 1 }} aria-hidden>{h.weekStreak > 0 ? '🔥' : '🌱'}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+            {h.weekStreak > 0 ? `${h.weekStreak} good ${h.weekStreak === 1 ? 'week' : 'weeks'} in a row` : 'Start your first good week'}
+          </div>
+          <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>
+            A week counts once you hit {h.weekGoal || 1} of {h.weekTotal || 1} check-ins — one slow day won't break it.
           </div>
         </div>
       </div>

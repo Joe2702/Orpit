@@ -1,4 +1,5 @@
 import type { AppState } from '../types';
+import { dayKey } from './format';
 
 export interface BadgeDef {
   id: string;
@@ -33,7 +34,7 @@ interface Metrics {
 
 function metrics(s: AppState): Metrics {
   const dayKeys = new Set<string>();
-  const add = (ts: number) => dayKeys.add(new Date(ts).toISOString().slice(0, 10));
+  const add = (ts: number) => dayKeys.add(dayKey(ts));
   s.workouts.forEach((w) => add(w.ts));
   s.nights.forEach((n) => add(n.ts));
   s.txns.forEach((t) => add(t.ts));

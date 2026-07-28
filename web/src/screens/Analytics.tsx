@@ -145,16 +145,32 @@ export function Analytics() {
       </div>
       <RangeSeg />
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-        {([['week', 'Your week', 'indigo', '🗓️'], ['month', 'Your month', 'coral', '🌙']] as const).map(([k, label, color, emoji]) => (
+      <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+        {([['week', 'This week', 'indigo', '🗓️'], ['month', 'This month', 'coral', '🌙']] as const).map(([k, label, color, emoji]) => (
           <div
             key={k}
-            onClick={() => openReport(k)}
+            onClick={() => openReport(k, 0)}
             className="press99"
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 16, background: `color-mix(in srgb,var(--${color}) 14%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${color}) 30%,var(--border))`, cursor: 'pointer' }}
+            role="button"
+            aria-label={`Open ${label} report`}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: 16, background: `color-mix(in srgb,var(--${color}) 14%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${color}) 30%,var(--border))`, cursor: 'pointer' }}
           >
-            <span style={{ fontSize: 18 }}>{emoji}</span>
+            <span style={{ fontSize: 18 }} aria-hidden>{emoji}</span>
             <span style={{ fontSize: 14.5, fontWeight: 700, color: `var(--${color})` }}>{label}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+        {([['week', 'Last week', 'indigo'], ['month', 'Last month', 'coral']] as const).map(([k, label, color]) => (
+          <div
+            key={k}
+            onClick={() => openReport(k, 1)}
+            className="pressRow"
+            role="button"
+            aria-label={`Open ${label} report`}
+            style={{ flex: 1, textAlign: 'center', padding: '10px 0', borderRadius: 12, fontSize: 13, fontWeight: 600, color: `var(--${color})`, background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer' }}
+          >
+            {label}
           </div>
         ))}
       </div>

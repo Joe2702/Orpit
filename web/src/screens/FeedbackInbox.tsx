@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
-import { api, ApiError, type FeedbackItem } from '../api';
+import { api, ApiError, type FeedbackItem, type ClientErrorItem } from '../api';
 import { BackButton } from '../ui';
 
 const KIND_STYLE: Record<string, { label: string; color: string }> = {
@@ -25,6 +25,8 @@ function timeAgo(ts: number): string {
 export function FeedbackInbox() {
   const { go } = useStore();
   const [items, setItems] = useState<FeedbackItem[] | null>(null);
+  const [errors, setErrors] = useState<ClientErrorItem[]>([]);
+  const [tab, setTab] = useState<'feedback' | 'crashes'>('feedback');
   const [unlocked, setUnlocked] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -39,8 +41,18 @@ export function FeedbackInbox() {
       .then((r) => {
         setItems(r.items);
         setUnlocked(true);
+        // Crash reports live behind the same password.
+        api.adminErrors(password).then((e) => setErrors(e.items)).catch(() => {});
       })
-      .catch((e) => setError(e instanceof ApiError && e.status === 403 ? 'Wrong password.' : 'Could not load feedback.'))
+      .catch((e) =>
+        setError(
+          e instanceof ApiError && e.status === 403
+            ? 'Wrong password.'
+            : e instanceof ApiError && e.status === 503
+            ? 'Not configured — set ADMIN_PASSWORD on the server.'
+            : 'Could not load feedback.'
+        )
+      )
       .finally(() => setChecking(false));
   };
 
@@ -77,11 +89,54 @@ export function FeedbackInbox() {
             {checking ? 'Checking…' : 'Unlock'}
           </div>
         </div>
-      ) : items && items.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text2)', fontSize: 14 }}>
-          No feedback yet. When your testers send some, it shows up here.
-        </div>
       ) : (
+        <>
+          <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: 3, marginBottom: 18 }}>
+            {([['feedback', `Feedback (${items?.length ?? 0})`], ['crashes', `Crashes (${errors.length})`]] as const).map(([k, label]) => (
+              <div
+                key={k}
+                onClick={() => setTab(k)}
+                role="tab"
+                aria-selected={tab === k}
+                style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 11, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', ...(tab === k ? { background: 'var(--surface)', color: 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
+              >
+                {label}
+              </div>
+            ))}
+          </div>
+
+          {tab === 'crashes' ? (
+            errors.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>
+                No crashes reported. 🎉
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {errors.map((e) => (
+                  <div key={e.id} style={{ background: 'var(--surface)', border: '1px solid color-mix(in srgb,var(--danger) 25%,var(--border))', borderRadius: 18, boxShadow: 'var(--shadow)', padding: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--danger)', background: 'color-mix(in srgb,var(--danger) 13%,transparent)', padding: '3px 9px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '.04em' }}>Crash</span>
+                      <span style={{ flex: 1 }} />
+                      <span style={{ fontSize: 12, color: 'var(--text2)' }}>{timeAgo(e.createdAt)}</span>
+                    </div>
+                    <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.5, wordBreak: 'break-word' }}>{e.message}</div>
+                    {e.stack && (
+                      <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 8, fontFamily: "'Geist Mono',monospace", whiteSpace: 'pre-wrap', maxHeight: 120, overflow: 'auto', background: 'var(--bg)', borderRadius: 10, padding: 10 }}>
+                        {e.stack}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 10 }}>
+                      {e.email} · build {e.build || '—'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : items && items.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>
+              No feedback yet. When your testers send some, it shows up here.
+            </div>
+          ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {items!.map((f) => {
             const k = KIND_STYLE[f.kind] || KIND_STYLE.other;
@@ -115,7 +170,9 @@ export function FeedbackInbox() {
               </div>
             );
           })}
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

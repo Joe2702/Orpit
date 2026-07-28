@@ -1,5 +1,16 @@
 // Formatting helpers ported 1:1 from the Orbit prototype.
 
+/**
+ * The calendar day (YYYY-MM-DD) a timestamp falls on **in the user's own
+ * timezone**. Habit check-ins are keyed by this — using UTC instead would file
+ * anything logged after midnight (east of UTC) under the previous day.
+ */
+export function dayKey(ts: number = Date.now()): string {
+  const d = new Date(ts);
+  const off = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - off).toISOString().slice(0, 10);
+}
+
 export function hm(h: number): string {
   const m = Math.round(h * 60);
   return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;

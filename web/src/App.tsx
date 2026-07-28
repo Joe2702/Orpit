@@ -17,6 +17,7 @@ import { Counters } from './screens/Counters';
 import { Achievements } from './screens/Achievements';
 import { FAddTx, FTxns, FBudgets, FGoals, FAccounts, FRecurring, FCats, FInsights } from './screens/FinanceScreens';
 import { FeedbackInbox } from './screens/FeedbackInbox';
+import { Privacy } from './screens/Privacy';
 
 import { Chooser } from './sheets/Chooser';
 import { CounterSheet, CountLogSheet, CountPickSheet } from './sheets/CounterSheets';
@@ -32,7 +33,9 @@ import { FeedbackSheet } from './sheets/FeedbackSheet';
 import { HabitCalendarSheet } from './sheets/HabitCalendarSheet';
 import { ReminderOnboarding } from './ReminderOnboarding';
 import { StoryReport } from './screens/StoryReport';
+import { Intro } from './screens/Intro';
 import { syncReminders } from './lib/notify';
+import { dayKey } from './lib/format';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
 
@@ -83,6 +86,8 @@ function CurrentScreen() {
       return <FInsights />;
     case 'feedbackInbox':
       return <FeedbackInbox />;
+    case 'privacy':
+      return <Privacy />;
     default:
       return null;
   }
@@ -166,8 +171,15 @@ function TabBar() {
 
   // A floating rounded-pill nav: a solid light bar that hovers over the screen,
   // with the active destination marked by a pill behind its icon. Icons only.
-  const item = (active: boolean, onClick: () => void, path: React.ReactNode) => (
-    <div onClick={onClick} className="press92" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+  const item = (active: boolean, onClick: () => void, path: React.ReactNode, label: string) => (
+    <div
+      onClick={onClick}
+      className="press92"
+      role="tab"
+      aria-label={label}
+      aria-selected={active}
+      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 48 }}
+    >
       <div
         style={{
           display: 'flex',
@@ -181,7 +193,7 @@ function TabBar() {
           transition: 'background .2s, color .2s',
         }}
       >
-        <svg width="24" height="24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+        <svg width="24" height="24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: active ? 2.3 : 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
           {path}
         </svg>
       </div>
@@ -211,26 +223,36 @@ function TabBar() {
           padding: '0 8px',
         }}
       >
-        {item(screen === 'home', () => go('home'), <path d="M4 11l8-7 8 7M6 9.5V19h4.5v-5h3v5H18V9.5" />)}
-        {item(screen === 'analytics', () => go('analytics'), <path d="M4 20V11M10 20V5M16 20v-6M4 20h16" />)}
+        {item(screen === 'home', () => go('home'), <path d="M4 11l8-7 8 7M6 9.5V19h4.5v-5h3v5H18V9.5" />, 'Home')}
+        {item(screen === 'analytics', () => go('analytics'), <path d="M4 20V11M10 20V5M16 20v-6M4 20h16" />, 'Analytics')}
         {/* Add — the primary create action; accented but flat within the bar. */}
-        <div onClick={() => open('chooser')} className="press92" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+        <div onClick={() => open('chooser')} className="press92" role="button" aria-label="Add an entry" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 48 }}>
           <div style={{ width: 46, height: 46, borderRadius: 15, background: 'linear-gradient(155deg,var(--blue),var(--indigo))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--glow)' }}>
-            <svg width="24" height="24" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M12 5v14M5 12h14" /></svg>
+            <svg width="24" height="24" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }} aria-hidden><path d="M12 5v14M5 12h14" /></svg>
           </div>
         </div>
-        {item(screen === 'settings', () => go('settings'), (
+        {item(
+          screen === 'settings',
+          () => go('settings'),
           <>
             <circle cx="12" cy="8" r="3.4" />
             <path d="M5.5 19a6.5 6.5 0 0 1 13 0" />
-          </>
-        ))}
+          </>,
+          'Profile'
+        )}
       </div>
     </div>
   );
 }
 
 function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; onRetry: () => void }) {
+  // After a few seconds, explain the wait instead of spinning silently — the
+  // free host sleeps, and a blank splash reads as "the app is broken".
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), 4000);
+    return () => clearTimeout(t);
+  }, []);
   // Always brand-indigo so it flows seamlessly out of the app's launch icon —
   // no cheap color mismatch before the animation appears.
   return (
@@ -263,13 +285,23 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 
         {error ? (
           <div style={{ textAlign: 'center', marginTop: 18 }}>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,.8)', marginBottom: 16, maxWidth: 240 }}>Taking a moment to wake up. Thanks for your patience.</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,.85)', marginBottom: 16, maxWidth: 260, lineHeight: 1.5 }}>
+              The server is still waking up. It sleeps when unused, so the first
+              open of the day can take up to a minute.
+            </div>
             <div onClick={onRetry} className="press" style={{ display: 'inline-flex', background: '#fff', color: '#4a45a6', height: 46, padding: '0 26px', borderRadius: 14, alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px -10px rgba(0,0,0,.4)' }}>Try again</div>
           </div>
         ) : (
-          <div style={{ width: 120, height: 3, borderRadius: 999, overflow: 'hidden', marginTop: 26, background: 'rgba(255,255,255,.2)' }}>
-            <div style={{ width: '40%', height: '100%', borderRadius: 999, background: '#fff', animation: 'loadBar 1.3s ease-in-out infinite' }} />
-          </div>
+          <>
+            <div style={{ width: 120, height: 3, borderRadius: 999, overflow: 'hidden', marginTop: 26, background: 'rgba(255,255,255,.2)' }}>
+              <div style={{ width: '40%', height: '100%', borderRadius: 999, background: '#fff', animation: 'loadBar 1.3s ease-in-out infinite' }} />
+            </div>
+            {slow && (
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,.8)', marginTop: 16, maxWidth: 250, textAlign: 'center', lineHeight: 1.5, animation: 'fadeIn .4s ease' }}>
+                Waking up the server — this can take ~30 seconds after a quiet spell.
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -277,7 +309,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 }
 
 export function App() {
-  const { ready, authed, state, screen, sheet, toast, closeSheet, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, report, closeReport } = useStore();
+  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, report, closeReport } = useStore();
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
 
   // Track the phone's own light/dark setting so "System" can follow it live.
@@ -295,9 +327,19 @@ export function App() {
   // this device whenever the account has reminders enabled.
   const remOn = authed && state ? !!state.profile.reminders : false;
   const remTime = authed && state ? state.profile.reminderTime || '21:00' : '21:00';
+  // How many of today's scheduled habits are still unchecked — the reminder
+  // text is built from this so it isn't the same sentence every day.
+  const remainingToday = React.useMemo(() => {
+    if (!state) return -1;
+    const today = dayKey();
+    const dow = new Date().getDay();
+    const due = state.habits.filter((h) => (/^[01]{7}$/.test(h.days) ? h.days : '1111111')[dow] === '1');
+    const done = new Set(state.checkins.filter((c) => c.day === today).map((c) => c.habitId));
+    return due.filter((h) => !done.has(h.id)).length;
+  }, [state]);
   useEffect(() => {
-    if (remOn) syncReminders(true, remTime);
-  }, [remOn, remTime]);
+    if (remOn) syncReminders(true, remTime, remainingToday);
+  }, [remOn, remTime, remainingToday]);
 
   const rawTheme = authed && state ? state.profile.theme : localTheme;
   const theme: 'light' | 'dark' = rawTheme === 'system' ? (sysDark ? 'dark' : 'light') : rawTheme;
@@ -396,10 +438,20 @@ export function App() {
 
       {toast && (
         <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, background: 'var(--text)', color: 'var(--bg)', padding: '11px 20px', borderRadius: 999, fontSize: 14, fontWeight: 600, boxShadow: '0 12px 32px rgba(8,9,14,.28)', animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' }}>
-          <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--success)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+          <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--success)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <path d="M4 9.5l3.4 3.4L14 5" />
           </svg>
           {toast}
+          {toastUndo && (
+            <span
+              onClick={runUndo}
+              role="button"
+              aria-label="Undo"
+              style={{ marginLeft: 4, paddingLeft: 12, borderLeft: '1px solid color-mix(in srgb,var(--bg) 35%,transparent)', fontWeight: 700, color: 'var(--warning)', cursor: 'pointer' }}
+            >
+              Undo
+            </span>
+          )}
         </div>
       )}
 
@@ -457,9 +509,11 @@ export function App() {
         </div>
       )}
 
-      {authed && <ReminderOnboarding />}
+      {/* First run: explain the app before asking about reminders. */}
+      {authed && state && !state.profile.introDone && <Intro />}
+      {authed && state?.profile.introDone && <ReminderOnboarding />}
 
-      {report && state && <StoryReport kind={report} onClose={closeReport} />}
+      {report && state && <StoryReport kind={report.kind} offset={report.offset} onClose={closeReport} />}
     </>
   );
 

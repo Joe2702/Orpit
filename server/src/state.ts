@@ -7,10 +7,24 @@ export async function buildState(userId: number) {
   const profile = await one(
     `SELECT name, email, theme, reminders, haptics, onboarded, currency, avatar, layout,
             reminder_time AS "reminderTime", reminder_tz AS "reminderTz",
+            claimed_badges AS "claimedBadgesRaw", intro_done AS "introDone",
             (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt"
      FROM users WHERE id = $1`,
     [userId]
   );
+  // claimed_badges is stored as a JSON string; hand the client a real array.
+  if (profile) {
+    const p = profile as any;
+    let claimed: string[] = [];
+    try {
+      const parsed = JSON.parse(p.claimedBadgesRaw || '[]');
+      if (Array.isArray(parsed)) claimed = parsed.filter((x: unknown) => typeof x === 'string');
+    } catch {
+      /* corrupt value → treat as none claimed */
+    }
+    p.claimedBadges = claimed;
+    delete p.claimedBadgesRaw;
+  }
 
   const habits = await query(
     `SELECT id::text, name, color, target, locked, days FROM habits

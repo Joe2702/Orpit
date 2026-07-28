@@ -14,25 +14,40 @@ export function WorkoutSheet() {
   const { state, open, closeSheet, mutateOpt, haptic } = useStore();
   const cats = state!.wCats;
   const [catId, setCatId] = useState(cats[0]?.id || '');
-  const [dur, setDur] = useState(32);
+  const [dur, setDur] = useState(30);
   const [intensity, setIntensity] = useState('Moderate');
   const [day, setDay] = useState(todayISO());
 
-  const save = () => {
-    if (!catId) return;
-    haptic();
-    const catName = cats.find((c) => c.id === catId)?.name || 'Workout';
-    const ts = new Date(`${day}T12:00:00`).getTime();
+  // Most recent workout — offered as a one-tap repeat, the most common case.
+  const last = state!.workouts.length
+    ? [...state!.workouts].sort((a, b) => b.ts - a.ts)[0]
+    : null;
+  const lastCatName = cats.find((c) => c.id === last?.catId)?.name || last?.name || 'Workout';
+
+  const log = (o: { catId: string; dur: number; intensity: string | null; ts: number }) => {
+    const catName = cats.find((c) => c.id === o.catId)?.name || 'Workout';
     const tempId = 'tmp_' + Date.now();
     mutateOpt(
       (s) => ({
         ...s,
-        workouts: [...s.workouts, { id: tempId, name: catName, catId, dur, dist: null, kcal: null, intensity, ts }],
+        workouts: [...s.workouts, { id: tempId, name: catName, catId: o.catId, dur: o.dur, dist: null, kcal: null, intensity: o.intensity, ts: o.ts }],
       }),
-      () => api.addWorkout({ catId, dur, dist: null, kcal: null, intensity, ts }),
+      () => api.addWorkout({ catId: o.catId, dur: o.dur, dist: null, kcal: null, intensity: o.intensity, ts: o.ts }),
       'Workout logged'
     ).catch(() => {});
     closeSheet();
+  };
+
+  const save = () => {
+    if (!catId) return;
+    haptic();
+    log({ catId, dur, intensity, ts: new Date(`${day}T12:00:00`).getTime() });
+  };
+
+  const repeatLast = () => {
+    if (!last?.catId) return;
+    haptic();
+    log({ catId: last.catId, dur: last.dur, intensity: last.intensity, ts: Date.now() });
   };
 
   const label = (t: string) => (
@@ -58,6 +73,27 @@ export function WorkoutSheet() {
           />
         </label>
       </div>
+
+      {last && (
+        <div
+          onClick={repeatLast}
+          className="press99"
+          role="button"
+          style={{ display: 'flex', alignItems: 'center', gap: 11, background: 'color-mix(in srgb,var(--coral) 10%,var(--surface))', border: '1px solid color-mix(in srgb,var(--coral) 30%,var(--border))', borderRadius: 16, padding: '13px 15px', marginBottom: 20, cursor: 'pointer' }}
+        >
+          <span style={{ width: 34, height: 34, borderRadius: 11, flex: 'none', background: 'color-mix(in srgb,var(--coral) 16%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--coral)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+              <path d="M4 8a5 5 0 0 1 9-2M13 4v3h-3M14 10a5 5 0 0 1-9 2M4 15v-3h3" />
+            </svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>Repeat last workout</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
+              {lastCatName} · {last.dur} min{last.intensity ? ` · ${last.intensity}` : ''}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>Category</span>

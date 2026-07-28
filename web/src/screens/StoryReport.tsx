@@ -3,14 +3,35 @@ import { useStore } from '../store';
 import { buildReport } from '../lib/report';
 
 // A full-screen, tap-through "story" summary of the user's week or month.
-export function StoryReport({ kind, onClose }: { kind: 'week' | 'month'; onClose: () => void }) {
+export function StoryReport({ kind, offset = 0, onClose }: { kind: 'week' | 'month'; offset?: number; onClose: () => void }) {
   const { state } = useStore();
-  const slides = buildReport(state!, kind);
+  const slides = buildReport(state!, kind, offset);
   const [i, setI] = useState(0);
   const slide = slides[i];
 
   const next = () => (i < slides.length - 1 ? setI(i + 1) : onClose());
   const prev = () => setI(Math.max(0, i - 1));
+
+  // Share the report as a short text card — the native sheet on the app, the
+  // Web Share API (or clipboard) on the web.
+  const share = async () => {
+    const title = kind === 'week' ? 'My week on Orbit' : 'My month on Orbit';
+    const lines = slides
+      .filter((s) => s.value)
+      .map((s) => `${s.emoji} ${s.headline}: ${s.value}`);
+    const text = `${title}\n\n${lines.join('\n')}`;
+    try {
+      const { Share } = await import('@capacitor/share');
+      await Share.share({ title, text, dialogTitle: title });
+    } catch {
+      try {
+        if (navigator.share) await navigator.share({ title, text });
+        else await navigator.clipboard.writeText(text);
+      } catch {
+        /* user dismissed the sheet */
+      }
+    }
+  };
 
   return (
     <div
@@ -41,9 +62,14 @@ export function StoryReport({ kind, onClose }: { kind: 'week' | 'month'; onClose
             </div>
           ))}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 14px 0' }}>
-          <div onClick={onClose} className="press92" style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            <svg width="20" height="20" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M5 5l10 10M15 5L5 15" /></svg>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 4, padding: '8px 14px 0' }}>
+          <div onClick={share} className="press92" role="button" aria-label="Share this report" style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <svg width="20" height="20" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+              <path d="M10 13V3M6.5 6.5L10 3l3.5 3.5M4 12v4.5h12V12" />
+            </svg>
+          </div>
+          <div onClick={onClose} className="press92" role="button" aria-label="Close report" style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <svg width="20" height="20" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }} aria-hidden><path d="M5 5l10 10M15 5L5 15" /></svg>
           </div>
         </div>
       </div>
