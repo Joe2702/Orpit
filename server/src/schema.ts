@@ -222,4 +222,38 @@ CREATE TABLE IF NOT EXISTS client_errors (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS client_errors_created ON client_errors(created_at DESC);
+
+-- ===== v3: retention, insights, personalisation =====
+
+-- Habits: pause (travel/illness) without losing the run, archive instead of
+-- destroying history, a personal "why", and an optional per-habit reminder.
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS paused BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS why TEXT;
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS reminder_time TEXT;
+
+-- Free-text notes turn entries into a diary ("knee hurt", "kid woke me twice").
+ALTER TABLE workouts ADD COLUMN IF NOT EXISTS note TEXT;
+ALTER TABLE nights   ADD COLUMN IF NOT EXISTS note TEXT;
+
+-- Recurring entries can be income (salary), not just expenses.
+ALTER TABLE recurring ADD COLUMN IF NOT EXISTS income BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Saved workout presets ("Push day · 45 min · Hard").
+CREATE TABLE IF NOT EXISTS workout_templates (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  category_id BIGINT REFERENCES workout_categories(id) ON DELETE CASCADE,
+  dur         INT NOT NULL DEFAULT 30,
+  intensity   TEXT,
+  sort        INT NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Personalisation: accent colour and which trackers the user wants to see.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS accent TEXT NOT NULL DEFAULT 'indigo';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS modules TEXT;
+-- Bumped to invalidate tokens on other devices ("sign out everywhere else").
+ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INT NOT NULL DEFAULT 0;
 `;

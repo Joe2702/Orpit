@@ -55,6 +55,17 @@ interface AuthResp {
   state: AppState;
 }
 
+export interface HabitBody {
+  name: string;
+  color: string;
+  target: string;
+  days: string;
+  why?: string | null;
+  reminderTime?: string | null;
+  paused?: boolean;
+  archived?: boolean;
+}
+
 export interface ClientErrorItem {
   id: string;
   message: string;
@@ -118,6 +129,8 @@ export const api = {
         | 'reminderTz'
         | 'claimedBadges'
         | 'introDone'
+        | 'accent'
+        | 'modules'
       >
     >
   ) => request<AppState>('/me', { method: 'PATCH', body: JSON.stringify(patch) }),
@@ -129,9 +142,8 @@ export const api = {
   adminFeedback: (password: string) =>
     request<{ items: FeedbackItem[] }>('/admin/feedback', { headers: { 'x-admin-password': password } }),
 
-  addHabit: (b: { name: string; color: string; target: string; days: string }) =>
-    request<AppState>('/habits', { method: 'POST', body: JSON.stringify(b) }),
-  editHabit: (id: string, b: { name: string; color: string; target: string; days: string }) =>
+  addHabit: (b: HabitBody) => request<AppState>('/habits', { method: 'POST', body: JSON.stringify(b) }),
+  editHabit: (id: string, b: HabitBody) =>
     request<AppState>(`/habits/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   sendFeedback: (kind: string, message: string) =>
     request<{ ok: boolean }>('/feedback', { method: 'POST', body: JSON.stringify({ kind, message }) }),
@@ -151,6 +163,7 @@ export const api = {
     dist?: string | null;
     kcal?: number | null;
     intensity?: string | null;
+    note?: string | null;
     ts?: number;
   }) => request<AppState>('/workouts', { method: 'POST', body: JSON.stringify(b) }),
   editWorkout: (
@@ -159,7 +172,7 @@ export const api = {
   ) => request<AppState>(`/workouts/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteWorkout: (id: string) => request<AppState>(`/workouts/${id}`, { method: 'DELETE' }),
 
-  addNight: (b: { hours: number; quality: number; bedH: number | null; wakeH: number | null; ts?: number }) =>
+  addNight: (b: { hours: number; quality: number; bedH: number | null; wakeH: number | null; note?: string | null; ts?: number }) =>
     request<AppState>('/nights', { method: 'POST', body: JSON.stringify(b) }),
   deleteNight: (id: string) => request<AppState>(`/nights/${id}`, { method: 'DELETE' }),
 
@@ -202,9 +215,9 @@ export const api = {
     request<AppState>(`/goals/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteGoal: (id: string) => request<AppState>(`/goals/${id}`, { method: 'DELETE' }),
 
-  addRecurring: (b: { name: string; cat: string; accId: string | null; amount: number; freq: string; nextTs?: number | null }) =>
+  addRecurring: (b: { name: string; cat: string; accId: string | null; amount: number; freq: string; income?: boolean; nextTs?: number | null }) =>
     request<AppState>('/recurring', { method: 'POST', body: JSON.stringify(b) }),
-  editRecurring: (id: string, b: { name: string; cat: string; accId: string | null; amount: number; freq: string }) =>
+  editRecurring: (id: string, b: { name: string; cat: string; accId: string | null; amount: number; freq: string; income?: boolean }) =>
     request<AppState>(`/recurring/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteRecurring: (id: string) => request<AppState>(`/recurring/${id}`, { method: 'DELETE' }),
 
@@ -217,6 +230,17 @@ export const api = {
     request<AppState>(`/counters/${id}/log`, { method: 'POST', body: JSON.stringify({ amount }) }),
 
   reset: () => request<AppState>('/reset', { method: 'POST' }),
+  // Workout presets
+  addTemplate: (b: { name: string; catId: string | null; dur: number; intensity: string | null }) =>
+    request<AppState>('/wtemplates', { method: 'POST', body: JSON.stringify(b) }),
+  deleteTemplate: (id: string) => request<AppState>(`/wtemplates/${id}`, { method: 'DELETE' }),
+  // Account security
+  changePassword: (current: string, next: string) =>
+    request<{ ok: boolean }>('/me/password', { method: 'POST', body: JSON.stringify({ current, next }) }),
+  signOutOthers: () => request<{ token: string }>('/me/signout-others', { method: 'POST' }),
+  // Restore a previously exported file (additive — never deletes)
+  importData: (data: unknown) =>
+    request<{ added: number; state: AppState }>('/import', { method: 'POST', body: JSON.stringify({ data }) }),
   // Deletes the whole user account (not a finance account — see deleteAccount).
   deleteMyAccount: () => request<{ ok: boolean }>('/me', { method: 'DELETE' }),
   adminErrors: (password: string) =>

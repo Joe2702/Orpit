@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import { buildReport } from '../lib/report';
 
 // A full-screen, tap-through "story" summary of the user's week or month.
-export function StoryReport({ kind, offset = 0, onClose }: { kind: 'week' | 'month'; offset?: number; onClose: () => void }) {
+export function StoryReport({ kind, offset = 0, onClose }: { kind: 'week' | 'month' | 'year'; offset?: number; onClose: () => void }) {
   const { state } = useStore();
   const slides = buildReport(state!, kind, offset);
   const [i, setI] = useState(0);
@@ -15,7 +15,7 @@ export function StoryReport({ kind, offset = 0, onClose }: { kind: 'week' | 'mon
   // Share the report as a short text card — the native sheet on the app, the
   // Web Share API (or clipboard) on the web.
   const share = async () => {
-    const title = kind === 'week' ? 'My week on Orbit' : 'My month on Orbit';
+    const title = kind === 'week' ? 'My week on Orbit' : kind === 'year' ? 'My year on Orbit' : 'My month on Orbit';
     const lines = slides
       .filter((s) => s.value)
       .map((s) => `${s.emoji} ${s.headline}: ${s.value}`);

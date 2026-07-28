@@ -11,12 +11,13 @@ function todayISO(): string {
 }
 
 export function WorkoutSheet() {
-  const { state, open, closeSheet, mutateOpt, haptic } = useStore();
+  const { state, open, closeSheet, mutateOpt, mutate, haptic, showToast } = useStore();
   const cats = state!.wCats;
   const [catId, setCatId] = useState(cats[0]?.id || '');
   const [dur, setDur] = useState(30);
   const [intensity, setIntensity] = useState('Moderate');
   const [day, setDay] = useState(todayISO());
+  const [note, setNote] = useState('');
 
   // Most recent workout — offered as a one-tap repeat, the most common case.
   const last = state!.workouts.length
@@ -24,15 +25,15 @@ export function WorkoutSheet() {
     : null;
   const lastCatName = cats.find((c) => c.id === last?.catId)?.name || last?.name || 'Workout';
 
-  const log = (o: { catId: string; dur: number; intensity: string | null; ts: number }) => {
+  const log = (o: { catId: string; dur: number; intensity: string | null; ts: number; note?: string | null }) => {
     const catName = cats.find((c) => c.id === o.catId)?.name || 'Workout';
     const tempId = 'tmp_' + Date.now();
     mutateOpt(
       (s) => ({
         ...s,
-        workouts: [...s.workouts, { id: tempId, name: catName, catId: o.catId, dur: o.dur, dist: null, kcal: null, intensity: o.intensity, ts: o.ts }],
+        workouts: [...s.workouts, { id: tempId, name: catName, catId: o.catId, dur: o.dur, dist: null, kcal: null, intensity: o.intensity, note: o.note ?? null, ts: o.ts }],
       }),
-      () => api.addWorkout({ catId: o.catId, dur: o.dur, dist: null, kcal: null, intensity: o.intensity, ts: o.ts }),
+      () => api.addWorkout({ catId: o.catId, dur: o.dur, dist: null, kcal: null, intensity: o.intensity, note: o.note ?? null, ts: o.ts }),
       'Workout logged'
     ).catch(() => {});
     closeSheet();
@@ -41,7 +42,16 @@ export function WorkoutSheet() {
   const save = () => {
     if (!catId) return;
     haptic();
-    log({ catId, dur, intensity, ts: new Date(`${day}T12:00:00`).getTime() });
+    log({ catId, dur, intensity, note: note.trim() || null, ts: new Date(`${day}T12:00:00`).getTime() });
+  };
+
+  // Saved presets ("Push day · 45 min · Hard") — pick one to log instantly.
+  const templates = state!.wTemplates || [];
+  const saveTemplate = () => {
+    if (!catId) return;
+    const catName = cats.find((c) => c.id === catId)?.name || 'Workout';
+    haptic();
+    mutate(() => api.addTemplate({ name: `${catName} · ${dur}m`, catId, dur, intensity }), 'Preset saved').catch(() => {});
   };
 
   const repeatLast = () => {
@@ -128,6 +138,41 @@ export function WorkoutSheet() {
             {t}
           </div>
         ))}
+      </div>
+
+      {templates.length > 0 && (
+        <>
+          {label('Your presets')}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+            {templates.map((t) => (
+              <div
+                key={t.id}
+                onClick={() => {
+                  haptic();
+                  log({ catId: t.catId || catId, dur: t.dur, intensity: t.intensity, ts: Date.now() });
+                }}
+                className="pressRow"
+                role="button"
+                style={{ padding: '9px 14px', borderRadius: 999, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', border: '1.5px solid color-mix(in srgb,var(--coral) 40%,var(--border))', background: 'color-mix(in srgb,var(--coral) 9%,transparent)', color: 'var(--coral)' }}
+              >
+                {t.name}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {label('Note (optional)')}
+      <input
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="e.g. knee felt better today"
+        maxLength={200}
+        style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 22 }}
+      />
+
+      <div onClick={saveTemplate} className="pressRow" role="button" style={{ textAlign: 'center', fontSize: 13, fontWeight: 600, color: 'var(--text2)', padding: 10, marginBottom: 8, cursor: 'pointer' }}>
+        Save this as a preset
       </div>
 
       <div onClick={save} className="press" style={{ background: 'var(--coral)', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>

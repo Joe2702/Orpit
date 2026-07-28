@@ -9,6 +9,7 @@ import { Reorderable } from '../Reorderable';
 import { Bars, Spark, Ring } from '../lib/charts';
 import { Avatar, SectionLabel } from '../ui';
 import { IconWorkout, IconSleep, IconExpense, IconHabit } from '../icons';
+import { enabled } from '../lib/modules';
 
 function QuickAdd() {
   const { open } = useStore();
@@ -52,7 +53,7 @@ export function Home() {
   const profile = state!.profile;
   // Only show habits scheduled for today's weekday (Sun=0 … Sat=6).
   const dow = new Date().getDay();
-  const todaysHabits = h.habits.filter((hb) => (hb.days || '1111111')[dow] === '1');
+  const todaysHabits = h.habits.filter((hb) => !hb.paused && (hb.days || '1111111')[dow] === '1');
   const doneCount = todaysHabits.filter((x) => x.done).length;
   const badges = computeBadges(state!);
   const badgeCount = badges.filter((b) => b.unlocked).length;
@@ -75,6 +76,18 @@ export function Home() {
       };
     }, () => api.toggleHabit(id)).catch(() => {});
   };
+
+  // ---- Never miss twice ----
+  // The best-known habit-recovery mechanic: after ONE missed day, a gentle
+  // nudge (with the user's own reason) so a slip doesn't become a spiral.
+  const yesterdayKey = dayKey(Date.now() - 86400000);
+  const missedYesterday = todaysHabits.filter((hb) => {
+    const dowY = new Date(Date.now() - 86400000).getDay();
+    const scheduledY = (hb.days || '1111111')[dowY] === '1';
+    if (!scheduledY || hb.done) return false;
+    return !state!.checkins.some((c) => c.habitId === hb.id && c.day === yesterdayKey);
+  });
+  const nudge = missedYesterday[0];
 
   // ---- Getting started ----
   // A brand-new account has empty charts everywhere, which feels like a void.
@@ -262,7 +275,13 @@ export function Home() {
     ),
   };
 
-  const blockList = ['habits', 'quick', 'week', 'counters'];
+  // Respect the trackers the user chose to see.
+  const blockList = [
+    ...(enabled(state!, 'habits') ? ['habits'] : []),
+    'quick',
+    'week',
+    ...(enabled(state!, 'counters') ? ['counters'] : []),
+  ];
   const order = reconcile(parseLayout(profile.layout).home, blockList);
   const items = order.map((id) => ({ id, node: <div style={{ marginBottom: 22 }}>{blocks[id]}</div> }));
   const saveOrder = (ids: string[]) => {
@@ -300,6 +319,29 @@ export function Home() {
           <Avatar name={profile.name} src={profile.avatar} size={46} onClick={() => go('settings')} />
         </div>
       </div>
+
+      {nudge && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: `color-mix(in srgb,var(--${nudge.color}) 12%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${nudge.color}) 30%,var(--border))`, borderRadius: 18, padding: '14px 16px', marginBottom: 16 }}>
+          <span style={{ fontSize: 22, lineHeight: 1 }} aria-hidden>🎯</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>
+              Don't miss "{nudge.name}" twice
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>
+              {nudge.why ? `"${nudge.why}"` : 'You skipped it yesterday — one tap today keeps it alive.'}
+            </div>
+          </div>
+          <div
+            onClick={() => toggleHabit(nudge.id)}
+            className="press92"
+            role="button"
+            aria-label={`Check off ${nudge.name}`}
+            style={{ flex: 'none', padding: '9px 14px', borderRadius: 999, background: `var(--${nudge.color})`, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+          >
+            Do it
+          </div>
+        </div>
+      )}
 
       {showChecklist && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '16px 18px', marginBottom: 22 }}>

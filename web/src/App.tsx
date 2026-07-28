@@ -18,6 +18,7 @@ import { Achievements } from './screens/Achievements';
 import { FAddTx, FTxns, FBudgets, FGoals, FAccounts, FRecurring, FCats, FInsights } from './screens/FinanceScreens';
 import { FeedbackInbox } from './screens/FeedbackInbox';
 import { Privacy } from './screens/Privacy';
+import { Insights } from './screens/Insights';
 
 import { Chooser } from './sheets/Chooser';
 import { CounterSheet, CountLogSheet, CountPickSheet } from './sheets/CounterSheets';
@@ -34,7 +35,7 @@ import { HabitCalendarSheet } from './sheets/HabitCalendarSheet';
 import { ReminderOnboarding } from './ReminderOnboarding';
 import { StoryReport } from './screens/StoryReport';
 import { Intro } from './screens/Intro';
-import { syncReminders } from './lib/notify';
+import { syncReminders, scheduleExtras } from './lib/notify';
 import { dayKey } from './lib/format';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
@@ -88,6 +89,8 @@ function CurrentScreen() {
       return <FeedbackInbox />;
     case 'privacy':
       return <Privacy />;
+    case 'insights':
+      return <Insights />;
     default:
       return null;
   }
@@ -309,7 +312,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 }
 
 export function App() {
-  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, report, closeReport } = useStore();
+  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, report, closeReport, applyState } = useStore();
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
 
   // Track the phone's own light/dark setting so "System" can follow it live.
@@ -341,6 +344,24 @@ export function App() {
     if (remOn) syncReminders(true, remTime, remainingToday);
   }, [remOn, remTime, remainingToday]);
 
+  // Per-habit reminders and "bill due tomorrow" nudges.
+  const habitsKey = state ? state.habits.map((h) => `${h.id}:${h.reminderTime}:${h.paused}:${h.archived}`).join(',') : '';
+  const billsKey = state ? state.recurring.map((r) => `${r.id}:${r.nextTs}:${r.income}`).join(',') : '';
+  useEffect(() => {
+    if (remOn && state) scheduleExtras(state.habits, state.recurring);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remOn, habitsKey, billsKey]);
+
+  // The chosen accent replaces the app's primary colour everywhere by remapping
+  // the --indigo token the UI already uses.
+  const accent = (authed && state ? state.profile.accent : 'indigo') || 'indigo';
+  useEffect(() => {
+    const root = document.querySelector('.orbit') as HTMLElement | null;
+    if (!root) return;
+    if (accent === 'indigo') root.style.removeProperty('--indigo');
+    else root.style.setProperty('--indigo', `var(--${accent})`);
+  }, [accent, authed]);
+
   const rawTheme = authed && state ? state.profile.theme : localTheme;
   const theme: 'light' | 'dark' = rawTheme === 'system' ? (sysDark ? 'dark' : 'light') : rawTheme;
 
@@ -365,6 +386,39 @@ export function App() {
   }, []);
 
   const showTabs = APP_SCREENS.includes(screen);
+
+  // ---- Pull to refresh ----
+  // Only engages at the very top of the list, so it never fights normal scrolling.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const pullStart = useRef<number | null>(null);
+  const [pull, setPull] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const onPullStart = (e: React.TouchEvent) => {
+    if ((scrollRef.current?.scrollTop ?? 1) <= 0) pullStart.current = e.touches[0].clientY;
+    else pullStart.current = null;
+  };
+  const onPullMove = (e: React.TouchEvent) => {
+    if (pullStart.current == null || refreshing) return;
+    const dy = e.touches[0].clientY - pullStart.current;
+    if (dy > 0) setPull(Math.min(90, dy * 0.5));
+  };
+  const onPullEnd = async () => {
+    const shouldRefresh = pull > 64 && !refreshing && authed;
+    pullStart.current = null;
+    if (!shouldRefresh) {
+      setPull(0);
+      return;
+    }
+    setRefreshing(true);
+    setPull(48);
+    try {
+      applyState(await api.getState());
+    } catch {
+      /* offline or asleep — keep what we have */
+    }
+    setRefreshing(false);
+    setPull(0);
+  };
 
   // ---- Android hardware "Back" button handling ----
   // Back should navigate inside the app; only at the top level does it ask
@@ -432,7 +486,18 @@ export function App() {
 
       {!mobile && <StatusBar />}
 
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', position: 'relative', WebkitOverflowScrolling: 'touch', paddingBottom: showTabs ? 84 : 0 }}>
+      <div
+        ref={scrollRef}
+        onTouchStart={onPullStart}
+        onTouchMove={onPullMove}
+        onTouchEnd={onPullEnd}
+        style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', position: 'relative', WebkitOverflowScrolling: 'touch', paddingBottom: showTabs ? 84 : 0 }}
+      >
+        {pull > 0 && (
+          <div style={{ height: pull, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', fontSize: 12.5, fontWeight: 600 }}>
+            {refreshing ? 'Refreshing…' : pull > 64 ? 'Release to refresh' : 'Pull to refresh'}
+          </div>
+        )}
         {ready ? <CurrentScreen /> : null}
       </div>
 

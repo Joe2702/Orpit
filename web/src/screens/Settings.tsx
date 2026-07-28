@@ -1,13 +1,21 @@
 import React from 'react';
 import { useStore } from '../store';
-import { api } from '../api';
+import { api, setToken } from '../api';
 import { Avatar, SectionLabel, toggleTrack, toggleKnob } from '../ui';
 import { IconChevron } from '../icons';
 import { deviceTimezone } from '../lib/push';
 import { enableReminders, disableReminders, updateReminderTime, sendTestNotification } from '../lib/notify';
 
+export const MODULE_OPTS = [
+  { key: 'habits', label: 'Habits', emoji: '🌱', color: 'teal' },
+  { key: 'workouts', label: 'Workouts', emoji: '💪', color: 'coral' },
+  { key: 'sleep', label: 'Sleep', emoji: '😴', color: 'blue' },
+  { key: 'finances', label: 'Finances', emoji: '💰', color: 'emerald' },
+  { key: 'counters', label: 'Counters', emoji: '🔢', color: 'indigo' },
+];
+
 export function Settings() {
-  const { state, go, open, mutate, mutateOpt, signOut, showToast, haptic, confirm } = useStore();
+  const { state, go, open, mutate, mutateOpt, signOut, showToast, haptic, confirm, applyState } = useStore();
   const profile = state!.profile;
 
   // Long-press (1.2s) on the version string opens the feedback inbox.
@@ -127,6 +135,55 @@ export function Settings() {
     }
   };
 
+  // Restore from a previously exported JSON file. Additive — never deletes.
+  const importData = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const parsed = JSON.parse(await file.text());
+        const r = await api.importData(parsed);
+        applyState(r.state);
+        showToast(r.added ? `Imported ${r.added} items` : 'Nothing new to import');
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : "That file couldn't be read");
+      }
+    };
+    input.click();
+  };
+
+  const changePassword = async () => {
+    const current = window.prompt('Current password (leave blank if you signed up with Google)') ?? null;
+    if (current === null) return;
+    const next = window.prompt('New password (at least 8 characters)') ?? null;
+    if (next === null) return;
+    try {
+      await api.changePassword(current, next);
+      showToast('Password changed');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not change password');
+    }
+  };
+
+  const signOutOthers = async () => {
+    if (!(await confirm({
+      title: 'Sign out other devices?',
+      message: 'Every other phone or browser signed into this account will be logged out. This device stays signed in.',
+      confirmLabel: 'Sign them out',
+      danger: false,
+    }))) return;
+    try {
+      const r = await api.signOutOthers();
+      setToken(r.token);
+      showToast('Other devices signed out');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Could not do that');
+    }
+  };
+
   const exportData = () => {
     try {
       const data = {
@@ -243,6 +300,57 @@ export function Settings() {
         })}
       </div>
 
+      <SectionLabel>What you track</SectionLabel>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 8 }}>
+        {MODULE_OPTS.map((m, i) => {
+          const on = !profile.modules || profile.modules.includes(m.key);
+          return (
+            <div key={m.key} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: i === MODULE_OPTS.length - 1 ? 'none' : '1px solid var(--border)' }}>
+              <span style={{ width: 34, height: 34, borderRadius: 10, background: `color-mix(in srgb,var(--${m.color}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', fontSize: 17 }} aria-hidden>
+                {m.emoji}
+              </span>
+              <div style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{m.label}</div>
+              <div
+                onClick={() => {
+                  const cur = profile.modules || MODULE_OPTS.map((x) => x.key);
+                  const next = on ? cur.filter((k) => k !== m.key) : [...cur, m.key];
+                  if (!next.length) {
+                    showToast('Keep at least one');
+                    return;
+                  }
+                  mutateOpt((st) => ({ ...st, profile: { ...st.profile, modules: next } }), () => api.updateMe({ modules: next }));
+                }}
+                role="switch"
+                aria-checked={on}
+                aria-label={m.label}
+                style={toggleTrack(on)}
+              >
+                <div style={toggleKnob(on)} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24, paddingLeft: 4, lineHeight: 1.5 }}>
+        Hides what you don't use — nothing is deleted.
+      </div>
+
+      <SectionLabel>Accent colour</SectionLabel>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, paddingLeft: 2 }}>
+        {['indigo', 'blue', 'teal', 'emerald', 'coral', 'purple', 'pink', 'amber', 'cyan', 'rose'].map((c) => {
+          const active = (profile.accent || 'indigo') === c;
+          return (
+            <div
+              key={c}
+              onClick={() => mutateOpt((s) => ({ ...s, profile: { ...s.profile, accent: c } }), () => api.updateMe({ accent: c }))}
+              role="button"
+              aria-label={`Accent ${c}`}
+              style={{ width: 38, height: 38, borderRadius: '50%', cursor: 'pointer', flex: 'none', background: `var(--${c})`, transition: 'all .15s', boxShadow: active ? `0 0 0 3px var(--surface),0 0 0 5px var(--${c})` : '0 0 0 0 transparent' }}
+            />
+          );
+        })}
+      </div>
+
       <SectionLabel>Preferences</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         <PrefRow
@@ -350,6 +458,18 @@ export function Settings() {
           </div>
           <IconChevron />
         </div>
+        <div onClick={importData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderTop: '1px solid var(--border)', cursor: 'pointer' }}>
+          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--teal) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--teal)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+              <path d="M10 12V3M6.5 6.5L10 3l3.5 3.5M4 14v2h12v-2" />
+            </svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Import data</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Restore from an exported file</div>
+          </div>
+          <IconChevron />
+        </div>
         <div onClick={resetData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderTop: '1px solid var(--border)', cursor: 'pointer' }}>
           <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--danger) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--danger)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
@@ -360,6 +480,36 @@ export function Settings() {
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--danger)' }}>Reset all data</div>
             <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Erase every entry and start fresh</div>
           </div>
+        </div>
+      </div>
+
+      <SectionLabel>Security</SectionLabel>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+        <div onClick={changePassword} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+              <rect x="4" y="8.5" width="12" height="8" rx="2" />
+              <path d="M7 8.5V6a3 3 0 0 1 6 0v2.5" />
+            </svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Change password</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Without the email round-trip</div>
+          </div>
+          <IconChevron />
+        </div>
+        <div onClick={signOutOthers} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
+          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--coral) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--coral)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+              <rect x="3" y="4" width="9" height="12" rx="2" />
+              <path d="M14 7l3 3-3 3M17 10h-5" />
+            </svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Sign out other devices</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Keeps you signed in here</div>
+          </div>
+          <IconChevron />
         </div>
       </div>
 

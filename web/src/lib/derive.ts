@@ -139,6 +139,8 @@ export interface HabitDerived {
   done: boolean;
   total: number; // total days ever completed (replaces streaks)
   streak: number;
+  paused: boolean;
+  why: string | null;
   // One 0/1 per *scheduled* weekday in the current week (Sun→Sat order);
   // 1 = checked in that day, 0 = missed or still upcoming. Length equals the
   // number of days the habit is assigned per week.
@@ -188,6 +190,10 @@ function weekSlotsFor(mask: string, set: Set<string>): number[] {
 
 export function deriveHabits(state: AppState, range: Range) {
   const today = sod(Date.now());
+  // Archived habits disappear from the app (history is kept); paused ones stay
+  // visible but stop counting toward progress, so travel/illness can't break a run.
+  const live = state.habits.filter((h) => !h.archived);
+  const counted = live.filter((h) => !h.paused);
   const byHabit = new Map<string, Set<string>>();
   state.habits.forEach((h) => byHabit.set(h.id, new Set()));
   state.checkins.forEach((c) => byHabit.get(c.habitId)?.add(c.day));
@@ -195,7 +201,7 @@ export function deriveHabits(state: AppState, range: Range) {
   // Key off UTC day-strings (subtracting whole days in ms) so it matches exactly
   // how the server stores check-ins, regardless of the client's timezone.
   const nowMs = Date.now();
-  const habits: HabitDerived[] = state.habits.map((h) => {
+  const habits: HabitDerived[] = live.map((h) => {
     const set = byHabit.get(h.id)!;
     const done = set.has(dayStr(nowMs));
     // Current streak (kept for internal stats, no longer shown to the user).
@@ -213,6 +219,8 @@ export function deriveHabits(state: AppState, range: Range) {
       locked: h.locked,
       days: h.days,
       done,
+      paused: h.paused,
+      why: h.why,
       total: set.size, // total days ever completed
       streak,
       weekSlots: weekSlotsFor(h.days, set),
@@ -262,7 +270,7 @@ export function deriveHabits(state: AppState, range: Range) {
     rangeTotal = 0,
     weekDone = 0,
     weekTotal = 0;
-  state.habits.forEach((h) => {
+  counted.forEach((h) => {
     const set = byHabit.get(h.id)!;
     const r = scheduledStats(h.days, set, nRange);
     rangeDone += r.done;
@@ -287,7 +295,7 @@ export function deriveHabits(state: AppState, range: Range) {
       if (t > Date.now()) break; // ignore days that haven't happened
       const dow = new Date(t).getDay();
       const ds = dayStr(t);
-      state.habits.forEach((h) => {
+      counted.forEach((h) => {
         const mask = /^[01]{7}$/.test(h.days) ? h.days : '1111111';
         if (mask[dow] !== '1') return;
         sched++;
@@ -441,7 +449,14 @@ export function derive(state: AppState, range: Range) {
     // `status` carries the same meaning as `color` in words, so budget health
     // isn't communicated by colour alone.
     const status = pct >= 100 ? 'Over budget' : pct >= 80 ? 'Close to limit' : 'On track';
-    return { ...b, spent: sp, pct, remaining: b.limit - sp, color: budgetColor(pct), status };
+    // Forecast: project this month's pace to month-end, so a warning arrives
+    // while there's still time to act rather than after the fact.
+    const nowD = new Date();
+    const dayOfMonth = nowD.getDate();
+    const daysInMonth = new Date(nowD.getFullYear(), nowD.getMonth() + 1, 0).getDate();
+    const projected = dayOfMonth > 2 ? Math.round((sp / dayOfMonth) * daysInMonth) : null;
+    const willExceed = projected != null && b.limit > 0 && projected > b.limit && pct < 100;
+    return { ...b, spent: sp, pct, remaining: b.limit - sp, color: budgetColor(pct), status, projected, willExceed };
   });
   const budgetTotal = budgets.reduce((s, b) => s + b.limit, 0),
     budgetSpent = budgets.reduce((s, b) => s + b.spent, 0);

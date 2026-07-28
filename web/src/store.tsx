@@ -26,7 +26,8 @@ export type Screen =
   | 'frecurring'
   | 'finsights'
   | 'feedbackInbox'
-  | 'privacy';
+  | 'privacy'
+  | 'insights';
 
 export type SheetKind =
   | 'chooser'
@@ -105,8 +106,8 @@ interface StoreCtx {
   confirmState: (ConfirmOpts & { resolve: (v: boolean) => void }) | null;
   closeConfirm: (v: boolean) => void;
   // Full-screen story report; offset 0 = current period, 1 = previous, …
-  report: { kind: 'week' | 'month'; offset: number } | null;
-  openReport: (k: 'week' | 'month', offset?: number) => void;
+  report: { kind: 'week' | 'month' | 'year'; offset: number } | null;
+  openReport: (k: 'week' | 'month' | 'year', offset?: number) => void;
   closeReport: () => void;
   // fire device vibration when the user has haptics enabled (no-op otherwise)
   haptic: (pattern?: number | number[]) => void;
@@ -232,8 +233,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const applyState = useCallback((s: AppState) => setState(s), []);
 
-  const [report, setReport] = useState<{ kind: 'week' | 'month'; offset: number } | null>(null);
-  const openReport = useCallback((kind: 'week' | 'month', offset = 0) => setReport({ kind, offset }), []);
+  const [report, setReport] = useState<{ kind: 'week' | 'month' | 'year'; offset: number } | null>(null);
+  const openReport = useCallback((kind: 'week' | 'month' | 'year', offset = 0) => setReport({ kind, offset }), []);
   const closeReport = useCallback(() => setReport(null), []);
 
   const [confirmState, setConfirmState] = useState<(ConfirmOpts & { resolve: (v: boolean) => void }) | null>(null);

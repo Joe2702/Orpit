@@ -14,7 +14,7 @@ const D = 86400000;
 
 // Build a set of "story" slides summarising the user's last week or month.
 // Monthly goes deeper (top category, best habit, savings rate, …).
-export function buildReport(s: AppState, kind: 'week' | 'month', offset = 0): ReportSlide[] {
+export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset = 0): ReportSlide[] {
   // Calendar periods, not rolling windows: "your week" means Mon–Sun and
   // "your month" means the actual month. offset=0 is the current period,
   // 1 is the previous one, and so on.
@@ -29,6 +29,9 @@ export function buildReport(s: AppState, kind: 'week' | 'month', offset = 0): Re
     start = d;
     end = new Date(d);
     end.setDate(end.getDate() + 7);
+  } else if (kind === 'year') {
+    start = new Date(now.getFullYear() - offset, 0, 1);
+    end = new Date(now.getFullYear() - offset + 1, 0, 1);
   } else {
     start = new Date(now.getFullYear(), now.getMonth() - offset, 1);
     end = new Date(now.getFullYear(), now.getMonth() - offset + 1, 1);
@@ -47,7 +50,11 @@ export function buildReport(s: AppState, kind: 'week' | 'month', offset = 0): Re
         : offset === 1
         ? 'last week'
         : `${offset} weeks ago`
+      : kind === 'year'
+      ? String(start.getFullYear())
       : start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  // A year gets the full deep-dive treatment, like a month.
+  const deep = kind !== 'week';
 
   const workouts = s.workouts.filter((w) => inWin(w.ts));
   const wMin = workouts.reduce((a, w) => a + (w.dur || 0), 0);
@@ -110,8 +117,8 @@ export function buildReport(s: AppState, kind: 'week' | 'month', offset = 0): Re
   slides.push({
     key: 'intro',
     color: 'indigo',
-    emoji: kind === 'week' ? '🗓️' : '🌙',
-    headline: kind === 'week' ? 'Your week' : 'Your month',
+    emoji: kind === 'week' ? '🗓️' : kind === 'year' ? '🎆' : '🌙',
+    headline: kind === 'week' ? 'Your week' : kind === 'year' ? `${start.getFullYear()} in review` : 'Your month',
     value: '',
     caption: range,
   });
@@ -124,7 +131,7 @@ export function buildReport(s: AppState, kind: 'week' | 'month', offset = 0): Re
     value: String(workouts.length),
     caption: workouts.length ? `${wMin} minutes moved · ${wActiveDays} active days` : `No workouts logged ${label}`,
   });
-  if (kind === 'month' && topWCat) {
+  if (deep && topWCat) {
     slides.push({ key: 'wcat', color: 'coral', emoji: '🏆', headline: 'Top workout', value: topWCat, caption: `your most-logged category (${topWCatN}×)` });
   }
 
@@ -136,8 +143,8 @@ export function buildReport(s: AppState, kind: 'week' | 'month', offset = 0): Re
     value: nights.length ? fmtDur(slAvg) : '—',
     caption: nights.length ? `nightly average across ${nights.length} nights` : `No nights logged ${label}`,
   });
-  if (kind === 'month' && nights.length) {
-    slides.push({ key: 'sleepbest', color: 'blue', emoji: '🌟', headline: 'Best night', value: fmtDur(slBest), caption: 'your longest sleep this month' });
+  if (deep && nights.length) {
+    slides.push({ key: 'sleepbest', color: 'blue', emoji: '🌟', headline: 'Best night', value: fmtDur(slBest), caption: kind === 'year' ? 'your longest sleep this year' : 'your longest sleep this month' });
   }
 
   slides.push({
@@ -154,7 +161,7 @@ export function buildReport(s: AppState, kind: 'week' | 'month', offset = 0): Re
 
   if (txns.length) {
     slides.push({ key: 'spent', color: 'emerald', emoji: '💸', headline: 'Spent', value: money(spent), caption: `across ${txns.filter((t) => t.amount < 0).length} expenses ${label}` });
-    if (kind === 'month') {
+    if (deep) {
       if (topCat) slides.push({ key: 'topcat', color: 'emerald', emoji: '🧾', headline: 'Top category', value: topCat, caption: `${money(topCatV)} spent here` });
       slides.push({ key: 'saved', color: 'emerald', emoji: '📈', headline: 'Net saved', value: money(net), caption: income > 0 ? `${savingsRate}% savings rate` : 'income vs. spending' });
     }
@@ -164,7 +171,7 @@ export function buildReport(s: AppState, kind: 'week' | 'month', offset = 0): Re
     key: 'outro',
     color: 'indigo',
     emoji: '✨',
-    headline: kind === 'week' ? 'Onto next week' : 'Onto next month',
+    headline: kind === 'week' ? 'Onto next week' : kind === 'year' ? 'Onto the next one' : 'Onto next month',
     value: '',
     caption: 'Keep tracking — every entry paints the bigger picture.',
   });

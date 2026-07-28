@@ -249,6 +249,11 @@ export function FBudgets() {
                 </span>
                 <span style={{ fontSize: 12.5, fontWeight: 600, color: b.remaining >= 0 ? 'var(--text2)' : 'var(--danger)' }}>{b.remaining >= 0 ? money(b.remaining) + ' left' : money(-b.remaining) + ' over'}</span>
               </div>
+              {b.willExceed && (
+                <div style={{ fontSize: 12, color: 'var(--warning)', marginTop: 8, fontWeight: 600 }}>
+                  At this pace you'll reach {money(b.projected!)} by month-end.
+                </div>
+              )}
             </div>
           );
         })}

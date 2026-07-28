@@ -98,6 +98,69 @@ async function scheduleWeekly(): Promise<void> {
   });
 }
 
+// Per-habit and bill reminders use their own id ranges so they never collide
+// with the daily (1001) / test (1002) / weekly (1003) notifications.
+const HABIT_BASE = 2000;
+const BILL_BASE = 3000;
+const stableId = (base: number, key: string) => {
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return base + (h % 500);
+};
+
+/**
+ * Schedule a reminder for each habit that has its own time, and one the day
+ * before each recurring bill is due.
+ */
+export async function scheduleExtras(
+  habits: { id: string; name: string; reminderTime: string | null; paused: boolean; archived: boolean }[],
+  bills: { id: string; name: string; nextTs: number | null; income: boolean }[]
+): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const ln = await LN();
+    await ensureChannel(ln);
+    const wanted = habits.filter((h) => h.reminderTime && !h.paused && !h.archived);
+    // Clear the whole range first so removed reminders actually disappear.
+    const pending = await ln.getPending();
+    const stale = pending.notifications
+      .filter((n) => n.id >= HABIT_BASE && n.id < BILL_BASE + 500)
+      .map((n) => ({ id: n.id }));
+    if (stale.length) await ln.cancel({ notifications: stale });
+
+    const notifications: Parameters<typeof ln.schedule>[0]['notifications'] = [];
+    wanted.forEach((h) => {
+      const { hour, minute } = parseTime(h.reminderTime!);
+      notifications.push({
+        id: stableId(HABIT_BASE, h.id),
+        title: h.name,
+        body: 'Time for this one — tap to check it off 🌱',
+        schedule: { on: { hour, minute }, allowWhileIdle: true },
+        channelId: CHANNEL_ID,
+      });
+    });
+    // Bills: a heads-up the day before, at 10:00.
+    bills
+      .filter((b) => !b.income && b.nextTs && b.nextTs > Date.now())
+      .slice(0, 20)
+      .forEach((b) => {
+        const at = new Date(b.nextTs! - 86400000);
+        at.setHours(10, 0, 0, 0);
+        if (at.getTime() <= Date.now()) return;
+        notifications.push({
+          id: stableId(BILL_BASE, b.id),
+          title: 'Upcoming bill',
+          body: `${b.name} is due tomorrow.`,
+          schedule: { at, allowWhileIdle: true },
+          channelId: CHANNEL_ID,
+        });
+      });
+    if (notifications.length) await ln.schedule({ notifications });
+  } catch {
+    /* reminders are best-effort — never break the app over them */
+  }
+}
+
 /**
  * Called on app launch: if the account has reminders on, make sure the daily
  * notification is actually scheduled on THIS device (permissions were granted

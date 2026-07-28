@@ -4,6 +4,7 @@ import { api } from '../api';
 import { daysLabel } from '../lib/format';
 import { HABIT_PRESETS } from '../lib/presets';
 import { IconTrash } from '../icons';
+import { toggleTrack, toggleKnob } from '../ui';
 
 const COLORS = ['teal', 'indigo', 'coral', 'blue', 'emerald', 'purple', 'pink', 'amber', 'cyan', 'rose'];
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Sun..Sat
@@ -16,6 +17,9 @@ export function HabitSheet() {
   const [days, setDays] = useState<string>(
     /^[01]{7}$/.test(sheetData?.days) ? sheetData.days : '1111111'
   );
+  const [why, setWhy] = useState<string>(sheetData?.why ?? '');
+  const [hReminder, setHReminder] = useState<string>(sheetData?.reminderTime ?? '');
+  const [paused, setPaused] = useState<boolean>(!!sheetData?.paused);
 
   const toggleDay = (i: number) => {
     const arr = days.split('');
@@ -38,7 +42,16 @@ export function HabitSheet() {
       return;
     }
     haptic();
-    const body = { name: name.trim(), color, target: daysLabel(days), days };
+    const body = {
+      name: name.trim(),
+      color,
+      target: daysLabel(days),
+      days,
+      why: why.trim() || null,
+      reminderTime: hReminder || null,
+      paused,
+      archived: false,
+    };
     if (editId) {
       mutateOpt(
         (s) => ({ ...s, habits: s.habits.map((hb) => (hb.id === editId ? { ...hb, ...body } : hb)) }),
@@ -48,11 +61,35 @@ export function HabitSheet() {
     } else {
       const tempId = 'tmp_' + Date.now();
       mutateOpt(
-        (s) => ({ ...s, habits: [...s.habits, { id: tempId, ...body, locked: false }] }),
+        (s) => ({
+          ...s,
+          habits: [
+            ...s.habits,
+            { id: tempId, ...body, locked: false, paused: false, archived: false, why: body.why ?? null, reminderTime: body.reminderTime ?? null },
+          ],
+        }),
         () => api.addHabit(body),
         'Habit added'
       ).catch(() => {});
     }
+    closeSheet();
+  };
+
+  // Archiving hides the habit but keeps every check-in — the safe alternative
+  // to deleting, which destroys history for good.
+  const archive = async () => {
+    if (!editId) return;
+    if (!(await confirm({
+      title: 'Archive this habit?',
+      message: "It disappears from your lists, but its history is kept. You can't undo this from the app yet.",
+      confirmLabel: 'Archive',
+    }))) return;
+    haptic();
+    mutateOpt(
+      (s) => ({ ...s, habits: s.habits.map((hb) => (hb.id === editId ? { ...hb, archived: true } : hb)) }),
+      () => api.editHabit(editId, { name: name.trim(), color, target: daysLabel(days), days, why: why.trim() || null, reminderTime: hReminder || null, paused, archived: true }),
+      'Habit archived'
+    ).catch(() => {});
     closeSheet();
   };
 
@@ -156,12 +193,66 @@ export function HabitSheet() {
         This habit only appears on the days you pick.
       </div>
 
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Why this matters (optional)</div>
+      <input
+        value={why}
+        onChange={(e) => setWhy(e.target.value)}
+        placeholder="e.g. so I have energy for my kids"
+        maxLength={200}
+        style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 6 }}
+      />
+      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 20 }}>Shown when you're slipping, as a nudge.</div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: '12px 14px', marginBottom: 14 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>Its own reminder</div>
+          <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>Leave empty to use the daily one</div>
+        </div>
+        <input
+          type="time"
+          value={hReminder}
+          onChange={(e) => setHReminder(e.target.value)}
+          style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '8px 10px', outline: 'none' }}
+        />
+      </div>
+
+      {editId && (
+        <div
+          onClick={() => setPaused(!paused)}
+          className="pressRow"
+          role="button"
+          style={{ display: 'flex', alignItems: 'center', gap: 12, background: paused ? 'color-mix(in srgb,var(--warning) 12%,var(--surface))' : 'var(--bg)', border: `1px solid ${paused ? 'color-mix(in srgb,var(--warning) 35%,var(--border))' : 'var(--border)'}`, borderRadius: 14, padding: '12px 14px', marginBottom: 20, cursor: 'pointer' }}
+        >
+          <span style={{ fontSize: 18 }} aria-hidden>{paused ? '⏸️' : '▶️'}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>{paused ? 'Paused' : 'Pause this habit'}</div>
+            <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>
+              Travelling or unwell? Pausing hides it without breaking your run.
+            </div>
+          </div>
+          <div style={toggleTrack(paused)}>
+            <div style={toggleKnob(paused)} />
+          </div>
+        </div>
+      )}
+
       <div
         onClick={save}
         style={{ background: canSave ? 'var(--teal)' : 'color-mix(in srgb,var(--teal) 40%,var(--surface))', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', marginTop: 8, transition: 'all .2s' }}
       >
         {editId ? 'Save changes' : 'Create habit'}
       </div>
+
+      {editId && (
+        <div
+          onClick={archive}
+          className="press99"
+          role="button"
+          style={{ height: 52, borderRadius: 16, border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', marginTop: 10 }}
+        >
+          Archive (keeps your history)
+        </div>
+      )}
 
       {editId && (
         <div onClick={del} className="press99" style={{ height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>

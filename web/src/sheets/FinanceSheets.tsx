@@ -194,12 +194,13 @@ export function RecurringSheet() {
   const [amount, setAmount] = useState(sheetData?.amount != null ? String(sheetData.amount) : '');
   const [freq, setFreq] = useState<'Weekly' | 'Monthly' | 'Yearly'>(sheetData?.freq ?? 'Monthly');
   const [accId, setAccId] = useState(sheetData?.accId ?? state!.accounts[0]?.id ?? '');
+  const [income, setIncome] = useState<boolean>(!!sheetData?.income);
   const canSave = !!name.trim() && parseFloat(amount) > 0;
 
   const save = async () => {
     if (!canSave) { showToast('Name and amount required'); return; }
     haptic();
-    const body = { name: name.trim(), cat, amount: parseFloat(amount), freq, accId };
+    const body = { name: name.trim(), cat, amount: parseFloat(amount), freq, accId, income };
     await mutate(() => (editId ? api.editRecurring(editId, body) : api.addRecurring(body)), editId ? 'Recurring updated' : 'Recurring added');
     closeSheet();
   };
@@ -208,6 +209,17 @@ export function RecurringSheet() {
   return (
     <div style={{ padding: '4px 20px 32px' }}>
       <Title>{editId ? 'Edit recurring' : 'New recurring'}</Title>
+      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: 3, marginBottom: 18 }}>
+        {([[false, 'Expense'], [true, 'Income']] as const).map(([v, lbl]) => (
+          <div
+            key={lbl}
+            onClick={() => setIncome(v)}
+            style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 11, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(income === v ? { background: 'var(--surface)', color: v ? 'var(--emerald)' : 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
+          >
+            {lbl}
+          </div>
+        ))}
+      </div>
       {label('Name')}
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Netflix" style={{ ...input, marginBottom: 20 }} />
       {label('Amount')}

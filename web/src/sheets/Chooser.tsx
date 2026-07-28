@@ -1,10 +1,11 @@
 import React from 'react';
 import { useStore } from '../store';
 import { IconWorkout, IconSleep, IconExpense, IconHabit } from '../icons';
+import { enabled } from '../lib/modules';
 
 export function Chooser() {
-  const { open } = useStore();
-  const items = [
+  const { open, state } = useStore();
+  const allItems = [
     { label: 'Workout', desc: 'Run, lift, walk…', key: 'coral', icon: <IconWorkout size={24} />, sheet: 'workout' as const },
     { label: 'Sleep', desc: 'Bedtime & wake-up', key: 'blue', icon: <IconSleep size={24} />, sheet: 'sleep' as const },
     { label: 'Expense', desc: 'Income or spend', key: 'emerald', icon: <IconExpense size={24} />, sheet: 'expense' as const },
@@ -21,6 +22,9 @@ export function Chooser() {
       ),
     },
   ];
+  // Only offer what the user chose to track.
+  const modKey: Record<string, string> = { Workout: 'workouts', Sleep: 'sleep', Expense: 'finances', Habit: 'habits', Counter: 'counters' };
+  const items = allItems.filter((it) => enabled(state!, modKey[it.label]));
   return (
     <div style={{ padding: '8px 20px 34px' }}>
       <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 4px 16px' }}>Log something</div>
