@@ -31,6 +31,7 @@ import { ProfileSheet } from './sheets/ProfileSheet';
 import { FeedbackSheet } from './sheets/FeedbackSheet';
 import { HabitCalendarSheet } from './sheets/HabitCalendarSheet';
 import { ReminderOnboarding } from './ReminderOnboarding';
+import { StoryReport } from './screens/StoryReport';
 import { syncReminders } from './lib/notify';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
@@ -188,15 +189,23 @@ function TabBar() {
   );
 
   return (
-    <div style={{ flex: 'none', position: 'relative', padding: '0 16px 16px', zIndex: 30 }}>
+    // Absolutely positioned so the screen scrolls BEHIND it; the container
+    // itself ignores taps (pointerEvents none) so the transparent sides don't
+    // block content — only the pill is interactive.
+    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 16px 16px', zIndex: 40, pointerEvents: 'none' }}>
       <div
         style={{
           position: 'relative',
           height: 64,
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
+          pointerEvents: 'auto',
+          // Frosted glass: translucent + backdrop blur, so text scrolling under
+          // it shows through blurred rather than sitting on a solid bar.
+          background: 'color-mix(in srgb, var(--surface) 68%, transparent)',
+          backdropFilter: 'blur(20px) saturate(1.7)',
+          WebkitBackdropFilter: 'blur(20px) saturate(1.7)',
+          border: '1px solid color-mix(in srgb, var(--border) 70%, transparent)',
           borderRadius: 999,
-          boxShadow: '0 12px 30px -8px rgba(8,9,14,.30), 0 2px 8px rgba(8,9,14,.10)',
+          boxShadow: '0 12px 30px -10px rgba(8,9,14,.28)',
           display: 'flex',
           alignItems: 'center',
           padding: '0 8px',
@@ -268,7 +277,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 }
 
 export function App() {
-  const { ready, authed, state, screen, sheet, toast, closeSheet, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm } = useStore();
+  const { ready, authed, state, screen, sheet, toast, closeSheet, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, report, closeReport } = useStore();
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
 
   // Track the phone's own light/dark setting so "System" can follow it live.
@@ -381,7 +390,7 @@ export function App() {
 
       {!mobile && <StatusBar />}
 
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', position: 'relative', WebkitOverflowScrolling: 'touch' }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', position: 'relative', WebkitOverflowScrolling: 'touch', paddingBottom: showTabs ? 84 : 0 }}>
         {ready ? <CurrentScreen /> : null}
       </div>
 
@@ -449,6 +458,8 @@ export function App() {
       )}
 
       {authed && <ReminderOnboarding />}
+
+      {report && state && <StoryReport kind={report} onClose={closeReport} />}
     </>
   );
 

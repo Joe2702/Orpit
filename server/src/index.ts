@@ -481,9 +481,14 @@ app.post(
     );
     if (!cat) return res.status(400).json({ error: 'Unknown category' });
     const name = String(req.body.name || '').trim() || cat.name;
+    // Optional explicit timestamp lets the user log a workout for a past day.
+    const ts =
+      req.body.ts != null && Number.isFinite(Number(req.body.ts))
+        ? new Date(Number(req.body.ts))
+        : new Date();
     await query(
-      `INSERT INTO workouts (user_id, category_id, name, dur, dist, kcal, intensity)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      `INSERT INTO workouts (user_id, category_id, name, dur, dist, kcal, intensity, ts)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
       [
         uid,
         cat.id,
@@ -492,6 +497,7 @@ app.post(
         req.body.dist ? String(req.body.dist) : null,
         req.body.kcal ? Number(req.body.kcal) : null,
         req.body.intensity ? String(req.body.intensity) : null,
+        ts,
       ]
     );
     res.json(await buildState(uid));
@@ -922,7 +928,8 @@ app.post(
   wrap(async (req, res) => {
     const uid = req.userId!;
     const amt = Number(req.body.amount);
-    if (!amt || amt <= 0) return res.status(400).json({ error: 'Add an amount' });
+    // Negative amounts are allowed so a user can correct an over-count.
+    if (!Number.isFinite(amt) || amt === 0) return res.status(400).json({ error: 'Add an amount' });
     const owned = await one('SELECT id FROM counters WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
     if (!owned) return res.status(404).json({ error: 'Counter not found' });
     await query('INSERT INTO count_logs (user_id, counter_id, amount) VALUES ($1,$2,$3)', [
@@ -1050,18 +1057,19 @@ app.post(
   })
 );
 
-// ---- Owner-only feedback inbox ----
-// Lets the app owner read everything testers submit, straight from the app.
-// Access is restricted to the account whose email matches ADMIN_EMAIL.
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'youssif_mohammed@aucegypt.edu').toLowerCase();
+// ---- Password-protected feedback inbox ----
+// Any signed-in user who supplies the correct password (x-admin-password
+// header) can read everything testers submit. Override the default via the
+// ADMIN_PASSWORD env var on the server for real security (it's a public repo).
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '01027909082';
 
 app.get(
   '/api/admin/feedback',
   requireAuth,
   wrap(async (req, res) => {
-    const me = await one<{ email: string }>('SELECT email FROM users WHERE id = $1', [req.userId!]);
-    if (!me || me.email.toLowerCase() !== ADMIN_EMAIL) {
-      return res.status(403).json({ error: 'Not allowed' });
+    const pw = String(req.headers['x-admin-password'] || '');
+    if (pw !== ADMIN_PASSWORD) {
+      return res.status(403).json({ error: 'Wrong password' });
     }
     const rows = await query<{
       id: string;

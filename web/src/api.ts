@@ -101,7 +101,8 @@ export const api = {
   pushSubscribe: (sub: unknown) =>
     request<{ ok: boolean }>('/push/subscribe', { method: 'POST', body: JSON.stringify({ sub }) }),
   pushTest: () => request<{ ok: boolean; sent: number }>('/push/test', { method: 'POST' }),
-  adminFeedback: () => request<{ items: FeedbackItem[] }>('/admin/feedback'),
+  adminFeedback: (password: string) =>
+    request<{ items: FeedbackItem[] }>('/admin/feedback', { headers: { 'x-admin-password': password } }),
 
   addHabit: (b: { name: string; color: string; target: string; days: string }) =>
     request<AppState>('/habits', { method: 'POST', body: JSON.stringify(b) }),
@@ -125,6 +126,7 @@ export const api = {
     dist?: string | null;
     kcal?: number | null;
     intensity?: string | null;
+    ts?: number;
   }) => request<AppState>('/workouts', { method: 'POST', body: JSON.stringify(b) }),
   editWorkout: (
     id: string,

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../store';
 import { api, ApiError, type FeedbackItem } from '../api';
 import { BackButton } from '../ui';
@@ -25,49 +25,65 @@ function timeAgo(ts: number): string {
 export function FeedbackInbox() {
   const { go } = useStore();
   const [items, setItems] = useState<FeedbackItem[] | null>(null);
+  const [unlocked, setUnlocked] = useState(false);
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
 
-  useEffect(() => {
-    let alive = true;
+  const submit = () => {
+    if (!password || checking) return;
+    setChecking(true);
+    setError(null);
     api
-      .adminFeedback()
-      .then((r) => alive && setItems(r.items))
-      .catch((e) => {
-        if (!alive) return;
-        setError(e instanceof ApiError && e.status === 403 ? "You don't have access to this." : 'Could not load feedback.');
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
+      .adminFeedback(password)
+      .then((r) => {
+        setItems(r.items);
+        setUnlocked(true);
+      })
+      .catch((e) => setError(e instanceof ApiError && e.status === 403 ? 'Wrong password.' : 'Could not load feedback.'))
+      .finally(() => setChecking(false));
+  };
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
         <BackButton onClick={() => go('settings')} />
         <div style={{ flex: 1, fontSize: 24, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>Feedback</div>
-        {items && (
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{items.length}</div>
-        )}
+        {unlocked && items && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{items.length}</div>}
       </div>
 
-      {error && (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text2)', fontSize: 14 }}>{error}</div>
-      )}
-
-      {!error && items === null && (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text2)', fontSize: 14 }}>Loading…</div>
-      )}
-
-      {!error && items && items.length === 0 && (
+      {!unlocked ? (
+        <div style={{ padding: '30px 4px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 20 }}>
+            <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Enter password</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4 }}>This inbox is protected.</div>
+          </div>
+          <input
+            type="password"
+            inputMode="numeric"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && submit()}
+            placeholder="Password"
+            style={{ width: '100%', height: 52, borderRadius: 14, border: `1px solid ${error ? 'var(--danger)' : 'var(--border)'}`, background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginBottom: 12 }}
+          />
+          {error && <div style={{ fontSize: 13, color: 'var(--danger)', marginBottom: 12, textAlign: 'center' }}>{error}</div>}
+          <div
+            onClick={submit}
+            className="press"
+            style={{ background: password ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: '#fff', height: 52, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, cursor: password ? 'pointer' : 'default' }}
+          >
+            {checking ? 'Checking…' : 'Unlock'}
+          </div>
+        </div>
+      ) : items && items.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text2)', fontSize: 14 }}>
           No feedback yet. When your testers send some, it shows up here.
         </div>
-      )}
-
-      {!error && items && items.length > 0 && (
+      ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {items.map((f) => {
+          {items!.map((f) => {
             const k = KIND_STYLE[f.kind] || KIND_STYLE.other;
             return (
               <div
