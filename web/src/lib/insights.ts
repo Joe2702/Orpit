@@ -1,3 +1,4 @@
+import type { GlyphName } from './appIcons';
 import type { AppState } from '../types';
 import { dayKey, money, hm } from './format';
 
@@ -7,7 +8,7 @@ import { dayKey, money, hm } from './format';
 
 export interface Insight {
   id: string;
-  emoji: string;
+  icon: GlyphName;
   color: string; // CSS token key
   title: string; // the finding, in one sentence
   detail: string; // what it's based on
@@ -54,7 +55,7 @@ export function buildInsights(s: AppState): Insight[] {
       if (Math.abs(diffMin) >= 15) {
         out.push({
           id: 'sleep-workout',
-          emoji: diffMin > 0 ? '😴' : '⚡',
+          icon: (diffMin > 0 ? 'bed' : 'bolt') as GlyphName,
           color: 'blue',
           kind: 'link',
           title:
@@ -84,7 +85,7 @@ export function buildInsights(s: AppState): Insight[] {
       if (b > 0 && Math.abs(change) >= 25) {
         out.push({
           id: 'spend-sleep',
-          emoji: change > 0 ? '💸' : '🧘',
+          icon: (change > 0 ? 'cash' : 'zen') as GlyphName,
           color: 'emerald',
           kind: 'link',
           title:
@@ -114,7 +115,7 @@ export function buildInsights(s: AppState): Insight[] {
       if (Math.abs(change) >= 20) {
         out.push({
           id: 'habits-workout',
-          emoji: '🔗',
+          icon: 'link' as GlyphName,
           color: 'teal',
           kind: 'link',
           title:
@@ -153,7 +154,7 @@ export function buildInsights(s: AppState): Insight[] {
       if (best.r - worst.r >= 0.25) {
         out.push({
           id: 'weekday',
-          emoji: '📅',
+          icon: 'calendar' as GlyphName,
           color: 'indigo',
           kind: 'pattern',
           title: `${WD[worst.i]}s are your weak spot.`,
@@ -186,7 +187,7 @@ export function buildInsights(s: AppState): Insight[] {
       if (base > 0 && thisWeek >= base * 2 && thisWeek - base > 50) {
         out.push({
           id: 'anomaly-' + c,
-          emoji: '⚠️',
+          icon: 'alert' as GlyphName,
           color: 'warning',
           kind: 'alert',
           title: `${c} is ${(thisWeek / base).toFixed(1)}× your usual this week.`,
@@ -202,7 +203,7 @@ export function buildInsights(s: AppState): Insight[] {
       const longest = s.workouts.reduce((a, b) => (b.dur > a.dur ? b : a));
       out.push({
         id: 'pr-workout',
-        emoji: '🏆',
+        icon: 'trophy' as GlyphName,
         color: 'coral',
         kind: 'record',
         title: `Longest session: ${longest.dur} min.`,
@@ -213,7 +214,7 @@ export function buildInsights(s: AppState): Insight[] {
       const best = s.nights.reduce((a, b) => (b.hours > a.hours ? b : a));
       out.push({
         id: 'pr-sleep',
-        emoji: '🌙',
+        icon: 'moon' as GlyphName,
         color: 'blue',
         kind: 'record',
         title: `Best night: ${hm(best.hours)}.`,
@@ -235,7 +236,7 @@ export function buildInsights(s: AppState): Insight[] {
       if (bestWeek > 0) {
         out.push({
           id: 'pr-habits',
-          emoji: '🌱',
+          icon: 'sprout' as GlyphName,
           color: 'teal',
           kind: 'record',
           title: `Best habit week: ${bestWeek} check-ins.`,
@@ -253,7 +254,7 @@ export function buildInsights(s: AppState): Insight[] {
       if (debt >= 2) {
         out.push({
           id: 'sleep-debt',
-          emoji: '🛌',
+          icon: 'bed' as GlyphName,
           color: 'danger',
           kind: 'alert',
           title: `You're ${hm(debt)} short on sleep this week.`,
@@ -262,7 +263,7 @@ export function buildInsights(s: AppState): Insight[] {
       } else if (debt <= -2) {
         out.push({
           id: 'sleep-surplus',
-          emoji: '✨',
+          icon: 'sparkle' as GlyphName,
           color: 'success',
           kind: 'pattern',
           title: `You're ${hm(-debt)} ahead on sleep this week.`,

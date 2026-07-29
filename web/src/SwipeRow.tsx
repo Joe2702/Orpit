@@ -104,8 +104,11 @@ export function SwipeRow({
 
   return (
     <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 18 }}>
-      {/* Action strip, revealed as the row slides off it. */}
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'flex-end' }} aria-hidden={dx === 0}>
+      {/* Action strip, revealed as the row slides off it. Rendered only while
+          the row is actually moving: --surface is translucent, so a strip
+          sitting underneath a resting row shows through it. */}
+      {dx !== 0 && (
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'flex-end' }}>
         {onEdit &&
           btn('Edit', 'var(--blue)', (
             <svg width="19" height="19" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
@@ -118,6 +121,7 @@ export function SwipeRow({
           </svg>
         ), onDelete)}
       </div>
+      )}
 
       <div
         onPointerDown={down}

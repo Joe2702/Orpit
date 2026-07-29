@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import { Ring } from '../lib/charts';
 import { BackButton } from '../ui';
 import { computeBadges, type Badge } from '../lib/badges';
+import { Glyph } from '../lib/appIcons';
 
 export function Achievements() {
   const { state, go, claimedBadges, claimBadge, haptic } = useStore();
@@ -47,7 +48,7 @@ export function Achievements() {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
-            {unlocked.length === 0 ? 'Start earning badges' : unlocked.length === total ? 'You collected them all! 🎉' : 'Keep it going'}
+            {unlocked.length === 0 ? 'Start earning badges' : unlocked.length === total ? 'You collected them all' : 'Keep it going'}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4, lineHeight: 1.5 }}>
             {unlocked.length} of {total} unlocked. Log your day to reveal more.
@@ -57,7 +58,7 @@ export function Achievements() {
 
       {claimable.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'color-mix(in srgb,var(--warning) 14%,var(--surface))', border: '1px solid color-mix(in srgb,var(--warning) 40%,var(--border))', borderRadius: 16, padding: '13px 15px', marginBottom: 22 }}>
-          <span style={{ fontSize: 22, lineHeight: 1 }}>🎉</span>
+          <Glyph name="gift" size={22} color="var(--indigo)" />
           <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
             {claimable.length} new {claimable.length === 1 ? 'badge' : 'badges'} ready — tap the glowing ones below to reveal.
           </div>
@@ -125,8 +126,8 @@ function BadgeTile({
         style={{ position: 'relative', overflow: 'hidden', background: `color-mix(in srgb,var(--${b.color}) 14%,var(--surface))`, border: `1.5px solid color-mix(in srgb,var(--${b.color}) 45%,var(--border))`, borderRadius: 18, boxShadow: 'var(--shadow)', padding: '16px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8, minHeight: 138, justifyContent: 'center', cursor: 'pointer' }}
       >
         <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 50% 40%, color-mix(in srgb,var(--${b.color}) 32%,transparent), transparent 68%)`, animation: 'glowPulse 2.6s ease-in-out infinite' }} />
-        <div style={{ position: 'relative', width: 56, height: 56, borderRadius: '50%', background: `color-mix(in srgb,var(--${b.color}) 24%,var(--surface))`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>
-          🎁
+        <div style={{ position: 'relative', width: 56, height: 56, borderRadius: '50%', background: `color-mix(in srgb,var(--${b.color}) 24%,var(--surface))`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Glyph name="gift" size={26} color={`var(--${b.color})`} />
         </div>
         <div style={{ position: 'relative', fontSize: 13, fontWeight: 700, color: `var(--${b.color})` }}>Tap to reveal</div>
       </div>
@@ -136,8 +137,8 @@ function BadgeTile({
   if (b.unlocked && claimed) {
     return (
       <div style={{ background: `color-mix(in srgb,var(--${b.color}) 12%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${b.color}) 30%,var(--border))`, borderRadius: 18, boxShadow: 'var(--shadow)', padding: '16px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 7, minHeight: 138, justifyContent: 'center', animation: justClaimed ? 'badgePop .45s ease' : undefined }}>
-        <div style={{ width: 56, height: 56, borderRadius: '50%', background: `color-mix(in srgb,var(--${b.color}) 22%,var(--surface))`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, boxShadow: `0 6px 16px -6px color-mix(in srgb,var(--${b.color}) 60%,transparent)` }}>
-          {b.emoji}
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: `color-mix(in srgb,var(--${b.color}) 22%,var(--surface))`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 6px 16px -6px color-mix(in srgb,var(--${b.color}) 60%,transparent)` }}>
+          <Glyph name={b.icon} size={28} color={`var(--${b.color})`} />
         </div>
         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>{b.name}</div>
         <div style={{ fontSize: 11.5, color: 'var(--text2)', lineHeight: 1.3 }}>{b.desc}</div>

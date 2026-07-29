@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { api, ApiError, type FeedbackItem, type ClientErrorItem } from '../api';
 import { BackButton } from '../ui';
+import { Glyph } from '../lib/appIcons';
 
 const KIND_STYLE: Record<string, { label: string; color: string }> = {
   bug: { label: 'Bug', color: 'danger' },
@@ -67,7 +68,9 @@ export function FeedbackInbox() {
       {!unlocked ? (
         <div style={{ padding: '30px 4px' }}>
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
-            <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+              <Glyph name="lock" size={38} color="var(--text2)" sw={1.6} />
+            </div>
             <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Enter password</div>
             <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4 }}>This inbox is protected.</div>
           </div>
@@ -108,7 +111,7 @@ export function FeedbackInbox() {
           {tab === 'crashes' ? (
             errors.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>
-                No crashes reported. 🎉
+                No crashes reported.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

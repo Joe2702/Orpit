@@ -1,6 +1,5 @@
 import React from 'react';
 import type { WorkoutSet } from './types';
-import { startRest } from './lib/restTimer';
 
 // Strength logging: exercises, each with its own sets of reps × weight.
 //
@@ -28,15 +27,7 @@ export function volume(sets: WorkoutSet[] | null | undefined): number {
   return sets.reduce((a, s) => a + s.reps * (s.weight || 0), 0);
 }
 
-export function SetsEditor({
-  sets,
-  onChange,
-  restSeconds = 90,
-}: {
-  sets: WorkoutSet[];
-  onChange: (next: WorkoutSet[]) => void;
-  restSeconds?: number;
-}) {
+export function SetsEditor({ sets, onChange }: { sets: WorkoutSet[]; onChange: (next: WorkoutSet[]) => void }) {
   const groups = group(sets);
 
   const patch = (i: number, p: Partial<WorkoutSet>) =>
@@ -52,7 +43,6 @@ export function SetsEditor({
     const next = [...sets];
     next.splice(at, 0, { ex: g.ex, reps: prev.reps, weight: prev.weight });
     onChange(next);
-    startRest(restSeconds); // logging a set means the rest has begun
   };
 
   const addExercise = () => onChange([...sets, { ex: '', reps: 10, weight: null }]);
