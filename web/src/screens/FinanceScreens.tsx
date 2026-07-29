@@ -7,6 +7,9 @@ import { FinIcon } from '../lib/iconPaths';
 import { Ring } from '../lib/charts';
 import { BackButton, chip } from '../ui';
 import { IconTrash } from '../icons';
+import { SwipeRow } from '../SwipeRow';
+import { ReceiptField, ReceiptPicker } from '../Receipt';
+import { useEntryActions } from '../lib/entryActions';
 import type { Txn } from '../types';
 
 function Header({ title, action }: { title: string; action?: React.ReactNode }) {
@@ -45,6 +48,9 @@ export function FAddTx() {
   const [accId, setAccId] = useState<string>(edit?.accId || accounts[0]?.id || '');
   const [date, setDate] = useState<string>(edit ? new Date(edit.ts).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState<string>(edit?.note || '');
+  // Only used when creating: an existing transaction manages its receipt
+  // directly through ReceiptField, which uploads on the spot.
+  const [newPhoto, setNewPhoto] = useState<string | null>(null);
 
   const income = kind === 'income';
   const cat = income ? incCat : exCat;
@@ -65,7 +71,10 @@ export function FAddTx() {
     haptic();
     const ts = new Date(date + 'T12:00:00').getTime();
     const body = { name: cat, cat, amount: amt, income, accId, note: note.trim() || null, ts };
-    await mutate(() => (edit ? api.editTxn(edit.id, body) : api.addTxn(body)), edit ? 'Transaction updated' : 'Transaction saved');
+    await mutate(
+      () => (edit ? api.editTxn(edit.id, body) : api.addTxn({ ...body, ...(newPhoto ? { photo: newPhoto } : {}) })),
+      edit ? 'Transaction updated' : 'Transaction saved'
+    );
     go('ftxns');
   };
   const del = async () => {
@@ -118,6 +127,10 @@ export function FAddTx() {
       <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 14px', fontSize: 15, fontWeight: 600, color: 'var(--text)', outline: 'none', marginBottom: 22 }} />
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Note</div>
       <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note" style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 22 }} />
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Receipt</div>
+      <div style={{ marginBottom: 22 }}>
+        {edit ? <ReceiptField txn={edit} /> : <ReceiptPicker value={newPhoto} onChange={setNewPhoto} />}
+      </div>
       <div onClick={save} className="press99" style={{ background: 'var(--indigo)', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 22px -12px rgba(40,36,28,.28)' }}>Save transaction</div>
       {edit && (
         <div onClick={del} className="press99" style={{ height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
@@ -131,6 +144,7 @@ export function FAddTx() {
 // ================= Transactions list (grouped, search, filter) =================
 export function FTxns() {
   const { state, go } = useStore();
+  const { remove } = useEntryActions();
   const fcats = state!.fcats;
   const accById = Object.fromEntries(state!.accounts.map((a) => [a.id, a]));
   const [q, setQ] = useState('');
@@ -182,16 +196,26 @@ export function FTxns() {
               {g.items.map((t) => {
                 const fc = fcatByName(fcats, t.cat);
                 return (
-                  <div key={t.id} onClick={() => go('faddtx', { edit: t })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-                    <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: `color-mix(in srgb,var(--${fc.color}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <FinIcon icon={fc.icon} color={`var(--${fc.color})`} size={20} />
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t.name}</div>
-                      <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t.cat} · {accById[t.accId || '']?.name || '—'}</div>
+                  <SwipeRow key={t.id} onEdit={() => go('faddtx', { edit: t })} onDelete={() => remove('txn', t)}>
+                    <div onClick={() => go('faddtx', { edit: t })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}>
+                      <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: `color-mix(in srgb,var(--${fc.color}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <FinIcon icon={fc.icon} color={`var(--${fc.color})`} size={20} />
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {t.name}
+                          {t.photo && (
+                            <svg width="13" height="13" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.8, strokeLinejoin: 'round', flex: 'none' }} aria-label="Has a receipt">
+                              <path d="M1.5 4h2.2l1-1.4h3.6L9.3 4h2.2v7h-10z" />
+                              <circle cx="6.5" cy="7.4" r="2.1" />
+                            </svg>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t.cat} · {accById[t.accId || '']?.name || '—'}</div>
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: t.amount >= 0 ? 'var(--emerald)' : 'var(--text)' }}>{(t.amount >= 0 ? '+ ' : '− ') + money(t.amount)}</div>
                     </div>
-                    <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: t.amount >= 0 ? 'var(--emerald)' : 'var(--text)' }}>{(t.amount >= 0 ? '+ ' : '− ') + money(t.amount)}</div>
-                  </div>
+                  </SwipeRow>
                 );
               })}
             </div>
@@ -234,12 +258,17 @@ export function FBudgets() {
         {d.budgets.map((b) => {
           const fc = fcatByName(state!.fcats, b.cat);
           return (
-            <div key={b.id} onClick={() => open('budget', { id: b.id, cat: b.cat, limit: b.limit })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: 'pointer' }}>
+            <div key={b.id} onClick={() => open('budget', { id: b.id, cat: b.cat, limit: b.limit, rollover: b.rollover })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: 'pointer' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 12 }}>
                 <span style={{ width: 34, height: 34, borderRadius: 10, flex: 'none', background: `color-mix(in srgb,var(--${fc.color}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FinIcon icon={fc.icon} color={`var(--${fc.color})`} size={18} /></span>
                 <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{b.cat}</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{money(b.spent)} / {money(b.limit)}</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{money(b.spent)} / {money(b.effLimit)}</span>
               </div>
+              {b.carried > 0 && (
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--emerald)', marginTop: -6, marginBottom: 8 }}>
+                  +{money(b.carried)} rolled over from last month
+                </div>
+              )}
               <div style={{ height: 9, borderRadius: 999, background: 'var(--bg)', overflow: 'hidden', marginBottom: 8 }}>
                 <div style={{ height: '100%', borderRadius: 999, width: `${Math.min(100, b.pct)}%`, background: b.color, transition: 'width .4s' }} />
               </div>
@@ -249,6 +278,11 @@ export function FBudgets() {
                 </span>
                 <span style={{ fontSize: 12.5, fontWeight: 600, color: b.remaining >= 0 ? 'var(--text2)' : 'var(--danger)' }}>{b.remaining >= 0 ? money(b.remaining) + ' left' : money(-b.remaining) + ' over'}</span>
               </div>
+              {b.willExceed && (
+                <div style={{ fontSize: 12, color: 'var(--warning)', marginTop: 8, fontWeight: 600 }}>
+                  At this pace you'll reach {money(b.projected!)} by month-end.
+                </div>
+              )}
             </div>
           );
         })}

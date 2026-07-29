@@ -222,4 +222,73 @@ CREATE TABLE IF NOT EXISTS client_errors (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS client_errors_created ON client_errors(created_at DESC);
+
+-- ===== v3: retention, insights, personalisation =====
+
+-- Habits: pause (travel/illness) without losing the run, archive instead of
+-- destroying history, a personal "why", and an optional per-habit reminder.
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS paused BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS why TEXT;
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS reminder_time TEXT;
+
+-- Free-text notes turn entries into a diary ("knee hurt", "kid woke me twice").
+ALTER TABLE workouts ADD COLUMN IF NOT EXISTS note TEXT;
+ALTER TABLE nights   ADD COLUMN IF NOT EXISTS note TEXT;
+
+-- Recurring entries can be income (salary), not just expenses.
+ALTER TABLE recurring ADD COLUMN IF NOT EXISTS income BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Saved workout presets ("Push day · 45 min · Hard").
+CREATE TABLE IF NOT EXISTS workout_templates (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  category_id BIGINT REFERENCES workout_categories(id) ON DELETE CASCADE,
+  dur         INT NOT NULL DEFAULT 30,
+  intensity   TEXT,
+  sort        INT NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Personalisation: accent colour and which trackers the user wants to see.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS accent TEXT NOT NULL DEFAULT 'indigo';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS modules TEXT;
+-- Bumped to invalidate tokens on other devices ("sign out everywhere else").
+ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INT NOT NULL DEFAULT 0;
+
+-- ===== v3.1: quick wins =====
+-- Unused budget can carry into next month.
+ALTER TABLE budgets ADD COLUMN IF NOT EXISTS rollover BOOLEAN NOT NULL DEFAULT FALSE;
+-- In-app text size multiplier (0.9 / 1 / 1.1 / 1.2).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS text_scale REAL NOT NULL DEFAULT 1;
+-- Optional "start winding down" nudge before the usual bedtime.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS wind_down BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- ===== v3.2: medium features =====
+-- Strength logging. Sets live as JSONB on the workout rather than in their own
+-- table: they're always read and written together with the workout, and nothing
+-- ever queries across them.
+ALTER TABLE workouts ADD COLUMN IF NOT EXISTS sets JSONB;
+
+-- Receipt photos, kept out of the workouts/txns rows and out of the state
+-- bundle so a few hundred KB of image never rides along with every app open.
+CREATE TABLE IF NOT EXISTS txn_photos (
+  txn_id     BIGINT PRIMARY KEY REFERENCES txns(id) ON DELETE CASCADE,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  data       TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS txn_photos_user ON txn_photos(user_id);
+
+-- Email verification: a single-use token per request, expiring after a day.
+CREATE TABLE IF NOT EXISTS email_verifications (
+  token      TEXT PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  email      TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS email_verifications_user ON email_verifications(user_id);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE;
 `;

@@ -26,7 +26,10 @@ export type Screen =
   | 'frecurring'
   | 'finsights'
   | 'feedbackInbox'
-  | 'privacy';
+  | 'privacy'
+  | 'insights'
+  | 'search'
+  | 'verify';
 
 export type SheetKind =
   | 'chooser'
@@ -48,6 +51,7 @@ export type SheetKind =
   | 'recurring'
   | 'feedback'
   | 'habitcal'
+  | 'catchup'
   | null;
 
 interface StoreCtx {
@@ -105,8 +109,8 @@ interface StoreCtx {
   confirmState: (ConfirmOpts & { resolve: (v: boolean) => void }) | null;
   closeConfirm: (v: boolean) => void;
   // Full-screen story report; offset 0 = current period, 1 = previous, …
-  report: { kind: 'week' | 'month'; offset: number } | null;
-  openReport: (k: 'week' | 'month', offset?: number) => void;
+  report: { kind: 'week' | 'month' | 'year'; offset: number } | null;
+  openReport: (k: 'week' | 'month' | 'year', offset?: number) => void;
   closeReport: () => void;
   // fire device vibration when the user has haptics enabled (no-op otherwise)
   haptic: (pattern?: number | number[]) => void;
@@ -135,11 +139,21 @@ const initialResetToken =
     ? new URLSearchParams(window.location.search).get('token')
     : null;
 
+// Same for the email-confirmation link (/verify?token=…).
+const initialVerifyToken =
+  typeof window !== 'undefined' && window.location.pathname === '/verify'
+    ? new URLSearchParams(window.location.search).get('token')
+    : null;
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [state, setState] = useState<AppState | null>(null);
-  const [screen, setScreen] = useState<Screen>(initialResetToken ? 'reset' : 'welcome');
-  const [screenData, setScreenData] = useState<any>(initialResetToken ? { token: initialResetToken } : null);
+  const [screen, setScreen] = useState<Screen>(
+    initialResetToken ? 'reset' : initialVerifyToken ? 'verify' : 'welcome'
+  );
+  const [screenData, setScreenData] = useState<any>(
+    initialResetToken ? { token: initialResetToken } : initialVerifyToken ? { token: initialVerifyToken } : null
+  );
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [sheetData, setSheetData] = useState<any>(null);
   const [range, setRangeState] = useState<Range>('Week');
@@ -149,7 +163,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const toastUndoRef = useRef<(() => void) | undefined>(undefined);
   toastUndoRef.current = toastUndo;
   const [authMode, setAuthMode] = useState<'signup' | 'signin'>('signup');
-  const [booting, setBooting] = useState<boolean>(!initialResetToken && !!getToken());
+  const [booting, setBooting] = useState<boolean>(!initialResetToken && !initialVerifyToken && !!getToken());
   const [bootError, setBootError] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
   // Latest committed state (for optimistic rollback) and a monotonic counter so
@@ -232,8 +246,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const applyState = useCallback((s: AppState) => setState(s), []);
 
-  const [report, setReport] = useState<{ kind: 'week' | 'month'; offset: number } | null>(null);
-  const openReport = useCallback((kind: 'week' | 'month', offset = 0) => setReport({ kind, offset }), []);
+  const [report, setReport] = useState<{ kind: 'week' | 'month' | 'year'; offset: number } | null>(null);
+  const openReport = useCallback((kind: 'week' | 'month' | 'year', offset = 0) => setReport({ kind, offset }), []);
   const closeReport = useCallback(() => setReport(null), []);
 
   const [confirmState, setConfirmState] = useState<(ConfirmOpts & { resolve: (v: boolean) => void }) | null>(null);

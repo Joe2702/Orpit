@@ -18,6 +18,10 @@ import { Achievements } from './screens/Achievements';
 import { FAddTx, FTxns, FBudgets, FGoals, FAccounts, FRecurring, FCats, FInsights } from './screens/FinanceScreens';
 import { FeedbackInbox } from './screens/FeedbackInbox';
 import { Privacy } from './screens/Privacy';
+import { Insights } from './screens/Insights';
+import { Search } from './screens/Search';
+import { RestTimer } from './RestTimer';
+import { VerifyEmail } from './screens/VerifyEmail';
 
 import { Chooser } from './sheets/Chooser';
 import { CounterSheet, CountLogSheet, CountPickSheet } from './sheets/CounterSheets';
@@ -31,10 +35,11 @@ import { WCatsSheet, WCatSheet } from './sheets/CategorySheets';
 import { ProfileSheet } from './sheets/ProfileSheet';
 import { FeedbackSheet } from './sheets/FeedbackSheet';
 import { HabitCalendarSheet } from './sheets/HabitCalendarSheet';
+import { CatchUpSheet } from './sheets/CatchUpSheet';
 import { ReminderOnboarding } from './ReminderOnboarding';
 import { StoryReport } from './screens/StoryReport';
 import { Intro } from './screens/Intro';
-import { syncReminders } from './lib/notify';
+import { syncReminders, scheduleExtras } from './lib/notify';
 import { dayKey } from './lib/format';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
@@ -50,6 +55,8 @@ function CurrentScreen() {
       return <Forgot />;
     case 'reset':
       return <Reset />;
+    case 'verify':
+      return <VerifyEmail />;
     case 'home':
       return emptyMode ? <HomeEmpty /> : <Home />;
     case 'workouts':
@@ -88,6 +95,10 @@ function CurrentScreen() {
       return <FeedbackInbox />;
     case 'privacy':
       return <Privacy />;
+    case 'insights':
+      return <Insights />;
+    case 'search':
+      return <Search />;
     default:
       return null;
   }
@@ -134,6 +145,8 @@ function SheetBody() {
       return <FeedbackSheet />;
     case 'habitcal':
       return <HabitCalendarSheet />;
+    case 'catchup':
+      return <CatchUpSheet />;
     default:
       return null;
   }
@@ -309,7 +322,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 }
 
 export function App() {
-  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, report, closeReport } = useStore();
+  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, report, closeReport, applyState } = useStore();
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
 
   // Track the phone's own light/dark setting so "System" can follow it live.
@@ -341,6 +354,41 @@ export function App() {
     if (remOn) syncReminders(true, remTime, remainingToday);
   }, [remOn, remTime, remainingToday]);
 
+  // Per-habit reminders and "bill due tomorrow" nudges.
+  const habitsKey = state ? state.habits.map((h) => `${h.id}:${h.reminderTime}:${h.paused}:${h.archived}`).join(',') : '';
+  const billsKey = state ? state.recurring.map((r) => `${r.id}:${r.nextTs}:${r.income}`).join(',') : '';
+  useEffect(() => {
+    if (remOn && state) {
+      // Usual bedtime from the last 14 logged nights.
+      const recent = state.nights.filter((n) => n.bedH != null).slice(0, 14);
+      const bedHour = recent.length
+        ? recent.reduce((a, n) => a + (n.bedH! < 12 ? n.bedH! + 24 : n.bedH!), 0) / recent.length
+        : null;
+      scheduleExtras(state.habits, state.recurring, { on: !!state.profile.windDown, bedHour });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remOn, habitsKey, billsKey, state?.profile.windDown]);
+
+  // The chosen accent replaces the app's primary colour everywhere by remapping
+  // the --indigo token the UI already uses.
+  const accent = (authed && state ? state.profile.accent : 'indigo') || 'indigo';
+  useEffect(() => {
+    const root = document.querySelector('.orbit') as HTMLElement | null;
+    if (!root) return;
+    if (accent === 'indigo') root.style.removeProperty('--indigo');
+    else root.style.setProperty('--indigo', `var(--${accent})`);
+  }, [accent, authed]);
+
+  // Text size: the UI uses fixed pixel sizes, so scale the whole app with
+  // `zoom` (supported in the Android WebView and Chrome) rather than rewriting
+  // every size. Layout stays proportional.
+  const textScale = (authed && state ? state.profile.textScale : 1) || 1;
+  useEffect(() => {
+    const root = document.querySelector('.orbit') as HTMLElement | null;
+    if (!root) return;
+    root.style.setProperty('zoom', String(textScale));
+  }, [textScale, authed]);
+
   const rawTheme = authed && state ? state.profile.theme : localTheme;
   const theme: 'light' | 'dark' = rawTheme === 'system' ? (sysDark ? 'dark' : 'light') : rawTheme;
 
@@ -365,6 +413,82 @@ export function App() {
   }, []);
 
   const showTabs = APP_SCREENS.includes(screen);
+
+  // ---- Pull to refresh ----
+  // Only engages at the very top of the list, so it never fights normal scrolling.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const pullStart = useRef<number | null>(null);
+  const [pull, setPull] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const onPullStart = (e: React.TouchEvent) => {
+    if ((scrollRef.current?.scrollTop ?? 1) <= 0) pullStart.current = e.touches[0].clientY;
+    else pullStart.current = null;
+  };
+  const onPullMove = (e: React.TouchEvent) => {
+    if (pullStart.current == null || refreshing) return;
+    const dy = e.touches[0].clientY - pullStart.current;
+    if (dy > 0) setPull(Math.min(90, dy * 0.5));
+  };
+  const onPullEnd = async () => {
+    const shouldRefresh = pull > 64 && !refreshing && authed;
+    pullStart.current = null;
+    if (!shouldRefresh) {
+      setPull(0);
+      return;
+    }
+    setRefreshing(true);
+    setPull(48);
+    try {
+      applyState(await api.getState());
+    } catch {
+      /* offline or asleep — keep what we have */
+    }
+    setRefreshing(false);
+    setPull(0);
+  };
+
+  // ---- Swipe between the main tabs ----
+  // Only on the three top-level destinations, and only for a clearly horizontal
+  // flick: `touch-action: pan-y` on swipeable rows means a row swipe never
+  // reaches here, and a vertical scroll fails the axis test.
+  const TAB_ORDER = ['home', 'analytics', 'settings'] as const;
+  const swipe = useRef<{ x: number; y: number; axis: '' | 'x' | 'y' } | null>(null);
+  const [slide, setSlide] = useState<'l' | 'r' | null>(null);
+
+  const onSwipeStart = (e: React.TouchEvent) => {
+    swipe.current = showTabs && e.touches.length === 1
+      ? { x: e.touches[0].clientX, y: e.touches[0].clientY, axis: '' }
+      : null;
+  };
+  const onSwipeMove = (e: React.TouchEvent) => {
+    const s = swipe.current;
+    if (!s || s.axis) return;
+    const dx = e.touches[0].clientX - s.x;
+    const dy = e.touches[0].clientY - s.y;
+    if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+    // Lock to whichever axis moved first, and require the horizontal one to be
+    // decisively horizontal so a diagonal scroll doesn't change tabs.
+    s.axis = Math.abs(dx) > Math.abs(dy) * 1.6 ? 'x' : 'y';
+  };
+  const onSwipeEnd = (e: React.TouchEvent) => {
+    const s = swipe.current;
+    swipe.current = null;
+    if (!s || s.axis !== 'x') return;
+    const dx = (e.changedTouches[0]?.clientX ?? s.x) - s.x;
+    if (Math.abs(dx) < 60) return;
+    const i = TAB_ORDER.indexOf(screen as (typeof TAB_ORDER)[number]);
+    if (i < 0) return;
+    const next = TAB_ORDER[i + (dx < 0 ? 1 : -1)];
+    if (!next) return;
+    setSlide(dx < 0 ? 'l' : 'r');
+    go(next);
+  };
+  // Clear the direction hint once the incoming screen has animated in.
+  useEffect(() => {
+    if (!slide) return;
+    const t = setTimeout(() => setSlide(null), 300);
+    return () => clearTimeout(t);
+  }, [slide]);
 
   // ---- Android hardware "Back" button handling ----
   // Back should navigate inside the app; only at the top level does it ask
@@ -432,9 +556,26 @@ export function App() {
 
       {!mobile && <StatusBar />}
 
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', position: 'relative', WebkitOverflowScrolling: 'touch', paddingBottom: showTabs ? 84 : 0 }}>
-        {ready ? <CurrentScreen /> : null}
+      <div
+        ref={scrollRef}
+        onTouchStart={(e) => { onPullStart(e); onSwipeStart(e); }}
+        onTouchMove={(e) => { onPullMove(e); onSwipeMove(e); }}
+        onTouchEnd={(e) => { onPullEnd(); onSwipeEnd(e); }}
+        style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', position: 'relative', WebkitOverflowScrolling: 'touch', paddingBottom: showTabs ? 84 : 0 }}
+      >
+        {pull > 0 && (
+          <div style={{ height: pull, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', fontSize: 12.5, fontWeight: 600 }}>
+            {refreshing ? 'Refreshing…' : pull > 64 ? 'Release to refresh' : 'Pull to refresh'}
+          </div>
+        )}
+        {/* Keyed on the screen so a tab change replays the slide-in from the
+            side the swipe came from. */}
+        <div key={screen} style={slide ? { animation: `${slide === 'l' ? 'slideInR' : 'slideInL'} .26s cubic-bezier(.2,.8,.3,1)` } : undefined}>
+          {ready ? <CurrentScreen /> : null}
+        </div>
       </div>
+
+      <RestTimer raised={showTabs} />
 
       {toast && (
         <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, background: 'var(--text)', color: 'var(--bg)', padding: '11px 20px', borderRadius: 999, fontSize: 14, fontWeight: 600, boxShadow: '0 12px 32px rgba(8,9,14,.28)', animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' }}>

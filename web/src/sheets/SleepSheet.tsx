@@ -16,6 +16,7 @@ export function SleepSheet() {
   const [bed, setBed] = useState('23:00');
   const [wake, setWake] = useState('06:45');
   const [day, setDay] = useState(todayISO());
+  const [note, setNote] = useState('');
 
   // Duration is derived from bedtime → wake-up.
   const hours = (() => {
@@ -33,8 +34,8 @@ export function SleepSheet() {
       wakeH = parseClock(wake);
     const tempId = 'tmp_' + Date.now();
     mutateOpt(
-      (s) => ({ ...s, nights: [...s.nights, { id: tempId, hours, quality, bedH, wakeH, ts }] }),
-      () => api.addNight({ hours, quality, bedH, wakeH, ts }),
+      (s) => ({ ...s, nights: [...s.nights, { id: tempId, hours, quality, bedH, wakeH, note: note.trim() || null, ts }] }),
+      () => api.addNight({ hours, quality, bedH, wakeH, note: note.trim() || null, ts }),
       'Sleep logged'
     ).catch(() => {});
     closeSheet();
@@ -99,6 +100,15 @@ export function SleepSheet() {
         <span>Poor</span>
         <span>Excellent</span>
       </div>
+
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Note (optional)</div>
+      <input
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="e.g. woke up twice"
+        maxLength={200}
+        style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 24 }}
+      />
 
       <div onClick={save} className="press" style={{ background: 'var(--blue)', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>Save sleep</div>
     </div>

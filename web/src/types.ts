@@ -14,6 +14,15 @@ export interface Profile {
   reminderTz: string | null;
   // Achievement badges already revealed, synced with the account.
   claimedBadges: string[];
+  // Accent colour token and which trackers the user wants visible (null = all).
+  accent: string;
+  modules: string[] | null;
+  // In-app text size multiplier and the optional wind-down nudge.
+  textScale: number;
+  windDown: boolean;
+  // Confirmed via an emailed link. Never gates anything — it only makes
+  // password recovery reliable, so the app nudges instead of blocking.
+  emailVerified: boolean;
   // Whether the first-run intro has been completed.
   introDone: boolean;
   createdAt: number;
@@ -26,6 +35,10 @@ export interface Habit {
   target: string;
   locked: boolean;
   days: string; // 7-char mask, Sun..Sat, '1' = tracked
+  paused: boolean; // temporarily off (travel/illness) without losing history
+  archived: boolean; // hidden from the app but its check-ins are kept
+  why: string | null; // the user's own motivation, shown when slipping
+  reminderTime: string | null; // optional per-habit reminder (HH:MM)
 }
 
 export interface Checkin {
@@ -39,6 +52,13 @@ export interface WCat {
   color: string;
 }
 
+/** One logged set: an exercise, how many reps, and optionally the weight used. */
+export interface WorkoutSet {
+  ex: string;
+  reps: number;
+  weight: number | null;
+}
+
 export interface Workout {
   id: string;
   name: string;
@@ -47,6 +67,9 @@ export interface Workout {
   dist: string | null;
   kcal: number | null;
   intensity: string | null;
+  note: string | null;
+  // Strength logging. null for cardio and anything logged without sets.
+  sets: WorkoutSet[] | null;
   ts: number;
 }
 
@@ -56,6 +79,7 @@ export interface Night {
   quality: number;
   bedH: number | null;
   wakeH: number | null;
+  note: string | null;
   ts: number;
 }
 
@@ -67,6 +91,9 @@ export interface Txn {
   income: boolean;
   accId: string | null;
   note: string | null;
+  // Whether a receipt exists. The image itself is fetched on demand so it
+  // never rides along with every app open.
+  photo: boolean;
   ts: number;
 }
 
@@ -90,6 +117,8 @@ export interface Budget {
   id: string;
   cat: string;
   limit: number;
+  // Unused budget carries into next month.
+  rollover: boolean;
 }
 
 export interface Goal {
@@ -108,7 +137,16 @@ export interface Recurring {
   accId: string | null;
   amount: number;
   freq: 'Weekly' | 'Monthly' | 'Yearly';
+  income: boolean;
   nextTs: number | null;
+}
+
+export interface WTemplate {
+  id: string;
+  name: string;
+  catId: string | null;
+  dur: number;
+  intensity: string | null;
 }
 
 export interface Counter {
@@ -142,6 +180,7 @@ export interface AppState {
   recurring: Recurring[];
   counters: Counter[];
   countLogs: CountLog[];
+  wTemplates: WTemplate[];
 }
 
 export type Range = 'Week' | 'Month' | 'Year' | 'All';

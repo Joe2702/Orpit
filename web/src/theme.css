@@ -237,3 +237,14 @@ body {
 .pressRow:active {
   background: var(--bg);
 }
+
+/* Tab-to-tab slide, played on the incoming screen so a swipe feels like it
+   moved sideways through the app rather than swapping content in place. */
+@keyframes slideInR {
+  from { opacity: 0; transform: translate3d(26px, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes slideInL {
+  from { opacity: 0; transform: translate3d(-26px, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}

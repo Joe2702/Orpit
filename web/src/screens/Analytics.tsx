@@ -7,6 +7,7 @@ import { hm, money, signMoney, cNum } from '../lib/format';
 import { parseLayout, reconcile } from '../lib/layout';
 import { Reorderable } from '../Reorderable';
 import { RangeSeg } from '../ui';
+import { enabled } from '../lib/modules';
 
 function Arrow() {
   return (
@@ -127,7 +128,13 @@ export function Analytics() {
     ),
   };
 
-  const blockList = ['workouts', 'sleep', 'habits', 'finances', ...(state!.counters.length > 0 ? ['counters'] : [])];
+  const blockList = [
+    ...(enabled(state!, 'workouts') ? ['workouts'] : []),
+    ...(enabled(state!, 'sleep') ? ['sleep'] : []),
+    ...(enabled(state!, 'habits') ? ['habits'] : []),
+    ...(enabled(state!, 'finances') ? ['finances'] : []),
+    ...(enabled(state!, 'counters') && state!.counters.length > 0 ? ['counters'] : []),
+  ];
   const order = reconcile(parseLayout(profile.layout).analytics, blockList);
   const items = order.map((id) => ({ id, node: <div style={{ marginBottom: 14 }}>{blocks[id]}</div> }));
   const saveOrder = (ids: string[]) => {
@@ -145,6 +152,23 @@ export function Analytics() {
       </div>
       <RangeSeg />
 
+      <div
+        onClick={() => go('insights')}
+        className="press99"
+        role="button"
+        aria-label="Open insights"
+        style={{ display: 'flex', alignItems: 'center', gap: 13, background: 'linear-gradient(140deg, color-mix(in srgb,var(--indigo) 16%,var(--surface)), color-mix(in srgb,var(--blue) 12%,var(--surface)))', border: '1px solid color-mix(in srgb,var(--indigo) 28%,var(--border))', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '15px 17px', marginBottom: 12, cursor: 'pointer' }}
+      >
+        <span style={{ fontSize: 24, lineHeight: 1 }} aria-hidden>🔍</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15.5, fontWeight: 700, color: 'var(--text)' }}>Insights</div>
+          <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.4 }}>
+            How your sleep, training, habits and spending affect each other
+          </div>
+        </div>
+        <Arrow />
+      </div>
+
       <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
         {([['week', 'This week', 'indigo', '🗓️'], ['month', 'This month', 'coral', '🌙']] as const).map(([k, label, color, emoji]) => (
           <div
@@ -161,10 +185,10 @@ export function Analytics() {
         ))}
       </div>
       <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-        {([['week', 'Last week', 'indigo'], ['month', 'Last month', 'coral']] as const).map(([k, label, color]) => (
+        {([['week', 'Last week', 'indigo'], ['month', 'Last month', 'coral'], ['year', 'Year in review', 'warning']] as const).map(([k, label, color]) => (
           <div
             key={k}
-            onClick={() => openReport(k, 1)}
+            onClick={() => openReport(k, k === 'year' ? 0 : 1)}
             className="pressRow"
             role="button"
             aria-label={`Open ${label} report`}

@@ -1,4 +1,4 @@
-import type { AppState } from './types';
+import type { AppState, WorkoutSet } from './types';
 
 // On the web the frontend is served by the same server as the API, so a
 // relative path works. Inside a native (Capacitor) build the app runs from a
@@ -53,6 +53,17 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
 interface AuthResp {
   token: string;
   state: AppState;
+}
+
+export interface HabitBody {
+  name: string;
+  color: string;
+  target: string;
+  days: string;
+  why?: string | null;
+  reminderTime?: string | null;
+  paused?: boolean;
+  archived?: boolean;
 }
 
 export interface ClientErrorItem {
@@ -118,6 +129,10 @@ export const api = {
         | 'reminderTz'
         | 'claimedBadges'
         | 'introDone'
+        | 'accent'
+        | 'modules'
+        | 'textScale'
+        | 'windDown'
       >
     >
   ) => request<AppState>('/me', { method: 'PATCH', body: JSON.stringify(patch) }),
@@ -129,13 +144,14 @@ export const api = {
   adminFeedback: (password: string) =>
     request<{ items: FeedbackItem[] }>('/admin/feedback', { headers: { 'x-admin-password': password } }),
 
-  addHabit: (b: { name: string; color: string; target: string; days: string }) =>
-    request<AppState>('/habits', { method: 'POST', body: JSON.stringify(b) }),
-  editHabit: (id: string, b: { name: string; color: string; target: string; days: string }) =>
+  addHabit: (b: HabitBody) => request<AppState>('/habits', { method: 'POST', body: JSON.stringify(b) }),
+  editHabit: (id: string, b: HabitBody) =>
     request<AppState>(`/habits/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   sendFeedback: (kind: string, message: string) =>
     request<{ ok: boolean }>('/feedback', { method: 'POST', body: JSON.stringify({ kind, message }) }),
   deleteHabit: (id: string) => request<AppState>(`/habits/${id}`, { method: 'DELETE' }),
+  reorderHabits: (ids: string[]) =>
+    request<AppState>('/habits/order', { method: 'PATCH', body: JSON.stringify({ ids }) }),
   toggleHabit: (id: string, day?: string) =>
     request<AppState>(`/habits/${id}/toggle`, { method: 'POST', body: JSON.stringify({ day }) }),
 
@@ -151,15 +167,18 @@ export const api = {
     dist?: string | null;
     kcal?: number | null;
     intensity?: string | null;
+    note?: string | null;
+    sets?: WorkoutSet[] | null;
     ts?: number;
   }) => request<AppState>('/workouts', { method: 'POST', body: JSON.stringify(b) }),
   editWorkout: (
     id: string,
-    b: { dur: number; catId: string; dist?: string | null; kcal?: number | null }
+    // Omit `sets` entirely to leave an existing set list untouched.
+    b: { dur: number; catId: string; dist?: string | null; kcal?: number | null; sets?: WorkoutSet[] | null }
   ) => request<AppState>(`/workouts/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteWorkout: (id: string) => request<AppState>(`/workouts/${id}`, { method: 'DELETE' }),
 
-  addNight: (b: { hours: number; quality: number; bedH: number | null; wakeH: number | null; ts?: number }) =>
+  addNight: (b: { hours: number; quality: number; bedH: number | null; wakeH: number | null; note?: string | null; ts?: number }) =>
     request<AppState>('/nights', { method: 'POST', body: JSON.stringify(b) }),
   deleteNight: (id: string) => request<AppState>(`/nights/${id}`, { method: 'DELETE' }),
 
@@ -170,13 +189,23 @@ export const api = {
     income: boolean;
     accId?: string | null;
     note?: string | null;
+    // A data URL attaches a receipt; null clears one; omit to leave it alone.
+    photo?: string | null;
     ts?: number;
   }) => request<AppState>('/txns', { method: 'POST', body: JSON.stringify(b) }),
   editTxn: (
     id: string,
-    b: { name?: string; cat: string; amount: number; income: boolean; accId?: string | null; note?: string | null; ts?: number }
+    b: { name?: string; cat: string; amount: number; income: boolean; accId?: string | null; note?: string | null; photo?: string | null; ts?: number }
   ) => request<AppState>(`/txns/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteTxn: (id: string) => request<AppState>(`/txns/${id}`, { method: 'DELETE' }),
+  /** Fetch a receipt on demand — images are never part of the state bundle. */
+  txnPhoto: (id: string) => request<{ photo: string }>(`/txns/${id}/photo`),
+  setTxnPhoto: (id: string, photo: string | null) =>
+    request<AppState>(`/txns/${id}/photo`, { method: 'PUT', body: JSON.stringify({ photo }) }),
+
+  sendVerifyEmail: () => request<{ ok: boolean; already?: boolean }>('/verify/send', { method: 'POST' }),
+  confirmEmail: (token: string) =>
+    request<{ ok: boolean }>('/verify/confirm', { method: 'POST', body: JSON.stringify({ token }) }),
 
   addAccount: (b: { name: string; type: string; color: string; opening: number }) =>
     request<AppState>('/accounts', { method: 'POST', body: JSON.stringify(b) }),
@@ -190,9 +219,9 @@ export const api = {
     request<AppState>(`/fcats/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteFcat: (id: string) => request<AppState>(`/fcats/${id}`, { method: 'DELETE' }),
 
-  addBudget: (b: { cat: string; limit: number }) =>
+  addBudget: (b: { cat: string; limit: number; rollover?: boolean }) =>
     request<AppState>('/budgets', { method: 'POST', body: JSON.stringify(b) }),
-  editBudget: (id: string, b: { cat: string; limit: number }) =>
+  editBudget: (id: string, b: { cat: string; limit: number; rollover?: boolean }) =>
     request<AppState>(`/budgets/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteBudget: (id: string) => request<AppState>(`/budgets/${id}`, { method: 'DELETE' }),
 
@@ -202,9 +231,9 @@ export const api = {
     request<AppState>(`/goals/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteGoal: (id: string) => request<AppState>(`/goals/${id}`, { method: 'DELETE' }),
 
-  addRecurring: (b: { name: string; cat: string; accId: string | null; amount: number; freq: string; nextTs?: number | null }) =>
+  addRecurring: (b: { name: string; cat: string; accId: string | null; amount: number; freq: string; income?: boolean; nextTs?: number | null }) =>
     request<AppState>('/recurring', { method: 'POST', body: JSON.stringify(b) }),
-  editRecurring: (id: string, b: { name: string; cat: string; accId: string | null; amount: number; freq: string }) =>
+  editRecurring: (id: string, b: { name: string; cat: string; accId: string | null; amount: number; freq: string; income?: boolean }) =>
     request<AppState>(`/recurring/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteRecurring: (id: string) => request<AppState>(`/recurring/${id}`, { method: 'DELETE' }),
 
@@ -217,6 +246,17 @@ export const api = {
     request<AppState>(`/counters/${id}/log`, { method: 'POST', body: JSON.stringify({ amount }) }),
 
   reset: () => request<AppState>('/reset', { method: 'POST' }),
+  // Workout presets
+  addTemplate: (b: { name: string; catId: string | null; dur: number; intensity: string | null }) =>
+    request<AppState>('/wtemplates', { method: 'POST', body: JSON.stringify(b) }),
+  deleteTemplate: (id: string) => request<AppState>(`/wtemplates/${id}`, { method: 'DELETE' }),
+  // Account security
+  changePassword: (current: string, next: string) =>
+    request<{ ok: boolean }>('/me/password', { method: 'POST', body: JSON.stringify({ current, next }) }),
+  signOutOthers: () => request<{ token: string }>('/me/signout-others', { method: 'POST' }),
+  // Restore a previously exported file (additive — never deletes)
+  importData: (data: unknown) =>
+    request<{ added: number; state: AppState }>('/import', { method: 'POST', body: JSON.stringify({ data }) }),
   // Deletes the whole user account (not a finance account — see deleteAccount).
   deleteMyAccount: () => request<{ ok: boolean }>('/me', { method: 'DELETE' }),
   adminErrors: (password: string) =>

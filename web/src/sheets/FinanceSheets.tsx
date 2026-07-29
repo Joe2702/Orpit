@@ -117,12 +117,13 @@ export function BudgetSheet() {
   const editId: string | null = sheetData?.id ?? null;
   const [cat, setCat] = useState(sheetData?.cat ?? state!.fcats.find((c) => c.kind === 'expense')?.name ?? 'Food');
   const [limit, setLimit] = useState(sheetData?.limit != null ? String(sheetData.limit) : '');
+  const [rollover, setRollover] = useState<boolean>(!!sheetData?.rollover);
   const canSave = parseFloat(limit) > 0;
 
   const save = async () => {
     if (!canSave) { showToast('Enter a limit'); return; }
     haptic();
-    const body = { cat, limit: parseFloat(limit) };
+    const body = { cat, limit: parseFloat(limit), rollover };
     await mutate(() => (editId ? api.editBudget(editId, body) : api.addBudget(body)), editId ? 'Budget updated' : 'Budget added');
     closeSheet();
   };
@@ -136,7 +137,28 @@ export function BudgetSheet() {
         {state!.fcats.filter((c) => c.kind === 'expense').map((c) => (<div key={c.id} onClick={() => setCat(c.name)} style={chip(cat === c.name, 'var(--emerald)')}>{c.name}</div>))}
       </div>
       {label('Monthly limit')}
-      <input value={limit} onChange={(e) => setLimit(e.target.value.replace(/[^0-9.]/g, ''))} inputMode="decimal" placeholder="0" style={{ ...input, marginBottom: 24 }} />
+      <input value={limit} onChange={(e) => setLimit(e.target.value.replace(/[^0-9.]/g, ''))} inputMode="decimal" placeholder="0" style={{ ...input, marginBottom: 18 }} />
+
+      {/* Rollover: a good month shouldn't be wasted — carry whatever was left
+          into next month's limit instead of resetting to zero. */}
+      <div
+        onClick={() => { haptic(); setRollover(!rollover); }}
+        className="press99"
+        role="switch"
+        aria-checked={rollover}
+        style={{ display: 'flex', alignItems: 'center', gap: 13, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: '14px 16px', marginBottom: 24, cursor: 'pointer' }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Roll over what's left</div>
+          <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>
+            Unspent money from last month is added to this month's limit.
+          </div>
+        </div>
+        <span style={{ width: 46, height: 28, borderRadius: 999, flex: 'none', position: 'relative', transition: 'background .18s', background: rollover ? 'var(--emerald)' : 'color-mix(in srgb,var(--text2) 28%,transparent)' }}>
+          <span style={{ position: 'absolute', top: 3, left: rollover ? 21 : 3, width: 22, height: 22, borderRadius: '50%', background: '#fff', transition: 'left .18s', boxShadow: '0 1px 3px rgba(20,21,26,.25)' }} />
+        </span>
+      </div>
+
       <div onClick={save} style={cta(canSave, 'emerald')}>{editId ? 'Save changes' : 'Add budget'}</div>
       {editId && <div onClick={del} className="press99" style={delBtn}><IconTrash />Delete budget</div>}
     </div>
@@ -194,12 +216,13 @@ export function RecurringSheet() {
   const [amount, setAmount] = useState(sheetData?.amount != null ? String(sheetData.amount) : '');
   const [freq, setFreq] = useState<'Weekly' | 'Monthly' | 'Yearly'>(sheetData?.freq ?? 'Monthly');
   const [accId, setAccId] = useState(sheetData?.accId ?? state!.accounts[0]?.id ?? '');
+  const [income, setIncome] = useState<boolean>(!!sheetData?.income);
   const canSave = !!name.trim() && parseFloat(amount) > 0;
 
   const save = async () => {
     if (!canSave) { showToast('Name and amount required'); return; }
     haptic();
-    const body = { name: name.trim(), cat, amount: parseFloat(amount), freq, accId };
+    const body = { name: name.trim(), cat, amount: parseFloat(amount), freq, accId, income };
     await mutate(() => (editId ? api.editRecurring(editId, body) : api.addRecurring(body)), editId ? 'Recurring updated' : 'Recurring added');
     closeSheet();
   };
@@ -208,6 +231,17 @@ export function RecurringSheet() {
   return (
     <div style={{ padding: '4px 20px 32px' }}>
       <Title>{editId ? 'Edit recurring' : 'New recurring'}</Title>
+      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: 3, marginBottom: 18 }}>
+        {([[false, 'Expense'], [true, 'Income']] as const).map(([v, lbl]) => (
+          <div
+            key={lbl}
+            onClick={() => setIncome(v)}
+            style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 11, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(income === v ? { background: 'var(--surface)', color: v ? 'var(--emerald)' : 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
+          >
+            {lbl}
+          </div>
+        ))}
+      </div>
       {label('Name')}
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Netflix" style={{ ...input, marginBottom: 20 }} />
       {label('Amount')}

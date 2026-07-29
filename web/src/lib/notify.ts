@@ -12,6 +12,7 @@ import { api } from '../api';
 const REMINDER_ID = 1001; // stable id for the repeating daily reminder
 const TEST_ID = 1002;
 const WEEKLY_ID = 1003; // Sunday evening "your week is ready" nudge
+const REST_ID = 1005; // rest-between-sets countdown
 
 export function isNative(): boolean {
   return Capacitor.isNativePlatform();
@@ -96,6 +97,117 @@ async function scheduleWeekly(): Promise<void> {
       },
     ],
   });
+}
+
+// Per-habit and bill reminders use their own id ranges so they never collide
+// with the daily (1001) / test (1002) / weekly (1003) notifications.
+const HABIT_BASE = 2000;
+const BILL_BASE = 3000;
+const WINDDOWN_ID = 1004;
+const stableId = (base: number, key: string) => {
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return base + (h % 500);
+};
+
+/**
+ * Schedule a reminder for each habit that has its own time, and one the day
+ * before each recurring bill is due.
+ */
+export async function scheduleExtras(
+  habits: { id: string; name: string; reminderTime: string | null; paused: boolean; archived: boolean }[],
+  bills: { id: string; name: string; nextTs: number | null; income: boolean }[],
+  windDown?: { on: boolean; bedHour: number | null }
+): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const ln = await LN();
+    await ensureChannel(ln);
+    const wanted = habits.filter((h) => h.reminderTime && !h.paused && !h.archived);
+    // Clear the whole range first so removed reminders actually disappear.
+    const pending = await ln.getPending();
+    const stale = pending.notifications
+      .filter((n) => n.id >= HABIT_BASE && n.id < BILL_BASE + 500)
+      .map((n) => ({ id: n.id }));
+    if (stale.length) await ln.cancel({ notifications: stale });
+
+    const notifications: Parameters<typeof ln.schedule>[0]['notifications'] = [];
+    wanted.forEach((h) => {
+      const { hour, minute } = parseTime(h.reminderTime!);
+      notifications.push({
+        id: stableId(HABIT_BASE, h.id),
+        title: h.name,
+        body: 'Time for this one — tap to check it off 🌱',
+        schedule: { on: { hour, minute }, allowWhileIdle: true },
+        channelId: CHANNEL_ID,
+      });
+    });
+    // Bills: a heads-up the day before, at 10:00.
+    bills
+      .filter((b) => !b.income && b.nextTs && b.nextTs > Date.now())
+      .slice(0, 20)
+      .forEach((b) => {
+        const at = new Date(b.nextTs! - 86400000);
+        at.setHours(10, 0, 0, 0);
+        if (at.getTime() <= Date.now()) return;
+        notifications.push({
+          id: stableId(BILL_BASE, b.id),
+          title: 'Upcoming bill',
+          body: `${b.name} is due tomorrow.`,
+          schedule: { at, allowWhileIdle: true },
+          channelId: CHANNEL_ID,
+        });
+      });
+    // Wind-down: 30 minutes before the user's usual bedtime.
+    await ln.cancel({ notifications: [{ id: WINDDOWN_ID }] }).catch(() => {});
+    if (windDown?.on && windDown.bedHour != null) {
+      const t = (windDown.bedHour - 0.5 + 24) % 24;
+      notifications.push({
+        id: WINDDOWN_ID,
+        title: 'Time to wind down',
+        body: 'Bed in about 30 minutes — start slowing things down 🌙',
+        schedule: { on: { hour: Math.floor(t), minute: Math.round((t % 1) * 60) }, allowWhileIdle: true },
+        channelId: CHANNEL_ID,
+      });
+    }
+    if (notifications.length) await ln.schedule({ notifications });
+  } catch {
+    /* reminders are best-effort — never break the app over them */
+  }
+}
+
+/**
+ * Ring when the rest between sets is up. The countdown itself is wall-clock, so
+ * this only exists to get the user's attention when the phone is in a pocket —
+ * the timer stays correct either way.
+ */
+export async function scheduleRestAlarm(at: Date): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const ln = await LN();
+    const perm = await ln.checkPermissions();
+    if (perm.display !== 'granted') return; // don't prompt mid-workout
+    await ensureChannel(ln);
+    await ln.cancel({ notifications: [{ id: REST_ID }] }).catch(() => {});
+    if (at.getTime() <= Date.now()) return;
+    await ln.schedule({
+      notifications: [
+        { id: REST_ID, title: 'Rest over', body: 'Next set 💪', schedule: { at, allowWhileIdle: true }, channelId: CHANNEL_ID },
+      ],
+    });
+  } catch {
+    /* best-effort */
+  }
+}
+
+export async function cancelRestAlarm(): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const ln = await LN();
+    await ln.cancel({ notifications: [{ id: REST_ID }] });
+  } catch {
+    /* ignore */
+  }
 }
 
 /**

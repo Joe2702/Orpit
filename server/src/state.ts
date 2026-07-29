@@ -8,6 +8,8 @@ export async function buildState(userId: number) {
     `SELECT name, email, theme, reminders, haptics, onboarded, currency, avatar, layout,
             reminder_time AS "reminderTime", reminder_tz AS "reminderTz",
             claimed_badges AS "claimedBadgesRaw", intro_done AS "introDone",
+            accent, modules AS "modulesRaw", text_scale AS "textScale", wind_down AS "windDown",
+            email_verified AS "emailVerified",
             (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt"
      FROM users WHERE id = $1`,
     [userId]
@@ -27,8 +29,9 @@ export async function buildState(userId: number) {
   }
 
   const habits = await query(
-    `SELECT id::text, name, color, target, locked, days FROM habits
-     WHERE user_id = $1 ORDER BY locked DESC, sort, id`,
+    `SELECT id::text, name, color, target, locked, days, paused, archived, why,
+            reminder_time AS "reminderTime"
+     FROM habits WHERE user_id = $1 ORDER BY locked DESC, sort, id`,
     [userId]
   );
 
@@ -45,7 +48,7 @@ export async function buildState(userId: number) {
   );
 
   const workouts = await query(
-    `SELECT id::text, name, category_id::text AS "catId", dur, dist, kcal, intensity,
+    `SELECT id::text, name, category_id::text AS "catId", dur, dist, kcal, intensity, note, sets,
             ${TS('ts')}
      FROM workouts WHERE user_id = $1 ORDER BY ts DESC`,
     [userId]
@@ -64,7 +67,7 @@ export async function buildState(userId: number) {
   );
 
   const budgets = await query(
-    `SELECT id::text, cat, limit_amt AS "limit" FROM budgets
+    `SELECT id::text, cat, limit_amt AS "limit", rollover FROM budgets
      WHERE user_id = $1 ORDER BY sort, id`,
     [userId]
   );
@@ -77,7 +80,7 @@ export async function buildState(userId: number) {
   );
 
   const recurring = await query(
-    `SELECT id::text, name, cat, acc_id::text AS "accId", amount, freq,
+    `SELECT id::text, name, cat, acc_id::text AS "accId", amount, freq, income,
             (EXTRACT(EPOCH FROM next_ts) * 1000)::float8 AS "nextTs"
      FROM recurring WHERE user_id = $1 ORDER BY next_ts, id`,
     [userId]
@@ -96,20 +99,45 @@ export async function buildState(userId: number) {
   );
 
   const nights = await query(
-    `SELECT id::text, hours, quality, bed_h AS "bedH", wake_h AS "wakeH",
+    `SELECT id::text, hours, quality, bed_h AS "bedH", wake_h AS "wakeH", note,
             ${TS('ts')}
      FROM nights WHERE user_id = $1 ORDER BY ts DESC`,
     [userId]
   );
 
   const txns = await query(
-    `SELECT id::text, name, cat, amount, income, acc_id::text AS "accId", note, ${TS('ts')}
-     FROM txns WHERE user_id = $1 ORDER BY ts DESC`,
+    // The receipt image itself stays behind GET /api/txns/:id/photo — the state
+    // bundle only carries whether one exists, so it stays small.
+    `SELECT t.id::text, t.name, t.cat, t.amount, t.income, t.acc_id::text AS "accId", t.note,
+            (p.txn_id IS NOT NULL) AS photo, ${TS('t.ts')}
+     FROM txns t LEFT JOIN txn_photos p ON p.txn_id = t.id
+     WHERE t.user_id = $1 ORDER BY t.ts DESC`,
     [userId]
   );
 
+  const wTemplates = await query(
+    `SELECT id::text, name, category_id::text AS "catId", dur, intensity
+     FROM workout_templates WHERE user_id = $1 ORDER BY sort, id`,
+    [userId]
+  );
+
+  // modules is a JSON string of the trackers the user chose to see.
+  if (profile) {
+    const p = profile as any;
+    let mods: string[] | null = null;
+    try {
+      const parsed = JSON.parse(p.modulesRaw || 'null');
+      if (Array.isArray(parsed)) mods = parsed.filter((x: unknown) => typeof x === 'string');
+    } catch {
+      /* corrupt value → show everything */
+    }
+    p.modules = mods;
+    delete p.modulesRaw;
+  }
+
   return {
     profile,
+    wTemplates,
     habits,
     checkins,
     wCats,

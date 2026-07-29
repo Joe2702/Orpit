@@ -133,13 +133,13 @@ app.post(
   wrap(async (req, res) => {
     const email = String(req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '');
-    const u = await one<{ id: number; password_hash: string | null }>(
-      'SELECT id, password_hash FROM users WHERE email = $1',
+    const u = await one<{ id: number; password_hash: string | null; token_version: number }>(
+      'SELECT id, password_hash, token_version FROM users WHERE email = $1',
       [email]
     );
     if (!u || !u.password_hash || !(await bcrypt.compare(password, u.password_hash)))
       return res.status(401).json({ error: 'Incorrect email or password' });
-    res.json({ token: signToken(u.id), state: await buildState(u.id) });
+    res.json({ token: signToken(u.id, u.token_version ?? 0), state: await buildState(u.id) });
   })
 );
 
@@ -175,12 +175,14 @@ app.post(
     if (!user) {
       const byEmail = await one<{ id: number }>('SELECT id FROM users WHERE email = $1', [email]);
       if (byEmail) {
-        await query('UPDATE users SET google_id = $1 WHERE id = $2', [googleId, byEmail.id]);
+        // Google already proved the address — nothing left for us to verify.
+        await query('UPDATE users SET google_id = $1, email_verified = TRUE WHERE id = $2', [googleId, byEmail.id]);
         user = byEmail;
       } else {
         const id = await tx(async (c) => {
           const { rows } = await c.query(
-            `INSERT INTO users (email, name, google_id, onboarded, intro_done) VALUES ($1,$2,$3,TRUE,FALSE) RETURNING id`,
+            `INSERT INTO users (email, name, google_id, onboarded, intro_done, email_verified)
+             VALUES ($1,$2,$3,TRUE,FALSE,TRUE) RETURNING id`,
             [email, name, googleId]
           );
           const uid = rows[0].id as number;
@@ -190,18 +192,20 @@ app.post(
         user = { id };
       }
     }
-    res.json({ token: signToken(user.id), state: await buildState(user.id) });
+    const tv = await one<{ token_version: number }>('SELECT token_version FROM users WHERE id = $1', [user.id]);
+    res.json({ token: signToken(user.id, tv?.token_version ?? 0), state: await buildState(user.id) });
   })
 );
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
-// Send a password-reset email via Brevo (if configured). Returns false if not set up.
-async function sendResetEmail(to: string, link: string): Promise<boolean> {
+// Send transactional mail via Brevo (if configured). Returns false if not set up,
+// so callers can degrade gracefully rather than fail the whole request.
+async function sendMail(tag: string, to: string, subject: string, htmlContent: string): Promise<boolean> {
   const key = process.env.BREVO_API_KEY;
   const from = process.env.MAIL_FROM;
   if (!key || !from) {
-    console.log('[reset] Brevo not configured — missing', !key ? 'BREVO_API_KEY' : 'MAIL_FROM');
+    console.log(`[${tag}] Brevo not configured — missing`, !key ? 'BREVO_API_KEY' : 'MAIL_FROM');
     return false;
   }
   try {
@@ -211,27 +215,38 @@ async function sendResetEmail(to: string, link: string): Promise<boolean> {
       body: JSON.stringify({
         sender: { email: from, name: 'Orbit' },
         to: [{ email: to }],
-        subject: 'Reset your Orbit password',
-        htmlContent: `<div style="font-family:sans-serif;font-size:15px;color:#211f1b">
-          <p>Tap the button to set a new password. This link expires in 1 hour.</p>
-          <p><a href="${link}" style="display:inline-block;background:#5c57c9;color:#fff;padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:600">Reset password</a></p>
-          <p style="color:#807a70;font-size:13px">Or paste this link: ${link}</p>
-          <p style="color:#807a70;font-size:13px">If you didn't request this, you can ignore this email.</p>
-        </div>`,
+        subject,
+        htmlContent,
       }),
     });
     if (!r.ok) {
       const body = await r.text().catch(() => '');
-      console.log(`[reset] Brevo rejected email (HTTP ${r.status}):`, body);
+      console.log(`[${tag}] Brevo rejected email (HTTP ${r.status}):`, body);
     } else {
-      console.log('[reset] Brevo accepted email for', to);
+      console.log(`[${tag}] Brevo accepted email for`, to);
     }
     return r.ok;
   } catch (e) {
-    console.log('[reset] Brevo request threw:', e instanceof Error ? e.message : e);
+    console.log(`[${tag}] Brevo request threw:`, e instanceof Error ? e.message : e);
     return false;
   }
 }
+
+const mailButton = (link: string, label: string) =>
+  `<p><a href="${link}" style="display:inline-block;background:#5c57c9;color:#fff;padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:600">${label}</a></p>
+   <p style="color:#807a70;font-size:13px">Or paste this link: ${link}</p>`;
+
+const sendResetEmail = (to: string, link: string) =>
+  sendMail(
+    'reset',
+    to,
+    'Reset your Orbit password',
+    `<div style="font-family:sans-serif;font-size:15px;color:#211f1b">
+      <p>Tap the button to set a new password. This link expires in 1 hour.</p>
+      ${mailButton(link, 'Reset password')}
+      <p style="color:#807a70;font-size:13px">If you didn't request this, you can ignore this email.</p>
+    </div>`
+  );
 
 // Request a reset link (always responds ok, so it can't be used to probe emails).
 app.post(
@@ -289,6 +304,67 @@ app.post(
   })
 );
 
+// ---------------- Email verification ----------------
+//
+// Deliberately not a gate: an unverified account works exactly like a verified
+// one. Verification exists so password reset can reach a real inbox, so the
+// app nudges rather than blocks.
+
+app.post(
+  '/api/verify/send',
+  requireAuth,
+  rateLimit('verify-send', 5, 60 * 60 * 1000),
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const u = await one<{ email: string; email_verified: boolean }>(
+      'SELECT email, email_verified FROM users WHERE id = $1',
+      [uid]
+    );
+    if (!u) return res.status(404).json({ error: 'Not found' });
+    if (u.email_verified) return res.json({ ok: true, already: true });
+
+    const token = randomBytes(32).toString('hex');
+    await query('DELETE FROM email_verifications WHERE user_id = $1', [uid]);
+    await query(
+      'INSERT INTO email_verifications (token, user_id, email, expires_at) VALUES ($1,$2,$3,$4)',
+      [sha256(token), uid, u.email, new Date(Date.now() + 24 * 60 * 60 * 1000)]
+    );
+    const base = process.env.APP_URL || `https://${req.headers.host}`;
+    const sent = await sendMail(
+      'verify',
+      u.email,
+      'Confirm your email for Orbit',
+      `<div style="font-family:sans-serif;font-size:15px;color:#211f1b">
+        <p>Confirm this address so you can recover your account if you ever forget your password.</p>
+        ${mailButton(`${base}/verify?token=${token}`, 'Confirm email')}
+        <p style="color:#807a70;font-size:13px">This link expires in 24 hours. If you didn't sign up for Orbit, you can ignore this email.</p>
+      </div>`
+    );
+    if (!sent) return res.status(503).json({ error: "Email isn't set up on the server yet" });
+    res.json({ ok: true });
+  })
+);
+
+// Public: the link lands here straight from the inbox, with no session.
+app.post(
+  '/api/verify/confirm',
+  rateLimit('verify-confirm', 20, 60 * 60 * 1000),
+  wrap(async (req, res) => {
+    const row = await one<{ user_id: number; email: string; expires_at: string }>(
+      'SELECT user_id, email, expires_at FROM email_verifications WHERE token = $1',
+      [sha256(String(req.body.token || ''))]
+    );
+    if (!row || new Date(row.expires_at).getTime() < Date.now()) {
+      return res.status(400).json({ error: 'This link is invalid or has expired' });
+    }
+    // Only confirm the address the link was issued for — if the user changed
+    // their email in the meantime, the old link must not verify the new one.
+    await query('UPDATE users SET email_verified = TRUE WHERE id = $1 AND email = $2', [row.user_id, row.email]);
+    await query('DELETE FROM email_verifications WHERE user_id = $1', [row.user_id]);
+    res.json({ ok: true });
+  })
+);
+
 // ---------------- State ----------------
 
 app.get(
@@ -308,6 +384,10 @@ app.patch(
       const e = req.body.email.trim().toLowerCase();
       if (e && !emailOk(e)) return res.status(400).json({ error: 'Enter a valid email' });
       fields.email = e;
+      // A new address hasn't been proven yet — drop verified status and any
+      // outstanding link, so an old token can't confirm the new address.
+      fields.email_verified = false;
+      await query('DELETE FROM email_verifications WHERE user_id = $1', [uid]);
     }
     if (['light', 'dark', 'system'].includes(req.body.theme)) fields.theme = req.body.theme;
     if (typeof req.body.reminders === 'boolean') fields.reminders = req.body.reminders;
@@ -334,6 +414,15 @@ app.patch(
       fields.claimed_badges = JSON.stringify(ids);
     }
     if (typeof req.body.introDone === 'boolean') fields.intro_done = req.body.introDone;
+    if (Number.isFinite(Number(req.body.textScale))) {
+      fields.text_scale = Math.min(1.4, Math.max(0.85, Number(req.body.textScale)));
+    }
+    if (typeof req.body.windDown === 'boolean') fields.wind_down = req.body.windDown;
+    // Accent colour + which trackers to show.
+    if (typeof req.body.accent === 'string' && req.body.accent.length < 20) fields.accent = req.body.accent;
+    if (Array.isArray(req.body.modules)) {
+      fields.modules = JSON.stringify(req.body.modules.filter((x: unknown) => typeof x === 'string').slice(0, 20));
+    }
 
     const keys = Object.keys(fields);
     if (keys.length) {
@@ -365,9 +454,11 @@ app.post(
       'SELECT COALESCE(MAX(sort), -1) + 1 AS m FROM habits WHERE user_id = $1',
       [uid]
     );
+    const why = req.body.why ? String(req.body.why).slice(0, 300) : null;
+    const rt = /^\d{2}:\d{2}$/.test(req.body.reminderTime) ? req.body.reminderTime : null;
     await query(
-      'INSERT INTO habits (user_id, name, color, target, days, sort) VALUES ($1,$2,$3,$4,$5,$6)',
-      [uid, name, color, target, days, max!.m]
+      'INSERT INTO habits (user_id, name, color, target, days, sort, why, reminder_time) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+      [uid, name, color, target, days, max!.m, why, rt]
     );
     res.json(await buildState(uid));
   })
@@ -387,9 +478,15 @@ app.patch(
     if (!owned) return res.status(404).json({ error: 'Habit not found' });
     if (owned.locked) return res.status(400).json({ error: 'This habit is permanent and can’t be edited' });
     const days = /^[01]{7}$/.test(req.body.days) ? req.body.days : '1111111';
+    const why = req.body.why ? String(req.body.why).slice(0, 300) : null;
+    const rt = /^\d{2}:\d{2}$/.test(req.body.reminderTime) ? req.body.reminderTime : null;
+    const paused = !!req.body.paused;
+    const archived = !!req.body.archived;
     await query(
-      'UPDATE habits SET name = $1, color = $2, target = $3, days = $4 WHERE id = $5 AND user_id = $6',
-      [name, String(req.body.color || 'teal'), String(req.body.target || 'Daily'), days, req.params.id, uid]
+      `UPDATE habits SET name = $1, color = $2, target = $3, days = $4, why = $5,
+              reminder_time = $6, paused = $7, archived = $8
+       WHERE id = $9 AND user_id = $10`,
+      [name, String(req.body.color || 'teal'), String(req.body.target || 'Daily'), days, why, rt, paused, archived, req.params.id, uid]
     );
     res.json(await buildState(uid));
   })
@@ -439,6 +536,22 @@ app.post(
         [req.params.id, uid, day]
       );
     }
+    res.json(await buildState(uid));
+  })
+);
+
+// Persist a new habit order (drag-to-sort).
+app.patch(
+  '/api/habits/order',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const ids = Array.isArray(req.body.ids) ? req.body.ids.slice(0, 200) : [];
+    await tx(async (c) => {
+      for (let i = 0; i < ids.length; i++) {
+        await c.query('UPDATE habits SET sort = $1 WHERE id = $2 AND user_id = $3', [i, ids[i], uid]);
+      }
+    });
     res.json(await buildState(uid));
   })
 );
@@ -507,6 +620,24 @@ app.delete(
 
 // ---------------- Workouts ----------------
 
+/**
+ * Normalise a strength-set list coming from the client. Sets are stored as
+ * JSONB, so this is the only guard against junk reaching the column: cap the
+ * count, coerce every field, and drop anything without an exercise name.
+ */
+function cleanSets(raw: unknown): string | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const out = raw
+    .slice(0, 100)
+    .map((s: any) => ({
+      ex: String(s?.ex ?? '').trim().slice(0, 60),
+      reps: Math.max(0, Math.min(9999, Math.round(Number(s?.reps) || 0))),
+      weight: s?.weight == null || s.weight === '' ? null : Math.max(0, Math.min(9999, Number(s.weight) || 0)),
+    }))
+    .filter((s) => s.ex);
+  return out.length ? JSON.stringify(out) : null;
+}
+
 app.post(
   '/api/workouts',
   requireAuth,
@@ -524,8 +655,8 @@ app.post(
         ? new Date(Number(req.body.ts))
         : new Date();
     await query(
-      `INSERT INTO workouts (user_id, category_id, name, dur, dist, kcal, intensity, ts)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      `INSERT INTO workouts (user_id, category_id, name, dur, dist, kcal, intensity, ts, note, sets)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [
         uid,
         cat.id,
@@ -535,6 +666,8 @@ app.post(
         req.body.kcal ? Number(req.body.kcal) : null,
         req.body.intensity ? String(req.body.intensity) : null,
         ts,
+        req.body.note ? String(req.body.note).slice(0, 500) : null,
+        cleanSets(req.body.sets),
       ]
     );
     res.json(await buildState(uid));
@@ -547,16 +680,21 @@ app.patch(
   wrap(async (req, res) => {
     const uid = req.userId!;
     await query(
+      // `sets` is only touched when the client sends the key at all, so edits
+      // that don't involve strength logging can't wipe an existing set list.
       `UPDATE workouts SET
          dur = $1,
          category_id = COALESCE($2, category_id),
-         dist = $3, kcal = $4
-       WHERE id = $5 AND user_id = $6`,
+         dist = $3, kcal = $4,
+         sets = CASE WHEN $5::boolean THEN $6::jsonb ELSE sets END
+       WHERE id = $7 AND user_id = $8`,
       [
         Number(req.body.dur) || 0,
         req.body.catId || null,
         req.body.dist ? String(req.body.dist) : null,
         req.body.kcal ? Number(req.body.kcal) : null,
+        Object.prototype.hasOwnProperty.call(req.body, 'sets'),
+        cleanSets(req.body.sets),
         req.params.id,
         uid,
       ]
@@ -588,7 +726,7 @@ app.post(
         ? new Date(Number(req.body.ts))
         : new Date();
     await query(
-      'INSERT INTO nights (user_id, hours, quality, bed_h, wake_h, ts) VALUES ($1,$2,$3,$4,$5,$6)',
+      'INSERT INTO nights (user_id, hours, quality, bed_h, wake_h, ts, note) VALUES ($1,$2,$3,$4,$5,$6,$7)',
       [
         uid,
         Number(req.body.hours) || 0,
@@ -596,6 +734,7 @@ app.post(
         req.body.bedH != null ? Number(req.body.bedH) : null,
         req.body.wakeH != null ? Number(req.body.wakeH) : null,
         ts,
+        req.body.note ? String(req.body.note).slice(0, 500) : null,
       ]
     );
     res.json(await buildState(uid));
@@ -614,6 +753,62 @@ app.delete(
 
 // ---------------- Transactions ----------------
 
+// Receipts are stored as base64 data URLs. The client already downscales and
+// re-encodes to JPEG before upload; this is the backstop so one oversized image
+// can't bloat a shared free-tier database.
+const MAX_PHOTO_BYTES = 400_000;
+function cleanPhoto(raw: unknown): string | null {
+  if (typeof raw !== 'string' || !raw.startsWith('data:image/')) return null;
+  if (raw.length > MAX_PHOTO_BYTES) return null;
+  return raw;
+}
+
+/** Attach, replace or clear a transaction's receipt. `undefined` leaves it alone. */
+async function saveTxnPhoto(uid: number, txnId: string | number, raw: unknown): Promise<void> {
+  if (raw === undefined) return;
+  if (raw === null || raw === '') {
+    await query('DELETE FROM txn_photos WHERE txn_id = $1 AND user_id = $2', [txnId, uid]);
+    return;
+  }
+  const data = cleanPhoto(raw);
+  if (!data) return;
+  await query(
+    `INSERT INTO txn_photos (txn_id, user_id, data) VALUES ($1,$2,$3)
+     ON CONFLICT (txn_id) DO UPDATE SET data = EXCLUDED.data, created_at = now()`,
+    [txnId, uid, data]
+  );
+}
+
+// Fetched on demand when the user actually opens a receipt, so images never
+// ride along with the state bundle.
+app.get(
+  '/api/txns/:id/photo',
+  requireAuth,
+  wrap(async (req, res) => {
+    const row = await one<{ data: string }>(
+      'SELECT data FROM txn_photos WHERE txn_id = $1 AND user_id = $2',
+      [req.params.id, req.userId!]
+    );
+    if (!row) return res.status(404).json({ error: 'No receipt' });
+    res.json({ photo: row.data });
+  })
+);
+
+app.put(
+  '/api/txns/:id/photo',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const owns = await one('SELECT id FROM txns WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    if (!owns) return res.status(404).json({ error: 'Not found' });
+    if (req.body.photo && !cleanPhoto(req.body.photo)) {
+      return res.status(413).json({ error: 'That image is too large — try a smaller photo' });
+    }
+    await saveTxnPhoto(uid, req.params.id, req.body.photo ?? null);
+    res.json(await buildState(uid));
+  })
+);
+
 app.post(
   '/api/txns',
   requireAuth,
@@ -624,8 +819,9 @@ app.post(
     const income = !!req.body.income;
     const cat = String(req.body.cat || 'Other');
     const ts = req.body.ts ? new Date(Number(req.body.ts)) : new Date();
-    await query(
-      'INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+    const row = await one<{ id: string }>(
+      `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id::text`,
       [
         uid,
         String(req.body.name || cat),
@@ -637,6 +833,7 @@ app.post(
         ts,
       ]
     );
+    if (row) await saveTxnPhoto(uid, row.id, req.body.photo);
     res.json(await buildState(uid));
   })
 );
@@ -666,6 +863,7 @@ app.patch(
         uid,
       ]
     );
+    await saveTxnPhoto(uid, req.params.id, req.body.photo);
     res.json(await buildState(uid));
   })
 );
@@ -789,11 +987,12 @@ app.post(
       'SELECT COALESCE(MAX(sort), -1) + 1 AS m FROM budgets WHERE user_id = $1',
       [uid]
     );
-    await query('INSERT INTO budgets (user_id, cat, limit_amt, sort) VALUES ($1,$2,$3,$4)', [
+    await query('INSERT INTO budgets (user_id, cat, limit_amt, sort, rollover) VALUES ($1,$2,$3,$4,$5)', [
       uid,
       cat,
       Number(req.body.limit) || 0,
       max!.m,
+      !!req.body.rollover,
     ]);
     res.json(await buildState(uid));
   })
@@ -804,11 +1003,12 @@ app.patch(
   requireAuth,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    await query('UPDATE budgets SET cat=$1, limit_amt=$2 WHERE id=$3 AND user_id=$4', [
+    await query('UPDATE budgets SET cat=$1, limit_amt=$2, rollover=$5 WHERE id=$3 AND user_id=$4', [
       String(req.body.cat || '').trim(),
       Number(req.body.limit) || 0,
       req.params.id,
       uid,
+      !!req.body.rollover,
     ]);
     res.json(await buildState(uid));
   })
@@ -880,8 +1080,8 @@ app.post(
     const name = String(req.body.name || '').trim();
     if (!name) return res.status(400).json({ error: 'Name required' });
     await query(
-      'INSERT INTO recurring (user_id, name, cat, acc_id, amount, freq, next_ts) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-      [uid, name, String(req.body.cat || 'Other'), req.body.accId || null, Number(req.body.amount) || 0, String(req.body.freq || 'Monthly'), req.body.nextTs ? new Date(Number(req.body.nextTs)) : new Date(Date.now() + 30 * 86400000)]
+      'INSERT INTO recurring (user_id, name, cat, acc_id, amount, freq, next_ts, income) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+      [uid, name, String(req.body.cat || 'Other'), req.body.accId || null, Number(req.body.amount) || 0, String(req.body.freq || 'Monthly'), req.body.nextTs ? new Date(Number(req.body.nextTs)) : new Date(Date.now() + 30 * 86400000), !!req.body.income]
     );
     res.json(await buildState(uid));
   })
@@ -895,8 +1095,8 @@ app.patch(
     const name = String(req.body.name || '').trim();
     if (!name) return res.status(400).json({ error: 'Name required' });
     await query(
-      'UPDATE recurring SET name=$1, cat=$2, acc_id=$3, amount=$4, freq=$5 WHERE id=$6 AND user_id=$7',
-      [name, String(req.body.cat || 'Other'), req.body.accId || null, Number(req.body.amount) || 0, String(req.body.freq || 'Monthly'), req.params.id, uid]
+      'UPDATE recurring SET name=$1, cat=$2, acc_id=$3, amount=$4, freq=$5, income=$8 WHERE id=$6 AND user_id=$7',
+      [name, String(req.body.cat || 'Other'), req.body.accId || null, Number(req.body.amount) || 0, String(req.body.freq || 'Monthly'), req.params.id, uid, !!req.body.income]
     );
     res.json(await buildState(uid));
   })
@@ -1015,6 +1215,162 @@ app.delete(
     // Every table references users(id) ON DELETE CASCADE, so one delete is enough.
     await query('DELETE FROM users WHERE id = $1', [req.userId!]);
     res.json({ ok: true });
+  })
+);
+
+// Change the password from inside the app (without the email round-trip).
+app.post(
+  '/api/me/password',
+  requireAuth,
+  rateLimit('change-pw', 10, 60 * 60 * 1000),
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const current = String(req.body.current || '');
+    const next = String(req.body.next || '');
+    if (next.length < 8) return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    const u = await one<{ password_hash: string | null }>('SELECT password_hash FROM users WHERE id = $1', [uid]);
+    // Google-only accounts have no password yet — let them set one.
+    if (u?.password_hash && !(await bcrypt.compare(current, u.password_hash))) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    await query('UPDATE users SET password_hash = $1 WHERE id = $2', [await bcrypt.hash(next, 10), uid]);
+    res.json({ ok: true });
+  })
+);
+
+// Invalidate every other device's token by bumping the account's token version.
+app.post(
+  '/api/me/signout-others',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const row = await one<{ token_version: number }>(
+      'UPDATE users SET token_version = token_version + 1 WHERE id = $1 RETURNING token_version',
+      [uid]
+    );
+    // Hand back a fresh token so THIS device stays signed in.
+    res.json({ token: signToken(uid, row?.token_version ?? 0) });
+  })
+);
+
+// ---------------- Workout templates ----------------
+
+app.post(
+  '/api/wtemplates',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const name = String(req.body.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'Name required' });
+    const max = await one<{ m: number }>(
+      'SELECT COALESCE(MAX(sort), -1) + 1 AS m FROM workout_templates WHERE user_id = $1',
+      [uid]
+    );
+    await query(
+      'INSERT INTO workout_templates (user_id, name, category_id, dur, intensity, sort) VALUES ($1,$2,$3,$4,$5,$6)',
+      [uid, name, req.body.catId || null, Number(req.body.dur) || 30, req.body.intensity ? String(req.body.intensity) : null, max!.m]
+    );
+    res.json(await buildState(uid));
+  })
+);
+
+app.delete(
+  '/api/wtemplates/:id',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    await query('DELETE FROM workout_templates WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    res.json(await buildState(uid));
+  })
+);
+
+// ---------------- Import ----------------
+// Restore entries from a previously exported JSON file. Additive by design: it
+// never deletes what's already there, so an import can't destroy live data.
+app.post(
+  '/api/import',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const d = req.body?.data;
+    if (!d || typeof d !== 'object') return res.status(400).json({ error: 'That file does not look like an Orbit export' });
+
+    const num = (v: unknown, def = 0) => (Number.isFinite(Number(v)) ? Number(v) : def);
+    const str = (v: unknown, def = '') => (typeof v === 'string' ? v : def);
+    let added = 0;
+
+    await tx(async (c) => {
+      // Habits (matched by name — re-importing the same file won't duplicate).
+      if (Array.isArray(d.habits)) {
+        for (const h of d.habits.slice(0, 200)) {
+          const name = str(h?.name).trim();
+          if (!name) continue;
+          const exists = await c.query('SELECT id FROM habits WHERE user_id = $1 AND name = $2', [uid, name]);
+          if (exists.rows.length) continue;
+          await c.query(
+            'INSERT INTO habits (user_id, name, color, target, days) VALUES ($1,$2,$3,$4,$5)',
+            [uid, name, str(h?.color, 'teal'), str(h?.target, 'Daily'), /^[01]{7}$/.test(h?.days) ? h.days : '1111111']
+          );
+          added++;
+        }
+      }
+      // Check-ins, matched back to habits by name.
+      if (Array.isArray(d.checkins) && Array.isArray(d.habits)) {
+        const byId = new Map<string, string>();
+        for (const h of d.habits) if (h?.id && h?.name) byId.set(String(h.id), String(h.name));
+        for (const ci of d.checkins.slice(0, 5000)) {
+          const hname = byId.get(String(ci?.habitId));
+          if (!hname || !/^\d{4}-\d{2}-\d{2}$/.test(ci?.day)) continue;
+          const row = await c.query('SELECT id FROM habits WHERE user_id = $1 AND name = $2', [uid, hname]);
+          if (!row.rows.length) continue;
+          await c.query(
+            'INSERT INTO habit_checkins (habit_id, user_id, day) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
+            [row.rows[0].id, uid, ci.day]
+          );
+          added++;
+        }
+      }
+      // Workouts / nights / transactions — skipped when the same timestamp exists.
+      if (Array.isArray(d.workouts)) {
+        for (const w of d.workouts.slice(0, 2000)) {
+          const ts = new Date(num(w?.ts, Date.now()));
+          const dup = await c.query('SELECT id FROM workouts WHERE user_id = $1 AND ts = $2', [uid, ts]);
+          if (dup.rows.length) continue;
+          await c.query(
+            'INSERT INTO workouts (user_id, name, dur, dist, kcal, intensity, ts) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+            [uid, str(w?.name, 'Workout'), num(w?.dur), w?.dist ? String(w.dist) : null, w?.kcal ? num(w.kcal) : null, w?.intensity ? String(w.intensity) : null, ts]
+          );
+          added++;
+        }
+      }
+      if (Array.isArray(d.nights)) {
+        for (const n of d.nights.slice(0, 2000)) {
+          const ts = new Date(num(n?.ts, Date.now()));
+          const dup = await c.query('SELECT id FROM nights WHERE user_id = $1 AND ts = $2', [uid, ts]);
+          if (dup.rows.length) continue;
+          await c.query(
+            'INSERT INTO nights (user_id, hours, quality, bed_h, wake_h, ts) VALUES ($1,$2,$3,$4,$5,$6)',
+            [uid, num(n?.hours), num(n?.quality, 7), n?.bedH != null ? num(n.bedH) : null, n?.wakeH != null ? num(n.wakeH) : null, ts]
+          );
+          added++;
+        }
+      }
+      if (Array.isArray(d.txns)) {
+        for (const t of d.txns.slice(0, 5000)) {
+          const ts = new Date(num(t?.ts, Date.now()));
+          const amt = num(t?.amount);
+          const dup = await c.query('SELECT id FROM txns WHERE user_id = $1 AND ts = $2 AND amount = $3', [uid, ts, amt]);
+          if (dup.rows.length) continue;
+          await c.query(
+            'INSERT INTO txns (user_id, name, cat, amount, income, note, ts) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+            [uid, str(t?.name, 'Entry'), str(t?.cat, 'Other'), amt, amt > 0, t?.note ? String(t.note) : null, ts]
+          );
+          added++;
+        }
+      }
+    });
+
+    res.json({ added, state: await buildState(uid) });
   })
 );
 
@@ -1343,9 +1699,10 @@ async function runRecurring() {
       acc_id: string | null;
       amount: number;
       freq: string;
+      income: boolean;
       next_ts: string;
     }>(
-      `SELECT id::text, user_id, name, cat, acc_id::text, amount, freq, next_ts
+      `SELECT id::text, user_id, name, cat, acc_id::text, amount, freq, income, next_ts
          FROM recurring
         WHERE next_ts IS NOT NULL AND next_ts <= now()`
     );
@@ -1355,12 +1712,20 @@ async function runRecurring() {
       // Insert one transaction per missed period (bounded so a very old date
       // can't spin forever).
       while (next.getTime() <= Date.now() && guard++ < 60) {
-        // Recurring entries are expenses (stored positive), so post them as
-        // negative amounts with income = false, matching POST /api/txns.
+        // Amounts are stored positive; sign them by kind, matching POST /api/txns.
         await query(
           `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts)
-           VALUES ($1,$2,$3,$4,FALSE,$5,$6,$7)`,
-          [r.user_id, r.name, r.cat, -Math.abs(r.amount), r.acc_id, 'Recurring', next]
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+          [
+            r.user_id,
+            r.name,
+            r.cat,
+            r.income ? Math.abs(r.amount) : -Math.abs(r.amount),
+            !!r.income,
+            r.acc_id,
+            'Recurring',
+            next,
+          ]
         );
         next = advance(next, r.freq);
       }
