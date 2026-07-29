@@ -20,7 +20,6 @@ import { FeedbackInbox } from './screens/FeedbackInbox';
 import { Privacy } from './screens/Privacy';
 import { Insights } from './screens/Insights';
 import { Search } from './screens/Search';
-import { RestTimer } from './RestTimer';
 import { VerifyEmail } from './screens/VerifyEmail';
 
 import { Chooser } from './sheets/Chooser';
@@ -258,6 +257,49 @@ function TabBar() {
   );
 }
 
+/**
+ * Password re-entry for irreversible actions. A masked field rather than
+ * `window.prompt`, which shows the typed password in clear text and renders as
+ * a raw system dialog inside the app.
+ */
+function PasswordPrompt() {
+  const { passwordState, closePassword } = useStore();
+  const [value, setValue] = useState('');
+  if (!passwordState) return null;
+  return (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
+      <div onClick={() => closePassword(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.5)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(2px)' }} />
+      <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 24, padding: '26px 22px 20px', width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(8,9,14,.35)', animation: 'fadeUp .25s ease' }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em', textAlign: 'center' }}>{passwordState.title}</div>
+        {passwordState.message && (
+          <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5, textAlign: 'center' }}>{passwordState.message}</div>
+        )}
+        <input
+          type="password"
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && value && closePassword(value)}
+          placeholder="Your password"
+          style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginTop: 18 }}
+        />
+        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+          <div onClick={() => closePassword(null)} className="press" style={{ flex: 1, height: 48, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+            Cancel
+          </div>
+          <div
+            onClick={() => value && closePassword(value)}
+            className="press"
+            style={{ flex: 1, height: 48, borderRadius: 14, background: value ? 'var(--danger)' : 'color-mix(in srgb,var(--danger) 40%,var(--surface))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: value ? 'pointer' : 'default' }}
+          >
+            {passwordState.confirmLabel || 'Confirm'}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; onRetry: () => void }) {
   // After a few seconds, explain the wait instead of spinning silently — the
   // free host sleeps, and a blank splash reads as "the app is broken".
@@ -322,7 +364,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 }
 
 export function App() {
-  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, report, closeReport, applyState } = useStore();
+  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, passwordState, report, closeReport, applyState } = useStore();
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
 
   // Track the phone's own light/dark setting so "System" can follow it live.
@@ -575,8 +617,6 @@ export function App() {
         </div>
       </div>
 
-      <RestTimer raised={showTabs} />
-
       {toast && (
         <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, background: 'var(--text)', color: 'var(--bg)', padding: '11px 20px', borderRadius: 999, fontSize: 14, fontWeight: 600, boxShadow: '0 12px 32px rgba(8,9,14,.28)', animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' }}>
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--success)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
@@ -649,6 +689,8 @@ export function App() {
           </div>
         </div>
       )}
+
+      {passwordState && <PasswordPrompt />}
 
       {/* First run: explain the app before asking about reminders. */}
       {authed && state && !state.profile.introDone && <Intro />}

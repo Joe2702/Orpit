@@ -5,6 +5,7 @@ import { daysLabel } from '../lib/format';
 import { HABIT_PRESETS } from '../lib/presets';
 import { IconTrash } from '../icons';
 import { toggleTrack, toggleKnob } from '../ui';
+import { Glyph } from '../lib/appIcons';
 
 const COLORS = ['teal', 'indigo', 'coral', 'blue', 'emerald', 'purple', 'pink', 'amber', 'cyan', 'rose'];
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Sun..Sat
@@ -223,7 +224,7 @@ export function HabitSheet() {
           role="button"
           style={{ display: 'flex', alignItems: 'center', gap: 12, background: paused ? 'color-mix(in srgb,var(--warning) 12%,var(--surface))' : 'var(--bg)', border: `1px solid ${paused ? 'color-mix(in srgb,var(--warning) 35%,var(--border))' : 'var(--border)'}`, borderRadius: 14, padding: '12px 14px', marginBottom: 20, cursor: 'pointer' }}
         >
-          <span style={{ fontSize: 18 }} aria-hidden>{paused ? '⏸️' : '▶️'}</span>
+          <Glyph name={paused ? 'pause' : 'play'} size={19} color={paused ? 'var(--warning)' : 'var(--text2)'} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>{paused ? 'Paused' : 'Pause this habit'}</div>
             <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>

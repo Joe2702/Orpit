@@ -4,11 +4,18 @@ import { IconWorkout, IconSleep, IconExpense, IconHabit } from '../icons';
 import { enabled } from '../lib/modules';
 
 export function Chooser() {
-  const { open, state } = useStore();
+  const { open, go, closeSheet, state } = useStore();
+  // Transactions deliberately go to the full add-transaction *screen* rather
+  // than a cut-down sheet, so logging money is the same experience wherever it
+  // starts from — keypad, categories, account, date, note and receipt.
+  const addTxn = () => {
+    closeSheet();
+    go('faddtx');
+  };
   const allItems = [
     { label: 'Workout', desc: 'Run, lift, walk…', key: 'coral', icon: <IconWorkout size={24} />, sheet: 'workout' as const },
     { label: 'Sleep', desc: 'Bedtime & wake-up', key: 'blue', icon: <IconSleep size={24} />, sheet: 'sleep' as const },
-    { label: 'Expense', desc: 'Income or spend', key: 'emerald', icon: <IconExpense size={24} />, sheet: 'expense' as const },
+    { label: 'Expense', desc: 'Income or spend', key: 'emerald', icon: <IconExpense size={24} />, sheet: null, action: addTxn },
     { label: 'Habit', desc: 'Build a routine', key: 'teal', icon: <IconHabit size={24} />, sheet: 'habit' as const },
     {
       label: 'Counter',
@@ -32,7 +39,7 @@ export function Chooser() {
         {items.map((it) => (
           <div
             key={it.label}
-            onClick={() => open(it.sheet)}
+            onClick={() => (it.action ? it.action() : it.sheet && open(it.sheet))}
             className="press"
             style={{ background: `color-mix(in srgb,var(--${it.key}) 10%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${it.key}) 18%,var(--border))`, borderRadius: 20, padding: 18, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 12 }}
           >

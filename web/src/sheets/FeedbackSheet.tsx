@@ -22,7 +22,7 @@ export function FeedbackSheet() {
     haptic();
     try {
       await api.sendFeedback(kind, message.trim());
-      showToast('Thanks — feedback sent 💙');
+      showToast('Thanks — feedback sent');
       closeSheet();
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Could not send');

@@ -3,6 +3,7 @@ import { useStore } from './store';
 import { api } from './api';
 import { deviceTimezone } from './lib/push';
 import { enableReminders } from './lib/notify';
+import { Glyph } from './lib/appIcons';
 
 const DISMISS_KEY = 'orbit_reminder_dismissed';
 
@@ -25,7 +26,7 @@ export function ReminderOnboarding() {
     try {
       await mutate(() => api.updateMe({ reminderTime: time, reminderTz: deviceTimezone(), reminders: true }));
       const status = await enableReminders(time);
-      if (status === 'ok') showToast('Daily reminder is on 🌙');
+      if (status === 'ok') showToast('Daily reminder is on');
       else if (status === 'denied') showToast('Allow notifications to get reminders');
       else showToast('Reminder time saved');
     } catch {
@@ -40,7 +41,9 @@ export function ReminderOnboarding() {
     <div style={{ position: 'absolute', inset: 0, zIndex: 97, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 26 }}>
       <div onClick={dismiss} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.55)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(2px)' }} />
       <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 24, padding: '26px 22px 20px', width: '100%', maxWidth: 340, boxShadow: '0 20px 60px rgba(8,9,14,.4)', animation: 'fadeUp .28s ease' }}>
-        <div style={{ fontSize: 34, textAlign: 'center', marginBottom: 6 }}>🌙</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+          <Glyph name="moon" size={32} color="var(--indigo)" sw={1.7} />
+        </div>
         <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', textAlign: 'center', letterSpacing: '-.02em' }}>
           When should we check in?
         </div>

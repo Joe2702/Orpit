@@ -2,6 +2,7 @@ import React from 'react';
 import { useStore } from '../store';
 import { BackButton } from '../ui';
 import { buildInsights, insightsReady } from '../lib/insights';
+import { Glyph } from '../lib/appIcons';
 
 const KIND_LABEL: Record<string, string> = {
   alert: 'Worth noticing',
@@ -27,7 +28,9 @@ export function Insights() {
 
       {!ready || insights.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 24px' }}>
-          <div style={{ fontSize: 44, marginBottom: 14 }} aria-hidden>🔍</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+          <Glyph name="search" size={40} color="var(--text2)" sw={1.6} />
+        </div>
           <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
             {ready ? 'Nothing stands out yet' : 'Still gathering data'}
           </div>
@@ -52,7 +55,9 @@ export function Insights() {
                 gap: 14,
               }}
             >
-              <span style={{ fontSize: 26, lineHeight: 1.1, flex: 'none' }} aria-hidden>{it.emoji}</span>
+              <span style={{ flex: 'none', width: 38, height: 38, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `color-mix(in srgb,var(--${it.color}) 14%,transparent)` }}>
+                <Glyph name={it.icon} size={21} color={`var(--${it.color})`} />
+              </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: `var(--${it.color})`, marginBottom: 5 }}>
                   {KIND_LABEL[it.kind]}

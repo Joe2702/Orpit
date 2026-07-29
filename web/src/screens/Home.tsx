@@ -8,44 +8,9 @@ import { parseLayout, reconcile } from '../lib/layout';
 import { Reorderable } from '../Reorderable';
 import { Bars, Spark, Ring } from '../lib/charts';
 import { Avatar, SectionLabel } from '../ui';
-import { IconWorkout, IconSleep, IconExpense, IconHabit } from '../icons';
+import { IconWorkout, IconSleep, IconExpense } from '../icons';
 import { enabled } from '../lib/modules';
-
-function QuickAdd() {
-  const { open } = useStore();
-  const items = [
-    { label: 'Workout', key: 'coral', icon: <IconWorkout />, sheet: 'workout' as const },
-    { label: 'Sleep', key: 'blue', icon: <IconSleep />, sheet: 'sleep' as const },
-    { label: 'Expense', key: 'emerald', icon: <IconExpense />, sheet: 'expense' as const },
-    { label: 'Habit', key: 'teal', icon: <IconHabit />, sheet: 'habit' as const },
-  ];
-  return (
-    <div style={{ display: 'flex', gap: 10 }}>
-      {items.map((it) => (
-        <div
-          key={it.label}
-          onClick={() => open(it.sheet)}
-          className="press96"
-          style={{
-            flex: 1,
-            background: `color-mix(in srgb,var(--${it.key}) 11%,var(--surface))`,
-            border: `1px solid color-mix(in srgb,var(--${it.key}) 16%,var(--border))`,
-            borderRadius: 18,
-            padding: '14px 6px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 9,
-            cursor: 'pointer',
-          }}
-        >
-          {it.icon}
-          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{it.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
+import { Glyph } from '../lib/appIcons';
 
 
 /** ↑/↓ vs the previous week. `lowerIsBetter` flips the colour (e.g. spending). */
@@ -184,13 +149,6 @@ export function Home() {
       </>
     ),
 
-    quick: (
-      <>
-        <SectionLabel>Quick add</SectionLabel>
-        <QuickAdd />
-      </>
-    ),
-
     week: (
       <>
         <SectionLabel>This week</SectionLabel>
@@ -302,7 +260,6 @@ export function Home() {
   // Respect the trackers the user chose to see.
   const blockList = [
     ...(enabled(state!, 'habits') ? ['habits'] : []),
-    'quick',
     'week',
     ...(enabled(state!, 'counters') ? ['counters'] : []),
   ];
@@ -342,7 +299,7 @@ export function Home() {
             className="press96"
             style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 5, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 999, padding: '7px 11px', cursor: 'pointer', boxShadow: 'var(--shadow)' }}
           >
-            <span style={{ fontSize: 15, lineHeight: 1 }}>🏆</span>
+            <Glyph name="trophy" size={15} color="var(--warning)" sw={2} />
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
               {badgeCount}<span style={{ color: 'var(--text2)', fontWeight: 600 }}>/{badges.length}</span>
             </span>
@@ -358,7 +315,9 @@ export function Home() {
 
       {nudge && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: `color-mix(in srgb,var(--${nudge.color}) 12%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${nudge.color}) 30%,var(--border))`, borderRadius: 18, padding: '14px 16px', marginBottom: 16 }}>
-          <span style={{ fontSize: 22, lineHeight: 1 }} aria-hidden>🎯</span>
+          <span style={{ flex: 'none', width: 36, height: 36, borderRadius: 11, background: `color-mix(in srgb,var(--${nudge.color}) 18%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Glyph name="target" size={20} color={`var(--${nudge.color})`} />
+          </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>
               Don't miss "{nudge.name}" twice

@@ -108,6 +108,10 @@ interface StoreCtx {
   confirm: (opts: ConfirmOpts) => Promise<boolean>;
   confirmState: (ConfirmOpts & { resolve: (v: boolean) => void }) | null;
   closeConfirm: (v: boolean) => void;
+  // Password re-entry, for actions too destructive to take on a tap alone.
+  askPassword: (opts: PasswordOpts) => Promise<string | null>;
+  passwordState: (PasswordOpts & { resolve: (v: string | null) => void }) | null;
+  closePassword: (v: string | null) => void;
   // Full-screen story report; offset 0 = current period, 1 = previous, …
   report: { kind: 'week' | 'month' | 'year'; offset: number } | null;
   openReport: (k: 'week' | 'month' | 'year', offset?: number) => void;
@@ -123,6 +127,12 @@ export interface ConfirmOpts {
   message?: string;
   confirmLabel?: string;
   danger?: boolean;
+}
+
+export interface PasswordOpts {
+  title: string;
+  message?: string;
+  confirmLabel?: string;
 }
 
 const Ctx = createContext<StoreCtx | null>(null);
@@ -255,6 +265,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (opts: ConfirmOpts) => new Promise<boolean>((resolve) => setConfirmState({ ...opts, resolve })),
     []
   );
+  const [passwordState, setPasswordState] = useState<(PasswordOpts & { resolve: (v: string | null) => void }) | null>(null);
+  const askPassword = useCallback(
+    (opts: PasswordOpts) => new Promise<string | null>((resolve) => setPasswordState({ ...opts, resolve })),
+    []
+  );
+  const closePassword = useCallback((v: string | null) => {
+    setPasswordState((cur) => {
+      cur?.resolve(v);
+      return null;
+    });
+  }, []);
+
   const closeConfirm = useCallback((v: boolean) => {
     setConfirmState((cur) => {
       cur?.resolve(v);
@@ -433,6 +455,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     claimBadge,
     confirm,
     confirmState,
+    askPassword,
+    passwordState,
+    closePassword,
     closeConfirm,
     report,
     openReport,

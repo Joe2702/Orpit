@@ -172,11 +172,6 @@ export function WorkoutSheet() {
       {label('Sets & reps (optional)')}
       <div style={{ marginBottom: 22 }}>
         <SetsEditor sets={sets} onChange={setSets} />
-        {sets.length > 0 && (
-          <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 9, lineHeight: 1.45 }}>
-            Adding a set starts the rest timer — it keeps running if you leave this sheet.
-          </div>
-        )}
       </div>
 
       {label('Note (optional)')}

@@ -12,7 +12,6 @@ import { api } from '../api';
 const REMINDER_ID = 1001; // stable id for the repeating daily reminder
 const TEST_ID = 1002;
 const WEEKLY_ID = 1003; // Sunday evening "your week is ready" nudge
-const REST_ID = 1005; // rest-between-sets countdown
 
 export function isNative(): boolean {
   return Capacitor.isNativePlatform();
@@ -51,11 +50,11 @@ function parseTime(time: string): { hour: number; minute: number } {
  * unchecked; -1 means "unknown".
  */
 function reminderBody(remaining: number): string {
-  if (remaining < 0) return 'How did today go? Take a moment to log it 🌙';
-  if (remaining === 0) return "Everything's checked off today — log the rest of your day? ✨";
-  if (remaining === 1) return 'Just one habit left today — finish strong 🌱';
-  if (remaining <= 3) return `${remaining} habits left today — a couple of taps 💫`;
-  return `${remaining} habits waiting. Two minutes now, a clearer picture later 🙌`;
+  if (remaining < 0) return 'How did today go? Take a moment to log it.';
+  if (remaining === 0) return "Everything's checked off today — log the rest of your day?";
+  if (remaining === 1) return 'Just one habit left today — finish strong.';
+  if (remaining <= 3) return `${remaining} habits left today — a couple of taps.`;
+  return `${remaining} habits waiting. Two minutes now, a clearer picture later.`;
 }
 
 async function scheduleDaily(time: string, remaining = -1): Promise<void> {
@@ -90,7 +89,7 @@ async function scheduleWeekly(): Promise<void> {
       {
         id: WEEKLY_ID,
         title: 'Your week on Orbit',
-        body: 'Your weekly report is ready — see how the week went 🗓️',
+        body: 'Your weekly report is ready — see how the week went.',
         // weekday 1 = Sunday in the plugin's schedule format.
         schedule: { on: { weekday: 1, hour: 19, minute: 0 }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
@@ -137,7 +136,7 @@ export async function scheduleExtras(
       notifications.push({
         id: stableId(HABIT_BASE, h.id),
         title: h.name,
-        body: 'Time for this one — tap to check it off 🌱',
+        body: 'Time for this one — tap to check it off.',
         schedule: { on: { hour, minute }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
       });
@@ -165,7 +164,7 @@ export async function scheduleExtras(
       notifications.push({
         id: WINDDOWN_ID,
         title: 'Time to wind down',
-        body: 'Bed in about 30 minutes — start slowing things down 🌙',
+        body: 'Bed in about 30 minutes — start slowing things down.',
         schedule: { on: { hour: Math.floor(t), minute: Math.round((t % 1) * 60) }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
       });
@@ -173,40 +172,6 @@ export async function scheduleExtras(
     if (notifications.length) await ln.schedule({ notifications });
   } catch {
     /* reminders are best-effort — never break the app over them */
-  }
-}
-
-/**
- * Ring when the rest between sets is up. The countdown itself is wall-clock, so
- * this only exists to get the user's attention when the phone is in a pocket —
- * the timer stays correct either way.
- */
-export async function scheduleRestAlarm(at: Date): Promise<void> {
-  if (!isNative()) return;
-  try {
-    const ln = await LN();
-    const perm = await ln.checkPermissions();
-    if (perm.display !== 'granted') return; // don't prompt mid-workout
-    await ensureChannel(ln);
-    await ln.cancel({ notifications: [{ id: REST_ID }] }).catch(() => {});
-    if (at.getTime() <= Date.now()) return;
-    await ln.schedule({
-      notifications: [
-        { id: REST_ID, title: 'Rest over', body: 'Next set 💪', schedule: { at, allowWhileIdle: true }, channelId: CHANNEL_ID },
-      ],
-    });
-  } catch {
-    /* best-effort */
-  }
-}
-
-export async function cancelRestAlarm(): Promise<void> {
-  if (!isNative()) return;
-  try {
-    const ln = await LN();
-    await ln.cancel({ notifications: [{ id: REST_ID }] });
-  } catch {
-    /* ignore */
   }
 }
 
@@ -296,7 +261,7 @@ export async function sendTestNotification(): Promise<'sent' | 'denied' | 'error
           {
             id: TEST_ID,
             title: 'Orbit',
-            body: 'Test notification 🎉 Your reminders are working.',
+            body: 'Test notification — your reminders are working.',
             schedule: { at: new Date(Date.now() + 1500) },
             channelId: CHANNEL_ID,
           },

@@ -5,17 +5,18 @@ import { Avatar, SectionLabel, toggleTrack, toggleKnob } from '../ui';
 import { IconChevron } from '../icons';
 import { deviceTimezone } from '../lib/push';
 import { enableReminders, disableReminders, updateReminderTime, sendTestNotification } from '../lib/notify';
+import { Glyph } from '../lib/appIcons';
 
 export const MODULE_OPTS = [
-  { key: 'habits', label: 'Habits', emoji: '🌱', color: 'teal' },
-  { key: 'workouts', label: 'Workouts', emoji: '💪', color: 'coral' },
-  { key: 'sleep', label: 'Sleep', emoji: '😴', color: 'blue' },
-  { key: 'finances', label: 'Finances', emoji: '💰', color: 'emerald' },
-  { key: 'counters', label: 'Counters', emoji: '🔢', color: 'indigo' },
+  { key: 'habits', label: 'Habits', icon: 'sprout' as const, color: 'teal' },
+  { key: 'workouts', label: 'Workouts', icon: 'dumbbell' as const, color: 'coral' },
+  { key: 'sleep', label: 'Sleep', icon: 'bed' as const, color: 'blue' },
+  { key: 'finances', label: 'Finances', icon: 'wallet' as const, color: 'emerald' },
+  { key: 'counters', label: 'Counters', icon: 'tally' as const, color: 'indigo' },
 ];
 
 export function Settings() {
-  const { state, go, open, mutate, mutateOpt, signOut, showToast, haptic, confirm, applyState } = useStore();
+  const { state, go, open, mutate, mutateOpt, signOut, showToast, haptic, confirm, askPassword, applyState } = useStore();
   const profile = state!.profile;
 
   // Long-press (1.2s) on the version string opens the feedback inbox.
@@ -70,7 +71,7 @@ export function Settings() {
       await mutate(() => api.updateMe({ reminders: true, reminderTz: deviceTimezone(), reminderTime: time }));
       const st = await enableReminders(time);
       if (st === 'denied') showToast('Allow notifications in your phone settings');
-      else if (st === 'ok') showToast('Daily reminder on 🌙');
+      else if (st === 'ok') showToast('Daily reminder on');
       else if (st === 'unsupported') showToast('Reminders not supported on this device');
     } else {
       await disableReminders();
@@ -86,7 +87,7 @@ export function Settings() {
 
   const sendTest = async () => {
     const r = await sendTestNotification();
-    if (r === 'sent') showToast('Test sent 🎉 check your notifications');
+    if (r === 'sent') showToast('Test sent — check your notifications');
     else if (r === 'denied') showToast('Allow notifications in your phone settings');
     else if (r === 'none') showToast('Turn on reminders first');
     else showToast('Could not send test');
@@ -126,8 +127,16 @@ export function Settings() {
       confirmLabel: 'Delete forever',
     });
     if (!sure) return;
+    // Final gate: prove it's really you. A phone left unlocked on a table
+    // shouldn't be two taps away from erasing the account.
+    const password = await askPassword({
+      title: 'Enter your password',
+      message: 'Confirm your password to permanently delete this account.',
+      confirmLabel: 'Delete account',
+    });
+    if (!password) return;
     try {
-      await api.deleteMyAccount();
+      await api.deleteMyAccount(password);
       showToast('Account deleted');
       signOut();
     } catch (e) {
@@ -341,8 +350,8 @@ export function Settings() {
           const on = !profile.modules || profile.modules.includes(m.key);
           return (
             <div key={m.key} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: i === MODULE_OPTS.length - 1 ? 'none' : '1px solid var(--border)' }}>
-              <span style={{ width: 34, height: 34, borderRadius: 10, background: `color-mix(in srgb,var(--${m.color}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', fontSize: 17 }} aria-hidden>
-                {m.emoji}
+              <span style={{ width: 34, height: 34, borderRadius: 10, background: `color-mix(in srgb,var(--${m.color}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                <Glyph name={m.icon} size={19} color={`var(--${m.color})`} />
               </span>
               <div style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{m.label}</div>
               <div

@@ -8,6 +8,7 @@ import { parseLayout, reconcile } from '../lib/layout';
 import { Reorderable } from '../Reorderable';
 import { RangeSeg } from '../ui';
 import { enabled } from '../lib/modules';
+import { Glyph } from '../lib/appIcons';
 
 function Arrow() {
   return (
@@ -159,7 +160,9 @@ export function Analytics() {
         aria-label="Open insights"
         style={{ display: 'flex', alignItems: 'center', gap: 13, background: 'linear-gradient(140deg, color-mix(in srgb,var(--indigo) 16%,var(--surface)), color-mix(in srgb,var(--blue) 12%,var(--surface)))', border: '1px solid color-mix(in srgb,var(--indigo) 28%,var(--border))', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '15px 17px', marginBottom: 12, cursor: 'pointer' }}
       >
-        <span style={{ fontSize: 24, lineHeight: 1 }} aria-hidden>🔍</span>
+        <span style={{ flex: 'none', width: 40, height: 40, borderRadius: 12, background: 'color-mix(in srgb,var(--indigo) 16%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Glyph name="search" size={22} color="var(--indigo)" />
+        </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15.5, fontWeight: 700, color: 'var(--text)' }}>Insights</div>
           <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.4 }}>
@@ -170,7 +173,7 @@ export function Analytics() {
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-        {([['week', 'This week', 'indigo', '🗓️'], ['month', 'This month', 'coral', '🌙']] as const).map(([k, label, color, emoji]) => (
+        {([['week', 'This week', 'indigo', 'calendar'], ['month', 'This month', 'coral', 'moon']] as const).map(([k, label, color, icon]) => (
           <div
             key={k}
             onClick={() => openReport(k, 0)}
@@ -179,7 +182,7 @@ export function Analytics() {
             aria-label={`Open ${label} report`}
             style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 52, borderRadius: 16, background: `color-mix(in srgb,var(--${color}) 14%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${color}) 30%,var(--border))`, cursor: 'pointer' }}
           >
-            <span style={{ fontSize: 18 }} aria-hidden>{emoji}</span>
+            <Glyph name={icon} size={18} color={`var(--${color})`} />
             <span style={{ fontSize: 14.5, fontWeight: 700, color: `var(--${color})` }}>{label}</span>
           </div>
         ))}

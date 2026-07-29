@@ -1,30 +1,31 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
 import { api } from '../api';
+import { Glyph } from '../lib/appIcons';
 
 // A short, skippable first-run tour. Without it, a new user lands on an empty
-// Home screen with no idea what the ➕ button or the tabs do.
+// Home screen with no idea what the + button or the tabs do.
 const SLIDES = [
   {
-    emoji: '🪐',
+    icon: 'planet' as const,
     title: 'Welcome to Orbit',
     body: 'One place for your habits, workouts, sleep and money — so you can see how they move together.',
     color: 'indigo',
   },
   {
-    emoji: '➕',
+    icon: 'plus' as const,
     title: 'Log with one tap',
     body: 'The + button in the middle of the bar adds anything: a workout, a night of sleep, an expense or a habit.',
     color: 'blue',
   },
   {
-    emoji: '✅',
+    icon: 'check' as const,
     title: 'Check off your habits',
     body: 'Your habits for today sit on the Home screen. Tap the circle to complete one — that is the whole ritual.',
     color: 'teal',
   },
   {
-    emoji: '📊',
+    icon: 'chart' as const,
     title: 'Watch it add up',
     body: 'Analytics turns your entries into trends, and every week and month becomes a short story report.',
     color: 'coral',
@@ -66,7 +67,9 @@ export function Intro() {
       </div>
 
       <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', animation: 'fadeUp .35s ease' }}>
-        <div style={{ fontSize: 68, marginBottom: 22 }} aria-hidden>{slide.emoji}</div>
+        <div style={{ width: 96, height: 96, borderRadius: '50%', marginBottom: 22, background: `color-mix(in srgb,var(--${slide.color}) 15%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Glyph name={slide.icon} size={46} color={`var(--${slide.color})`} sw={1.7} />
+        </div>
         <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-.02em', marginBottom: 12 }}>{slide.title}</div>
         <div style={{ fontSize: 16, lineHeight: 1.6, opacity: 0.92, maxWidth: 320 }}>{slide.body}</div>
       </div>

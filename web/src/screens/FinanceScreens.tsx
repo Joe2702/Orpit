@@ -37,7 +37,7 @@ function AddBtn({ color, onClick }: { color: string; onClick: () => void }) {
 
 // ================= Add / edit transaction (full screen) =================
 export function FAddTx() {
-  const { state, screenData, go, mutate, haptic } = useStore();
+  const { state, screenData, go, mutateOpt, haptic } = useStore();
   const edit: Txn | undefined = screenData?.edit;
   const fcats = state!.fcats;
   const accounts = state!.accounts;
@@ -71,16 +71,31 @@ export function FAddTx() {
     haptic();
     const ts = new Date(date + 'T12:00:00').getTime();
     const body = { name: cat, cat, amount: amt, income, accId, note: note.trim() || null, ts };
-    await mutate(
+    const signed = income ? amt : -amt;
+    // Update the list immediately and leave the screen; the server call settles
+    // in the background. Waiting on a sleepy free-tier host made saving feel
+    // broken even though it always worked.
+    const tempId = 'tmp_' + Date.now();
+    mutateOpt(
+      (s) => ({
+        ...s,
+        txns: edit
+          ? s.txns.map((t) => (t.id === edit.id ? { ...t, ...body, amount: signed, ts } : t))
+          : [...s.txns, { id: tempId, name: cat, cat, amount: signed, income, accId, note: note.trim() || null, photo: !!newPhoto, ts }],
+      }),
       () => (edit ? api.editTxn(edit.id, body) : api.addTxn({ ...body, ...(newPhoto ? { photo: newPhoto } : {}) })),
       edit ? 'Transaction updated' : 'Transaction saved'
-    );
+    ).catch(() => {});
     go('ftxns');
   };
-  const del = async () => {
+  const del = () => {
     if (!edit) return;
     haptic();
-    await mutate(() => api.deleteTxn(edit.id), 'Transaction deleted');
+    mutateOpt(
+      (s) => ({ ...s, txns: s.txns.filter((t) => t.id !== edit.id) }),
+      () => api.deleteTxn(edit.id),
+      'Transaction deleted'
+    ).catch(() => {});
     go('ftxns');
   };
 

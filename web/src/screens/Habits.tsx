@@ -7,6 +7,7 @@ import { daysLabel } from '../lib/format';
 import { IconPencil } from '../icons';
 import { Reorderable } from '../Reorderable';
 import { api } from '../api';
+import { Glyph } from '../lib/appIcons';
 
 export function Habits() {
   const { open, range, mutate } = useStore();
@@ -89,7 +90,7 @@ export function Habits() {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.45 }}>
-            {h.weekSecured ? 'This week counts ✓' : h.weekToGo > 0 ? `${h.weekToGo} more to secure this week` : "You're on track"}
+            {h.weekSecured ? 'This week counts' : h.weekToGo > 0 ? `${h.weekToGo} more to secure this week` : "You're on track"}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4, lineHeight: 1.5 }}>
             {h.rangeDone} of {h.rangeTotal} habit check-ins {rangeWord(range)}.
@@ -100,7 +101,9 @@ export function Habits() {
       {/* Weekly streak — forgiving by design: a week counts at 70%, and a slow
           week never wipes out the run. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '16px 18px', marginBottom: 22 }}>
-        <span style={{ fontSize: 26, lineHeight: 1 }} aria-hidden>{h.weekStreak > 0 ? '🔥' : '🌱'}</span>
+        <span style={{ flex: 'none', width: 40, height: 40, borderRadius: 12, background: 'color-mix(in srgb,var(--teal) 14%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Glyph name={h.weekStreak > 0 ? 'flame' : 'sprout'} size={22} color="var(--teal)" />
+        </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
             {h.weekStreak > 0 ? `${h.weekStreak} good ${h.weekStreak === 1 ? 'week' : 'weeks'} in a row` : 'Start your first good week'}

@@ -1212,8 +1212,23 @@ app.delete(
   '/api/me',
   requireAuth,
   wrap(async (req, res) => {
+    const uid = req.userId!;
+    // Re-authenticate before an irreversible, total delete: a stolen unlocked
+    // phone shouldn't be able to wipe the account in two taps.
+    const u = await one<{ password_hash: string | null }>('SELECT password_hash FROM users WHERE id = $1', [uid]);
+    if (!u) return res.status(404).json({ error: 'Not found' });
+    if (u.password_hash) {
+      const password = String(req.body?.password || '');
+      if (!password) return res.status(400).json({ error: 'Enter your password to confirm' });
+      if (!(await bcrypt.compare(password, u.password_hash))) {
+        return res.status(401).json({ error: 'That password is incorrect' });
+      }
+    }
+    // Google-only accounts have no password to check; the signed-in session is
+    // the only proof available, so the typed confirmation in the UI stands in.
+
     // Every table references users(id) ON DELETE CASCADE, so one delete is enough.
-    await query('DELETE FROM users WHERE id = $1', [req.userId!]);
+    await query('DELETE FROM users WHERE id = $1', [uid]);
     res.json({ ok: true });
   })
 );

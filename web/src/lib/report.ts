@@ -1,10 +1,11 @@
+import type { GlyphName } from './appIcons';
 import type { AppState } from '../types';
 import { money, dayKey } from './format';
 
 export interface ReportSlide {
   key: string;
   color: string; // CSS token key
-  emoji: string;
+  icon: GlyphName;
   headline: string;
   value: string; // big stat ('' for intro/outro)
   caption: string;
@@ -117,7 +118,7 @@ export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset
   slides.push({
     key: 'intro',
     color: 'indigo',
-    emoji: kind === 'week' ? '🗓️' : kind === 'year' ? '🎆' : '🌙',
+    icon: (kind === 'week' ? 'calendar' : kind === 'year' ? 'sparkle' : 'moon') as GlyphName,
     headline: kind === 'week' ? 'Your week' : kind === 'year' ? `${start.getFullYear()} in review` : 'Your month',
     value: '',
     caption: range,
@@ -126,51 +127,51 @@ export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset
   slides.push({
     key: 'workouts',
     color: 'coral',
-    emoji: '💪',
+    icon: 'dumbbell' as GlyphName,
     headline: 'Workouts',
     value: String(workouts.length),
     caption: workouts.length ? `${wMin} minutes moved · ${wActiveDays} active days` : `No workouts logged ${label}`,
   });
   if (deep && topWCat) {
-    slides.push({ key: 'wcat', color: 'coral', emoji: '🏆', headline: 'Top workout', value: topWCat, caption: `your most-logged category (${topWCatN}×)` });
+    slides.push({ key: 'wcat', color: 'coral', icon: 'trophy' as GlyphName, headline: 'Top workout', value: topWCat, caption: `your most-logged category (${topWCatN}×)` });
   }
 
   slides.push({
     key: 'sleep',
     color: 'blue',
-    emoji: '😴',
+    icon: 'bed' as GlyphName,
     headline: 'Sleep',
     value: nights.length ? fmtDur(slAvg) : '—',
     caption: nights.length ? `nightly average across ${nights.length} nights` : `No nights logged ${label}`,
   });
   if (deep && nights.length) {
-    slides.push({ key: 'sleepbest', color: 'blue', emoji: '🌟', headline: 'Best night', value: fmtDur(slBest), caption: kind === 'year' ? 'your longest sleep this year' : 'your longest sleep this month' });
+    slides.push({ key: 'sleepbest', color: 'blue', icon: 'star' as GlyphName, headline: 'Best night', value: fmtDur(slBest), caption: kind === 'year' ? 'your longest sleep this year' : 'your longest sleep this month' });
   }
 
   slides.push({
     key: 'habits',
     color: 'teal',
-    emoji: '🌱',
+    icon: 'sprout' as GlyphName,
     headline: 'Habit check-ins',
     value: String(habitChecks),
     caption: habitChecks ? `completed ${label}` : `No check-ins ${label} yet`,
   });
   if (bestHabit) {
-    slides.push({ key: 'besthabit', color: 'teal', emoji: '🔥', headline: 'Most consistent', value: bestHabit, caption: `${bestHabitN}× ${label}` });
+    slides.push({ key: 'besthabit', color: 'teal', icon: 'flame' as GlyphName, headline: 'Most consistent', value: bestHabit, caption: `${bestHabitN}× ${label}` });
   }
 
   if (txns.length) {
-    slides.push({ key: 'spent', color: 'emerald', emoji: '💸', headline: 'Spent', value: money(spent), caption: `across ${txns.filter((t) => t.amount < 0).length} expenses ${label}` });
+    slides.push({ key: 'spent', color: 'emerald', icon: 'cash' as GlyphName, headline: 'Spent', value: money(spent), caption: `across ${txns.filter((t) => t.amount < 0).length} expenses ${label}` });
     if (deep) {
-      if (topCat) slides.push({ key: 'topcat', color: 'emerald', emoji: '🧾', headline: 'Top category', value: topCat, caption: `${money(topCatV)} spent here` });
-      slides.push({ key: 'saved', color: 'emerald', emoji: '📈', headline: 'Net saved', value: money(net), caption: income > 0 ? `${savingsRate}% savings rate` : 'income vs. spending' });
+      if (topCat) slides.push({ key: 'topcat', color: 'emerald', icon: 'receipt' as GlyphName, headline: 'Top category', value: topCat, caption: `${money(topCatV)} spent here` });
+      slides.push({ key: 'saved', color: 'emerald', icon: 'trendUp' as GlyphName, headline: 'Net saved', value: money(net), caption: income > 0 ? `${savingsRate}% savings rate` : 'income vs. spending' });
     }
   }
 
   slides.push({
     key: 'outro',
     color: 'indigo',
-    emoji: '✨',
+    icon: 'sparkle' as GlyphName,
     headline: kind === 'week' ? 'Onto next week' : kind === 'year' ? 'Onto the next one' : 'Onto next month',
     value: '',
     caption: 'Keep tracking — every entry paints the bigger picture.',
