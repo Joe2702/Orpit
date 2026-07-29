@@ -21,6 +21,7 @@ import { Privacy } from './screens/Privacy';
 import { Insights } from './screens/Insights';
 import { Search } from './screens/Search';
 import { VerifyEmail } from './screens/VerifyEmail';
+import { SyncStatus } from './SyncStatus';
 
 import { Chooser } from './sheets/Chooser';
 import { CounterSheet, CountLogSheet, CountPickSheet } from './sheets/CounterSheets';
@@ -620,6 +621,7 @@ export function App() {
         )}
         {/* Keyed on the screen so a tab change replays the slide-in from the
             side the swipe came from. */}
+        {ready && <SyncStatus />}
         <div key={screen} style={slide ? { animation: `${slide === 'l' ? 'slideInR' : 'slideInL'} .26s cubic-bezier(.2,.8,.3,1)` } : undefined}>
           {ready ? <CurrentScreen /> : null}
         </div>
