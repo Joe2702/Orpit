@@ -53,8 +53,10 @@ jobs:
           VITE_BUILD_ID: ${{ github.run_number }}
         run: |
           if [ -z "$VITE_API_BASE" ]; then
-            echo "::warning::VITE_API_BASE is empty — the built app won't reach a backend. Set the repo variable VITE_API_BASE or run the workflow manually with the URL."
+            echo "::error::VITE_API_BASE is empty. A build without a backend URL produces an APK that can never reach the server — it just says \"waking up\" forever. Run this workflow manually and fill in the backend URL, or set the repo variable VITE_API_BASE (Settings -> Secrets and variables -> Actions -> Variables)."
+            exit 1
           fi
+          echo "Building against backend: $VITE_API_BASE"
           npm ci
           npm run build
           npx cap sync android
@@ -68,7 +70,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: orbit-android-apk
+          name: orbit-apk-${{ github.run_number }}
           path: web/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 

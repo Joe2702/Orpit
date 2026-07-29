@@ -36,6 +36,21 @@ app.use(
   })
 );
 
+// ---- Database readiness ----
+// The schema runs on boot, but the server must NOT wait for it before it starts
+// listening. On a free tier the Postgres sleeps too, so a slow or unreachable
+// database used to abort startup, Render would restart, and it would fail the
+// same way again — a crash loop where nothing ever answers and the app just
+// says "waking up" forever. Now we listen immediately, migrate in the
+// background with retries, and tell callers plainly while we wait.
+let dbReady = false;
+let dbError: string | null = null;
+
+app.use('/api', (req, res, next) => {
+  if (dbReady || req.path === '/health') return next();
+  res.status(503).json({ error: 'Starting up — the database is still waking. Try again in a moment.' });
+});
+
 const wrap =
   (fn: (req: AuthedRequest, res: express.Response) => Promise<any>) =>
   (req: AuthedRequest, res: express.Response) =>
@@ -1603,12 +1618,18 @@ app.get(
 app.get('/api/health', async (_req, res) => {
   // Touch the database too, so the keep-awake pinger keeps BOTH the server and
   // the (free, auto-sleeping) Postgres warm — otherwise the first action after
-  // idle waits for the database to wake up.
+  // idle waits for the database to wake up. Also reports migration state, so a
+  // stuck deploy can be diagnosed by opening this URL in a browser.
   try {
     await pool.query('SELECT 1');
-    res.json({ ok: true, db: true });
-  } catch {
-    res.json({ ok: true, db: false });
+    res.json({ ok: true, db: true, schema: dbReady });
+  } catch (e) {
+    res.json({
+      ok: true,
+      db: false,
+      schema: dbReady,
+      error: dbError || (e instanceof Error ? e.message : 'database unreachable'),
+    });
   }
 });
 
@@ -1645,7 +1666,7 @@ const PORT = Number(process.env.PORT) || 4000;
 
 // Every minute, fire due daily reminders (each at the user's local time).
 async function runReminders() {
-  if (!pushReady) return;
+  if (!pushReady || !dbReady) return;
   try {
     const rows = await query<{
       reminder_time: string;
@@ -1705,6 +1726,7 @@ function advance(from: Date, freq: string): Date {
  * up if the server was asleep (loops until the next date is in the future).
  */
 async function runRecurring() {
+  if (!dbReady) return;
   try {
     const due = await query<{
       id: string;
@@ -1751,24 +1773,44 @@ async function runRecurring() {
   }
 }
 
-async function start() {
-  // Create/upgrade tables on boot (idempotent) — no separate migrate step needed in the cloud.
-  await pool.query(SCHEMA_SQL);
-  // Ensure every existing account has the permanent "Daily Check-In" habit.
-  await pool.query(
-    `INSERT INTO habits (user_id, name, color, target, days, locked, sort)
-     SELECT u.id, 'Daily Check-In', 'indigo', 'Daily', '1111111', TRUE, -1 FROM users u
-     WHERE NOT EXISTS (SELECT 1 FROM habits h WHERE h.user_id = u.id AND h.locked = TRUE)`
-  );
+/**
+ * Create/upgrade tables (idempotent) — no separate migrate step in the cloud.
+ * Retries with backoff instead of exiting: a sleeping or briefly unreachable
+ * database is a normal condition on a free tier, not a fatal one.
+ */
+async function migrate(attempt = 1): Promise<void> {
+  try {
+    await pool.query(SCHEMA_SQL);
+    // Ensure every existing account has the permanent "Daily Check-In" habit.
+    await pool.query(
+      `INSERT INTO habits (user_id, name, color, target, days, locked, sort)
+       SELECT u.id, 'Daily Check-In', 'indigo', 'Daily', '1111111', TRUE, -1 FROM users u
+       WHERE NOT EXISTS (SELECT 1 FROM habits h WHERE h.user_id = u.id AND h.locked = TRUE)`
+    );
+    dbReady = true;
+    dbError = null;
+    console.log('[boot] schema ready — serving requests');
+  } catch (e) {
+    dbError = e instanceof Error ? e.message : String(e);
+    const wait = Math.min(30_000, 2_000 * attempt);
+    console.error(
+      `[boot] schema attempt ${attempt} failed: ${dbError}\n` +
+        `[boot] retrying in ${wait / 1000}s. Is DATABASE_URL set and reachable?`
+    );
+    setTimeout(() => migrate(attempt + 1), wait).unref?.();
+  }
+}
+
+function start() {
+  // Listen first, always. Even with the database down the health endpoint
+  // answers, so the problem is visible instead of looking like a hang.
   app.listen(PORT, () => console.log(`Orbit API listening on port ${PORT}`));
   console.log(pushReady ? 'Daily reminders: ON' : 'Daily reminders: OFF (set VAPID_PRIVATE to enable)');
+  migrate();
   setInterval(runReminders, 60 * 1000);
   // Post due recurring transactions on boot, then hourly.
   runRecurring();
   setInterval(runRecurring, 60 * 60 * 1000);
 }
 
-start().catch((e) => {
-  console.error('Startup failed. Is DATABASE_URL set and reachable?\n', e.message);
-  process.exit(1);
-});
+start();
