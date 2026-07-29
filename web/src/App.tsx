@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from './store';
-import { api } from './api';
+import { api, API_BASE } from './api';
 
 import { Welcome } from './screens/Welcome';
 import { Signin } from './screens/Signin';
@@ -301,6 +301,7 @@ function PasswordPrompt() {
 }
 
 function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; onRetry: () => void }) {
+  const apiBase = API_BASE;
   // After a few seconds, explain the wait instead of spinning silently — the
   // free host sleeps, and a blank splash reads as "the app is broken".
   const [slow, setSlow] = useState(false);
@@ -340,9 +341,16 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 
         {error ? (
           <div style={{ textAlign: 'center', marginTop: 18 }}>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,.85)', marginBottom: 16, maxWidth: 260, lineHeight: 1.5 }}>
-              The server is still waking up. It sleeps when unused, so the first
-              open of the day can take up to a minute.
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,.85)', marginBottom: 14, maxWidth: 270, lineHeight: 1.5 }}>
+              {apiBase
+                ? "Couldn't reach the server. It sleeps when unused, so the first open of the day can take up to a minute."
+                : 'This build has no backend address, so it can never reach the server. It needs to be rebuilt with the backend URL.'}
+            </div>
+            {/* Which backend this build actually points at. Without it, a build
+                configured with the wrong URL — or none at all — is invisible and
+                looks exactly like a server that won't wake up. */}
+            <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.6)', marginBottom: 16, maxWidth: 280, wordBreak: 'break-all', lineHeight: 1.45 }}>
+              {apiBase || 'no backend URL configured'}
             </div>
             <div onClick={onRetry} className="press" style={{ display: 'inline-flex', background: '#fff', color: '#4a45a6', height: 46, padding: '0 26px', borderRadius: 14, alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px -10px rgba(0,0,0,.4)' }}>Try again</div>
           </div>

@@ -4,7 +4,7 @@ import type { AppState, WorkoutSet } from './types';
 // relative path works. Inside a native (Capacitor) build the app runs from a
 // local origin on the device, so it needs the absolute backend URL, supplied
 // at build time via VITE_API_BASE (e.g. https://orbit.onrender.com).
-const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
+export const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
 
 const TOKEN_KEY = 'orbit_token';
 
