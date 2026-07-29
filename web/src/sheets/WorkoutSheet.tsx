@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { api } from '../api';
 import { chip } from '../ui';
+import { SetsEditor } from '../SetsEditor';
+import type { WorkoutSet } from '../types';
 
 // Local YYYY-MM-DD (not UTC) for the date input's default.
 function todayISO(): string {
@@ -18,6 +20,7 @@ export function WorkoutSheet() {
   const [intensity, setIntensity] = useState('Moderate');
   const [day, setDay] = useState(todayISO());
   const [note, setNote] = useState('');
+  const [sets, setSets] = useState<WorkoutSet[]>([]);
 
   // Most recent workout — offered as a one-tap repeat, the most common case.
   const last = state!.workouts.length
@@ -25,15 +28,19 @@ export function WorkoutSheet() {
     : null;
   const lastCatName = cats.find((c) => c.id === last?.catId)?.name || last?.name || 'Workout';
 
-  const log = (o: { catId: string; dur: number; intensity: string | null; ts: number; note?: string | null }) => {
+  const log = (o: { catId: string; dur: number; intensity: string | null; ts: number; note?: string | null; sets?: WorkoutSet[] | null }) => {
     const catName = cats.find((c) => c.id === o.catId)?.name || 'Workout';
     const tempId = 'tmp_' + Date.now();
+    // Half-filled rows (an exercise card added but never named) are dropped
+    // rather than saved as a blank exercise.
+    const clean = (o.sets || []).filter((s) => s.ex.trim());
+    const payload = clean.length ? clean : null;
     mutateOpt(
       (s) => ({
         ...s,
-        workouts: [...s.workouts, { id: tempId, name: catName, catId: o.catId, dur: o.dur, dist: null, kcal: null, intensity: o.intensity, note: o.note ?? null, ts: o.ts }],
+        workouts: [...s.workouts, { id: tempId, name: catName, catId: o.catId, dur: o.dur, dist: null, kcal: null, intensity: o.intensity, note: o.note ?? null, sets: payload, ts: o.ts }],
       }),
-      () => api.addWorkout({ catId: o.catId, dur: o.dur, dist: null, kcal: null, intensity: o.intensity, note: o.note ?? null, ts: o.ts }),
+      () => api.addWorkout({ catId: o.catId, dur: o.dur, dist: null, kcal: null, intensity: o.intensity, note: o.note ?? null, sets: payload, ts: o.ts }),
       'Workout logged'
     ).catch(() => {});
     closeSheet();
@@ -42,7 +49,7 @@ export function WorkoutSheet() {
   const save = () => {
     if (!catId) return;
     haptic();
-    log({ catId, dur, intensity, note: note.trim() || null, ts: new Date(`${day}T12:00:00`).getTime() });
+    log({ catId, dur, intensity, note: note.trim() || null, sets, ts: new Date(`${day}T12:00:00`).getTime() });
   };
 
   // Saved presets ("Push day · 45 min · Hard") — pick one to log instantly.
@@ -161,6 +168,16 @@ export function WorkoutSheet() {
           </div>
         </>
       )}
+
+      {label('Sets & reps (optional)')}
+      <div style={{ marginBottom: 22 }}>
+        <SetsEditor sets={sets} onChange={setSets} />
+        {sets.length > 0 && (
+          <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 9, lineHeight: 1.45 }}>
+            Adding a set starts the rest timer — it keeps running if you leave this sheet.
+          </div>
+        )}
+      </div>
 
       {label('Note (optional)')}
       <input

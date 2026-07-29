@@ -1,4 +1,4 @@
-import type { AppState } from './types';
+import type { AppState, WorkoutSet } from './types';
 
 // On the web the frontend is served by the same server as the API, so a
 // relative path works. Inside a native (Capacitor) build the app runs from a
@@ -168,11 +168,13 @@ export const api = {
     kcal?: number | null;
     intensity?: string | null;
     note?: string | null;
+    sets?: WorkoutSet[] | null;
     ts?: number;
   }) => request<AppState>('/workouts', { method: 'POST', body: JSON.stringify(b) }),
   editWorkout: (
     id: string,
-    b: { dur: number; catId: string; dist?: string | null; kcal?: number | null }
+    // Omit `sets` entirely to leave an existing set list untouched.
+    b: { dur: number; catId: string; dist?: string | null; kcal?: number | null; sets?: WorkoutSet[] | null }
   ) => request<AppState>(`/workouts/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteWorkout: (id: string) => request<AppState>(`/workouts/${id}`, { method: 'DELETE' }),
 
@@ -187,13 +189,23 @@ export const api = {
     income: boolean;
     accId?: string | null;
     note?: string | null;
+    // A data URL attaches a receipt; null clears one; omit to leave it alone.
+    photo?: string | null;
     ts?: number;
   }) => request<AppState>('/txns', { method: 'POST', body: JSON.stringify(b) }),
   editTxn: (
     id: string,
-    b: { name?: string; cat: string; amount: number; income: boolean; accId?: string | null; note?: string | null; ts?: number }
+    b: { name?: string; cat: string; amount: number; income: boolean; accId?: string | null; note?: string | null; photo?: string | null; ts?: number }
   ) => request<AppState>(`/txns/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteTxn: (id: string) => request<AppState>(`/txns/${id}`, { method: 'DELETE' }),
+  /** Fetch a receipt on demand — images are never part of the state bundle. */
+  txnPhoto: (id: string) => request<{ photo: string }>(`/txns/${id}/photo`),
+  setTxnPhoto: (id: string, photo: string | null) =>
+    request<AppState>(`/txns/${id}/photo`, { method: 'PUT', body: JSON.stringify({ photo }) }),
+
+  sendVerifyEmail: () => request<{ ok: boolean; already?: boolean }>('/verify/send', { method: 'POST' }),
+  confirmEmail: (token: string) =>
+    request<{ ok: boolean }>('/verify/confirm', { method: 'POST', body: JSON.stringify({ token }) }),
 
   addAccount: (b: { name: string; type: string; color: string; opening: number }) =>
     request<AppState>('/accounts', { method: 'POST', body: JSON.stringify(b) }),

@@ -5,6 +5,9 @@ import { Bars, Donut } from '../lib/charts';
 import { relLabel } from '../lib/format';
 import { DetailHeader, RangeSeg, SectionLabel, rangeWord } from '../ui';
 import { IconWorkout } from '../icons';
+import { SwipeRow } from '../SwipeRow';
+import { volume } from '../SetsEditor';
+import { useEntryActions } from '../lib/entryActions';
 
 // Round a minutes value up to a clean axis maximum (15/30/45/60/90/120…), so the
 // y-axis reads sensibly instead of arbitrary numbers like "47m".
@@ -17,6 +20,7 @@ function niceMinutes(v: number): number {
 
 export function Workouts() {
   const { state, open, range } = useStore();
+  const { remove } = useEntryActions();
   const { d } = useData();
   // Render a page at a time so hundreds of entries don't stall the screen.
   const [shown, setShown] = useState(50);
@@ -125,24 +129,36 @@ export function Workouts() {
               ? w.intensity + ' intensity'
               : w.dur + ' min');
           return (
-            <div
+            <SwipeRow
               key={w.id}
-              onClick={() => open('edit', { kind: 'workout', item: w })}
-              className="pressRow"
-              style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+              onEdit={() => open('edit', { kind: 'workout', item: w })}
+              onDelete={() => remove('workout', w)}
             >
-              <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: `color-mix(in srgb,var(--${cc}) 14%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ width: 13, height: 13, borderRadius: 4, background: `var(--${cc})` }} />
-              </span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{w.name}</div>
-                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{meta}</div>
+              <div
+                onClick={() => open('edit', { kind: 'workout', item: w })}
+                className="pressRow"
+                style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}
+              >
+                <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: `color-mix(in srgb,var(--${cc}) 14%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ width: 13, height: 13, borderRadius: 4, background: `var(--${cc})` }} />
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{w.name}</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{meta}</div>
+                  {/* Strength sessions get their headline number: total volume. */}
+                  {w.sets && w.sets.length > 0 && (
+                    <div style={{ fontSize: 12, fontWeight: 600, color: `var(--${cc})`, marginTop: 3 }}>
+                      {w.sets.length} {w.sets.length === 1 ? 'set' : 'sets'}
+                      {volume(w.sets) > 0 && ` · ${Math.round(volume(w.sets)).toLocaleString()} total volume`}
+                    </div>
+                  )}
+                </div>
+                <div style={{ textAlign: 'right', flex: 'none' }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{w.dur}m</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 1 }}>{relLabel(w.ts)}</div>
+                </div>
               </div>
-              <div style={{ textAlign: 'right', flex: 'none' }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{w.dur}m</div>
-                <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 1 }}>{relLabel(w.ts)}</div>
-              </div>
-            </div>
+            </SwipeRow>
           );
         })}
       </div>

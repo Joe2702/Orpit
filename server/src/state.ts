@@ -9,6 +9,7 @@ export async function buildState(userId: number) {
             reminder_time AS "reminderTime", reminder_tz AS "reminderTz",
             claimed_badges AS "claimedBadgesRaw", intro_done AS "introDone",
             accent, modules AS "modulesRaw", text_scale AS "textScale", wind_down AS "windDown",
+            email_verified AS "emailVerified",
             (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt"
      FROM users WHERE id = $1`,
     [userId]
@@ -47,7 +48,7 @@ export async function buildState(userId: number) {
   );
 
   const workouts = await query(
-    `SELECT id::text, name, category_id::text AS "catId", dur, dist, kcal, intensity, note,
+    `SELECT id::text, name, category_id::text AS "catId", dur, dist, kcal, intensity, note, sets,
             ${TS('ts')}
      FROM workouts WHERE user_id = $1 ORDER BY ts DESC`,
     [userId]
@@ -105,8 +106,12 @@ export async function buildState(userId: number) {
   );
 
   const txns = await query(
-    `SELECT id::text, name, cat, amount, income, acc_id::text AS "accId", note, ${TS('ts')}
-     FROM txns WHERE user_id = $1 ORDER BY ts DESC`,
+    // The receipt image itself stays behind GET /api/txns/:id/photo — the state
+    // bundle only carries whether one exists, so it stays small.
+    `SELECT t.id::text, t.name, t.cat, t.amount, t.income, t.acc_id::text AS "accId", t.note,
+            (p.txn_id IS NOT NULL) AS photo, ${TS('t.ts')}
+     FROM txns t LEFT JOIN txn_photos p ON p.txn_id = t.id
+     WHERE t.user_id = $1 ORDER BY t.ts DESC`,
     [userId]
   );
 

@@ -175,12 +175,14 @@ app.post(
     if (!user) {
       const byEmail = await one<{ id: number }>('SELECT id FROM users WHERE email = $1', [email]);
       if (byEmail) {
-        await query('UPDATE users SET google_id = $1 WHERE id = $2', [googleId, byEmail.id]);
+        // Google already proved the address — nothing left for us to verify.
+        await query('UPDATE users SET google_id = $1, email_verified = TRUE WHERE id = $2', [googleId, byEmail.id]);
         user = byEmail;
       } else {
         const id = await tx(async (c) => {
           const { rows } = await c.query(
-            `INSERT INTO users (email, name, google_id, onboarded, intro_done) VALUES ($1,$2,$3,TRUE,FALSE) RETURNING id`,
+            `INSERT INTO users (email, name, google_id, onboarded, intro_done, email_verified)
+             VALUES ($1,$2,$3,TRUE,FALSE,TRUE) RETURNING id`,
             [email, name, googleId]
           );
           const uid = rows[0].id as number;
@@ -197,12 +199,13 @@ app.post(
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
-// Send a password-reset email via Brevo (if configured). Returns false if not set up.
-async function sendResetEmail(to: string, link: string): Promise<boolean> {
+// Send transactional mail via Brevo (if configured). Returns false if not set up,
+// so callers can degrade gracefully rather than fail the whole request.
+async function sendMail(tag: string, to: string, subject: string, htmlContent: string): Promise<boolean> {
   const key = process.env.BREVO_API_KEY;
   const from = process.env.MAIL_FROM;
   if (!key || !from) {
-    console.log('[reset] Brevo not configured — missing', !key ? 'BREVO_API_KEY' : 'MAIL_FROM');
+    console.log(`[${tag}] Brevo not configured — missing`, !key ? 'BREVO_API_KEY' : 'MAIL_FROM');
     return false;
   }
   try {
@@ -212,27 +215,38 @@ async function sendResetEmail(to: string, link: string): Promise<boolean> {
       body: JSON.stringify({
         sender: { email: from, name: 'Orbit' },
         to: [{ email: to }],
-        subject: 'Reset your Orbit password',
-        htmlContent: `<div style="font-family:sans-serif;font-size:15px;color:#211f1b">
-          <p>Tap the button to set a new password. This link expires in 1 hour.</p>
-          <p><a href="${link}" style="display:inline-block;background:#5c57c9;color:#fff;padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:600">Reset password</a></p>
-          <p style="color:#807a70;font-size:13px">Or paste this link: ${link}</p>
-          <p style="color:#807a70;font-size:13px">If you didn't request this, you can ignore this email.</p>
-        </div>`,
+        subject,
+        htmlContent,
       }),
     });
     if (!r.ok) {
       const body = await r.text().catch(() => '');
-      console.log(`[reset] Brevo rejected email (HTTP ${r.status}):`, body);
+      console.log(`[${tag}] Brevo rejected email (HTTP ${r.status}):`, body);
     } else {
-      console.log('[reset] Brevo accepted email for', to);
+      console.log(`[${tag}] Brevo accepted email for`, to);
     }
     return r.ok;
   } catch (e) {
-    console.log('[reset] Brevo request threw:', e instanceof Error ? e.message : e);
+    console.log(`[${tag}] Brevo request threw:`, e instanceof Error ? e.message : e);
     return false;
   }
 }
+
+const mailButton = (link: string, label: string) =>
+  `<p><a href="${link}" style="display:inline-block;background:#5c57c9;color:#fff;padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:600">${label}</a></p>
+   <p style="color:#807a70;font-size:13px">Or paste this link: ${link}</p>`;
+
+const sendResetEmail = (to: string, link: string) =>
+  sendMail(
+    'reset',
+    to,
+    'Reset your Orbit password',
+    `<div style="font-family:sans-serif;font-size:15px;color:#211f1b">
+      <p>Tap the button to set a new password. This link expires in 1 hour.</p>
+      ${mailButton(link, 'Reset password')}
+      <p style="color:#807a70;font-size:13px">If you didn't request this, you can ignore this email.</p>
+    </div>`
+  );
 
 // Request a reset link (always responds ok, so it can't be used to probe emails).
 app.post(
@@ -290,6 +304,67 @@ app.post(
   })
 );
 
+// ---------------- Email verification ----------------
+//
+// Deliberately not a gate: an unverified account works exactly like a verified
+// one. Verification exists so password reset can reach a real inbox, so the
+// app nudges rather than blocks.
+
+app.post(
+  '/api/verify/send',
+  requireAuth,
+  rateLimit('verify-send', 5, 60 * 60 * 1000),
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const u = await one<{ email: string; email_verified: boolean }>(
+      'SELECT email, email_verified FROM users WHERE id = $1',
+      [uid]
+    );
+    if (!u) return res.status(404).json({ error: 'Not found' });
+    if (u.email_verified) return res.json({ ok: true, already: true });
+
+    const token = randomBytes(32).toString('hex');
+    await query('DELETE FROM email_verifications WHERE user_id = $1', [uid]);
+    await query(
+      'INSERT INTO email_verifications (token, user_id, email, expires_at) VALUES ($1,$2,$3,$4)',
+      [sha256(token), uid, u.email, new Date(Date.now() + 24 * 60 * 60 * 1000)]
+    );
+    const base = process.env.APP_URL || `https://${req.headers.host}`;
+    const sent = await sendMail(
+      'verify',
+      u.email,
+      'Confirm your email for Orbit',
+      `<div style="font-family:sans-serif;font-size:15px;color:#211f1b">
+        <p>Confirm this address so you can recover your account if you ever forget your password.</p>
+        ${mailButton(`${base}/verify?token=${token}`, 'Confirm email')}
+        <p style="color:#807a70;font-size:13px">This link expires in 24 hours. If you didn't sign up for Orbit, you can ignore this email.</p>
+      </div>`
+    );
+    if (!sent) return res.status(503).json({ error: "Email isn't set up on the server yet" });
+    res.json({ ok: true });
+  })
+);
+
+// Public: the link lands here straight from the inbox, with no session.
+app.post(
+  '/api/verify/confirm',
+  rateLimit('verify-confirm', 20, 60 * 60 * 1000),
+  wrap(async (req, res) => {
+    const row = await one<{ user_id: number; email: string; expires_at: string }>(
+      'SELECT user_id, email, expires_at FROM email_verifications WHERE token = $1',
+      [sha256(String(req.body.token || ''))]
+    );
+    if (!row || new Date(row.expires_at).getTime() < Date.now()) {
+      return res.status(400).json({ error: 'This link is invalid or has expired' });
+    }
+    // Only confirm the address the link was issued for — if the user changed
+    // their email in the meantime, the old link must not verify the new one.
+    await query('UPDATE users SET email_verified = TRUE WHERE id = $1 AND email = $2', [row.user_id, row.email]);
+    await query('DELETE FROM email_verifications WHERE user_id = $1', [row.user_id]);
+    res.json({ ok: true });
+  })
+);
+
 // ---------------- State ----------------
 
 app.get(
@@ -309,6 +384,10 @@ app.patch(
       const e = req.body.email.trim().toLowerCase();
       if (e && !emailOk(e)) return res.status(400).json({ error: 'Enter a valid email' });
       fields.email = e;
+      // A new address hasn't been proven yet — drop verified status and any
+      // outstanding link, so an old token can't confirm the new address.
+      fields.email_verified = false;
+      await query('DELETE FROM email_verifications WHERE user_id = $1', [uid]);
     }
     if (['light', 'dark', 'system'].includes(req.body.theme)) fields.theme = req.body.theme;
     if (typeof req.body.reminders === 'boolean') fields.reminders = req.body.reminders;
@@ -541,6 +620,24 @@ app.delete(
 
 // ---------------- Workouts ----------------
 
+/**
+ * Normalise a strength-set list coming from the client. Sets are stored as
+ * JSONB, so this is the only guard against junk reaching the column: cap the
+ * count, coerce every field, and drop anything without an exercise name.
+ */
+function cleanSets(raw: unknown): string | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const out = raw
+    .slice(0, 100)
+    .map((s: any) => ({
+      ex: String(s?.ex ?? '').trim().slice(0, 60),
+      reps: Math.max(0, Math.min(9999, Math.round(Number(s?.reps) || 0))),
+      weight: s?.weight == null || s.weight === '' ? null : Math.max(0, Math.min(9999, Number(s.weight) || 0)),
+    }))
+    .filter((s) => s.ex);
+  return out.length ? JSON.stringify(out) : null;
+}
+
 app.post(
   '/api/workouts',
   requireAuth,
@@ -558,8 +655,8 @@ app.post(
         ? new Date(Number(req.body.ts))
         : new Date();
     await query(
-      `INSERT INTO workouts (user_id, category_id, name, dur, dist, kcal, intensity, ts, note)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      `INSERT INTO workouts (user_id, category_id, name, dur, dist, kcal, intensity, ts, note, sets)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [
         uid,
         cat.id,
@@ -570,6 +667,7 @@ app.post(
         req.body.intensity ? String(req.body.intensity) : null,
         ts,
         req.body.note ? String(req.body.note).slice(0, 500) : null,
+        cleanSets(req.body.sets),
       ]
     );
     res.json(await buildState(uid));
@@ -582,16 +680,21 @@ app.patch(
   wrap(async (req, res) => {
     const uid = req.userId!;
     await query(
+      // `sets` is only touched when the client sends the key at all, so edits
+      // that don't involve strength logging can't wipe an existing set list.
       `UPDATE workouts SET
          dur = $1,
          category_id = COALESCE($2, category_id),
-         dist = $3, kcal = $4
-       WHERE id = $5 AND user_id = $6`,
+         dist = $3, kcal = $4,
+         sets = CASE WHEN $5::boolean THEN $6::jsonb ELSE sets END
+       WHERE id = $7 AND user_id = $8`,
       [
         Number(req.body.dur) || 0,
         req.body.catId || null,
         req.body.dist ? String(req.body.dist) : null,
         req.body.kcal ? Number(req.body.kcal) : null,
+        Object.prototype.hasOwnProperty.call(req.body, 'sets'),
+        cleanSets(req.body.sets),
         req.params.id,
         uid,
       ]
@@ -650,6 +753,62 @@ app.delete(
 
 // ---------------- Transactions ----------------
 
+// Receipts are stored as base64 data URLs. The client already downscales and
+// re-encodes to JPEG before upload; this is the backstop so one oversized image
+// can't bloat a shared free-tier database.
+const MAX_PHOTO_BYTES = 400_000;
+function cleanPhoto(raw: unknown): string | null {
+  if (typeof raw !== 'string' || !raw.startsWith('data:image/')) return null;
+  if (raw.length > MAX_PHOTO_BYTES) return null;
+  return raw;
+}
+
+/** Attach, replace or clear a transaction's receipt. `undefined` leaves it alone. */
+async function saveTxnPhoto(uid: number, txnId: string | number, raw: unknown): Promise<void> {
+  if (raw === undefined) return;
+  if (raw === null || raw === '') {
+    await query('DELETE FROM txn_photos WHERE txn_id = $1 AND user_id = $2', [txnId, uid]);
+    return;
+  }
+  const data = cleanPhoto(raw);
+  if (!data) return;
+  await query(
+    `INSERT INTO txn_photos (txn_id, user_id, data) VALUES ($1,$2,$3)
+     ON CONFLICT (txn_id) DO UPDATE SET data = EXCLUDED.data, created_at = now()`,
+    [txnId, uid, data]
+  );
+}
+
+// Fetched on demand when the user actually opens a receipt, so images never
+// ride along with the state bundle.
+app.get(
+  '/api/txns/:id/photo',
+  requireAuth,
+  wrap(async (req, res) => {
+    const row = await one<{ data: string }>(
+      'SELECT data FROM txn_photos WHERE txn_id = $1 AND user_id = $2',
+      [req.params.id, req.userId!]
+    );
+    if (!row) return res.status(404).json({ error: 'No receipt' });
+    res.json({ photo: row.data });
+  })
+);
+
+app.put(
+  '/api/txns/:id/photo',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const owns = await one('SELECT id FROM txns WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    if (!owns) return res.status(404).json({ error: 'Not found' });
+    if (req.body.photo && !cleanPhoto(req.body.photo)) {
+      return res.status(413).json({ error: 'That image is too large — try a smaller photo' });
+    }
+    await saveTxnPhoto(uid, req.params.id, req.body.photo ?? null);
+    res.json(await buildState(uid));
+  })
+);
+
 app.post(
   '/api/txns',
   requireAuth,
@@ -660,8 +819,9 @@ app.post(
     const income = !!req.body.income;
     const cat = String(req.body.cat || 'Other');
     const ts = req.body.ts ? new Date(Number(req.body.ts)) : new Date();
-    await query(
-      'INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+    const row = await one<{ id: string }>(
+      `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id::text`,
       [
         uid,
         String(req.body.name || cat),
@@ -673,6 +833,7 @@ app.post(
         ts,
       ]
     );
+    if (row) await saveTxnPhoto(uid, row.id, req.body.photo);
     res.json(await buildState(uid));
   })
 );
@@ -702,6 +863,7 @@ app.patch(
         uid,
       ]
     );
+    await saveTxnPhoto(uid, req.params.id, req.body.photo);
     res.json(await buildState(uid));
   })
 );

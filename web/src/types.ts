@@ -20,6 +20,9 @@ export interface Profile {
   // In-app text size multiplier and the optional wind-down nudge.
   textScale: number;
   windDown: boolean;
+  // Confirmed via an emailed link. Never gates anything — it only makes
+  // password recovery reliable, so the app nudges instead of blocking.
+  emailVerified: boolean;
   // Whether the first-run intro has been completed.
   introDone: boolean;
   createdAt: number;
@@ -49,6 +52,13 @@ export interface WCat {
   color: string;
 }
 
+/** One logged set: an exercise, how many reps, and optionally the weight used. */
+export interface WorkoutSet {
+  ex: string;
+  reps: number;
+  weight: number | null;
+}
+
 export interface Workout {
   id: string;
   name: string;
@@ -58,6 +68,8 @@ export interface Workout {
   kcal: number | null;
   intensity: string | null;
   note: string | null;
+  // Strength logging. null for cardio and anything logged without sets.
+  sets: WorkoutSet[] | null;
   ts: number;
 }
 
@@ -79,6 +91,9 @@ export interface Txn {
   income: boolean;
   accId: string | null;
   note: string | null;
+  // Whether a receipt exists. The image itself is fetched on demand so it
+  // never rides along with every app open.
+  photo: boolean;
   ts: number;
 }
 

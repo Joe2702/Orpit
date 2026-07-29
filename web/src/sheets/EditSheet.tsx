@@ -4,10 +4,14 @@ import { api } from '../api';
 import { chip } from '../ui';
 import { IconTrash } from '../icons';
 import { hm, signMoney } from '../lib/format';
-import type { Workout, Night, Txn, AppState } from '../types';
+import { SetsEditor } from '../SetsEditor';
+import { useEntryActions } from '../lib/entryActions';
+import { ReceiptField } from '../Receipt';
+import type { Workout, Night, Txn, WorkoutSet } from '../types';
 
 export function EditSheet() {
-  const { state, sheetData, open, closeSheet, mutate, mutateOpt, haptic, confirm, showToast } = useStore();
+  const { state, sheetData, open, closeSheet, mutateOpt, haptic, confirm } = useStore();
+  const { remove, duplicate: dup } = useEntryActions();
   const kind: 'workout' | 'sleep' | 'txn' = sheetData?.kind;
   const item = sheetData?.item;
 
@@ -16,6 +20,7 @@ export function EditSheet() {
   const [dur, setDur] = useState<number>(w?.dur || 0);
   const [dist, setDist] = useState<string>(w?.dist || '');
   const [kcal, setKcal] = useState<string>(w?.kcal ? String(w.kcal) : '');
+  const [sets, setSets] = useState<WorkoutSet[]>(w?.sets || []);
 
   const title =
     kind === 'workout' ? 'Edit workout' : kind === 'sleep' ? 'Edit sleep' : kind === 'txn' ? 'Edit transaction' : 'Edit entry';
@@ -30,7 +35,8 @@ export function EditSheet() {
 
   const saveWorkout = () => {
     haptic();
-    const patch = { dur, catId, dist: dist.trim() || null, kcal: kcal ? Number(kcal) : null };
+    const clean = sets.filter((s) => s.ex.trim());
+    const patch = { dur, catId, dist: dist.trim() || null, kcal: kcal ? Number(kcal) : null, sets: clean.length ? clean : null };
     mutateOpt(
       (s) => ({ ...s, workouts: s.workouts.map((x) => (x.id === w!.id ? { ...x, ...patch } : x)) }),
       () => api.editWorkout(w!.id, patch),
@@ -42,53 +48,16 @@ export function EditSheet() {
   // Duplicate: re-log the same entry with today's date — quicker than retyping
   // a repeat meal, expense or session.
   const duplicate = () => {
-    haptic();
-    if (kind === 'workout') {
-      const x = item as Workout;
-      mutate(() => api.addWorkout({ catId: x.catId || '', dur: x.dur, dist: x.dist, kcal: x.kcal, intensity: x.intensity, note: x.note, ts: Date.now() }), 'Duplicated to today').catch(() => {});
-    } else if (kind === 'sleep') {
-      const x = item as Night;
-      mutate(() => api.addNight({ hours: x.hours, quality: x.quality, bedH: x.bedH, wakeH: x.wakeH, note: x.note, ts: Date.now() }), 'Duplicated to today').catch(() => {});
-    } else {
-      const x = item as Txn;
-      mutate(() => api.addTxn({ name: x.name, cat: x.cat, amount: Math.abs(x.amount), income: x.income, accId: x.accId, note: x.note, ts: Date.now() }), 'Duplicated to today').catch(() => {});
-    }
+    dup(kind, item);
     closeSheet();
   };
 
+  // Opened from a tap rather than a swipe, so confirm first — the swipe path
+  // relies on the undo toast instead.
   const del = async () => {
-    const id = (item as { id: string }).id;
-    if (id.startsWith('tmp_')) {
-      showToast('Still saving — try again in a moment');
-      return;
-    }
     const noun = kind === 'workout' ? 'workout' : kind === 'sleep' ? 'sleep entry' : 'transaction';
     if (!(await confirm({ title: `Delete this ${noun}?`, message: 'You can undo this right after.' }))) return;
-    haptic();
-    const fn =
-      kind === 'workout' ? () => api.deleteWorkout(id) : kind === 'sleep' ? () => api.deleteNight(id) : () => api.deleteTxn(id);
-    const optimistic = (s: AppState): AppState =>
-      kind === 'workout'
-        ? { ...s, workouts: s.workouts.filter((x) => x.id !== id) }
-        : kind === 'sleep'
-        ? { ...s, nights: s.nights.filter((x) => x.id !== id) }
-        : { ...s, txns: s.txns.filter((x) => x.id !== id) };
-
-    // Undo re-creates the entry from the snapshot we still hold in `item`.
-    const restore = () => {
-      if (kind === 'workout') {
-        const x = item as Workout;
-        mutate(() => api.addWorkout({ catId: x.catId || '', dur: x.dur, dist: x.dist, kcal: x.kcal, intensity: x.intensity, ts: x.ts }), 'Restored').catch(() => {});
-      } else if (kind === 'sleep') {
-        const x = item as Night;
-        mutate(() => api.addNight({ hours: x.hours, quality: x.quality, bedH: x.bedH, wakeH: x.wakeH, ts: x.ts }), 'Restored').catch(() => {});
-      } else {
-        const x = item as Txn;
-        mutate(() => api.addTxn({ name: x.name, cat: x.cat, amount: Math.abs(x.amount), income: x.income, accId: x.accId, note: x.note, ts: x.ts }), 'Restored').catch(() => {});
-      }
-    };
-
-    mutateOpt(optimistic, fn).then(() => showToast('Entry deleted', restore)).catch(() => {});
+    remove(kind, item);
     closeSheet();
   };
 
@@ -151,10 +120,22 @@ export function EditSheet() {
             </div>
           </div>
 
+          {label('Sets & reps')}
+          <div style={{ marginBottom: 22 }}>
+            <SetsEditor sets={sets} onChange={setSets} />
+          </div>
+
           <div onClick={saveWorkout} className="press" style={{ background: 'var(--coral)', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', marginBottom: 10 }}>
             Save changes
           </div>
         </>
+      )}
+
+      {kind === 'txn' && (
+        <div style={{ marginBottom: 20 }}>
+          {label('Receipt')}
+          <ReceiptField txn={item as Txn} />
+        </div>
       )}
 
       <div onClick={duplicate} className="press99" role="button" style={{ height: 52, borderRadius: 16, border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', marginBottom: 10 }}>

@@ -28,7 +28,8 @@ export type Screen =
   | 'feedbackInbox'
   | 'privacy'
   | 'insights'
-  | 'search';
+  | 'search'
+  | 'verify';
 
 export type SheetKind =
   | 'chooser'
@@ -138,11 +139,21 @@ const initialResetToken =
     ? new URLSearchParams(window.location.search).get('token')
     : null;
 
+// Same for the email-confirmation link (/verify?token=…).
+const initialVerifyToken =
+  typeof window !== 'undefined' && window.location.pathname === '/verify'
+    ? new URLSearchParams(window.location.search).get('token')
+    : null;
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [state, setState] = useState<AppState | null>(null);
-  const [screen, setScreen] = useState<Screen>(initialResetToken ? 'reset' : 'welcome');
-  const [screenData, setScreenData] = useState<any>(initialResetToken ? { token: initialResetToken } : null);
+  const [screen, setScreen] = useState<Screen>(
+    initialResetToken ? 'reset' : initialVerifyToken ? 'verify' : 'welcome'
+  );
+  const [screenData, setScreenData] = useState<any>(
+    initialResetToken ? { token: initialResetToken } : initialVerifyToken ? { token: initialVerifyToken } : null
+  );
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [sheetData, setSheetData] = useState<any>(null);
   const [range, setRangeState] = useState<Range>('Week');
@@ -152,7 +163,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const toastUndoRef = useRef<(() => void) | undefined>(undefined);
   toastUndoRef.current = toastUndo;
   const [authMode, setAuthMode] = useState<'signup' | 'signin'>('signup');
-  const [booting, setBooting] = useState<boolean>(!initialResetToken && !!getToken());
+  const [booting, setBooting] = useState<boolean>(!initialResetToken && !initialVerifyToken && !!getToken());
   const [bootError, setBootError] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
   // Latest committed state (for optimistic rollback) and a monotonic counter so

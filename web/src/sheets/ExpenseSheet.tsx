@@ -46,7 +46,7 @@ export function ExpenseSheet() {
     const accId = state!.accounts[0]?.id ?? null;
     const tempId = 'tmp_' + Date.now();
     mutateOpt(
-      (s) => ({ ...s, txns: [...s.txns, { id: tempId, name: cat, cat, amount: income ? amt : -amt, income, accId, note: null, ts }] }),
+      (s) => ({ ...s, txns: [...s.txns, { id: tempId, name: cat, cat, amount: income ? amt : -amt, income, accId, note: null, photo: false, ts }] }),
       () => api.addTxn({ name: cat, cat, amount: amt, income, accId, ts }),
       income ? 'Income logged' : 'Expense logged'
     ).catch(() => {});

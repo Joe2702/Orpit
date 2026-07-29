@@ -272,6 +272,41 @@ export function Settings() {
         ))}
       </div>
 
+      {/* Unverified email. A nudge, never a wall — the account works either
+          way; this only makes password recovery possible. */}
+      {!profile.emailVerified && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 13, background: 'color-mix(in srgb,var(--warning) 10%,var(--surface))', border: '1px solid color-mix(in srgb,var(--warning) 32%,var(--border))', borderRadius: 18, padding: '15px 16px', marginBottom: 24 }}>
+          <span style={{ width: 36, height: 36, flex: 'none', borderRadius: 11, background: 'color-mix(in srgb,var(--warning) 18%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--warning)', strokeWidth: 1.9, strokeLinejoin: 'round' }} aria-hidden>
+              <rect x="1.5" y="3.5" width="16" height="12" rx="2.5" />
+              <path d="M2 5l7.5 5.5L17 5" />
+            </svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>Confirm your email</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>
+              So you can reset your password if you ever lose it.
+            </div>
+          </div>
+          <div
+            onClick={async () => {
+              haptic();
+              try {
+                const r = await api.sendVerifyEmail();
+                showToast(r.already ? 'Already confirmed' : 'Link sent — check your inbox');
+              } catch (e) {
+                showToast(e instanceof Error ? e.message : 'Could not send the link');
+              }
+            }}
+            className="press92"
+            role="button"
+            style={{ flex: 'none', height: 38, padding: '0 15px', borderRadius: 999, background: 'var(--warning)', color: '#fff', display: 'flex', alignItems: 'center', fontSize: 13.5, fontWeight: 700, cursor: 'pointer' }}
+          >
+            Send link
+          </div>
+        </div>
+      )}
+
       <SectionLabel>Appearance</SectionLabel>
       <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: 3, marginBottom: 24 }}>
         {themeSeg.map(([label, val]) => {

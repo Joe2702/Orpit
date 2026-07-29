@@ -12,6 +12,7 @@ import { api } from '../api';
 const REMINDER_ID = 1001; // stable id for the repeating daily reminder
 const TEST_ID = 1002;
 const WEEKLY_ID = 1003; // Sunday evening "your week is ready" nudge
+const REST_ID = 1005; // rest-between-sets countdown
 
 export function isNative(): boolean {
   return Capacitor.isNativePlatform();
@@ -172,6 +173,40 @@ export async function scheduleExtras(
     if (notifications.length) await ln.schedule({ notifications });
   } catch {
     /* reminders are best-effort — never break the app over them */
+  }
+}
+
+/**
+ * Ring when the rest between sets is up. The countdown itself is wall-clock, so
+ * this only exists to get the user's attention when the phone is in a pocket —
+ * the timer stays correct either way.
+ */
+export async function scheduleRestAlarm(at: Date): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const ln = await LN();
+    const perm = await ln.checkPermissions();
+    if (perm.display !== 'granted') return; // don't prompt mid-workout
+    await ensureChannel(ln);
+    await ln.cancel({ notifications: [{ id: REST_ID }] }).catch(() => {});
+    if (at.getTime() <= Date.now()) return;
+    await ln.schedule({
+      notifications: [
+        { id: REST_ID, title: 'Rest over', body: 'Next set 💪', schedule: { at, allowWhileIdle: true }, channelId: CHANNEL_ID },
+      ],
+    });
+  } catch {
+    /* best-effort */
+  }
+}
+
+export async function cancelRestAlarm(): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const ln = await LN();
+    await ln.cancel({ notifications: [{ id: REST_ID }] });
+  } catch {
+    /* ignore */
   }
 }
 

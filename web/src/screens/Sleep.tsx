@@ -5,9 +5,12 @@ import { SleepTimeline } from '../lib/charts';
 import { hm, fmtClock, relLabel } from '../lib/format';
 import { DetailHeader, RangeSeg, SectionLabel, rangeWord } from '../ui';
 import { IconSleep } from '../icons';
+import { SwipeRow } from '../SwipeRow';
+import { useEntryActions } from '../lib/entryActions';
 
 export function Sleep() {
   const { state, open, range } = useStore();
+  const { remove } = useEntryActions();
   const { d } = useData();
   // Render a page at a time so hundreds of nights don't stall the screen.
   const [shown, setShown] = useState(50);
@@ -112,21 +115,22 @@ export function Sleep() {
       <SectionLabel>Recent nights</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         {[...state!.nights].sort((a, b) => b.ts - a.ts).slice(0, shown).map((n) => (
-          <div
-            key={n.id}
-            onClick={() => open('edit', { kind: 'sleep', item: n })}
-            className="pressRow"
-            style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
-          >
-            <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: 'color-mix(in srgb,var(--blue) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <IconSleep c="var(--blue)" size={20} />
-            </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{relLabel(n.ts)}</div>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--blue)', marginTop: 2 }}>Quality {n.quality}/10</div>
+          <SwipeRow key={n.id} onEdit={() => open('edit', { kind: 'sleep', item: n })} onDelete={() => remove('sleep', n)}>
+            <div
+              onClick={() => open('edit', { kind: 'sleep', item: n })}
+              className="pressRow"
+              style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}
+            >
+              <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: 'color-mix(in srgb,var(--blue) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <IconSleep c="var(--blue)" size={20} />
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{relLabel(n.ts)}</div>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--blue)', marginTop: 2 }}>Quality {n.quality}/10</div>
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums', flex: 'none' }}>{hm(n.hours)}</div>
             </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums', flex: 'none' }}>{hm(n.hours)}</div>
-          </div>
+          </SwipeRow>
         ))}
       </div>
       {state!.nights.length > shown && (

@@ -20,6 +20,8 @@ import { FeedbackInbox } from './screens/FeedbackInbox';
 import { Privacy } from './screens/Privacy';
 import { Insights } from './screens/Insights';
 import { Search } from './screens/Search';
+import { RestTimer } from './RestTimer';
+import { VerifyEmail } from './screens/VerifyEmail';
 
 import { Chooser } from './sheets/Chooser';
 import { CounterSheet, CountLogSheet, CountPickSheet } from './sheets/CounterSheets';
@@ -53,6 +55,8 @@ function CurrentScreen() {
       return <Forgot />;
     case 'reset':
       return <Reset />;
+    case 'verify':
+      return <VerifyEmail />;
     case 'home':
       return emptyMode ? <HomeEmpty /> : <Home />;
     case 'workouts':
@@ -443,6 +447,49 @@ export function App() {
     setPull(0);
   };
 
+  // ---- Swipe between the main tabs ----
+  // Only on the three top-level destinations, and only for a clearly horizontal
+  // flick: `touch-action: pan-y` on swipeable rows means a row swipe never
+  // reaches here, and a vertical scroll fails the axis test.
+  const TAB_ORDER = ['home', 'analytics', 'settings'] as const;
+  const swipe = useRef<{ x: number; y: number; axis: '' | 'x' | 'y' } | null>(null);
+  const [slide, setSlide] = useState<'l' | 'r' | null>(null);
+
+  const onSwipeStart = (e: React.TouchEvent) => {
+    swipe.current = showTabs && e.touches.length === 1
+      ? { x: e.touches[0].clientX, y: e.touches[0].clientY, axis: '' }
+      : null;
+  };
+  const onSwipeMove = (e: React.TouchEvent) => {
+    const s = swipe.current;
+    if (!s || s.axis) return;
+    const dx = e.touches[0].clientX - s.x;
+    const dy = e.touches[0].clientY - s.y;
+    if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+    // Lock to whichever axis moved first, and require the horizontal one to be
+    // decisively horizontal so a diagonal scroll doesn't change tabs.
+    s.axis = Math.abs(dx) > Math.abs(dy) * 1.6 ? 'x' : 'y';
+  };
+  const onSwipeEnd = (e: React.TouchEvent) => {
+    const s = swipe.current;
+    swipe.current = null;
+    if (!s || s.axis !== 'x') return;
+    const dx = (e.changedTouches[0]?.clientX ?? s.x) - s.x;
+    if (Math.abs(dx) < 60) return;
+    const i = TAB_ORDER.indexOf(screen as (typeof TAB_ORDER)[number]);
+    if (i < 0) return;
+    const next = TAB_ORDER[i + (dx < 0 ? 1 : -1)];
+    if (!next) return;
+    setSlide(dx < 0 ? 'l' : 'r');
+    go(next);
+  };
+  // Clear the direction hint once the incoming screen has animated in.
+  useEffect(() => {
+    if (!slide) return;
+    const t = setTimeout(() => setSlide(null), 300);
+    return () => clearTimeout(t);
+  }, [slide]);
+
   // ---- Android hardware "Back" button handling ----
   // Back should navigate inside the app; only at the top level does it ask
   // "exit Orbit?" — like a real installed app, instead of instantly closing.
@@ -511,9 +558,9 @@ export function App() {
 
       <div
         ref={scrollRef}
-        onTouchStart={onPullStart}
-        onTouchMove={onPullMove}
-        onTouchEnd={onPullEnd}
+        onTouchStart={(e) => { onPullStart(e); onSwipeStart(e); }}
+        onTouchMove={(e) => { onPullMove(e); onSwipeMove(e); }}
+        onTouchEnd={(e) => { onPullEnd(); onSwipeEnd(e); }}
         style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', position: 'relative', WebkitOverflowScrolling: 'touch', paddingBottom: showTabs ? 84 : 0 }}
       >
         {pull > 0 && (
@@ -521,8 +568,14 @@ export function App() {
             {refreshing ? 'Refreshing…' : pull > 64 ? 'Release to refresh' : 'Pull to refresh'}
           </div>
         )}
-        {ready ? <CurrentScreen /> : null}
+        {/* Keyed on the screen so a tab change replays the slide-in from the
+            side the swipe came from. */}
+        <div key={screen} style={slide ? { animation: `${slide === 'l' ? 'slideInR' : 'slideInL'} .26s cubic-bezier(.2,.8,.3,1)` } : undefined}>
+          {ready ? <CurrentScreen /> : null}
+        </div>
       </div>
+
+      <RestTimer raised={showTabs} />
 
       {toast && (
         <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, background: 'var(--text)', color: 'var(--bg)', padding: '11px 20px', borderRadius: 999, fontSize: 14, fontWeight: 600, boxShadow: '0 12px 32px rgba(8,9,14,.28)', animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' }}>

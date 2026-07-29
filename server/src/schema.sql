@@ -262,3 +262,30 @@ ALTER TABLE budgets ADD COLUMN IF NOT EXISTS rollover BOOLEAN NOT NULL DEFAULT F
 ALTER TABLE users ADD COLUMN IF NOT EXISTS text_scale REAL NOT NULL DEFAULT 1;
 -- Optional "start winding down" nudge before the usual bedtime.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS wind_down BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- ===== v3.2: medium features =====
+-- Strength logging. Sets live as JSONB on the workout rather than in their own
+-- table: they're always read and written together with the workout, and nothing
+-- ever queries across them.
+ALTER TABLE workouts ADD COLUMN IF NOT EXISTS sets JSONB;
+
+-- Receipt photos, kept out of the workouts/txns rows and out of the state
+-- bundle so a few hundred KB of image never rides along with every app open.
+CREATE TABLE IF NOT EXISTS txn_photos (
+  txn_id     BIGINT PRIMARY KEY REFERENCES txns(id) ON DELETE CASCADE,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  data       TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS txn_photos_user ON txn_photos(user_id);
+
+-- Email verification: a single-use token per request, expiring after a day.
+CREATE TABLE IF NOT EXISTS email_verifications (
+  token      TEXT PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  email      TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS email_verifications_user ON email_verifications(user_id);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE;
