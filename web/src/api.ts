@@ -142,6 +142,12 @@ export const api = {
       body: JSON.stringify({ token, password }),
     }),
   getState: () => request<AppState>('/state'),
+  /**
+   * Complete history, not the windowed state bundle. Used only by "export my
+   * data" — the one place that must never be truncated, since users are told to
+   * export before deleting their account.
+   */
+  exportAll: () => request<Record<string, unknown>>('/export'),
 
   updateMe: (
     patch: Partial<
@@ -182,7 +188,14 @@ export const api = {
   deleteHabit: (id: string) => request<AppState>(`/habits/${id}`, { method: 'DELETE' }),
   reorderHabits: (ids: string[]) =>
     request<AppState>('/habits/order', { method: 'PATCH', body: JSON.stringify({ ids }) }),
-  toggleHabit: (id: string, day?: string) =>
+  /**
+   * `day` is required, and deliberately so. It used to be optional; the one
+   * call site that omitted it fell through to the server's UTC clock, which
+   * filed check-ins under the wrong date east of UTC after midnight and under
+   * the *sync* date for anything queued offline. Making it mandatory means the
+   * compiler catches the next omission.
+   */
+  toggleHabit: (id: string, day: string) =>
     request<AppState>(`/habits/${id}/toggle`, { method: 'POST', body: JSON.stringify({ day }) }),
 
   addCategory: (b: { name: string; color: string }) =>
@@ -272,8 +285,11 @@ export const api = {
   editCounter: (id: string, b: { name: string; unit: string; color: string; icon: string; step: number }) =>
     request<AppState>(`/counters/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteCounter: (id: string) => request<AppState>(`/counters/${id}`, { method: 'DELETE' }),
-  logCounter: (id: string, amount: number) =>
-    request<AppState>(`/counters/${id}/log`, { method: 'POST', body: JSON.stringify({ amount }) }),
+  // `ts` is required for the same reason as toggleHabit's `day`: without it the
+  // server stamps its own clock, so anything logged offline lands on the day it
+  // synced rather than the day it happened.
+  logCounter: (id: string, amount: number, ts: number) =>
+    request<AppState>(`/counters/${id}/log`, { method: 'POST', body: JSON.stringify({ amount, ts }) }),
 
   reset: () => request<AppState>('/reset', { method: 'POST' }),
   // Workout presets

@@ -42,6 +42,7 @@ import { Intro } from './screens/Intro';
 import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily } from './lib/notify';
 import { listenForShortcuts, type ShortcutAction } from './lib/shortcuts';
 import { dayKey } from './lib/format';
+import { updateWidget } from './lib/widget';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
 
@@ -498,6 +499,13 @@ export function App() {
     setRefreshing(false);
     setPull(0);
   };
+
+  // Keep the home-screen widget's summary current. Writing on every state
+  // change is cheap (one small string) and means the value is already correct
+  // when the activity refreshes the widget on its way to the background.
+  useEffect(() => {
+    updateWidget(state);
+  }, [state]);
 
   // ---- Reminder action buttons ----
   // "Done" on a habit reminder checks that habit off for today; "Snooze" pushes

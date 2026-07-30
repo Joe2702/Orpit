@@ -273,6 +273,123 @@ export function buildInsights(s: AppState): Insight[] {
     }
   }
 
+
+  // ---- 8. Keystone habit ----
+  // Which single habit, on the days you do it, coincides with getting more of
+  // everything else done. The most useful thing a cross-tracker app can tell
+  // you, because it identifies where one unit of willpower buys the most.
+  {
+    const live = s.habits.filter((h) => !h.archived && !h.paused && !h.locked);
+    if (live.length >= 2) {
+      const byHabitDay = new Map<string, Set<string>>();
+      s.checkins.forEach((c) => {
+        if (!byHabitDay.has(c.habitId)) byHabitDay.set(c.habitId, new Set());
+        byHabitDay.get(c.habitId)!.add(c.day);
+      });
+      // "Everything else" = other habits done, workouts logged, counters logged.
+      const otherScore = (day: string, exceptId: string) =>
+        s.checkins.filter((c) => c.day === day && c.habitId !== exceptId).length +
+        (workoutDays.get(day)?.length || 0) +
+        (byDay(s.countLogs).get(day)?.length || 0);
+
+      const allDays = new Set<string>([
+        ...s.checkins.map((c) => c.day),
+        ...Array.from(workoutDays.keys()),
+      ]);
+
+      let best: { name: string; on: number; off: number; days: number } | null = null;
+      live.forEach((h) => {
+        const on = byHabitDay.get(h.id) || new Set<string>();
+        if (on.size < 5) return; // too little evidence to claim a pattern
+        const offDays = Array.from(allDays).filter((d) => !on.has(d));
+        if (offDays.length < 5) return;
+        const onAvg = avg(Array.from(on).map((d) => otherScore(d, h.id)));
+        const offAvg = avg(offDays.map((d) => otherScore(d, h.id)));
+        if (offAvg <= 0) return;
+        if (!best || onAvg / offAvg > best.on / best.off) {
+          best = { name: h.name, on: onAvg, off: offAvg, days: on.size };
+        }
+      });
+      const b = best as { name: string; on: number; off: number; days: number } | null;
+      if (b && b.on / b.off >= 1.4) {
+        out.push({
+          id: 'keystone',
+          icon: 'link' as GlyphName,
+          color: 'indigo',
+          kind: 'link',
+          title: `"${b.name}" is your keystone habit.`,
+          detail: `On days you do it you get ${(b.on / b.off).toFixed(1)}× more done elsewhere — across ${b.days} days.`,
+        });
+      }
+    }
+  }
+
+  // ---- 9. Bedtime consistency ↔ sleep quality ----
+  // Not "sleep more" but "sleep at the same time", which is the advice people
+  // rarely get from a tracker and can act on tonight.
+  {
+    const withBed = s.nights.filter((n) => n.bedH != null && n.quality > 0).slice(0, 60);
+    if (withBed.length >= 10) {
+      // Treat bedtimes before noon as after-midnight, so 23:30 and 00:30 sit
+      // next to each other rather than 24 hours apart.
+      const norm = (h: number) => (h < 12 ? h + 24 : h);
+      const median = [...withBed.map((n) => norm(n.bedH!))].sort((a, b) => a - b)[Math.floor(withBed.length / 2)];
+      const steady = withBed.filter((n) => Math.abs(norm(n.bedH!) - median) <= 0.5);
+      const erratic = withBed.filter((n) => Math.abs(norm(n.bedH!) - median) > 1.5);
+      if (steady.length >= 4 && erratic.length >= 4) {
+        const qs = avg(steady.map((n) => n.quality));
+        const qe = avg(erratic.map((n) => n.quality));
+        if (qs - qe >= 0.8) {
+          out.push({
+            id: 'bedtime-consistency',
+            icon: 'moon' as GlyphName,
+            color: 'blue',
+            kind: 'link',
+            title: `A steady bedtime is worth ${(qs - qe).toFixed(1)} points of sleep quality.`,
+            detail: `${qs.toFixed(1)}/10 on your usual schedule vs ${qe.toFixed(1)}/10 when it drifts over an hour.`,
+          });
+        }
+      }
+    }
+  }
+
+  // ---- 10. Momentum: this month against the one before ----
+  // The question every tracker exists to answer — am I actually improving? —
+  // stated once, for whichever tracker moved most.
+  {
+    const m0 = now - 30 * D;
+    const m1 = now - 60 * D;
+    const inRange = <T extends { ts: number }>(xs: T[], a: number, b: number) => xs.filter((x) => x.ts >= a && x.ts < b);
+
+    type Move = { label: string; delta: number; better: boolean; detail: string };
+    const moves: Move[] = [];
+
+    const wNow = inRange(s.workouts, m0, now).length;
+    const wPrev = inRange(s.workouts, m1, m0).length;
+    if (wPrev >= 3) moves.push({ label: 'Training', delta: pct(wNow, wPrev), better: wNow >= wPrev, detail: `${wNow} sessions vs ${wPrev} the month before.` });
+
+    const sNow = avg(inRange(s.nights, m0, now).map((n) => n.hours));
+    const sPrev = avg(inRange(s.nights, m1, m0).map((n) => n.hours));
+    if (sPrev > 0 && inRange(s.nights, m1, m0).length >= 5)
+      moves.push({ label: 'Sleep', delta: pct(sNow, sPrev), better: sNow >= sPrev, detail: `${hm(sNow)} a night vs ${hm(sPrev)}.` });
+
+    const spNow = inRange(s.txns, m0, now).filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
+    const spPrev = inRange(s.txns, m1, m0).filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
+    if (spPrev > 0) moves.push({ label: 'Spending', delta: pct(spNow, spPrev), better: spNow <= spPrev, detail: `${money(spNow)} vs ${money(spPrev)}.` });
+
+    const biggest = moves.filter((m) => Math.abs(m.delta) >= 15).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))[0];
+    if (biggest) {
+      out.push({
+        id: 'momentum',
+        icon: biggest.better ? 'trendUp' : 'alert',
+        color: biggest.better ? 'success' : 'warning',
+        kind: 'pattern',
+        title: `${biggest.label} is ${biggest.delta > 0 ? 'up' : 'down'} ${Math.abs(biggest.delta)}% this month.`,
+        detail: biggest.detail,
+      });
+    }
+  }
+
   // Alerts and links first — they're the most actionable.
   const order = { alert: 0, link: 1, pattern: 2, record: 3 };
   return out.sort((a, b) => order[a.kind] - order[b.kind]);

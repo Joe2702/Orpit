@@ -181,6 +181,30 @@ export interface AppState {
   counters: Counter[];
   countLogs: CountLog[];
   wTemplates: WTemplate[];
+  /**
+   * Totals for history older than the state window. The raw rows aren't sent —
+   * one habit tap would otherwise re-download years of entries — but every
+   * all-time number (badge counts, days tracked, account balances) still has to
+   * be exact, so those are folded in here.
+   */
+  archive: Archive;
+}
+
+export interface Archive {
+  workouts: number;
+  nights: number;
+  txns: number;
+  countLogs: number;
+  checkins: number;
+  /** Signed sum of pre-window transactions, for the net-worth baseline. */
+  txnSum: number;
+  /** Distinct days with any activity before the window. Disjoint from the window. */
+  activeDays: number;
+  /** Earliest entry of any kind, or null if the account has none. */
+  earliestTs: number | null;
+  /** Pre-window balance change per account id, so balances stay right. */
+  accSums: Record<string, number>;
+  windowDays: number;
 }
 
 export type Range = 'Week' | 'Month' | 'Year' | 'All';

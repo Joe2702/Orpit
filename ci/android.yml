@@ -58,6 +58,9 @@ jobs:
           fi
           echo "Building against backend: $VITE_API_BASE"
           npm ci
+          # Tests gate the build: a broken offline queue or a date regression
+          # should stop an APK being produced, not ship silently to testers.
+          npm test
           npm run build
           npx cap sync android
 

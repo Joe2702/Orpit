@@ -5,7 +5,7 @@ import 'dotenv/config';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
-import { randomBytes, createHash } from 'node:crypto';
+import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import webpush from 'web-push';
 
 import { pool, query, one, tx } from './db.js';
@@ -97,6 +97,10 @@ async function idempotency(req: AuthedRequest, res: express.Response, next: expr
   next();
 }
 
+// One password policy, applied at signup, reset and change alike.
+const MIN_PASSWORD = 8;
+const PASSWORD_RULE = `Password must be at least ${MIN_PASSWORD} characters`;
+
 const emailOk = (e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
 
 // ---- Simple in-memory rate limiting ----
@@ -159,8 +163,8 @@ app.post(
     const password = String(req.body.password || '');
     const name = String(req.body.name || '').trim() || 'Alex Rivera';
     if (!emailOk(email)) return res.status(400).json({ error: 'Enter a valid email' });
-    if (password.length < 8)
-      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    if (password.length < MIN_PASSWORD)
+      return res.status(400).json({ error: PASSWORD_RULE });
 
     const existing = await one('SELECT id FROM users WHERE email = $1', [email]);
     if (existing) return res.status(409).json({ error: 'That email is already registered' });
@@ -249,6 +253,9 @@ app.post(
     res.json({ token: signToken(user.id, tv?.token_version ?? 0), state: await buildState(user.id) });
   })
 );
+
+// Epoch-millis helper, mirroring state.ts.
+const TS = (col: string) => `(EXTRACT(EPOCH FROM ${col}) * 1000)::float8 AS ts`;
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
@@ -342,7 +349,9 @@ app.post(
   wrap(async (req, res) => {
     const token = String(req.body.token || '');
     const password = String(req.body.password || '');
-    if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    // Reset used to allow 6 while signup demanded 8 — a downgrade path around
+    // our own policy. One constant now governs every entry point.
+    if (password.length < MIN_PASSWORD) return res.status(400).json({ error: PASSWORD_RULE });
     const row = await one<{ user_id: number; expires_at: string }>(
       'SELECT user_id, expires_at FROM password_resets WHERE token_hash = $1',
       [sha256(token)]
@@ -354,6 +363,38 @@ app.post(
     await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, row.user_id]);
     await query('DELETE FROM password_resets WHERE user_id = $1', [row.user_id]);
     res.json({ token: signToken(row.user_id), state: await buildState(row.user_id) });
+  })
+);
+
+// Full, unwindowed history for "export my data".
+//
+// The state bundle is capped to a rolling window so routine requests stay
+// small — but an export is the one place that must be complete. Users are told
+// to export before deleting their account, so a silently truncated file here
+// would be the worst possible data loss.
+app.get(
+  '/api/export',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const [profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs] =
+      await Promise.all([
+        one('SELECT name, email, (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt" FROM users WHERE id = $1', [uid]),
+        query('SELECT id::text, name, color, target, days, why, paused, archived FROM habits WHERE user_id = $1 ORDER BY sort, id', [uid]),
+        query(`SELECT habit_id::text AS "habitId", to_char(day, 'YYYY-MM-DD') AS day FROM habit_checkins WHERE user_id = $1 ORDER BY day`, [uid]),
+        query('SELECT id::text, name, color FROM workout_categories WHERE user_id = $1 ORDER BY sort, id', [uid]),
+        query(`SELECT id::text, name, category_id::text AS "catId", dur, dist, kcal, intensity, note, sets, ${TS('ts')} FROM workouts WHERE user_id = $1 ORDER BY ts`, [uid]),
+        query(`SELECT id::text, hours, quality, bed_h AS "bedH", wake_h AS "wakeH", note, ${TS('ts')} FROM nights WHERE user_id = $1 ORDER BY ts`, [uid]),
+        query(`SELECT id::text, name, cat, amount, income, acc_id::text AS "accId", note, ${TS('ts')} FROM txns WHERE user_id = $1 ORDER BY ts`, [uid]),
+        query('SELECT id::text, name, type, color, opening FROM accounts WHERE user_id = $1 ORDER BY sort, id', [uid]),
+        query('SELECT id::text, name, icon, color, kind FROM fcats WHERE user_id = $1 ORDER BY sort, id', [uid]),
+        query('SELECT id::text, name, unit, color, icon, step FROM counters WHERE user_id = $1 ORDER BY sort, id', [uid]),
+        query(`SELECT id::text, counter_id::text AS "counterId", amount, ${TS('ts')} FROM count_logs WHERE user_id = $1 ORDER BY ts`, [uid]),
+      ]);
+    res.json({
+      profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs,
+      exportedAt: new Date().toISOString(),
+    });
   })
 );
 
@@ -1232,10 +1273,14 @@ app.post(
     if (!Number.isFinite(amt) || amt === 0) return res.status(400).json({ error: 'Add an amount' });
     const owned = await one('SELECT id FROM counters WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
     if (!owned) return res.status(404).json({ error: 'Counter not found' });
-    await query('INSERT INTO count_logs (user_id, counter_id, amount) VALUES ($1,$2,$3)', [
+    // Honour the client's timestamp when it sends one: an entry replayed from
+    // the offline queue must keep the day it was logged, not the day it synced.
+    const ts = req.body.ts != null && Number.isFinite(Number(req.body.ts)) ? new Date(Number(req.body.ts)) : new Date();
+    await query('INSERT INTO count_logs (user_id, counter_id, amount, ts) VALUES ($1,$2,$3,$4)', [
       uid,
       req.params.id,
       amt,
+      ts,
     ]);
     res.json(await buildState(uid));
   })
@@ -1305,7 +1350,7 @@ app.post(
     const uid = req.userId!;
     const current = String(req.body.current || '');
     const next = String(req.body.next || '');
-    if (next.length < 8) return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    if (next.length < MIN_PASSWORD) return res.status(400).json({ error: `New password must be at least ${MIN_PASSWORD} characters` });
     const u = await one<{ password_hash: string | null }>('SELECT password_hash FROM users WHERE id = $1', [uid]);
     // Google-only accounts have no password yet — let them set one.
     if (u?.password_hash && !(await bcrypt.compare(current, u.password_hash))) {
@@ -1593,13 +1638,21 @@ if (!ADMIN_PASSWORD) {
 }
 
 function adminOk(req: AuthedRequest): boolean {
-  return !!ADMIN_PASSWORD && String(req.headers['x-admin-password'] || '') === ADMIN_PASSWORD;
+  if (!ADMIN_PASSWORD) return false;
+  const given = String(req.headers['x-admin-password'] || '');
+  // Constant-time compare so the response time can't leak how much of the
+  // password is right. Lengths must match first — timingSafeEqual throws
+  // otherwise — which is fine, length isn't the secret.
+  const a = Buffer.from(given);
+  const b = Buffer.from(ADMIN_PASSWORD);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 // Recent client crash reports, newest first.
 app.get(
   '/api/admin/errors',
   requireAuth,
+  rateLimit('admin', 20, 15 * 60 * 1000),
   wrap(async (req, res) => {
     if (!ADMIN_PASSWORD) return res.status(503).json({ error: 'Inbox not configured on the server' });
     if (!adminOk(req)) return res.status(403).json({ error: 'Wrong password' });
@@ -1634,6 +1687,7 @@ app.get(
 app.get(
   '/api/admin/feedback',
   requireAuth,
+  rateLimit('admin', 20, 15 * 60 * 1000),
   wrap(async (req, res) => {
     if (!ADMIN_PASSWORD) return res.status(503).json({ error: 'Inbox not configured on the server' });
     if (!adminOk(req)) return res.status(403).json({ error: 'Wrong password' });

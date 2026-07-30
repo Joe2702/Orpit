@@ -9,14 +9,18 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "mobile:sync": "npm run build && cap sync",
-    "mobile:open:android": "cap open android"
+    "mobile:open:android": "cap open android",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",
     "@capacitor/app": "^8.1.1",
+    "@capacitor/camera": "^8.2.1",
     "@capacitor/cli": "^8.4.2",
     "@capacitor/core": "^8.4.2",
     "@capacitor/local-notifications": "^8.2.1",
+    "@capacitor/preferences": "^8.0.1",
     "@capacitor/share": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.3",
@@ -29,6 +33,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "typescript": "^5.5.4",
-    "vite": "^5.4.0"
+    "vite": "^5.4.0",
+    "vitest": "^4.1.10"
   }
 }

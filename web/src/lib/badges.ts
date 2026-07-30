@@ -33,7 +33,8 @@ interface Metrics {
   memberDays: number;
 }
 
-function metrics(s: AppState): Metrics {
+/** Exported so the window/archive arithmetic can be tested directly. */
+export function metrics(s: AppState): Metrics {
   const dayKeys = new Set<string>();
   const add = (ts: number) => dayKeys.add(dayKey(ts));
   s.workouts.forEach((w) => add(w.ts));
@@ -43,24 +44,29 @@ function metrics(s: AppState): Metrics {
   s.checkins.forEach((c) => dayKeys.add(c.day));
 
   const trackers =
-    (s.workouts.length ? 1 : 0) +
-    (s.nights.length ? 1 : 0) +
-    (s.checkins.length ? 1 : 0) +
-    (s.txns.length ? 1 : 0) +
-    (s.countLogs.length ? 1 : 0);
+    (s.workouts.length + s.archive.workouts ? 1 : 0) +
+    (s.nights.length + s.archive.nights ? 1 : 0) +
+    (s.checkins.length + s.archive.checkins ? 1 : 0) +
+    (s.txns.length + s.archive.txns ? 1 : 0) +
+    (s.countLogs.length + s.archive.countLogs ? 1 : 0);
 
+  // Every count is window + archive: a badge earned in year one must not
+  // un-earn itself when those rows fall out of the state window.
+  const a = s.archive;
   return {
-    workouts: s.workouts.length,
-    nights: s.nights.length,
-    checkins: s.checkins.length,
-    txns: s.txns.length,
-    counts: s.countLogs.length,
+    workouts: s.workouts.length + a.workouts,
+    nights: s.nights.length + a.nights,
+    checkins: s.checkins.length + a.checkins,
+    txns: s.txns.length + a.txns,
+    counts: s.countLogs.length + a.countLogs,
     goals: s.goals.length,
     goalsDone: s.goals.filter((g) => g.target > 0 && g.current >= g.target).length,
     entries:
-      s.workouts.length + s.nights.length + s.checkins.length + s.txns.length + s.countLogs.length,
+      s.workouts.length + s.nights.length + s.checkins.length + s.txns.length + s.countLogs.length +
+      a.workouts + a.nights + a.checkins + a.txns + a.countLogs,
     trackers,
-    activeDays: dayKeys.size,
+    // The two day sets are disjoint — archive is strictly before the window.
+    activeDays: dayKeys.size + a.activeDays,
     avatar: s.profile.avatar ? 1 : 0,
     memberDays: Math.max(0, Math.floor((Date.now() - s.profile.createdAt) / 86400000)),
   };

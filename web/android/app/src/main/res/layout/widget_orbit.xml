@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Home-screen widget: today's habit progress plus three one-tap log actions.
+
+  The whole point is logging without opening the app first — long-pressing the
+  icon already gives shortcuts, but a widget puts them permanently on screen.
+  Each action fires the same orbit:// URL the shortcuts use, so there is exactly
+  one deep-link path to maintain.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_bg"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:id="@+id/widget_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="10dp">
+
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:textColor="#FF211F1B"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_summary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_no_data"
+            android:textColor="#FF807A70"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:baselineAligned="false">
+
+        <LinearLayout
+            android:id="@+id/widget_workout"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="6dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/widget_pill">
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_shortcut_workout"
+                android:contentDescription="@string/shortcut_workout_long" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/shortcut_workout_short"
+                android:textColor="#FF211F1B"
+                android:textSize="11sp"
+                android:paddingTop="4dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_sleep"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="6dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/widget_pill">
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_shortcut_sleep"
+                android:contentDescription="@string/shortcut_sleep_long" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/shortcut_sleep_short"
+                android:textColor="#FF211F1B"
+                android:textSize="11sp"
+                android:paddingTop="4dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_expense"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/widget_pill">
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_shortcut_expense"
+                android:contentDescription="@string/shortcut_expense_long" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/shortcut_expense_short"
+                android:textColor="#FF211F1B"
+                android:textSize="11sp"
+                android:paddingTop="4dp" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
