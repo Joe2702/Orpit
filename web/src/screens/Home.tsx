@@ -55,7 +55,7 @@ export function Home() {
           ? s.checkins.filter((c) => !(c.habitId === id && c.day === key))
           : [...s.checkins, { habitId: id, day: key }],
       };
-    }, () => api.toggleHabit(id)).catch(() => {});
+    }, () => api.toggleHabit(id, key)).catch(() => {});
   };
 
   // ---- Never miss twice ----

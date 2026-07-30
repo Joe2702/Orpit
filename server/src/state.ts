@@ -2,6 +2,17 @@ import { query, one } from './db.js';
 
 const TS = (col: string) => `(EXTRACT(EPOCH FROM ${col}) * 1000)::float8 AS ts`;
 
+// How much raw history the client actually receives.
+//
+// Every mutation returns the whole bundle, so an unbounded payload meant one
+// habit tap re-downloading a user's entire life — fine at fifty entries, a
+// megabyte on mobile data after a couple of years. 400 days covers everything
+// the UI draws from raw rows (the Year range, the 12-week grid, the 6-month
+// net-worth line) with headroom; anything older is folded into the `archive`
+// totals below, which is all the remaining features need.
+const WINDOW_DAYS = 400;
+const CUTOFF = `now() - interval '${WINDOW_DAYS} days'`;
+
 /** Build the full client state bundle for a user. Raw data; the client derives metrics. */
 export async function buildState(userId: number) {
   const profile = await one(
@@ -37,7 +48,7 @@ export async function buildState(userId: number) {
 
   const checkins = await query(
     `SELECT habit_id::text AS "habitId", to_char(day, 'YYYY-MM-DD') AS day
-     FROM habit_checkins WHERE user_id = $1`,
+     FROM habit_checkins WHERE user_id = $1 AND day > (now() - interval '400 days')::date`,
     [userId]
   );
 
@@ -50,7 +61,7 @@ export async function buildState(userId: number) {
   const workouts = await query(
     `SELECT id::text, name, category_id::text AS "catId", dur, dist, kcal, intensity, note, sets,
             ${TS('ts')}
-     FROM workouts WHERE user_id = $1 ORDER BY ts DESC`,
+     FROM workouts WHERE user_id = $1 AND ts > now() - interval '400 days' ORDER BY ts DESC`,
     [userId]
   );
 
@@ -94,14 +105,14 @@ export async function buildState(userId: number) {
 
   const countLogs = await query(
     `SELECT id::text, counter_id::text AS "counterId", amount, ${TS('ts')}
-     FROM count_logs WHERE user_id = $1 ORDER BY ts DESC`,
+     FROM count_logs WHERE user_id = $1 AND ts > now() - interval '400 days' ORDER BY ts DESC`,
     [userId]
   );
 
   const nights = await query(
     `SELECT id::text, hours, quality, bed_h AS "bedH", wake_h AS "wakeH", note,
             ${TS('ts')}
-     FROM nights WHERE user_id = $1 ORDER BY ts DESC`,
+     FROM nights WHERE user_id = $1 AND ts > now() - interval '400 days' ORDER BY ts DESC`,
     [userId]
   );
 
@@ -111,7 +122,7 @@ export async function buildState(userId: number) {
     `SELECT t.id::text, t.name, t.cat, t.amount, t.income, t.acc_id::text AS "accId", t.note,
             (p.txn_id IS NOT NULL) AS photo, ${TS('t.ts')}
      FROM txns t LEFT JOIN txn_photos p ON p.txn_id = t.id
-     WHERE t.user_id = $1 ORDER BY t.ts DESC`,
+     WHERE t.user_id = $1 AND t.ts > now() - interval '400 days' ORDER BY t.ts DESC`,
     [userId]
   );
 
@@ -120,6 +131,56 @@ export async function buildState(userId: number) {
      FROM workout_templates WHERE user_id = $1 ORDER BY sort, id`,
     [userId]
   );
+
+
+  // Everything older than the window, folded into totals. Badge counts, "days
+  // tracked" and account balances must stay exact for a user's whole history,
+  // so the numbers survive even though the rows don't travel.
+  const archiveRow = await one<Record<string, any>>(
+    `SELECT
+       (SELECT count(*) FROM workouts   WHERE user_id = $1 AND ts <= now() - interval '400 days')::int AS workouts,
+       (SELECT count(*) FROM nights     WHERE user_id = $1 AND ts <= now() - interval '400 days')::int AS nights,
+       (SELECT count(*) FROM txns       WHERE user_id = $1 AND ts <= now() - interval '400 days')::int AS txns,
+       (SELECT count(*) FROM count_logs WHERE user_id = $1 AND ts <= now() - interval '400 days')::int AS "countLogs",
+       (SELECT count(*) FROM habit_checkins WHERE user_id = $1 AND day <= (now() - interval '400 days')::date)::int AS checkins,
+       (SELECT coalesce(sum(amount), 0) FROM txns WHERE user_id = $1 AND ts <= now() - interval '400 days')::float8 AS "txnSum",
+       (SELECT count(DISTINCT d) FROM (
+          SELECT date(ts) AS d FROM workouts   WHERE user_id = $1 AND ts <= now() - interval '400 days'
+          UNION SELECT date(ts) FROM nights     WHERE user_id = $1 AND ts <= now() - interval '400 days'
+          UNION SELECT date(ts) FROM txns       WHERE user_id = $1 AND ts <= now() - interval '400 days'
+          UNION SELECT date(ts) FROM count_logs WHERE user_id = $1 AND ts <= now() - interval '400 days'
+          UNION SELECT day      FROM habit_checkins WHERE user_id = $1 AND day <= (now() - interval '400 days')::date
+       ) x)::int AS "activeDays",
+       (SELECT min(t) FROM (
+          SELECT min(ts) AS t FROM workouts   WHERE user_id = $1
+          UNION SELECT min(ts) FROM nights     WHERE user_id = $1
+          UNION SELECT min(ts) FROM txns       WHERE user_id = $1
+          UNION SELECT min(ts) FROM count_logs WHERE user_id = $1
+       ) y) AS "earliestRaw"`,
+    [userId]
+  );
+
+  // Pre-window spend per account, so balances and net worth stay correct
+  // without shipping years of transactions.
+  const accSumRows = await query<{ accId: string | null; total: number }>(
+    `SELECT acc_id::text AS "accId", sum(amount)::float8 AS total
+     FROM txns WHERE user_id = $1 AND ts <= now() - interval '400 days'
+     GROUP BY acc_id`,
+    [userId]
+  );
+
+  const archive = {
+    workouts: archiveRow?.workouts ?? 0,
+    nights: archiveRow?.nights ?? 0,
+    txns: archiveRow?.txns ?? 0,
+    countLogs: archiveRow?.countLogs ?? 0,
+    checkins: archiveRow?.checkins ?? 0,
+    txnSum: archiveRow?.txnSum ?? 0,
+    activeDays: archiveRow?.activeDays ?? 0,
+    earliestTs: archiveRow?.earliestRaw ? new Date(archiveRow.earliestRaw).getTime() : null,
+    accSums: Object.fromEntries(accSumRows.map((r) => [r.accId ?? '', r.total])) as Record<string, number>,
+    windowDays: WINDOW_DAYS,
+  };
 
   // modules is a JSON string of the trackers the user chose to see.
   if (profile) {
@@ -151,5 +212,6 @@ export async function buildState(userId: number) {
     recurring,
     counters,
     countLogs,
+    archive,
   };
 }

@@ -250,6 +250,9 @@ app.post(
   })
 );
 
+// Epoch-millis helper, mirroring state.ts.
+const TS = (col: string) => `(EXTRACT(EPOCH FROM ${col}) * 1000)::float8 AS ts`;
+
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
 // Send transactional mail via Brevo (if configured). Returns false if not set up,
@@ -354,6 +357,38 @@ app.post(
     await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, row.user_id]);
     await query('DELETE FROM password_resets WHERE user_id = $1', [row.user_id]);
     res.json({ token: signToken(row.user_id), state: await buildState(row.user_id) });
+  })
+);
+
+// Full, unwindowed history for "export my data".
+//
+// The state bundle is capped to a rolling window so routine requests stay
+// small — but an export is the one place that must be complete. Users are told
+// to export before deleting their account, so a silently truncated file here
+// would be the worst possible data loss.
+app.get(
+  '/api/export',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const [profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs] =
+      await Promise.all([
+        one('SELECT name, email, (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt" FROM users WHERE id = $1', [uid]),
+        query('SELECT id::text, name, color, target, days, why, paused, archived FROM habits WHERE user_id = $1 ORDER BY sort, id', [uid]),
+        query(`SELECT habit_id::text AS "habitId", to_char(day, 'YYYY-MM-DD') AS day FROM habit_checkins WHERE user_id = $1 ORDER BY day`, [uid]),
+        query('SELECT id::text, name, color FROM workout_categories WHERE user_id = $1 ORDER BY sort, id', [uid]),
+        query(`SELECT id::text, name, category_id::text AS "catId", dur, dist, kcal, intensity, note, sets, ${TS('ts')} FROM workouts WHERE user_id = $1 ORDER BY ts`, [uid]),
+        query(`SELECT id::text, hours, quality, bed_h AS "bedH", wake_h AS "wakeH", note, ${TS('ts')} FROM nights WHERE user_id = $1 ORDER BY ts`, [uid]),
+        query(`SELECT id::text, name, cat, amount, income, acc_id::text AS "accId", note, ${TS('ts')} FROM txns WHERE user_id = $1 ORDER BY ts`, [uid]),
+        query('SELECT id::text, name, type, color, opening FROM accounts WHERE user_id = $1 ORDER BY sort, id', [uid]),
+        query('SELECT id::text, name, icon, color, kind FROM fcats WHERE user_id = $1 ORDER BY sort, id', [uid]),
+        query('SELECT id::text, name, unit, color, icon, step FROM counters WHERE user_id = $1 ORDER BY sort, id', [uid]),
+        query(`SELECT id::text, counter_id::text AS "counterId", amount, ${TS('ts')} FROM count_logs WHERE user_id = $1 ORDER BY ts`, [uid]),
+      ]);
+    res.json({
+      profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs,
+      exportedAt: new Date().toISOString(),
+    });
   })
 );
 
@@ -1232,10 +1267,14 @@ app.post(
     if (!Number.isFinite(amt) || amt === 0) return res.status(400).json({ error: 'Add an amount' });
     const owned = await one('SELECT id FROM counters WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
     if (!owned) return res.status(404).json({ error: 'Counter not found' });
-    await query('INSERT INTO count_logs (user_id, counter_id, amount) VALUES ($1,$2,$3)', [
+    // Honour the client's timestamp when it sends one: an entry replayed from
+    // the offline queue must keep the day it was logged, not the day it synced.
+    const ts = req.body.ts != null && Number.isFinite(Number(req.body.ts)) ? new Date(Number(req.body.ts)) : new Date();
+    await query('INSERT INTO count_logs (user_id, counter_id, amount, ts) VALUES ($1,$2,$3,$4)', [
       uid,
       req.params.id,
       amt,
+      ts,
     ]);
     res.json(await buildState(uid));
   })

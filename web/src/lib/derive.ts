@@ -468,8 +468,12 @@ export function derive(state: AppState, range: Range) {
   const budgetTotal = budgets.reduce((s, b) => s + b.limit, 0),
     budgetSpent = budgets.reduce((s, b) => s + b.spent, 0);
 
-  // Net worth over time: opening balances plus every transaction up to each point.
-  const openingTotal = state.accounts.reduce((a, x) => a + (x.opening || 0), 0);
+  // Net worth over time: opening balances plus every transaction up to each
+  // point. Transactions older than the state window aren't shipped as rows, so
+  // their net effect comes from the archive totals — without that, a long-lived
+  // account would appear to reset every time old rows aged out.
+  const openingTotal =
+    state.accounts.reduce((a, x) => a + (x.opening || 0), 0) + (state.archive?.txnSum || 0);
   const sortedT = [...T].sort((a, b) => a.ts - b.ts);
   const netWorthSeries: number[] = [];
   const netWorthLabels: string[] = [];
@@ -483,8 +487,12 @@ export function derive(state: AppState, range: Range) {
     }
   }
 
+  const accSums = state.archive?.accSums || {};
   const accounts = state.accounts.map((a) => {
-    const bal = (a.opening || 0) + T.filter((t) => t.accId === a.id).reduce((s, t) => s + t.amount, 0);
+    const bal =
+      (a.opening || 0) +
+      (accSums[a.id] || 0) + // pre-window movement on this account
+      T.filter((t) => t.accId === a.id).reduce((s, t) => s + t.amount, 0);
     return { ...a, balance: bal };
   });
   const netWorth = accounts.reduce((s, a) => s + a.balance, 0);

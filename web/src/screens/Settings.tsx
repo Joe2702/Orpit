@@ -29,15 +29,20 @@ export function Settings() {
   };
   const cancelHold = () => clearTimeout(holdTimer.current);
 
+  // The earliest entry may predate the state window, so prefer the archive's
+  // all-time minimum and fall back to what's loaded.
   const dataTs = [...state!.workouts, ...state!.nights, ...state!.txns].map((x) => x.ts);
-  const earliest = dataTs.length ? Math.min(...dataTs) : profile.createdAt;
+  const windowEarliest = dataTs.length ? Math.min(...dataTs) : profile.createdAt;
+  const earliest = state!.archive?.earliestTs ?? windowEarliest;
   const daysTracked = Math.max(1, Math.round((Date.now() - earliest) / 86400000));
+  const a = state!.archive;
   const entries =
     state!.workouts.length +
     state!.nights.length +
     state!.txns.length +
     state!.habits.length +
-    state!.countLogs.length;
+    state!.countLogs.length +
+    (a ? a.workouts + a.nights + a.txns + a.countLogs : 0);
   // Account age — time elapsed since the account was created, counting up.
   const ageDays = Math.max(0, Math.floor((Date.now() - profile.createdAt) / 86400000));
   const accountAge =
@@ -193,18 +198,12 @@ export function Settings() {
     }
   };
 
-  const exportData = () => {
+  const exportData = async () => {
     try {
-      const data = {
-        profile: { name: profile.name, email: profile.email },
-        habits: state!.habits,
-        checkins: state!.checkins,
-        wCats: state!.wCats,
-        workouts: state!.workouts,
-        nights: state!.nights,
-        txns: state!.txns,
-        exportedAt: new Date().toISOString(),
-      };
+      // Fetched from the server rather than assembled from state: the client
+      // only holds a rolling window, so building the file locally would quietly
+      // drop everything older.
+      const data = await api.exportAll();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

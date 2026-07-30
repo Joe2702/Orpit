@@ -195,12 +195,15 @@ export function CountLogSheet() {
     }
     haptic();
     const cid = counter!.id;
-    const tempId = 'tmp_' + Date.now();
+    const at = Date.now();
+    const tempId = 'tmp_' + at;
     const unit = counter?.unit || '';
     // Log instantly in the UI, sync in the background. A negative amount removes.
     mutateOpt(
-      (s) => ({ ...s, countLogs: [...s.countLogs, { id: tempId, counterId: cid, amount, ts: Date.now() }] }),
-      () => api.logCounter(cid, amount),
+      // Same timestamp in the optimistic row and on the wire, so an entry that
+      // syncs days later still belongs to the day it was logged.
+      (s) => ({ ...s, countLogs: [...s.countLogs, { id: tempId, counterId: cid, amount, ts: at }] }),
+      () => api.logCounter(cid, amount, at),
       amount > 0 ? `Logged ${cNum(amount)} ${unit}` : `Removed ${cNum(-amount)} ${unit}`
     ).catch(() => {});
     closeSheet();
