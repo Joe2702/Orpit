@@ -5,7 +5,7 @@ import 'dotenv/config';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
-import { randomBytes, createHash } from 'node:crypto';
+import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import webpush from 'web-push';
 
 import { pool, query, one, tx } from './db.js';
@@ -97,6 +97,10 @@ async function idempotency(req: AuthedRequest, res: express.Response, next: expr
   next();
 }
 
+// One password policy, applied at signup, reset and change alike.
+const MIN_PASSWORD = 8;
+const PASSWORD_RULE = `Password must be at least ${MIN_PASSWORD} characters`;
+
 const emailOk = (e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
 
 // ---- Simple in-memory rate limiting ----
@@ -159,8 +163,8 @@ app.post(
     const password = String(req.body.password || '');
     const name = String(req.body.name || '').trim() || 'Alex Rivera';
     if (!emailOk(email)) return res.status(400).json({ error: 'Enter a valid email' });
-    if (password.length < 8)
-      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    if (password.length < MIN_PASSWORD)
+      return res.status(400).json({ error: PASSWORD_RULE });
 
     const existing = await one('SELECT id FROM users WHERE email = $1', [email]);
     if (existing) return res.status(409).json({ error: 'That email is already registered' });
@@ -345,7 +349,9 @@ app.post(
   wrap(async (req, res) => {
     const token = String(req.body.token || '');
     const password = String(req.body.password || '');
-    if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    // Reset used to allow 6 while signup demanded 8 — a downgrade path around
+    // our own policy. One constant now governs every entry point.
+    if (password.length < MIN_PASSWORD) return res.status(400).json({ error: PASSWORD_RULE });
     const row = await one<{ user_id: number; expires_at: string }>(
       'SELECT user_id, expires_at FROM password_resets WHERE token_hash = $1',
       [sha256(token)]
@@ -1344,7 +1350,7 @@ app.post(
     const uid = req.userId!;
     const current = String(req.body.current || '');
     const next = String(req.body.next || '');
-    if (next.length < 8) return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    if (next.length < MIN_PASSWORD) return res.status(400).json({ error: `New password must be at least ${MIN_PASSWORD} characters` });
     const u = await one<{ password_hash: string | null }>('SELECT password_hash FROM users WHERE id = $1', [uid]);
     // Google-only accounts have no password yet — let them set one.
     if (u?.password_hash && !(await bcrypt.compare(current, u.password_hash))) {
@@ -1632,13 +1638,21 @@ if (!ADMIN_PASSWORD) {
 }
 
 function adminOk(req: AuthedRequest): boolean {
-  return !!ADMIN_PASSWORD && String(req.headers['x-admin-password'] || '') === ADMIN_PASSWORD;
+  if (!ADMIN_PASSWORD) return false;
+  const given = String(req.headers['x-admin-password'] || '');
+  // Constant-time compare so the response time can't leak how much of the
+  // password is right. Lengths must match first — timingSafeEqual throws
+  // otherwise — which is fine, length isn't the secret.
+  const a = Buffer.from(given);
+  const b = Buffer.from(ADMIN_PASSWORD);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 // Recent client crash reports, newest first.
 app.get(
   '/api/admin/errors',
   requireAuth,
+  rateLimit('admin', 20, 15 * 60 * 1000),
   wrap(async (req, res) => {
     if (!ADMIN_PASSWORD) return res.status(503).json({ error: 'Inbox not configured on the server' });
     if (!adminOk(req)) return res.status(403).json({ error: 'Wrong password' });
@@ -1673,6 +1687,7 @@ app.get(
 app.get(
   '/api/admin/feedback',
   requireAuth,
+  rateLimit('admin', 20, 15 * 60 * 1000),
   wrap(async (req, res) => {
     if (!ADMIN_PASSWORD) return res.status(503).json({ error: 'Inbox not configured on the server' });
     if (!adminOk(req)) return res.status(403).json({ error: 'Wrong password' });

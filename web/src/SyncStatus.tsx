@@ -9,17 +9,23 @@ import { useStore } from './store';
 // interpretation is the one people reach for.
 
 export function SyncStatus() {
-  const { pendingCount, online, sync, authed } = useStore();
+  const { pendingCount, online, isSyncing, sync, authed } = useStore();
   if (!authed) return null;
   if (online && pendingCount === 0) return null;
 
   const waiting = pendingCount > 0;
+  const noun = pendingCount === 1 ? 'entry' : 'entries';
   const color = online ? 'var(--indigo)' : 'var(--warning)';
+  // Only claim to be syncing while a flush is actually running. Queued entries
+  // sitting behind a failing server used to spin here indefinitely, which reads
+  // as "stuck" rather than "waiting, tap to retry".
   const label = !online
     ? waiting
       ? `Offline · ${pendingCount} waiting to sync`
       : 'Offline · your logs are saved on this device'
-    : `Syncing ${pendingCount} ${pendingCount === 1 ? 'entry' : 'entries'}…`;
+    : isSyncing
+    ? `Syncing ${pendingCount} ${noun}…`
+    : `${pendingCount} ${noun} waiting · tap to retry`;
 
   return (
     <div style={{ padding: '0 20px', marginBottom: 10 }}>
@@ -42,8 +48,8 @@ export function SyncStatus() {
         }}
       >
         {online ? (
-          // Spinning arrows while a flush is in flight.
-          <svg width="15" height="15" viewBox="0 0 20 20" style={{ flex: 'none', fill: 'none', stroke: color, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', animation: 'orbitSpin 1.1s linear infinite' }} aria-hidden>
+          // The arrows only spin while a flush is genuinely running.
+          <svg width="15" height="15" viewBox="0 0 20 20" style={{ flex: 'none', fill: 'none', stroke: color, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', animation: isSyncing ? 'orbitSpin 1.1s linear infinite' : undefined }} aria-hidden>
             <path d="M4 8a6 6 0 0 1 10.5-3M16 4v4h-4" />
             <path d="M16 12a6 6 0 0 1-10.5 3M4 16v-4h4" />
           </svg>

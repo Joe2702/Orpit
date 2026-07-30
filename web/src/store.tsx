@@ -108,6 +108,7 @@ interface StoreCtx {
   // Offline logging: how many writes are waiting, and whether we have a link.
   pendingCount: number;
   online: boolean;
+  isSyncing: boolean;
   sync: () => Promise<void>;
   // Reusable confirmation dialog. Resolves true if the user confirms.
   confirm: (opts: ConfirmOpts) => Promise<boolean>;
@@ -395,15 +396,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [pendingCount, setPendingCount] = useState<number>(() => pendingOps());
   const [online, setOnline] = useState<boolean>(() => isOnline());
   const syncing = useRef(false);
+  // Reactive counterpart to the `syncing` ref, so the status pill can say
+  // "syncing" only while a flush is genuinely in flight.
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => subscribeOffline(() => setPendingCount(pendingOps())), []);
 
   const sync = useCallback(async () => {
     if (syncing.current || !getToken() || pendingOps() === 0) return;
     syncing.current = true;
+    setIsSyncing(true);
+    // A flush returns the server's view as of its last replayed request. If the
+    // user logged something while it was running, that snapshot is already
+    // stale — applying it would make the new entry vanish until the next
+    // refresh. Same sequence discipline the mutations use.
+    const startSeq = seqRef.current;
     try {
       const r = await flushQueue();
-      if (r.state) {
+      if (r.state && seqRef.current === startSeq) {
         setState(r.state);
         cacheState(r.state);
       }
@@ -414,6 +424,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       /* still unreachable — the queue keeps everything for the next attempt */
     } finally {
       syncing.current = false;
+      setIsSyncing(false);
       setPendingCount(pendingOps());
     }
   }, [showToast]);
@@ -474,9 +485,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const mutate = useCallback(
     async (fn: () => Promise<AppState>, toastMsg?: string) => {
+      // Takes a sequence number like mutateOpt, so a slow response here can't
+      // overwrite a newer one that has already landed.
+      const mySeq = ++seqRef.current;
       try {
         const s = await fn();
-        setState(s);
+        setState((cur) => (seqRef.current === mySeq ? s : cur));
         // Keep the offline cache current on every accepted write, or reopening
         // without a network would show a stale snapshot.
         cacheState(s);
@@ -590,6 +604,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     confirm,
     pendingCount,
     online,
+    isSyncing,
     sync,
     confirmState,
     askPassword,
