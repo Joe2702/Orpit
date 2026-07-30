@@ -132,6 +132,18 @@ export function clearCache(): void {
 export const isOnline = (): boolean => (typeof navigator === 'undefined' ? true : navigator.onLine !== false);
 
 /**
+ * An entry the server hasn't seen yet. Optimistic creates carry a `tmp_` id
+ * until the real state comes back, so the prefix is the marker for "this exists
+ * only on this device so far" — which is what gates editing it and what the
+ * unsynced dot is drawn from.
+ */
+export const isUnsynced = (id: string): boolean => id.startsWith('tmp_');
+
+/** What to tell someone who tried to act on an entry that hasn't synced yet. */
+export const unsyncedMessage = (): string =>
+  isOnline() ? 'Still saving — try again in a moment' : "Waiting to sync — you can change this once you're back online";
+
+/**
  * Replay the queue in order. Stops at the first op that fails for a reason
  * worth retrying (still offline, server asleep) and leaves the rest queued.
  * An op the server actively rejects is dropped — retrying a 400 forever would

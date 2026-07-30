@@ -418,21 +418,56 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, [showToast]);
 
-  // Flush when the device says it's back, and on a slow timer as a backstop —
-  // `online` fires on regaining a link, not on that link becoming useful.
+  // Flush on every signal that the connection may be usable again.
+  //
+  // `online` alone isn't enough: it fires when a link is regained, not when it
+  // starts working, and it often doesn't fire at all for a phone waking in your
+  // pocket. Coming back to the app is the strongest hint there is — and the
+  // interval below can't cover it, because WebView timers are throttled while
+  // the app is backgrounded. Without the resume hook, reopening the app can sit
+  // on a full queue for half a minute.
   useEffect(() => {
     const up = () => {
       setOnline(true);
       sync();
     };
     const down = () => setOnline(false);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        setOnline(isOnline());
+        sync();
+      }
+    };
     window.addEventListener('online', up);
     window.addEventListener('offline', down);
+    document.addEventListener('visibilitychange', onVisible);
+
+    // Native resume. The web `visibilitychange` above covers browsers; this
+    // covers the Android app, where it is the reliable signal.
+    let removeNative: (() => void) | undefined;
+    import('@capacitor/app')
+      .then(({ App }) =>
+        App.addListener('appStateChange', ({ isActive }) => {
+          if (isActive) {
+            setOnline(isOnline());
+            sync();
+          }
+        })
+      )
+      .then((h) => {
+        removeNative = () => h.remove();
+      })
+      .catch(() => {
+        /* not running natively — the web listeners are enough */
+      });
+
     const iv = setInterval(() => isOnline() && sync(), 30_000);
     sync();
     return () => {
       window.removeEventListener('online', up);
       window.removeEventListener('offline', down);
+      document.removeEventListener('visibilitychange', onVisible);
+      removeNative?.();
       clearInterval(iv);
     };
   }, [sync]);

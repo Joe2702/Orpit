@@ -8,6 +8,7 @@ import { IconWorkout } from '../icons';
 import { SwipeRow } from '../SwipeRow';
 import { volume } from '../SetsEditor';
 import { useEntryActions } from '../lib/entryActions';
+import { UnsyncedDot } from '../UnsyncedDot';
 
 // Round a minutes value up to a clean axis maximum (15/30/45/60/90/120…), so the
 // y-axis reads sensibly instead of arbitrary numbers like "47m".
@@ -143,7 +144,10 @@ export function Workouts() {
                   <span style={{ width: 13, height: 13, borderRadius: 4, background: `var(--${cc})` }} />
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{w.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{w.name}</span>
+                    <UnsyncedDot id={w.id} />
+                  </div>
                   <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{meta}</div>
                   {/* Strength sessions get their headline number: total volume. */}
                   {w.sets && w.sets.length > 0 && (

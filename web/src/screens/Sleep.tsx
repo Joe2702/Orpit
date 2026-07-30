@@ -7,6 +7,7 @@ import { DetailHeader, RangeSeg, SectionLabel, rangeWord } from '../ui';
 import { IconSleep } from '../icons';
 import { SwipeRow } from '../SwipeRow';
 import { useEntryActions } from '../lib/entryActions';
+import { UnsyncedDot } from '../UnsyncedDot';
 
 export function Sleep() {
   const { state, open, range } = useStore();
@@ -125,7 +126,10 @@ export function Sleep() {
                 <IconSleep c="var(--blue)" size={20} />
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{relLabel(n.ts)}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{relLabel(n.ts)}</span>
+                  <UnsyncedDot id={n.id} />
+                </div>
                 <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--blue)', marginTop: 2 }}>Quality {n.quality}/10</div>
               </div>
               <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums', flex: 'none' }}>{hm(n.hours)}</div>

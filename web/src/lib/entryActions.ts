@@ -1,5 +1,6 @@
 import { useStore } from '../store';
 import { api } from '../api';
+import { isUnsynced, unsyncedMessage } from './offline';
 import type { Workout, Night, Txn, AppState } from '../types';
 
 export type EntryKind = 'workout' | 'sleep' | 'txn';
@@ -42,8 +43,11 @@ export function useEntryActions() {
    */
   const remove = (kind: EntryKind, item: Entry) => {
     const id = (item as { id: string }).id;
-    if (id.startsWith('tmp_')) {
-      showToast('Still saving — try again in a moment');
+    // Not on the server yet, so there is nothing to delete there. Offline this
+    // can last hours, so say what's actually happening rather than implying a
+    // save is seconds away.
+    if (isUnsynced(id)) {
+      showToast(unsyncedMessage());
       return;
     }
     haptic();
