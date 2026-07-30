@@ -11,6 +11,7 @@ import { SwipeRow } from '../SwipeRow';
 import { ReceiptField, ReceiptPicker } from '../Receipt';
 import { useEntryActions } from '../lib/entryActions';
 import type { Txn } from '../types';
+import { UnsyncedDot } from '../UnsyncedDot';
 
 function Header({ title, action }: { title: string; action?: React.ReactNode }) {
   const { go } = useStore();
@@ -219,6 +220,7 @@ export function FTxns() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
                           {t.name}
+                          <UnsyncedDot id={t.id} />
                           {t.photo && (
                             <svg width="13" height="13" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.8, strokeLinejoin: 'round', flex: 'none' }} aria-label="Has a receipt">
                               <path d="M1.5 4h2.2l1-1.4h3.6L9.3 4h2.2v7h-10z" />

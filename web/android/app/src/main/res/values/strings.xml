@@ -4,4 +4,11 @@
     <string name="title_activity_main">Orbit</string>
     <string name="package_name">com.orbit.app</string>
     <string name="custom_url_scheme">com.orbit.app</string>
+    <!-- Home-screen shortcut labels (long-press the app icon). -->
+    <string name="shortcut_workout_short">Workout</string>
+    <string name="shortcut_workout_long">Log a workout</string>
+    <string name="shortcut_sleep_short">Sleep</string>
+    <string name="shortcut_sleep_long">Log sleep</string>
+    <string name="shortcut_expense_short">Expense</string>
+    <string name="shortcut_expense_long">Add a transaction</string>
 </resources>

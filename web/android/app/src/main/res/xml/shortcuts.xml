@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Long-press the app icon to log without opening the app first.
+
+  Each shortcut fires an explicit VIEW intent at MainActivity carrying an
+  orbit:// URL. Capacitor hands that URL to the web layer (getLaunchUrl on a
+  cold start, appUrlOpen when the app is already running), which opens the
+  matching sheet. No native code is involved beyond this file.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="log_workout"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_workout"
+        android:shortcutShortLabel="@string/shortcut_workout_short"
+        android:shortcutLongLabel="@string/shortcut_workout_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.orbit.app"
+            android:targetClass="com.orbit.app.MainActivity"
+            android:data="orbit://log/workout" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="log_sleep"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_sleep"
+        android:shortcutShortLabel="@string/shortcut_sleep_short"
+        android:shortcutLongLabel="@string/shortcut_sleep_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.orbit.app"
+            android:targetClass="com.orbit.app.MainActivity"
+            android:data="orbit://log/sleep" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="log_expense"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_expense"
+        android:shortcutShortLabel="@string/shortcut_expense_short"
+        android:shortcutLongLabel="@string/shortcut_expense_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.orbit.app"
+            android:targetClass="com.orbit.app.MainActivity"
+            android:data="orbit://log/expense" />
+    </shortcut>
+
+</shortcuts>

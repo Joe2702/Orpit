@@ -59,6 +59,44 @@ const wrap =
       res.status(500).json({ error: 'Server error' });
     });
 
+/**
+ * Idempotency for mutations replayed from the offline queue.
+ *
+ * A client that loses the response to a request cannot tell whether it applied,
+ * so it replays on reconnect. Without this, a replayed "log workout" duplicates
+ * the entry and a replayed habit toggle silently un-checks the day.
+ *
+ * The key is claimed *before* the handler runs, so two concurrent replays of the
+ * same op can't both execute; if the handler then fails, the claim is released
+ * so a genuine retry still works.
+ */
+async function idempotency(req: AuthedRequest, res: express.Response, next: express.NextFunction) {
+  const opId = req.headers['x-orbit-op-id'];
+  if (!dbReady || typeof opId !== 'string' || !opId || opId.length > 64) return next();
+  const uid = req.userId!;
+  try {
+    const claim = await pool.query(
+      'INSERT INTO client_ops (op_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
+      [opId, uid]
+    );
+    if (claim.rowCount === 0) {
+      // Already applied — hand back current state so the client converges.
+      return res.json(await buildState(uid));
+    }
+  } catch {
+    return next(); // never let bookkeeping block a real write
+  }
+  // Release the claim if the write didn't actually succeed.
+  const done = res.json.bind(res);
+  res.json = (body: any) => {
+    if (res.statusCode >= 400) {
+      query('DELETE FROM client_ops WHERE op_id = $1 AND user_id = $2', [opId, uid]).catch(() => {});
+    }
+    return done(body);
+  };
+  next();
+}
+
 const emailOk = (e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
 
 // ---- Simple in-memory rate limiting ----
@@ -526,6 +564,7 @@ app.delete(
 app.post(
   '/api/habits/:id/toggle',
   requireAuth,
+  idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
     const owned = await one('SELECT id FROM habits WHERE id = $1 AND user_id = $2', [
@@ -656,6 +695,7 @@ function cleanSets(raw: unknown): string | null {
 app.post(
   '/api/workouts',
   requireAuth,
+  idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
     const cat = await one<{ id: string; name: string }>(
@@ -692,6 +732,7 @@ app.post(
 app.patch(
   '/api/workouts/:id',
   requireAuth,
+  idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
     await query(
@@ -721,6 +762,7 @@ app.patch(
 app.delete(
   '/api/workouts/:id',
   requireAuth,
+  idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
     await query('DELETE FROM workouts WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
@@ -733,6 +775,7 @@ app.delete(
 app.post(
   '/api/nights',
   requireAuth,
+  idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
     // Optional explicit timestamp lets the user log a night for a past day.
@@ -759,6 +802,7 @@ app.post(
 app.delete(
   '/api/nights/:id',
   requireAuth,
+  idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
     await query('DELETE FROM nights WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
@@ -827,6 +871,7 @@ app.put(
 app.post(
   '/api/txns',
   requireAuth,
+  idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
     const amt = Number(req.body.amount);
@@ -856,6 +901,7 @@ app.post(
 app.patch(
   '/api/txns/:id',
   requireAuth,
+  idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
     const amt = Number(req.body.amount);
@@ -886,6 +932,7 @@ app.patch(
 app.delete(
   '/api/txns/:id',
   requireAuth,
+  idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
     await query('DELETE FROM txns WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
@@ -1177,6 +1224,7 @@ app.delete(
 app.post(
   '/api/counters/:id/log',
   requireAuth,
+  idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
     const amt = Number(req.body.amount);
@@ -1808,6 +1856,11 @@ function start() {
   console.log(pushReady ? 'Daily reminders: ON' : 'Daily reminders: OFF (set VAPID_PRIVATE to enable)');
   migrate();
   setInterval(runReminders, 60 * 1000);
+  // Prune spent idempotency keys — they only need to outlive a device that has
+  // been offline for a while.
+  const pruneOps = () =>
+    query("DELETE FROM client_ops WHERE created_at < now() - interval '7 days'").catch(() => {});
+  setInterval(() => dbReady && pruneOps(), 6 * 60 * 60 * 1000);
   // Post due recurring transactions on boot, then hourly.
   runRecurring();
   setInterval(runRecurring, 60 * 60 * 1000);

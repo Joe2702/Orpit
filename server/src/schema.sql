@@ -289,3 +289,19 @@ CREATE TABLE IF NOT EXISTS email_verifications (
 );
 CREATE INDEX IF NOT EXISTS email_verifications_user ON email_verifications(user_id);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- ===== v3.3: offline logging =====
+-- Idempotency keys for queued offline mutations. A client that loses the
+-- response to a request cannot know whether it applied, so it replays; this
+-- table makes the replay a no-op instead of a duplicate entry (or, for a habit
+-- toggle, a silent un-toggle). Rows are pruned after a week.
+-- Keyed per user: a key is only ever meaningful to the account that minted it,
+-- and a global primary key would let one account's id silently swallow
+-- another's write.
+CREATE TABLE IF NOT EXISTS client_ops (
+  op_id      TEXT NOT NULL,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, op_id)
+);
+CREATE INDEX IF NOT EXISTS client_ops_created ON client_ops(created_at);

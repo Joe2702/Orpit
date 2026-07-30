@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from './store';
 import { api } from './api';
+import { isUnsynced, unsyncedMessage } from './lib/offline';
 import type { Txn } from './types';
 
 // Receipt photos.
@@ -140,6 +141,11 @@ export function ReceiptField({ txn }: { txn: Txn }) {
     const file = e.target.files?.[0];
     e.target.value = ''; // let the same file be picked again after a removal
     if (!file) return;
+    // There's no server-side row to attach to until this transaction syncs.
+    if (isUnsynced(txn.id)) {
+      showToast(unsyncedMessage());
+      return;
+    }
     setLoading(true);
     try {
       const data = await compressImage(file);

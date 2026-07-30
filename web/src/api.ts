@@ -1,4 +1,5 @@
 import type { AppState, WorkoutSet } from './types';
+import { enqueue, flush, isQueueable, newOpId, OfflineQueuedError, type QueuedOp } from './lib/offline';
 
 // On the web the frontend is served by the same server as the API, so a
 // relative path works. Inside a native (Capacitor) build the app runs from a
@@ -26,16 +27,35 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, opts: RequestInit = {}, opId?: string): Promise<T> {
   const token = getToken();
-  const res = await fetch(`${API_BASE}/api${path}`, {
-    ...opts,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(opts.headers || {}),
-    },
-  });
+  const method = (opts.method || 'GET').toUpperCase();
+  // Loggable mutations carry a stable id so the server can recognise a replay.
+  // It's generated up front, not at queue time, so an op whose *response* was
+  // lost replays under the same key it originally used.
+  const id = opId || (isQueueable(path, method) ? newOpId() : undefined);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api${path}`, {
+      ...opts,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(id ? { 'x-orbit-op-id': id } : {}),
+        ...(opts.headers || {}),
+      },
+    });
+  } catch (netErr) {
+    // fetch only rejects on a network-level failure — exactly the case worth
+    // deferring. Anything the server answered, even an error, is not queued.
+    if (id && !opId) {
+      enqueue({ id, path, method, body: typeof opts.body === 'string' ? opts.body : undefined, at: Date.now() });
+      throw new OfflineQueuedError();
+    }
+    throw netErr;
+  }
+
   if (!res.ok) {
     let msg = `Request failed (${res.status})`;
     try {
@@ -84,6 +104,16 @@ export interface FeedbackItem {
   name: string;
   email: string;
 }
+
+/**
+ * Replay everything the offline queue is holding. Each op goes out under its
+ * original id, so the server treats a second delivery of an already-applied
+ * write as a no-op.
+ */
+export const flushQueue = () =>
+  flush((op: QueuedOp) =>
+    request<AppState>(op.path, { method: op.method, body: op.body }, op.id)
+  );
 
 export const api = {
   signup: (email: string, password: string, name: string) =>

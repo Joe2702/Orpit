@@ -21,6 +21,7 @@ import { Privacy } from './screens/Privacy';
 import { Insights } from './screens/Insights';
 import { Search } from './screens/Search';
 import { VerifyEmail } from './screens/VerifyEmail';
+import { SyncStatus } from './SyncStatus';
 
 import { Chooser } from './sheets/Chooser';
 import { CounterSheet, CountLogSheet, CountPickSheet } from './sheets/CounterSheets';
@@ -38,7 +39,8 @@ import { CatchUpSheet } from './sheets/CatchUpSheet';
 import { ReminderOnboarding } from './ReminderOnboarding';
 import { StoryReport } from './screens/StoryReport';
 import { Intro } from './screens/Intro';
-import { syncReminders, scheduleExtras } from './lib/notify';
+import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily } from './lib/notify';
+import { listenForShortcuts, type ShortcutAction } from './lib/shortcuts';
 import { dayKey } from './lib/format';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
@@ -372,7 +374,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 }
 
 export function App() {
-  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, passwordState, report, closeReport, applyState } = useStore();
+  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, open, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, passwordState, report, closeReport, applyState } = useStore();
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
 
   // Track the phone's own light/dark setting so "System" can follow it live.
@@ -497,6 +499,46 @@ export function App() {
     setPull(0);
   };
 
+  // ---- Reminder action buttons ----
+  // "Done" on a habit reminder checks that habit off for today; "Snooze" pushes
+  // the nightly nudge out an hour. Both arrive through a listener rather than
+  // React state, so `stateRef` is used to read the latest check-ins without
+  // making the effect depend on every state change.
+  const liveState = useRef(state);
+  liveState.current = state;
+  useEffect(() => {
+    return listenForNotificationActions({
+      onSnooze: () => snoozeDaily(),
+      onDone: (habitId) => {
+        const cur = liveState.current;
+        if (!cur) return;
+        const today = dayKey();
+        // Toggle flips, so check first — acting on an already-checked habit
+        // would silently un-check it, the exact opposite of "Done".
+        if (cur.checkins.some((c) => c.habitId === habitId && c.day === today)) return;
+        if (!cur.habits.some((h) => h.id === habitId)) return; // deleted since
+        mutateOpt(
+          (st) => ({ ...st, checkins: [...st.checkins, { habitId, day: today }] }),
+          () => api.toggleHabit(habitId, today),
+          'Checked off'
+        ).catch(() => {});
+      },
+    });
+  }, [mutateOpt]);
+
+  // ---- Home-screen shortcuts ----
+  // A cold start arrives before the session is restored, so the action waits
+  // for `ready` rather than firing at a screen that isn't mounted yet.
+  const [shortcut, setShortcut] = useState<ShortcutAction | null>(null);
+  useEffect(() => listenForShortcuts(setShortcut), []);
+  useEffect(() => {
+    if (!shortcut || !ready || !authed) return;
+    setShortcut(null);
+    if (shortcut === 'workout') open('workout');
+    else if (shortcut === 'sleep') open('sleep');
+    else go('faddtx'); // expenses use the full add-transaction screen
+  }, [shortcut, ready, authed, open, go]);
+
   // ---- Swipe between the main tabs ----
   // Only on the three top-level destinations, and only for a clearly horizontal
   // flick: `touch-action: pan-y` on swipeable rows means a row swipe never
@@ -620,6 +662,7 @@ export function App() {
         )}
         {/* Keyed on the screen so a tab change replays the slide-in from the
             side the swipe came from. */}
+        {ready && <SyncStatus />}
         <div key={screen} style={slide ? { animation: `${slide === 'l' ? 'slideInR' : 'slideInL'} .26s cubic-bezier(.2,.8,.3,1)` } : undefined}>
           {ready ? <CurrentScreen /> : null}
         </div>

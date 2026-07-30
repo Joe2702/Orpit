@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
-import { api, getToken, setToken, clearToken, ApiError } from './api';
+import { api, flushQueue, getToken, setToken, clearToken, ApiError } from './api';
+import { OfflineQueuedError, cacheState, readCachedState, clearCache, pending as pendingOps, subscribe as subscribeOffline, isOnline } from './lib/offline';
 import { setCurrency } from './lib/format';
 import type { AppState, Range } from './types';
 
@@ -104,6 +105,10 @@ interface StoreCtx {
   // so reveals follow the user across devices and reinstalls.
   claimedBadges: string[];
   claimBadge: (id: string) => void;
+  // Offline logging: how many writes are waiting, and whether we have a link.
+  pendingCount: number;
+  online: boolean;
+  sync: () => Promise<void>;
   // Reusable confirmation dialog. Resolves true if the user confirms.
   confirm: (opts: ConfirmOpts) => Promise<boolean>;
   confirmState: (ConfirmOpts & { resolve: (v: boolean) => void }) | null;
@@ -225,11 +230,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     setBooting(true);
     setBootError(false);
+    // No network at all: open straight from the cached state instead of
+    // retrying for over a minute and then blaming the server.
+    const cached = readCachedState();
+    if (cached && !isOnline()) {
+      setState(cached);
+      setScreen('home');
+      setBooting(false);
+      setReady(true);
+      return;
+    }
     const delays = [800, 1500, 2500, 4000, 6000, 8000, 8000, 10000, 10000, 12000, 12000];
     for (let i = 0; i <= delays.length; i++) {
       try {
         const s = await api.getState();
         setState(s);
+        cacheState(s);
         setScreen('home');
         setBooting(false);
         setReady(true);
@@ -246,7 +262,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (i < delays.length) await new Promise((r) => setTimeout(r, delays[i]));
       }
     }
-    // Server still unreachable after many tries — offer a manual retry.
+    // Server still unreachable. A cached state beats a dead end: let the user
+    // in and keep logging, and sync whenever the connection returns.
+    const fallback = readCachedState();
+    if (fallback) {
+      setState(fallback);
+      setScreen('home');
+      setBooting(false);
+      setReady(true);
+      return;
+    }
     setBootError(true);
   }, []);
 
@@ -254,7 +279,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     restore();
   }, [restore]);
 
-  const applyState = useCallback((s: AppState) => setState(s), []);
+  const applyState = useCallback((s: AppState) => {
+    setState(s);
+    cacheState(s);
+  }, []);
 
   const [report, setReport] = useState<{ kind: 'week' | 'month' | 'year'; offset: number } | null>(null);
   const openReport = useCallback((kind: 'week' | 'month' | 'year', offset = 0) => setReport({ kind, offset }), []);
@@ -352,6 +380,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(() => {
     clearToken();
+    // Never leave one account's cached data (or unsent writes) on a device
+    // where someone else might sign in next.
+    clearCache();
     setState(null);
     setSheet(null);
     setScreen('welcome');
@@ -359,13 +390,104 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setRangeState('Week');
   }, []);
 
+  // ---- Offline sync ----
+  // `pendingCount` drives the status pill; `syncing` stops overlapping flushes.
+  const [pendingCount, setPendingCount] = useState<number>(() => pendingOps());
+  const [online, setOnline] = useState<boolean>(() => isOnline());
+  const syncing = useRef(false);
+
+  useEffect(() => subscribeOffline(() => setPendingCount(pendingOps())), []);
+
+  const sync = useCallback(async () => {
+    if (syncing.current || !getToken() || pendingOps() === 0) return;
+    syncing.current = true;
+    try {
+      const r = await flushQueue();
+      if (r.state) {
+        setState(r.state);
+        cacheState(r.state);
+      }
+      if (r.synced > 0) {
+        showToast(r.failed ? `Synced ${r.synced} · ${r.failed} couldn't be saved` : `Synced ${r.synced} ${r.synced === 1 ? 'entry' : 'entries'}`);
+      }
+    } catch {
+      /* still unreachable — the queue keeps everything for the next attempt */
+    } finally {
+      syncing.current = false;
+      setPendingCount(pendingOps());
+    }
+  }, [showToast]);
+
+  // Flush on every signal that the connection may be usable again.
+  //
+  // `online` alone isn't enough: it fires when a link is regained, not when it
+  // starts working, and it often doesn't fire at all for a phone waking in your
+  // pocket. Coming back to the app is the strongest hint there is — and the
+  // interval below can't cover it, because WebView timers are throttled while
+  // the app is backgrounded. Without the resume hook, reopening the app can sit
+  // on a full queue for half a minute.
+  useEffect(() => {
+    const up = () => {
+      setOnline(true);
+      sync();
+    };
+    const down = () => setOnline(false);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        setOnline(isOnline());
+        sync();
+      }
+    };
+    window.addEventListener('online', up);
+    window.addEventListener('offline', down);
+    document.addEventListener('visibilitychange', onVisible);
+
+    // Native resume. The web `visibilitychange` above covers browsers; this
+    // covers the Android app, where it is the reliable signal.
+    let removeNative: (() => void) | undefined;
+    import('@capacitor/app')
+      .then(({ App }) =>
+        App.addListener('appStateChange', ({ isActive }) => {
+          if (isActive) {
+            setOnline(isOnline());
+            sync();
+          }
+        })
+      )
+      .then((h) => {
+        removeNative = () => h.remove();
+      })
+      .catch(() => {
+        /* not running natively — the web listeners are enough */
+      });
+
+    const iv = setInterval(() => isOnline() && sync(), 30_000);
+    sync();
+    return () => {
+      window.removeEventListener('online', up);
+      window.removeEventListener('offline', down);
+      document.removeEventListener('visibilitychange', onVisible);
+      removeNative?.();
+      clearInterval(iv);
+    };
+  }, [sync]);
+
   const mutate = useCallback(
     async (fn: () => Promise<AppState>, toastMsg?: string) => {
       try {
         const s = await fn();
         setState(s);
+        // Keep the offline cache current on every accepted write, or reopening
+        // without a network would show a stale snapshot.
+        cacheState(s);
         if (toastMsg) showToast(toastMsg);
       } catch (e) {
+        // A queued op isn't a failure — it's a deferred success. There's no
+        // optimistic state here, so say plainly that it will appear on sync.
+        if (e instanceof OfflineQueuedError) {
+          showToast('Saved offline — syncing when you reconnect');
+          throw e;
+        }
         showToast(e instanceof Error ? e.message : 'Something went wrong');
         throw e;
       }
@@ -387,8 +509,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const s = await fn();
         // Reconcile with the server only if we're still the latest mutation.
         setState((cur) => (seqRef.current === mySeq ? s : cur));
+        cacheState(s);
         if (toastMsg) showToast(toastMsg);
       } catch (e) {
+        // Queued offline: the prediction is what the server will eventually
+        // agree with, so keep it on screen and persist it. Rolling back here
+        // would make a successful offline log look like it vanished.
+        if (e instanceof OfflineQueuedError) {
+          setState((cur) => {
+            if (cur) cacheState(cur);
+            return cur;
+          });
+          showToast(toastMsg ? `${toastMsg} · offline` : 'Saved offline');
+          throw e;
+        }
         // Roll back to the pre-mutation state, unless something newer supersedes.
         setState((cur) => (seqRef.current === mySeq ? prev : cur));
         showToast(e instanceof Error ? e.message : 'Something went wrong');
@@ -454,6 +588,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     claimedBadges,
     claimBadge,
     confirm,
+    pendingCount,
+    online,
+    sync,
     confirmState,
     askPassword,
     passwordState,

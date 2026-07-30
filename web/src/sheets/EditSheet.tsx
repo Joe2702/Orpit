@@ -6,11 +6,12 @@ import { IconTrash } from '../icons';
 import { hm, signMoney } from '../lib/format';
 import { SetsEditor } from '../SetsEditor';
 import { useEntryActions } from '../lib/entryActions';
+import { isUnsynced, unsyncedMessage } from '../lib/offline';
 import { ReceiptField } from '../Receipt';
 import type { Workout, Night, Txn, WorkoutSet } from '../types';
 
 export function EditSheet() {
-  const { state, sheetData, open, closeSheet, mutateOpt, haptic, confirm } = useStore();
+  const { state, sheetData, open, closeSheet, mutateOpt, haptic, confirm, showToast } = useStore();
   const { remove, duplicate: dup } = useEntryActions();
   const kind: 'workout' | 'sleep' | 'txn' = sheetData?.kind;
   const item = sheetData?.item;
@@ -34,6 +35,11 @@ export function EditSheet() {
       : '';
 
   const saveWorkout = () => {
+    // The server has never seen this entry, so there is no row to patch.
+    if (isUnsynced(w!.id)) {
+      showToast(unsyncedMessage());
+      return;
+    }
     haptic();
     const clean = sets.filter((s) => s.ex.trim());
     const patch = { dur, catId, dist: dist.trim() || null, kcal: kcal ? Number(kcal) : null, sets: clean.length ? clean : null };
