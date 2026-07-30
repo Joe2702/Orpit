@@ -39,7 +39,7 @@ import { CatchUpSheet } from './sheets/CatchUpSheet';
 import { ReminderOnboarding } from './ReminderOnboarding';
 import { StoryReport } from './screens/StoryReport';
 import { Intro } from './screens/Intro';
-import { syncReminders, scheduleExtras } from './lib/notify';
+import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily } from './lib/notify';
 import { listenForShortcuts, type ShortcutAction } from './lib/shortcuts';
 import { dayKey } from './lib/format';
 
@@ -498,6 +498,33 @@ export function App() {
     setRefreshing(false);
     setPull(0);
   };
+
+  // ---- Reminder action buttons ----
+  // "Done" on a habit reminder checks that habit off for today; "Snooze" pushes
+  // the nightly nudge out an hour. Both arrive through a listener rather than
+  // React state, so `stateRef` is used to read the latest check-ins without
+  // making the effect depend on every state change.
+  const liveState = useRef(state);
+  liveState.current = state;
+  useEffect(() => {
+    return listenForNotificationActions({
+      onSnooze: () => snoozeDaily(),
+      onDone: (habitId) => {
+        const cur = liveState.current;
+        if (!cur) return;
+        const today = dayKey();
+        // Toggle flips, so check first — acting on an already-checked habit
+        // would silently un-check it, the exact opposite of "Done".
+        if (cur.checkins.some((c) => c.habitId === habitId && c.day === today)) return;
+        if (!cur.habits.some((h) => h.id === habitId)) return; // deleted since
+        mutateOpt(
+          (st) => ({ ...st, checkins: [...st.checkins, { habitId, day: today }] }),
+          () => api.toggleHabit(habitId, today),
+          'Checked off'
+        ).catch(() => {});
+      },
+    });
+  }, [mutateOpt]);
 
   // ---- Home-screen shortcuts ----
   // A cold start arrives before the session is restored, so the action waits

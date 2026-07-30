@@ -26,14 +26,14 @@ export function AccountSheet() {
     if (!canSave) return;
     haptic();
     const body = { name: name.trim(), type, color, opening: parseFloat(opening || '0') || 0 };
-    await mutate(() => (editId ? api.editAccount(editId, body) : api.addAccount(body)), editId ? 'Account updated' : 'Account added');
+    mutate(() => (editId ? api.editAccount(editId, body) : api.addAccount(body)), editId ? 'Account updated' : 'Account added').catch(() => {});
     closeSheet();
   };
   const del = async () => {
     if (!editId) return;
     if (state!.accounts.length <= 1) { showToast('Keep at least one account'); return; }
     haptic();
-    await mutate(() => api.deleteAccount(editId), 'Account deleted');
+    mutate(() => api.deleteAccount(editId), 'Account deleted').catch(() => {});
     closeSheet();
   };
 
@@ -73,14 +73,14 @@ export function FcatSheet() {
     if (!canSave) return;
     haptic();
     const body = { name: name.trim(), icon, color, kind };
-    await mutate(() => (editId ? api.editFcat(editId, body) : api.addFcat(body)), editId ? 'Category updated' : 'Category added');
+    mutate(() => (editId ? api.editFcat(editId, body) : api.addFcat(body)), editId ? 'Category updated' : 'Category added').catch(() => {});
     closeSheet();
   };
   const del = async () => {
     if (!editId) return;
     if (state!.fcats.length <= 1) { showToast('Keep at least one category'); return; }
     haptic();
-    await mutate(() => api.deleteFcat(editId), 'Category deleted');
+    mutate(() => api.deleteFcat(editId), 'Category deleted').catch(() => {});
     closeSheet();
   };
 
@@ -124,10 +124,10 @@ export function BudgetSheet() {
     if (!canSave) { showToast('Enter a limit'); return; }
     haptic();
     const body = { cat, limit: parseFloat(limit), rollover };
-    await mutate(() => (editId ? api.editBudget(editId, body) : api.addBudget(body)), editId ? 'Budget updated' : 'Budget added');
+    mutate(() => (editId ? api.editBudget(editId, body) : api.addBudget(body)), editId ? 'Budget updated' : 'Budget added').catch(() => {});
     closeSheet();
   };
-  const del = async () => { if (!editId) return; haptic(); await mutate(() => api.deleteBudget(editId), 'Budget deleted'); closeSheet(); };
+  const del = async () => { if (!editId) return; haptic(); mutate(() => api.deleteBudget(editId), 'Budget deleted').catch(() => {}); closeSheet(); };
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
@@ -181,10 +181,10 @@ export function GoalSheet() {
     if (!canSave) { showToast('Name and target required'); return; }
     haptic();
     const body = { name: name.trim(), target: parseFloat(target), current: parseFloat(current || '0') || 0, color, dueTs: due ? new Date(due).getTime() : null };
-    await mutate(() => (editId ? api.editGoal(editId, body) : api.addGoal(body)), editId ? 'Goal updated' : 'Goal added');
+    mutate(() => (editId ? api.editGoal(editId, body) : api.addGoal(body)), editId ? 'Goal updated' : 'Goal added').catch(() => {});
     closeSheet();
   };
-  const del = async () => { if (!editId) return; haptic(); await mutate(() => api.deleteGoal(editId), 'Goal deleted'); closeSheet(); };
+  const del = async () => { if (!editId) return; haptic(); mutate(() => api.deleteGoal(editId), 'Goal deleted').catch(() => {}); closeSheet(); };
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
@@ -223,10 +223,10 @@ export function RecurringSheet() {
     if (!canSave) { showToast('Name and amount required'); return; }
     haptic();
     const body = { name: name.trim(), cat, amount: parseFloat(amount), freq, accId, income };
-    await mutate(() => (editId ? api.editRecurring(editId, body) : api.addRecurring(body)), editId ? 'Recurring updated' : 'Recurring added');
+    mutate(() => (editId ? api.editRecurring(editId, body) : api.addRecurring(body)), editId ? 'Recurring updated' : 'Recurring added').catch(() => {});
     closeSheet();
   };
-  const del = async () => { if (!editId) return; haptic(); await mutate(() => api.deleteRecurring(editId), 'Recurring deleted'); closeSheet(); };
+  const del = async () => { if (!editId) return; haptic(); mutate(() => api.deleteRecurring(editId), 'Recurring deleted').catch(() => {}); closeSheet(); };
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>

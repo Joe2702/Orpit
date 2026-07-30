@@ -24,6 +24,85 @@ async function LN() {
 
 const CHANNEL_ID = 'orbit-reminders';
 
+// Action buttons attached to reminders. Tapping one still opens the app — the
+// handler is JavaScript, so there is no truly silent path — but it lands on the
+// exact thing you meant to do instead of the Home screen.
+export const HABIT_ACTIONS = 'orbit-habit';   // a named habit → "Done"
+export const DAILY_ACTIONS = 'orbit-daily';   // the nightly nudge → "Snooze 1 hour"
+export const SNOOZE_ID = 1006;
+
+let actionsRegistered = false;
+async function ensureActionTypes(ln: Awaited<ReturnType<typeof LN>>): Promise<void> {
+  if (actionsRegistered) return;
+  try {
+    await ln.registerActionTypes({
+      types: [
+        { id: HABIT_ACTIONS, actions: [{ id: 'done', title: 'Done' }] },
+        { id: DAILY_ACTIONS, actions: [{ id: 'snooze', title: 'Snooze 1 hour' }] },
+      ],
+    });
+    actionsRegistered = true;
+  } catch {
+    /* older platform without action support — the notification still works */
+  }
+}
+
+/** Push the nightly reminder out by an hour, once. */
+export async function snoozeDaily(): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const ln = await LN();
+    await ensureChannel(ln);
+    await ln.cancel({ notifications: [{ id: SNOOZE_ID }] }).catch(() => {});
+    await ln.schedule({
+      notifications: [
+        {
+          id: SNOOZE_ID,
+          title: 'Orbit',
+          body: 'Picking this back up — how did today go?',
+          schedule: { at: new Date(Date.now() + 60 * 60 * 1000), allowWhileIdle: true },
+          channelId: CHANNEL_ID,
+        },
+      ],
+    });
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
+ * Listen for taps on a reminder's action button. `onDone` receives the habit id
+ * carried in the notification's `extra`; `onSnooze` has no payload.
+ */
+export function listenForNotificationActions(handlers: {
+  onDone: (habitId: string) => void;
+  onSnooze: () => void;
+}): () => void {
+  if (!isNative()) return () => {};
+  let cancelled = false;
+  let remove: (() => void) | undefined;
+  LN()
+    .then(async (ln) => {
+      if (cancelled) return;
+      const h = await ln.addListener('localNotificationActionPerformed', (e) => {
+        if (e.actionId === 'snooze') {
+          handlers.onSnooze();
+          return;
+        }
+        if (e.actionId === 'done') {
+          const id = (e.notification?.extra as { habitId?: string } | undefined)?.habitId;
+          if (id) handlers.onDone(id);
+        }
+      });
+      remove = () => h.remove();
+    })
+    .catch(() => {});
+  return () => {
+    cancelled = true;
+    remove?.();
+  };
+}
+
 // Android 8+ requires a notification channel; create it up front (no-op on iOS).
 async function ensureChannel(ln: Awaited<ReturnType<typeof LN>>): Promise<void> {
   try {
@@ -60,6 +139,7 @@ function reminderBody(remaining: number): string {
 async function scheduleDaily(time: string, remaining = -1): Promise<void> {
   const ln = await LN();
   await ensureChannel(ln);
+  await ensureActionTypes(ln);
   const { hour, minute } = parseTime(time);
   // Replace any existing schedule so changing the time doesn't stack reminders.
   await ln.cancel({ notifications: [{ id: REMINDER_ID }] }).catch(() => {});
@@ -71,6 +151,7 @@ async function scheduleDaily(time: string, remaining = -1): Promise<void> {
         body: reminderBody(remaining),
         schedule: { on: { hour, minute }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
+        actionTypeId: DAILY_ACTIONS,
       },
     ],
   });
@@ -122,6 +203,7 @@ export async function scheduleExtras(
   try {
     const ln = await LN();
     await ensureChannel(ln);
+    await ensureActionTypes(ln);
     const wanted = habits.filter((h) => h.reminderTime && !h.paused && !h.archived);
     // Clear the whole range first so removed reminders actually disappear.
     const pending = await ln.getPending();
@@ -139,6 +221,9 @@ export async function scheduleExtras(
         body: 'Time for this one — tap to check it off.',
         schedule: { on: { hour, minute }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
+        actionTypeId: HABIT_ACTIONS,
+        // Which habit this is for, so "Done" is unambiguous when it fires.
+        extra: { habitId: h.id },
       });
     });
     // Bills: a heads-up the day before, at 10:00.
