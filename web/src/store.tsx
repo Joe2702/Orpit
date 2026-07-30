@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { api, flushQueue, getToken, setToken, clearToken, ApiError } from './api';
-import { OfflineQueuedError, cacheState, readCachedState, clearCache, pending as pendingOps, subscribe as subscribeOffline, isOnline } from './lib/offline';
+import { OfflineQueuedError, cacheState, readCachedState, clearCache, pending as pendingOps, subscribe as subscribeOffline, isOnline, watchConnectivity } from './lib/offline';
 import { setCurrency } from './lib/format';
 import type { AppState, Range } from './types';
 
@@ -214,6 +214,36 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     fn?.();
   }, []);
 
+  /**
+   * Quietly bring the cached state up to date after a cache-first open.
+   *
+   * Retries while the free host wakes, but never blocks the UI and never shows
+   * an error: the user is already using the app. Only an explicit 401 acts, by
+   * signing them out.
+   */
+  const refreshInBackground = useCallback(async () => {
+    const delays = [0, 2000, 5000, 10000, 20000];
+    for (const wait of delays) {
+      if (wait) await new Promise((r) => setTimeout(r, wait));
+      if (!getToken()) return; // signed out while we waited
+      try {
+        const s = await api.getState();
+        const mySeq = ++seqRef.current;
+        setState((cur) => (seqRef.current === mySeq ? s : cur));
+        cacheState(s);
+        return;
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 401) {
+          clearToken();
+          clearCache();
+          setState(null);
+          setScreen('welcome');
+          return;
+        }
+      }
+    }
+  }, []);
+
   // Restore session on first load — and keep retrying while the (free) server
   // wakes up, instead of dropping a logged-in user back to the welcome screen.
   const restore = useCallback(async () => {
@@ -231,14 +261,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     setBooting(true);
     setBootError(false);
-    // No network at all: open straight from the cached state instead of
-    // retrying for over a minute and then blaming the server.
+
+    // Cache-first: if we have the user's data, show it immediately and refresh
+    // behind the scenes. Nobody should watch a spinner to see numbers the phone
+    // already has — and on a free host that spinner used to run for over a
+    // minute before falling back to exactly this. Being genuinely offline is
+    // then indistinguishable from a fast start, which is the point.
     const cached = readCachedState();
-    if (cached && !isOnline()) {
+    if (cached) {
       setState(cached);
       setScreen('home');
       setBooting(false);
       setReady(true);
+      refreshInBackground();
       return;
     }
     const delays = [800, 1500, 2500, 4000, 6000, 8000, 8000, 10000, 10000, 12000, 12000];
@@ -274,9 +309,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setBootError(true);
-  }, []);
+  }, [refreshInBackground]);
 
   useEffect(() => {
+    watchConnectivity(); // native radio state, not navigator.onLine
     restore();
   }, [restore]);
 

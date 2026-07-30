@@ -329,6 +329,85 @@ export async function disableReminders(): Promise<void> {
   }
 }
 
+export interface NotifyDiagnostics {
+  native: boolean;
+  /** OS-level permission to post notifications (Android 13+ asks for this). */
+  permission: 'granted' | 'denied' | 'prompt' | 'unknown';
+  /** Whether notifications are enabled for the app in system settings. */
+  enabled: boolean | null;
+  /** Exact alarms allowed. When false, reminders can be deferred by Doze. */
+  exact: boolean | null;
+  /** How many reminders are actually scheduled right now. */
+  scheduled: number;
+  /** When the next one is due, if the platform tells us. */
+  nextAt: string | null;
+}
+
+/**
+ * Report what the OS actually thinks, rather than what the app assumes.
+ *
+ * "Notifications don't fire" has at least four distinct causes — permission
+ * never granted, notifications disabled in system settings, nothing actually
+ * scheduled, or exact alarms blocked so the OS defers them. They're
+ * indistinguishable from inside the app unless you ask, so Settings shows this
+ * and the user can see which one it is instead of guessing.
+ */
+export async function diagnose(): Promise<NotifyDiagnostics> {
+  const out: NotifyDiagnostics = {
+    native: isNative(),
+    permission: 'unknown',
+    enabled: null,
+    exact: null,
+    scheduled: 0,
+    nextAt: null,
+  };
+  if (!isNative()) return out;
+  try {
+    const ln = await LN();
+    try {
+      const p = await ln.checkPermissions();
+      out.permission = (p.display as NotifyDiagnostics['permission']) || 'unknown';
+    } catch {
+      /* leave unknown */
+    }
+    try {
+      out.enabled = (await ln.areEnabled()).value;
+    } catch {
+      /* older platform */
+    }
+    try {
+      out.exact = (await ln.checkExactNotificationSetting()).exact_alarm === 'granted';
+    } catch {
+      /* not supported before Android 12 — treat as unknown */
+    }
+    try {
+      const pend = await ln.getPending();
+      out.scheduled = pend.notifications.length;
+      const times = pend.notifications
+        .map((n) => (n.schedule?.at ? new Date(n.schedule.at).getTime() : 0))
+        .filter((t) => t > 0)
+        .sort((a, b) => a - b);
+      if (times.length) out.nextAt = new Date(times[0]).toLocaleString();
+    } catch {
+      /* ignore */
+    }
+  } catch {
+    /* plugin unavailable */
+  }
+  return out;
+}
+
+/** Open the system screen where the user can allow exact alarms. */
+export async function requestExactAlarms(): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const ln = await LN();
+    await ln.changeExactNotificationSetting();
+  } catch {
+    /* not supported on this platform */
+  }
+}
+
 /**
  * Fire a test notification. Native: a real local notification a moment from now.
  * Web: fall back to the server push test. Returns what happened so the caller
