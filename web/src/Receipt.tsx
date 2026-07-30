@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useStore } from './store';
 import { api } from './api';
 import { isUnsynced, unsyncedMessage } from './lib/offline';
@@ -14,10 +15,9 @@ import type { Txn } from './types';
 const MAX_EDGE = 1100;
 const MAX_BYTES = 380_000; // stays under the server's 400 KB ceiling
 
-/** Downscale + re-encode a picked image to a data URL small enough to store. */
-export async function compressImage(file: File): Promise<string> {
-  const url = URL.createObjectURL(file);
-  try {
+/** Downscale + re-encode any image source to a data URL small enough to store. */
+export async function compressFromSrc(url: string): Promise<string> {
+  {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const i = new Image();
       i.onload = () => resolve(i);
@@ -40,9 +40,45 @@ export async function compressImage(file: File): Promise<string> {
       if (out.length <= MAX_BYTES) return out;
     }
     throw new Error('That photo is too large — try a closer crop');
+  }
+}
+
+/** Compress a file chosen through a file input. */
+export async function compressImage(file: File): Promise<string> {
+  const url = URL.createObjectURL(file);
+  try {
+    return await compressFromSrc(url);
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+/**
+ * Ask for a receipt the native way — a "Camera or Photos" prompt — falling back
+ * to a file input on the web. Returns null if the user backs out.
+ *
+ * The camera path matters more than it looks: photographing a receipt at the
+ * till is the actual use case, and gallery-only meant doing it later or not at
+ * all. The plugin launches the system camera by intent, so the app needs no
+ * camera permission of its own.
+ */
+export async function pickReceipt(): Promise<string | null> {
+  if (!Capacitor.isNativePlatform()) return null;
+  const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera');
+  const photo = await Camera.getPhoto({
+    source: CameraSource.Prompt,
+    resultType: CameraResultType.DataUrl,
+    // Ask the plugin for something already close to our ceiling; the
+    // compression below still guarantees the final size.
+    quality: 70,
+    width: 1400,
+    correctOrientation: true,
+    promptLabelHeader: 'Receipt',
+    promptLabelPhoto: 'Choose from photos',
+    promptLabelPicture: 'Take a photo',
+  });
+  if (!photo?.dataUrl) return null;
+  return compressFromSrc(photo.dataUrl);
 }
 
 const pickerBox: React.CSSProperties = {
@@ -84,6 +120,30 @@ export function ReceiptPicker({ value, onChange }: { value: string | null; onCha
     }
   };
 
+  // Native gets the system "Camera or Photos" sheet; the web falls back to the
+  // hidden file input, which is all a browser can offer.
+  const choose = async () => {
+    if (busy) return;
+    if (!Capacitor.isNativePlatform()) {
+      fileRef.current?.click();
+      return;
+    }
+    setBusy(true);
+    try {
+      const data = await pickReceipt();
+      if (data) {
+        onChange(data);
+        haptic();
+      }
+    } catch (err) {
+      // A cancelled picker rejects; that isn't worth a message.
+      const msg = err instanceof Error ? err.message : '';
+      if (msg && !/cancel/i.test(msg)) showToast(msg);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <>
       <input ref={fileRef} type="file" accept="image/*" onChange={pick} style={{ display: 'none' }} />
@@ -93,12 +153,12 @@ export function ReceiptPicker({ value, onChange }: { value: string | null; onCha
             <img src={value} alt="Receipt" style={{ display: 'block', width: '100%', maxHeight: 200, objectFit: 'cover' }} />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <div onClick={() => fileRef.current?.click()} className="press99" role="button" style={{ ...pickerBox, flex: 1 }}>Replace</div>
+            <div onClick={choose} className="press99" role="button" style={{ ...pickerBox, flex: 1 }}>Replace</div>
             <div onClick={() => onChange(null)} className="press99" role="button" style={{ ...pickerBox, flex: 1, color: 'var(--danger)', borderColor: 'color-mix(in srgb,var(--danger) 35%,var(--border))' }}>Remove</div>
           </div>
         </div>
       ) : (
-        <div onClick={() => !busy && fileRef.current?.click()} className="press99" role="button" style={{ ...pickerBox, opacity: busy ? 0.6 : 1 }}>
+        <div onClick={choose} className="press99" role="button" style={{ ...pickerBox, opacity: busy ? 0.6 : 1 }}>
           <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <path d="M2.5 6.5h3l1.5-2h5l1.5 2h3v9h-14z" />
             <circle cx="9.5" cy="11" r="3" />
@@ -160,6 +220,33 @@ export function ReceiptField({ txn }: { txn: Txn }) {
     }
   };
 
+  // Same native-first choice as the picker above, then upload immediately.
+  const choose = async () => {
+    if (loading) return;
+    if (isUnsynced(txn.id)) {
+      showToast(unsyncedMessage());
+      return;
+    }
+    if (!Capacitor.isNativePlatform()) {
+      fileRef.current?.click();
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await pickReceipt();
+      if (data) {
+        setPhoto(data);
+        haptic();
+        await mutate(() => api.setTxnPhoto(txn.id, data), 'Receipt saved');
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg && !/cancel/i.test(msg)) showToast(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const removePhoto = async () => {
     if (!(await confirm({ title: 'Remove this receipt?', message: 'The transaction itself stays.' }))) return;
     haptic();
@@ -192,7 +279,7 @@ export function ReceiptField({ txn }: { txn: Txn }) {
             <img src={photo} alt="Receipt" style={{ display: 'block', width: '100%', maxHeight: 220, objectFit: 'cover' }} />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <div onClick={() => fileRef.current?.click()} className="press99" role="button" style={{ ...box, flex: 1 }}>
+            <div onClick={choose} className="press99" role="button" style={{ ...box, flex: 1 }}>
               Replace
             </div>
             <div onClick={removePhoto} className="press99" role="button" style={{ ...box, flex: 1, color: 'var(--danger)', borderColor: 'color-mix(in srgb,var(--danger) 35%,var(--border))' }}>
@@ -201,7 +288,7 @@ export function ReceiptField({ txn }: { txn: Txn }) {
           </div>
         </div>
       ) : (
-        <div onClick={() => !loading && fileRef.current?.click()} className="press99" role="button" style={{ ...box, opacity: loading ? 0.6 : 1 }}>
+        <div onClick={choose} className="press99" role="button" style={{ ...box, opacity: loading ? 0.6 : 1 }}>
           <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <path d="M2.5 6.5h3l1.5-2h5l1.5 2h3v9h-14z" />
             <circle cx="9.5" cy="11" r="3" />

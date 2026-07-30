@@ -11,4 +11,6 @@
     <string name="shortcut_sleep_long">Log sleep</string>
     <string name="shortcut_expense_short">Expense</string>
     <string name="shortcut_expense_long">Add a transaction</string>
+    <string name="widget_no_data">Tap to log</string>
+    <string name="widget_description">Today\'s progress and one-tap logging</string>
 </resources>

@@ -38,6 +38,18 @@
 
         </activity>
 
+        <!-- Home-screen widget: today's progress plus one-tap logging. -->
+        <receiver
+            android:name=".OrbitWidget"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_orbit_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
