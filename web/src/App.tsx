@@ -40,6 +40,7 @@ import { ReminderOnboarding } from './ReminderOnboarding';
 import { StoryReport } from './screens/StoryReport';
 import { Intro } from './screens/Intro';
 import { syncReminders, scheduleExtras } from './lib/notify';
+import { listenForShortcuts, type ShortcutAction } from './lib/shortcuts';
 import { dayKey } from './lib/format';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
@@ -373,7 +374,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 }
 
 export function App() {
-  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, passwordState, report, closeReport, applyState } = useStore();
+  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, open, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, passwordState, report, closeReport, applyState } = useStore();
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
 
   // Track the phone's own light/dark setting so "System" can follow it live.
@@ -497,6 +498,19 @@ export function App() {
     setRefreshing(false);
     setPull(0);
   };
+
+  // ---- Home-screen shortcuts ----
+  // A cold start arrives before the session is restored, so the action waits
+  // for `ready` rather than firing at a screen that isn't mounted yet.
+  const [shortcut, setShortcut] = useState<ShortcutAction | null>(null);
+  useEffect(() => listenForShortcuts(setShortcut), []);
+  useEffect(() => {
+    if (!shortcut || !ready || !authed) return;
+    setShortcut(null);
+    if (shortcut === 'workout') open('workout');
+    else if (shortcut === 'sleep') open('sleep');
+    else go('faddtx'); // expenses use the full add-transaction screen
+  }, [shortcut, ready, authed, open, go]);
 
   // ---- Swipe between the main tabs ----
   // Only on the three top-level destinations, and only for a clearly horizontal
