@@ -12,8 +12,10 @@ public class MainActivity extends BridgeActivity {
      * Backgrounding is the moment the stored numbers are freshest and the user
      * is most likely heading to their home screen, so it's the right trigger.
      */
+    // public, not protected: Capacitor's BridgeActivity declares the lifecycle
+    // methods public, and an override may not narrow access.
     @Override
-    protected void onPause() {
+    public void onPause() {
         super.onPause();
         try {
             OrbitWidget.refreshAll(this);
