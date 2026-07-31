@@ -295,6 +295,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           setReady(true);
           return;
         }
+        // A sleeping server still answers, eventually — no radio doesn't. Once
+        // two attempts have failed at the socket level there is nothing to wake
+        // up, so stop spending a minute implying otherwise.
+        if (i >= 1 && !isOnline()) break;
         if (i < delays.length) await new Promise((r) => setTimeout(r, delays[i]));
       }
     }
