@@ -1,5 +1,16 @@
 apply plugin: 'com.android.application'
 
+// Play refuses any upload whose versionCode it has seen before, so a hardcoded
+// number means exactly one release, ever. CI passes its run number — which only
+// ever increases — and local builds fall back to 1.
+//
+// The base offset leaves room below for the builds already handed to testers;
+// versionCode must never go backwards for an installed user, or the update is
+// rejected as a downgrade.
+def buildNumber = (System.getenv('ORBIT_VERSION_CODE') ?: '0') as int
+def orbitVersionCode = buildNumber > 0 ? 1000 + buildNumber : 1
+def orbitVersionName = System.getenv('ORBIT_VERSION_NAME') ?: '1.0.0'
+
 android {
     namespace = "com.orbit.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +18,8 @@ android {
         applicationId "com.orbit.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode orbitVersionCode
+        versionName orbitVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

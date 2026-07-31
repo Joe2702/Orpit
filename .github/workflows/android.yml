@@ -16,6 +16,11 @@ on:
         description: 'Google Web OAuth client ID for Sign-in (optional; leave blank to hide the Google button)'
         required: false
         type: string
+      version_name:
+        description: 'Version shown to users in the Play listing (e.g. 1.0.0). The versionCode is set from the run number automatically.'
+        required: false
+        default: '1.0.0'
+        type: string
   push:
     branches: [main]
     paths:
@@ -66,6 +71,12 @@ jobs:
 
       - name: Build debug APK
         working-directory: web/android
+        env:
+          # Play rejects a versionCode it has already seen, so it must climb on
+          # every build. The run number is the only counter here that never
+          # repeats or goes backwards.
+          ORBIT_VERSION_CODE: ${{ github.run_number }}
+          ORBIT_VERSION_NAME: ${{ inputs.version_name || '1.0.0' }}
         run: |
           chmod +x ./gradlew
           ./gradlew assembleDebug --no-daemon
@@ -96,6 +107,8 @@ jobs:
           ORG_GRADLE_PROJECT_ORBIT_STORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           ORG_GRADLE_PROJECT_ORBIT_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           ORG_GRADLE_PROJECT_ORBIT_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          ORBIT_VERSION_CODE: ${{ github.run_number }}
+          ORBIT_VERSION_NAME: ${{ inputs.version_name || '1.0.0' }}
         run: ./gradlew bundleRelease --no-daemon
 
       - name: Upload release bundle
