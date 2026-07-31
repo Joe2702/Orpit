@@ -59,17 +59,32 @@ is skipped, so nothing breaks in the meantime.)
 3. **Data safety form** — declare what you collect. Use [`PRIVACY.md`](PRIVACY.md)
    as the source of truth: account info (email, name), the entries the user
    creates, and crash diagnostics; no ads, no tracking, no data sold.
-4. Provide a **privacy policy URL**. The simplest option is to publish
-   `PRIVACY.md` as a GitHub Pages site, or paste it anywhere public and link it.
-5. Upload the `.aab` to an **Internal testing** track first — it reaches your
-   testers within minutes and requires no review — then promote to Production
-   when you're happy.
+4. Paste the two required URLs. The server publishes both as plain pages that
+   work with no account and no JavaScript, so a reviewer can always read them:
+
+   | Play Console field | URL |
+   | --- | --- |
+   | Privacy policy | `https://<your-backend>/privacy` |
+   | Account deletion (Data safety → Data deletion) | `https://<your-backend>/delete-account` |
+
+   For the current deployment that is `https://orbit-x3z7.onrender.com/privacy`
+   and `https://orbit-x3z7.onrender.com/delete-account`. The privacy page is
+   rendered from [`PRIVACY.md`](PRIVACY.md), so editing that file updates the
+   published policy on the next deploy — there is no second copy to keep in sync.
+5. Upload the `.aab` to a **Closed testing** track first. A personal developer
+   account must run a closed test with **12+ testers opted in for 14 continuous
+   days** before it can apply for production access, so start that clock early —
+   it is the longest lead time in the whole process and nothing shortens it.
 
 ## Notes
 
 - The **app id** is `com.orbit.app`. It cannot be changed after publishing.
-- `versionCode` in `web/android/app/build.gradle` must increase with every
-  upload. Bump it before each release build.
+- `versionCode` is set automatically from the CI run number (`1000 + run`), so
+  every build produces a number Play hasn't seen. Nothing to bump by hand — but
+  never re-run an *older* workflow run to produce a release, because that would
+  hand Play a lower number and be rejected as a downgrade.
+- `versionName` is the human-facing version in the listing. Set it in the "Run
+  workflow" form (defaults to `1.0.0`).
 - If you also want **Google Sign-In** to work in the Play version, add the SHA-1
   of your *release* key (and Play's app-signing SHA-1, shown in the Play Console)
   as extra Android OAuth clients in Google Cloud — see [`GOOGLE_SIGNIN.md`](GOOGLE_SIGNIN.md).

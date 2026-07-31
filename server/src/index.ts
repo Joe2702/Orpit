@@ -13,6 +13,7 @@ import { signToken, requireAuth, type AuthedRequest } from './auth.js';
 import { seedUser } from './seed.js';
 import { buildState } from './state.js';
 import { SCHEMA_SQL } from './schema.js';
+import { legalRouter } from './legal.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -1751,6 +1752,13 @@ app.get('/.well-known/assetlinks.json', (_req, res) => {
     },
   ]);
 });
+
+// ---------------- Public legal pages ----------------
+// Ahead of the SPA, so /privacy and /delete-account are real documents a Play
+// reviewer can read with no account, no sign-in and no JavaScript. Play requires
+// both to be reachable that way; the in-app privacy screen sits behind auth and
+// does not qualify.
+app.use(legalRouter);
 
 // ---------------- Serve the built frontend (production) ----------------
 // The compiled server lives at server/dist; the web build is at web/dist.
