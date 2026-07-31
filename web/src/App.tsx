@@ -40,6 +40,7 @@ import { ReminderOnboarding } from './ReminderOnboarding';
 import { StoryReport } from './screens/StoryReport';
 import { Intro } from './screens/Intro';
 import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily } from './lib/notify';
+import { isOnline, subscribe as subscribeConnectivity } from './lib/offline';
 import { listenForShortcuts, type ShortcutAction } from './lib/shortcuts';
 import { dayKey } from './lib/format';
 import { updateWidget } from './lib/widget';
@@ -308,9 +309,17 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
   // After a few seconds, explain the wait instead of spinning silently — the
   // free host sleeps, and a blank splash reads as "the app is broken".
   const [slow, setSlow] = useState(false);
+  // ...but only blame the server when the phone actually has a connection.
+  // Telling someone in airplane mode to wait for a server to wake up is a lie
+  // they can't act on, and it's the message they'd stare at the longest.
+  const [offline, setOffline] = useState(!isOnline());
   useEffect(() => {
     const t = setTimeout(() => setSlow(true), 4000);
-    return () => clearTimeout(t);
+    const off = subscribeConnectivity(() => setOffline(!isOnline()));
+    return () => {
+      clearTimeout(t);
+      off();
+    };
   }, []);
   // Always brand-indigo so it flows seamlessly out of the app's launch icon —
   // no cheap color mismatch before the animation appears.
@@ -345,9 +354,11 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
         {error ? (
           <div style={{ textAlign: 'center', marginTop: 18 }}>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,.85)', marginBottom: 14, maxWidth: 270, lineHeight: 1.5 }}>
-              {apiBase
-                ? "Couldn't reach the server. It sleeps when unused, so the first open of the day can take up to a minute."
-                : 'This build has no backend address, so it can never reach the server. It needs to be rebuilt with the backend URL.'}
+              {!apiBase
+                ? 'This build has no backend address, so it can never reach the server. It needs to be rebuilt with the backend URL.'
+                : offline
+                  ? "You're offline. Orbit needs a connection the first time you open it on a device — after that it works without one."
+                  : "Couldn't reach the server. It sleeps when unused, so the first open of the day can take up to a minute."}
             </div>
             {/* Which backend this build actually points at. Without it, a build
                 configured with the wrong URL — or none at all — is invisible and
@@ -364,7 +375,9 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
             </div>
             {slow && (
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,.8)', marginTop: 16, maxWidth: 250, textAlign: 'center', lineHeight: 1.5, animation: 'fadeIn .4s ease' }}>
-                Waking up the server — this can take ~30 seconds after a quiet spell.
+                {offline
+                  ? "You're offline — waiting for a connection."
+                  : 'Waking up the server — this can take ~30 seconds after a quiet spell.'}
               </div>
             )}
           </>

@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import type { LocalNotificationsPlugin } from '@capacitor/local-notifications';
 import { enablePush as enableWebPush, pushSupported } from './push';
 import { api } from '../api';
 
@@ -17,9 +18,20 @@ export function isNative(): boolean {
   return Capacitor.isNativePlatform();
 }
 
-async function LN() {
+// Never return the plugin object bare from an async function.
+//
+// Capacitor hands back a Proxy that answers *any* property with a callable that
+// forwards to native. `await`ing a promise that resolves to it makes JS probe
+// for `.then` — the Proxy happily supplies one, the runtime calls it, and the
+// bridge tries to invoke a native method literally named `then`:
+//
+//   "LocalNotifications.then()" is not implemented on android
+//
+// which is exactly what every reminder path was dying on. Wrapping it in a
+// plain object hides it from Promise resolution.
+export async function LN(): Promise<{ ln: LocalNotificationsPlugin }> {
   const mod = await import('@capacitor/local-notifications');
-  return mod.LocalNotifications;
+  return { ln: mod.LocalNotifications };
 }
 
 const CHANNEL_ID = 'orbit-reminders';
@@ -32,7 +44,7 @@ export const DAILY_ACTIONS = 'orbit-daily';   // the nightly nudge → "Snooze 1
 export const SNOOZE_ID = 1006;
 
 let actionsRegistered = false;
-async function ensureActionTypes(ln: Awaited<ReturnType<typeof LN>>): Promise<void> {
+async function ensureActionTypes(ln: LocalNotificationsPlugin): Promise<void> {
   if (actionsRegistered) return;
   try {
     await ln.registerActionTypes({
@@ -51,7 +63,7 @@ async function ensureActionTypes(ln: Awaited<ReturnType<typeof LN>>): Promise<vo
 export async function snoozeDaily(): Promise<void> {
   if (!isNative()) return;
   try {
-    const ln = await LN();
+    const { ln } = await LN();
     await ensureChannel(ln);
     await ln.cancel({ notifications: [{ id: SNOOZE_ID }] }).catch(() => {});
     await ln.schedule({
@@ -82,7 +94,7 @@ export function listenForNotificationActions(handlers: {
   let cancelled = false;
   let remove: (() => void) | undefined;
   LN()
-    .then(async (ln) => {
+    .then(async ({ ln }) => {
       if (cancelled) return;
       const h = await ln.addListener('localNotificationActionPerformed', (e) => {
         if (e.actionId === 'snooze') {
@@ -104,7 +116,7 @@ export function listenForNotificationActions(handlers: {
 }
 
 // Android 8+ requires a notification channel; create it up front (no-op on iOS).
-async function ensureChannel(ln: Awaited<ReturnType<typeof LN>>): Promise<void> {
+async function ensureChannel(ln: LocalNotificationsPlugin): Promise<void> {
   try {
     await ln.createChannel({
       id: CHANNEL_ID,
@@ -137,7 +149,7 @@ function reminderBody(remaining: number): string {
 }
 
 async function scheduleDaily(time: string, remaining = -1): Promise<void> {
-  const ln = await LN();
+  const { ln } = await LN();
   await ensureChannel(ln);
   await ensureActionTypes(ln);
   const { hour, minute } = parseTime(time);
@@ -162,7 +174,7 @@ async function scheduleDaily(time: string, remaining = -1): Promise<void> {
  * that brings people back after the novelty of daily logging fades.
  */
 async function scheduleWeekly(): Promise<void> {
-  const ln = await LN();
+  const { ln } = await LN();
   await ensureChannel(ln);
   await ln.cancel({ notifications: [{ id: WEEKLY_ID }] }).catch(() => {});
   await ln.schedule({
@@ -201,7 +213,7 @@ export async function scheduleExtras(
 ): Promise<void> {
   if (!isNative()) return;
   try {
-    const ln = await LN();
+    const { ln } = await LN();
     await ensureChannel(ln);
     await ensureActionTypes(ln);
     const wanted = habits.filter((h) => h.reminderTime && !h.paused && !h.archived);
@@ -272,7 +284,7 @@ export async function syncReminders(enabled: boolean, time: string, remaining = 
       await disableReminders();
       return;
     }
-    const ln = await LN();
+    const { ln } = await LN();
     let perm = await ln.checkPermissions();
     if (perm.display !== 'granted') perm = await ln.requestPermissions();
     if (perm.display !== 'granted') return;
@@ -291,7 +303,7 @@ export async function syncReminders(enabled: boolean, time: string, remaining = 
 export async function enableReminders(time: string, remaining = -1): Promise<'ok' | 'denied' | 'unsupported' | 'error'> {
   if (isNative()) {
     try {
-      const ln = await LN();
+      const { ln } = await LN();
       const perm = await ln.requestPermissions();
       if (perm.display !== 'granted') return 'denied';
       await scheduleDaily(time, remaining);
@@ -322,7 +334,7 @@ export async function updateReminderTime(time: string): Promise<void> {
 export async function disableReminders(): Promise<void> {
   if (!isNative()) return;
   try {
-    const ln = await LN();
+    const { ln } = await LN();
     await ln.cancel({ notifications: [{ id: REMINDER_ID }, { id: WEEKLY_ID }] });
   } catch {
     /* ignore */
@@ -363,7 +375,7 @@ export async function diagnose(): Promise<NotifyDiagnostics> {
   };
   if (!isNative()) return out;
   try {
-    const ln = await LN();
+    const { ln } = await LN();
     try {
       const p = await ln.checkPermissions();
       out.permission = (p.display as NotifyDiagnostics['permission']) || 'unknown';
@@ -401,7 +413,7 @@ export async function diagnose(): Promise<NotifyDiagnostics> {
 export async function requestExactAlarms(): Promise<void> {
   if (!isNative()) return;
   try {
-    const ln = await LN();
+    const { ln } = await LN();
     await ln.changeExactNotificationSetting();
   } catch {
     /* not supported on this platform */
@@ -416,7 +428,7 @@ export async function requestExactAlarms(): Promise<void> {
 export async function sendTestNotification(): Promise<'sent' | 'denied' | 'error' | 'none'> {
   if (isNative()) {
     try {
-      const ln = await LN();
+      const { ln } = await LN();
       const perm = await ln.requestPermissions();
       if (perm.display !== 'granted') return 'denied';
       await ensureChannel(ln);
