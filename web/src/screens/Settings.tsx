@@ -91,17 +91,44 @@ export function Settings() {
   };
 
   // "Notifications don't work" has several distinct causes that look identical
-  // from inside the app. Rather than guess, show what the OS actually reports.
+  // from inside the app — permission revoked, notifications switched off in
+  // system settings, exact alarms blocked so Doze defers everything, or nothing
+  // scheduled on this device at all. Rather than guess, show what the OS
+  // actually reports.
+  //
+  // This runs on its own rather than waiting to be asked. Someone whose exact
+  // alarms were revoked by a system update has no symptom to notice — reminders
+  // just quietly stop — and would never think to go looking for a diagnostics
+  // screen. So the app checks, and stays quiet unless there's something to say.
   const [diag, setDiag] = React.useState<NotifyDiagnostics | null>(null);
   const [diagBusy, setDiagBusy] = React.useState(false);
-  const runDiagnostics = async () => {
-    setDiagBusy(true);
+  const [diagOpen, setDiagOpen] = React.useState(false);
+  const runDiagnostics = async (silent = false) => {
+    if (!silent) setDiagBusy(true);
     try {
       setDiag(await diagnose());
     } finally {
-      setDiagBusy(false);
+      if (!silent) setDiagBusy(false);
     }
   };
+
+  const remindersOn = profile.reminders;
+  React.useEffect(() => {
+    if (!isNative() || !remindersOn) {
+      setDiag(null);
+      setDiagOpen(false);
+      return;
+    }
+    runDiagnostics(true);
+  }, [remindersOn]);
+
+  // Green means every check the platform can answer came back fine. `null` is a
+  // platform that doesn't expose the setting (exact alarms before Android 12),
+  // which is not a problem — only an explicit `false` is.
+  const diagHealthy =
+    !!diag && diag.permission === 'granted' && diag.enabled !== false && diag.exact !== false && diag.scheduled > 0;
+  // Healthy stays collapsed to one line; a problem opens itself.
+  const diagShown = !!diag && (diagOpen || !diagHealthy);
 
   const sendTest = async () => {
     const r = await sendTestNotification();
@@ -466,14 +493,39 @@ export function Settings() {
           </div>
         )}
         {isNative() && (
-          <div onClick={runDiagnostics} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: diag ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}>
-            <span style={{ width: 36, flex: 'none' }} />
-            <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text2)' }}>
-              {diagBusy ? 'Checking…' : "Why aren't reminders arriving?"}
+          <div
+            onClick={() => (diag ? setDiagOpen((v) => !v) : runDiagnostics())}
+            className="pressRow"
+            style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: diagShown ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}
+          >
+            <span style={{ width: 36, flex: 'none', display: 'flex', justifyContent: 'center' }}>
+              {diag && (
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: diagHealthy ? 'var(--success)' : 'var(--danger)' }} />
+              )}
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: diag && !diagHealthy ? 'var(--danger)' : 'var(--text2)' }}>
+                {diagBusy
+                  ? 'Checking…'
+                  : !diag
+                    ? 'Check reminder setup'
+                    : diagHealthy
+                      ? 'Reminders are set up correctly'
+                      : 'Reminders may not arrive'}
+              </div>
+              {/* When everything is fine, the next scheduled time is the one
+                  piece of proof worth showing — it answers the question the
+                  panel used to exist for, in one line. */}
+              {diag && diagHealthy && diag.nextAt && !diagOpen && (
+                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Next: {diag.nextAt}</div>
+              )}
+              {diag && !diagHealthy && !diagOpen && (
+                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Tap to see what needs fixing</div>
+              )}
             </div>
           </div>
         )}
-        {diag && (
+        {diag && (diagOpen || !diagHealthy) && (
           <div style={{ padding: '14px 16px', background: 'var(--bg)' }}>
             {[
               ['Permission to notify', diag.permission === 'granted', diag.permission],
@@ -514,6 +566,14 @@ export function Settings() {
                 Nothing is scheduled. Turn the daily reminder off and on again to re-schedule it.
               </div>
             )}
+            <div
+              onClick={() => runDiagnostics()}
+              className="press99"
+              role="button"
+              style={{ marginTop: 10, fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}
+            >
+              {diagBusy ? 'Checking…' : 'Check again'}
+            </div>
           </div>
         )}
         <PrefRow
