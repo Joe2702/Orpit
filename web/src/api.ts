@@ -1,5 +1,5 @@
 import type { AppState, WorkoutSet } from './types';
-import { enqueue, flush, isQueueable, newOpId, OfflineQueuedError, type QueuedOp } from './lib/offline';
+import { enqueue, flush, isQueueable, newOpId, noteReachable, OfflineQueuedError, type QueuedOp } from './lib/offline';
 
 // On the web the frontend is served by the same server as the API, so a
 // relative path works. Inside a native (Capacitor) build the app runs from a
@@ -49,6 +49,8 @@ async function request<T>(path: string, opts: RequestInit = {}, opId?: string): 
   } catch (netErr) {
     // fetch only rejects on a network-level failure — exactly the case worth
     // deferring. Anything the server answered, even an error, is not queued.
+    // This is also the most reliable connectivity signal there is.
+    noteReachable(false);
     if (id && !opId) {
       enqueue({ id, path, method, body: typeof opts.body === 'string' ? opts.body : undefined, at: Date.now() });
       throw new OfflineQueuedError();
@@ -56,6 +58,7 @@ async function request<T>(path: string, opts: RequestInit = {}, opId?: string): 
     throw netErr;
   }
 
+  noteReachable(true); // the server answered, whatever it said
   if (!res.ok) {
     let msg = `Request failed (${res.status})`;
     try {

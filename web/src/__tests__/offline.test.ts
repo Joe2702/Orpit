@@ -1,11 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
+  noteReachable,
+  isOnline,
   enqueue,
   flush,
   pending,
   queuedOps,
   clearQueue,
   clearCache,
+  subscribe,
   isQueueable,
   newOpId,
   isUnsynced,
@@ -129,6 +132,35 @@ describe('unsynced entries', () => {
     // Offline this can last hours, so it must not imply a moment.
     expect(unsyncedMessage()).toContain('back online');
     expect(unsyncedMessage()).not.toContain('moment');
+  });
+});
+
+describe('connectivity', () => {
+  it('believes a failed request over navigator.onLine', () => {
+    // The Android WebView reports onLine: true even in airplane mode, because
+    // the page is served from a local origin. That lie is why the offline
+    // paths never triggered on the one platform they exist for.
+    setOnline(true);
+    noteReachable(false);
+    expect(isOnline()).toBe(false);
+  });
+
+  it('recovers as soon as a request succeeds', () => {
+    noteReachable(false);
+    expect(isOnline()).toBe(false);
+    noteReachable(true);
+    expect(isOnline()).toBe(true);
+  });
+
+  it('notifies subscribers when connectivity flips', () => {
+    noteReachable(true);
+    let calls = 0;
+    const off = subscribe(() => calls++);
+    noteReachable(false);
+    expect(calls).toBe(1);
+    noteReachable(false); // no change, no notification
+    expect(calls).toBe(1);
+    off();
   });
 });
 

@@ -4,7 +4,7 @@ import { api, setToken } from '../api';
 import { Avatar, SectionLabel, toggleTrack, toggleKnob } from '../ui';
 import { IconChevron } from '../icons';
 import { deviceTimezone } from '../lib/push';
-import { enableReminders, disableReminders, updateReminderTime, sendTestNotification } from '../lib/notify';
+import { enableReminders, disableReminders, updateReminderTime, sendTestNotification, diagnose, requestExactAlarms, isNative, type NotifyDiagnostics } from '../lib/notify';
 import { Glyph } from '../lib/appIcons';
 
 export const MODULE_OPTS = [
@@ -88,6 +88,19 @@ export function Settings() {
     if (!/^\d{2}:\d{2}$/.test(t)) return;
     mutate(() => api.updateMe({ reminderTime: t, reminderTz: deviceTimezone() }));
     updateReminderTime(t); // reschedule the native reminder to the new time
+  };
+
+  // "Notifications don't work" has several distinct causes that look identical
+  // from inside the app. Rather than guess, show what the OS actually reports.
+  const [diag, setDiag] = React.useState<NotifyDiagnostics | null>(null);
+  const [diagBusy, setDiagBusy] = React.useState(false);
+  const runDiagnostics = async () => {
+    setDiagBusy(true);
+    try {
+      setDiag(await diagnose());
+    } finally {
+      setDiagBusy(false);
+    }
   };
 
   const sendTest = async () => {
@@ -450,6 +463,57 @@ export function Settings() {
           <div onClick={sendTest} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
             <span style={{ width: 36, flex: 'none' }} />
             <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--indigo)' }}>Send a test notification</div>
+          </div>
+        )}
+        {isNative() && (
+          <div onClick={runDiagnostics} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: diag ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}>
+            <span style={{ width: 36, flex: 'none' }} />
+            <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text2)' }}>
+              {diagBusy ? 'Checking…' : "Why aren't reminders arriving?"}
+            </div>
+          </div>
+        )}
+        {diag && (
+          <div style={{ padding: '14px 16px', background: 'var(--bg)' }}>
+            {[
+              ['Permission to notify', diag.permission === 'granted', diag.permission],
+              ['Enabled in system settings', diag.enabled !== false, diag.enabled === null ? 'unknown' : diag.enabled ? 'yes' : 'no'],
+              ['Exact alarms allowed', diag.exact !== false, diag.exact === null ? 'unknown' : diag.exact ? 'yes' : 'no'],
+              ['Reminders scheduled', diag.scheduled > 0, String(diag.scheduled)],
+            ].map(([label, ok, value]) => (
+              <div key={label as string} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', flex: 'none', background: ok ? 'var(--success)' : 'var(--danger)' }} />
+                <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{label as string}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{value as string}</span>
+              </div>
+            ))}
+            {diag.nextAt && (
+              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 6 }}>Next reminder: {diag.nextAt}</div>
+            )}
+            {diag.permission !== 'granted' && (
+              <div style={{ fontSize: 12.5, color: 'var(--danger)', marginTop: 10, lineHeight: 1.5 }}>
+                Android is blocking notifications for Orbit. Open your phone's Settings → Apps → Orbit →
+                Notifications and allow them, then check again.
+              </div>
+            )}
+            {diag.permission === 'granted' && diag.exact === false && (
+              <div
+                onClick={async () => {
+                  await requestExactAlarms();
+                  runDiagnostics();
+                }}
+                className="press99"
+                role="button"
+                style={{ marginTop: 10, height: 44, borderRadius: 12, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}
+              >
+                Allow exact alarms — reminders arrive on time
+              </div>
+            )}
+            {diag.permission === 'granted' && diag.enabled !== false && diag.scheduled === 0 && (
+              <div style={{ fontSize: 12.5, color: 'var(--warning)', marginTop: 10, lineHeight: 1.5 }}>
+                Nothing is scheduled. Turn the daily reminder off and on again to re-schedule it.
+              </div>
+            )}
           </div>
         )}
         <PrefRow

@@ -129,7 +129,41 @@ export function clearCache(): void {
 
 // ---- connectivity -------------------------------------------------------
 
-export const isOnline = (): boolean => (typeof navigator === 'undefined' ? true : navigator.onLine !== false);
+// Real connectivity, not navigator.onLine.
+//
+// Inside the Android WebView `navigator.onLine` is effectively always true —
+// the page is served from a local origin, so the browser sees a live
+// connection even in airplane mode. Relying on it meant the offline paths
+// never triggered on the one platform they exist for. The native Network
+// plugin reports the actual radio state; the browser flag is only a fallback,
+// and a failed request corrects both.
+let liveOnline: boolean | null = null;
+
+export const isOnline = (): boolean => {
+  if (liveOnline !== null) return liveOnline;
+  return typeof navigator === 'undefined' ? true : navigator.onLine !== false;
+};
+
+/** Record what actually happened on the wire; the truest signal available. */
+export function noteReachable(ok: boolean): void {
+  if (liveOnline === ok) return;
+  liveOnline = ok;
+  emit();
+}
+
+/** Subscribe to the native connectivity status. No-op off-device. */
+export function watchConnectivity(): void {
+  import('@capacitor/network')
+    .then(async ({ Network }) => {
+      const apply = (connected: boolean) => noteReachable(connected);
+      const status = await Network.getStatus();
+      apply(status.connected);
+      Network.addListener('networkStatusChange', (st) => apply(st.connected));
+    })
+    .catch(() => {
+      /* not native — navigator.onLine and request outcomes carry it */
+    });
+}
 
 /**
  * An entry the server hasn't seen yet. Optimistic creates carry a `tmp_` id
