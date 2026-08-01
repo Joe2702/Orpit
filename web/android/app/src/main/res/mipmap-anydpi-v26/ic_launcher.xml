@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Orbit's launcher icon. The background is the brand gradient rather than a
+     flat colour, so the icon carries the same light as the splash screen it
+     hands over to. `monochrome` supplies the silhouette Android 13+ recolours
+     for themed icons; without it the launcher falls back to a flat blob. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/ic_launcher_background"/>
+    <background android:drawable="@mipmap/ic_launcher_background"/>
     <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+    <monochrome android:drawable="@drawable/ic_launcher_monochrome"/>
 </adaptive-icon>
