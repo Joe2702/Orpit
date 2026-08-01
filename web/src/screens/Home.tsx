@@ -14,13 +14,35 @@ import { Glyph } from '../lib/appIcons';
 
 
 /** ↑/↓ vs the previous week. `lowerIsBetter` flips the colour (e.g. spending). */
+/**
+ * The caption under a stat, with its week-on-week delta beside it.
+ *
+ * Wrapping matters more than it looks: the caption and the delta used to be
+ * adjacent inline text with no break opportunity, so "this week↑1550%" behaved
+ * as one unbreakable word and set a floor on how narrow the card could get.
+ * On a small phone — or any phone with the in-app text size raised, which
+ * shrinks the layout viewport — that floor pushed the right-hand column clean
+ * off the screen. As a wrapping flex row the delta drops to its own line
+ * instead.
+ */
+const subLabel: React.CSSProperties = {
+  fontSize: 11.5,
+  color: 'var(--text2)',
+  marginTop: -2,
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'baseline',
+  columnGap: 6,
+  minWidth: 0,
+};
+
 function Delta({ pct, lowerIsBetter }: { pct: number | null; lowerIsBetter?: boolean }) {
   if (pct == null || pct === 0) return null;
   const up = pct > 0;
   const good = lowerIsBetter ? !up : up;
   return (
     <span
-      style={{ fontSize: 11.5, fontWeight: 700, color: good ? 'var(--success)' : 'var(--danger)', marginLeft: 6, whiteSpace: 'nowrap' }}
+      style={{ fontSize: 11.5, fontWeight: 700, color: good ? 'var(--success)' : 'var(--danger)', whiteSpace: 'nowrap' }}
       aria-label={`${up ? 'up' : 'down'} ${Math.abs(pct)} percent vs last week`}
     >
       {up ? '↑' : '↓'}{Math.abs(pct)}%
@@ -152,11 +174,17 @@ export function Home() {
     week: (
       <>
         <SectionLabel>This week</SectionLabel>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        {/* auto-fit rather than a hard 1fr 1fr: below ~310px of usable width —
+            a small phone, or any phone with the in-app text size turned up,
+            which shrinks the layout viewport — two columns cannot hold their
+            content and the right-hand cards used to run off the screen. This
+            folds to a single column instead, with no media query, so it also
+            reacts to `zoom` the way a media query would not. */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(148px, 1fr))', gap: 12 }}>
           <StatCard onClick={() => go('workouts')} label="Workouts" iconKey="coral" icon={<IconWorkout c="var(--coral)" size={14} sw={2.1} />}>
             <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', lineHeight: 1.05 }}>{d.homeWorkoutCount}</div>
-            <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: -2 }}>
-              sessions this week<Delta pct={d.deltas.workouts} />
+            <div style={subLabel}>
+              <span>sessions this week</span><Delta pct={d.deltas.workouts} />
             </div>
             <div style={{ height: 42, marginTop: 4 }}>
               <Bars values={d.homeWorkoutSeries} colorKey="coral" />
@@ -168,22 +196,22 @@ export function Home() {
               {Math.floor(d.homeSlAvg)}<span style={{ fontSize: 20, fontWeight: 600 }}>h</span>{' '}
               {String(Math.round((d.homeSlAvg % 1) * 60)).padStart(2, '0')}<span style={{ fontSize: 20, fontWeight: 600 }}>m</span>
             </div>
-            <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: -2 }}>
-              nightly average<Delta pct={d.deltas.sleep} />
+            <div style={subLabel}>
+              <span>nightly average</span><Delta pct={d.deltas.sleep} />
             </div>
             <div style={{ height: 42, marginTop: 4 }}>
               <Spark values={d.homeSleepData.length > 1 ? d.homeSleepData : [0, 0]} colorKey="blue" />
             </div>
           </StatCard>
 
-          <div onClick={() => go('habits')} className="press" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div onClick={() => go('habits')} className="press" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, overflow: 'hidden' }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>Habits</span>
               <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', lineHeight: 1.05 }}>
                 {h.habitPct}<span style={{ fontSize: 20, fontWeight: 600 }}>%</span>
               </div>
-              <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: -2 }}>
-                completion<Delta pct={d.deltas.habits} />
+              <div style={subLabel}>
+                <span>completion</span><Delta pct={d.deltas.habits} />
               </div>
             </div>
             <div style={{ position: 'relative', width: 56, height: 56, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -195,8 +223,8 @@ export function Home() {
             <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', lineHeight: 1.05 }}>
               {money(d.homeWeekSpend)}
             </div>
-            <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: -2 }}>
-              this week<Delta pct={d.deltas.spend} lowerIsBetter />
+            <div style={subLabel}>
+              <span>this week</span><Delta pct={d.deltas.spend} lowerIsBetter />
             </div>
             <div style={{ height: 42, marginTop: 4 }}>
               <Spark values={d.homeSpendSeries.map((v) => v || 0.001)} colorKey="emerald" />
@@ -272,16 +300,19 @@ export function Home() {
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .4s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', letterSpacing: '.01em' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 18 }}>
+        {/* The greeting yields; the controls keep their tap targets. Without
+            this the date and greeting held their intrinsic width and pushed the
+            avatar off the right edge on a narrow screen. */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', letterSpacing: '.01em', overflowWrap: 'break-word' }}>
             {todayStr()} · Week {weekOfYear()} of 52
           </div>
-          <div style={{ fontSize: 27, fontWeight: 700, letterSpacing: '-.025em', marginTop: 3, color: 'var(--text)' }}>
+          <div style={{ fontSize: 27, fontWeight: 700, letterSpacing: '-.025em', marginTop: 3, color: 'var(--text)', overflowWrap: 'break-word' }}>
             {greeting()}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 'none' }}>
           <div
             onClick={() => go('search')}
             className="press96"
@@ -389,9 +420,9 @@ function StatCard({
   children: React.ReactNode;
 }) {
   return (
-    <div onClick={onClick} className="press" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 15, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>{label}</span>
+    <div onClick={onClick} className="press" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 15, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
         <span style={{ width: 24, height: 24, borderRadius: 8, background: `color-mix(in srgb,var(--${iconKey}) 14%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {icon}
         </span>
