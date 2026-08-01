@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- Retained for any density that falls back to a flat background; the
+         adaptive icon itself uses the gradient in mipmap/ic_launcher_background. -->
+    <color name="ic_launcher_background">#4A45A6</color>
 </resources>
