@@ -102,6 +102,10 @@ CREATE TABLE IF NOT EXISTS txns (
 CREATE INDEX IF NOT EXISTS txns_user_ts ON txns(user_id, ts);
 ALTER TABLE txns ADD COLUMN IF NOT EXISTS acc_id BIGINT;
 ALTER TABLE txns ADD COLUMN IF NOT EXISTS note TEXT;
+-- Transfers. A row with to_acc_id set moves money from acc_id to to_acc_id: it
+-- changes two balances and is neither income nor spending. Modelled as one row
+-- rather than a matched pair, so a half-deleted transfer cannot exist.
+ALTER TABLE txns ADD COLUMN IF NOT EXISTS to_acc_id BIGINT;
 
 -- ===== v2: accounts, finance categories, budgets, goals, recurring, counters =====
 
