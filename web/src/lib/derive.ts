@@ -345,9 +345,21 @@ export function derive(state: AppState, range: Range) {
 
   const W = state.workouts,
     N = state.nights,
-    T = state.txns;
+    // Two views of the ledger, and the distinction is the whole point.
+    //
+    // ALL is every row, and only account balances may use it: a transfer moves
+    // real money out of one account and into another.
+    //
+    // T drops transfers, and everything else uses it. Money moved between your
+    // own accounts is not income and not spending — counted as either, a single
+    // move to savings reads as a spending spree, blows the budget, drags the
+    // savings rate down and trips the anomaly detector. Filtering once here is
+    // what keeps every downstream total honest, rather than remembering to
+    // exclude them in thirty separate places.
+    ALL = state.txns,
+    T = state.txns.filter((t) => !t.toAccId);
 
-  const allTs = ([] as number[]).concat(W.map((x) => x.ts), N.map((x) => x.ts), T.map((x) => x.ts));
+  const allTs = ([] as number[]).concat(W.map((x) => x.ts), N.map((x) => x.ts), ALL.map((x) => x.ts));
   const allMin = allTs.length ? Math.min.apply(null, allTs) : Date.now();
   const buckets = makeBuckets(range, allMin);
   const winStart = buckets[0].start,
@@ -492,7 +504,10 @@ export function derive(state: AppState, range: Range) {
     const bal =
       (a.opening || 0) +
       (accSums[a.id] || 0) + // pre-window movement on this account
-      T.filter((t) => t.accId === a.id).reduce((s, t) => s + t.amount, 0);
+      // Money out of this account (a transfer's amount is already negative),
+      // plus money into it from transfers pointing here.
+      ALL.filter((t) => t.accId === a.id).reduce((s, t) => s + t.amount, 0) +
+      ALL.filter((t) => t.toAccId === a.id).reduce((s, t) => s + Math.abs(t.amount), 0);
     return { ...a, balance: bal };
   });
   const netWorth = accounts.reduce((s, a) => s + a.balance, 0);

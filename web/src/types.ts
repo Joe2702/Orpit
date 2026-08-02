@@ -90,6 +90,13 @@ export interface Txn {
   amount: number;
   income: boolean;
   accId: string | null;
+  /**
+   * Set only on a transfer: the account the money lands in. `accId` is the one
+   * it leaves. A transfer changes two balances and is neither income nor
+   * spending, so every total has to skip it — counting one as an expense is
+   * what makes a two-account ledger read as a spending spree.
+   */
+  toAccId: string | null;
   note: string | null;
   // Whether a receipt exists. The image itself is fetched on demand so it
   // never rides along with every app open.
