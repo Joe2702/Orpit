@@ -148,8 +148,13 @@ export function RangeSeg() {
           onClick={() => setRange(r)}
           style={{
             flex: 1,
-            textAlign: 'center',
-            padding: '8px 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            // 44px is the smallest reliable touch target. This is the control
+            // people reach for on every stats screen, and at 31px tall it sat
+            // well under that — an easy miss for anyone whose aim isn't exact.
+            minHeight: 44,
             borderRadius: 11,
             fontSize: 13,
             fontWeight: 600,
