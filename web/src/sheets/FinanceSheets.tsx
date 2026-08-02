@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import { useData } from '../hooks';
 import { api } from '../api';
 import { money } from '../lib/format';
-import { round2, movementOf, openingForBalance } from '../lib/accounts';
+import { round2 } from '../lib/accounts';
 import { chip } from '../ui';
 import { IconTrash } from '../icons';
 import { FinIcon } from '../lib/iconPaths';
@@ -32,22 +32,45 @@ export function AccountSheet() {
   // everyone can read today's figure off their banking app — and when the two
   // drift apart, today's is the one people want to correct.
   //
-  // What's stored is still the opening balance, so the transaction history
-  // stays untouched. Only the starting point moves, by exactly the correction.
+  // The correction is recorded as a dated entry, not by rewriting the opening
+  // balance. Rewriting it moved money silently and, worse, retroactively: every
+  // point on the net-worth chart shifted, so last month showed a balance the
+  // user never had. An entry belongs to the day the gap was noticed, leaves
+  // history alone, and can be seen and undone like anything else.
   const openingNow = sheetData?.opening ?? 0;
   const balanceNow = editId ? (d.accounts.find((a) => a.id === editId)?.balance ?? openingNow) : 0;
-  const movement = movementOf(balanceNow, openingNow); // everything logged since
   const [balance, setBalance] = useState(editId ? trim(balanceNow) : '');
   const typed = parseFloat(balance || '0') || 0;
+  const diff = editId ? round2(typed - balanceNow) : 0;
   const canSave = !!name.trim();
 
   const save = async () => {
     if (!canSave) return;
     haptic();
-    // Back out the movement so the account lands on the balance that was typed.
-    // Leaving the field untouched round-trips to the original opening balance.
-    const body = { name: name.trim(), type, color, opening: openingForBalance(typed, movement) };
-    mutate(() => (editId ? api.editAccount(editId, body) : api.addAccount(body)), editId ? 'Account updated' : 'Account added').catch(() => {});
+    if (!editId) {
+      // A new account has no history, so today's balance is the opening one.
+      const body = { name: name.trim(), type, color, opening: typed };
+      mutate(() => api.addAccount(body), 'Account added').catch(() => {});
+      closeSheet();
+      return;
+    }
+    // The opening balance is never touched on an edit.
+    const body = { name: name.trim(), type, color, opening: openingNow };
+    mutate(() => api.editAccount(editId, body), diff ? undefined : 'Account updated').catch(() => {});
+    if (diff) {
+      mutate(
+        () =>
+          api.addTxn({
+            name: 'Balance correction',
+            cat: 'Adjustment',
+            amount: diff, // signed: the direction is the whole content
+            income: false,
+            adjust: true,
+            accId: editId,
+          }),
+        `Balance corrected by ${money(Math.abs(diff))}`
+      ).catch(() => {});
+    }
     closeSheet();
   };
   const del = async () => {
@@ -69,14 +92,14 @@ export function AccountSheet() {
       </div>
       {label(editId ? 'Current balance' : 'Starting balance')}
       <input value={balance} onChange={(e) => setBalance(e.target.value.replace(/[^0-9.-]/g, ''))} inputMode="decimal" placeholder="0" style={input} />
-      {/* Say what will happen, because it isn't obvious: the correction lands on
-          the starting balance, so nothing you logged is rewritten or invented. */}
-      <div style={{ fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.5, margin: '8px 2px 20px' }}>
+      {/* Say what will happen before it happens, and name the amount: an entry
+          appearing in the list is only reassuring if it was announced. */}
+      <div style={{ fontSize: 12.5, color: diff ? 'var(--blue)' : 'var(--text2)', lineHeight: 1.5, margin: '8px 2px 20px' }}>
         {!editId
           ? "What's in this account right now."
-          : movement === 0
-            ? "What's in this account right now."
-            : `What's in this account right now. ${money(Math.abs(movement))} of logged ${movement > 0 ? 'income' : 'spending'} is already counted — changing this adjusts the starting balance, and leaves your transactions alone.`}
+          : diff === 0
+            ? "What's in this account right now. Change it to match your bank and Orbit records the difference."
+            : `Adds a ${diff > 0 ? '+' : '−'}${money(Math.abs(diff))} correction dated today, so you can see what changed. It won't count as spending or income.`}
       </div>
       {label('Color')}
       <div style={{ display: 'flex', gap: 14, marginBottom: 24, paddingLeft: 2 }}>

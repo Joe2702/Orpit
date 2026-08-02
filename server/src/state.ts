@@ -120,7 +120,7 @@ export async function buildState(userId: number) {
     // The receipt image itself stays behind GET /api/txns/:id/photo — the state
     // bundle only carries whether one exists, so it stays small.
     `SELECT t.id::text, t.name, t.cat, t.amount, t.income, t.acc_id::text AS "accId",
-            t.to_acc_id::text AS "toAccId", t.note,
+            t.to_acc_id::text AS "toAccId", t.adjust, t.note,
             (p.txn_id IS NOT NULL) AS photo, ${TS('t.ts')}
      FROM txns t LEFT JOIN txn_photos p ON p.txn_id = t.id
      WHERE t.user_id = $1 AND t.ts > now() - interval '400 days' ORDER BY t.ts DESC`,

@@ -345,19 +345,25 @@ export function derive(state: AppState, range: Range) {
 
   const W = state.workouts,
     N = state.nights,
-    // Two views of the ledger, and the distinction is the whole point.
+    // Three views of the ledger. Each answers a different question, and using
+    // the wrong one is how a finance app quietly starts lying.
     //
-    // ALL is every row, and only account balances may use it: a transfer moves
-    // real money out of one account and into another.
+    // ALL — every row. What does this account hold? Only balances use it.
     //
-    // T drops transfers, and everything else uses it. Money moved between your
-    // own accounts is not income and not spending — counted as either, a single
-    // move to savings reads as a spending spree, blows the budget, drags the
-    // savings rate down and trips the anomaly detector. Filtering once here is
-    // what keeps every downstream total honest, rather than remembering to
-    // exclude them in thirty separate places.
+    // NW — everything except transfers. How much do I have in total? A transfer
+    //   between your own accounts changes no total, so it is excluded; a
+    //   balance correction does change it, so it stays.
+    //
+    // T  — money that actually came in or went out. Everything else uses this:
+    //   budgets, categories, savings rate, insights, the story report. Neither
+    //   a transfer nor a correction is spending, and counting either one makes
+    //   a move to savings read as a spending spree — blowing the budget,
+    //   sinking the savings rate and tripping the anomaly detector. Filtering
+    //   once here is what keeps the thirty totals downstream honest, rather
+    //   than remembering to exclude them in thirty separate places.
     ALL = state.txns,
-    T = state.txns.filter((t) => !t.toAccId);
+    NW = state.txns.filter((t) => !t.toAccId),
+    T = state.txns.filter((t) => !t.toAccId && !t.adjust);
 
   const allTs = ([] as number[]).concat(W.map((x) => x.ts), N.map((x) => x.ts), ALL.map((x) => x.ts));
   const allMin = allTs.length ? Math.min.apply(null, allTs) : Date.now();
@@ -486,7 +492,7 @@ export function derive(state: AppState, range: Range) {
   // account would appear to reset every time old rows aged out.
   const openingTotal =
     state.accounts.reduce((a, x) => a + (x.opening || 0), 0) + (state.archive?.txnSum || 0);
-  const sortedT = [...T].sort((a, b) => a.ts - b.ts);
+  const sortedT = [...NW].sort((a, b) => a.ts - b.ts);
   const netWorthSeries: number[] = [];
   const netWorthLabels: string[] = [];
   {
