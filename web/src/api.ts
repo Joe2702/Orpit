@@ -236,6 +236,8 @@ export const api = {
     accId?: string | null;
     /** Set to make this a transfer into that account. */
     toAccId?: string | null;
+    /** A balance correction: real money, but neither income nor spending. */
+    adjust?: boolean;
     note?: string | null;
     // A data URL attaches a receipt; null clears one; omit to leave it alone.
     photo?: string | null;

@@ -115,7 +115,7 @@ export function FAddTx() {
         ...s,
         txns: edit
           ? s.txns.map((t) => (t.id === edit.id ? { ...t, ...body, amount: signed, ts } : t))
-          : [...s.txns, { id: tempId, name, cat, amount: signed, income: body.income, accId, toAccId: body.toAccId, note: note.trim() || null, photo: !!newPhoto, ts }],
+          : [...s.txns, { id: tempId, name, cat, amount: signed, income: body.income, accId, toAccId: body.toAccId, adjust: false, note: note.trim() || null, photo: !!newPhoto, ts }],
       }),
       () => (edit ? api.editTxn(edit.id, body) : api.addTxn({ ...body, ...(newPhoto ? { photo: newPhoto } : {}) })),
       edit ? 'Transaction updated' : 'Transaction saved'
@@ -276,13 +276,21 @@ export function FTxns() {
                 // loss, and painting it like an expense is the whole confusion
                 // this feature exists to remove.
                 const xfer = !!t.toAccId;
+                // A correction is real money but not an event you did — shown
+                // plainly, with its direction, and never in expense red.
+                const adj = t.adjust;
                 return (
                   <SwipeRow key={t.id} onEdit={() => go('faddtx', { edit: t })} onDelete={() => remove('txn', t)}>
                     <div onClick={() => go('faddtx', { edit: t })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}>
-                      <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: `color-mix(in srgb,var(--${xfer ? 'blue' : fc.color}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: `color-mix(in srgb,var(--${xfer || adj ? 'blue' : fc.color}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {xfer ? (
                           <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Transfer">
                             <path d="M3 7h12M12 4l3 3-3 3M17 13H5M8 10l-3 3 3 3" />
+                          </svg>
+                        ) : adj ? (
+                          <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Balance correction">
+                            <path d="M4 13.5a6 6 0 0 1 10-4.4M16 6.5a6 6 0 0 1-10 4.4" />
+                            <path d="M14 5v4h-4M6 15v-4h4" />
                           </svg>
                         ) : (
                           <FinIcon icon={fc.icon} color={`var(--${fc.color})`} size={20} />
@@ -302,10 +310,12 @@ export function FTxns() {
                         <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
                           {xfer
                             ? `Transfer · ${accById[t.accId || '']?.name || '—'} → ${accById[t.toAccId || '']?.name || '—'}`
-                            : `${t.cat} · ${accById[t.accId || '']?.name || '—'}`}
+                            : adj
+                              ? `Balance correction · ${accById[t.accId || '']?.name || '—'}`
+                              : `${t.cat} · ${accById[t.accId || '']?.name || '—'}`}
                         </div>
                       </div>
-                      <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: xfer ? 'var(--text2)' : t.amount >= 0 ? 'var(--emerald)' : 'var(--text)' }}>{(xfer ? '' : t.amount >= 0 ? '+ ' : '− ') + money(t.amount)}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: xfer || adj ? 'var(--text2)' : t.amount >= 0 ? 'var(--emerald)' : 'var(--text)' }}>{(xfer ? '' : t.amount >= 0 ? '+ ' : '− ') + money(t.amount)}</div>
                     </div>
                   </SwipeRow>
                 );

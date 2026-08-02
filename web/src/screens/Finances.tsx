@@ -205,7 +205,9 @@ export function Finances() {
         {[...state!.txns].sort((a, b) => b.ts - a.ts).slice(0, 6).map((t) => (
           <div key={t.id} onClick={() => go('faddtx', { edit: t })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
             <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: t.income ? 'color-mix(in srgb,var(--emerald) 13%,transparent)' : 'var(--bg)' }}>
-              {t.toAccId ? (
+              {t.adjust ? (
+                <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Balance correction"><path d="M4 13.5a6 6 0 0 1 10-4.4M16 6.5a6 6 0 0 1-10 4.4" /><path d="M14 5v4h-4M6 15v-4h4" /></svg>
+              ) : t.toAccId ? (
                 <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Transfer"><path d="M3 7h12M12 4l3 3-3 3M17 13H5M8 10l-3 3 3 3" /></svg>
               ) : t.income ? (
                 <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--emerald)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M7 7l6 6M13 7v6H7" /></svg>
@@ -217,8 +219,8 @@ export function Finances() {
               <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t.name}</div>
               <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t.cat} · {relLabel(t.ts)}</div>
             </div>
-            <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: t.toAccId ? 'var(--text2)' : t.income ? 'var(--emerald)' : 'var(--text)' }}>
-              {(t.toAccId ? '' : t.income ? '+ ' : '− ') + money(t.amount)}
+            <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: t.toAccId || t.adjust ? 'var(--text2)' : t.income ? 'var(--emerald)' : 'var(--text)' }}>
+              {(t.toAccId ? '' : t.adjust ? (t.amount >= 0 ? '+ ' : '− ') : t.income ? '+ ' : '− ') + money(t.amount)}
             </div>
           </div>
         ))}

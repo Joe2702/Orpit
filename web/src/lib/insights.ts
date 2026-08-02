@@ -42,7 +42,7 @@ export function buildInsights(s: AppState): Insight[] {
   // neither spending nor income. Left in, a payday sweep into savings reads as
   // the biggest spending day of the month and every correlation below inherits
   // the lie.
-  const spendTxns = s.txns.filter((t) => !t.toAccId);
+  const spendTxns = s.txns.filter((t) => !t.toAccId && !t.adjust);
   const txnsByDay = byDay(spendTxns);
 
   // ---- 1. Workouts ↔ sleep ----
