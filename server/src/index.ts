@@ -386,7 +386,7 @@ app.get(
         query('SELECT id::text, name, color FROM workout_categories WHERE user_id = $1 ORDER BY sort, id', [uid]),
         query(`SELECT id::text, name, category_id::text AS "catId", dur, dist, kcal, intensity, note, sets, ${TS('ts')} FROM workouts WHERE user_id = $1 ORDER BY ts`, [uid]),
         query(`SELECT id::text, hours, quality, bed_h AS "bedH", wake_h AS "wakeH", note, ${TS('ts')} FROM nights WHERE user_id = $1 ORDER BY ts`, [uid]),
-        query(`SELECT id::text, name, cat, amount, income, acc_id::text AS "accId", note, ${TS('ts')} FROM txns WHERE user_id = $1 ORDER BY ts`, [uid]),
+        query(`SELECT id::text, name, cat, amount, income, acc_id::text AS "accId", to_acc_id::text AS "toAccId", note, ${TS('ts')} FROM txns WHERE user_id = $1 ORDER BY ts`, [uid]),
         query('SELECT id::text, name, type, color, opening FROM accounts WHERE user_id = $1 ORDER BY sort, id', [uid]),
         query('SELECT id::text, name, icon, color, kind FROM fcats WHERE user_id = $1 ORDER BY sort, id', [uid]),
         query('SELECT id::text, name, unit, color, icon, step FROM counters WHERE user_id = $1 ORDER BY sort, id', [uid]),
@@ -910,6 +910,28 @@ app.put(
   })
 );
 
+/**
+ * Validate a transfer's destination account.
+ *
+ * A transfer is a row carrying `to_acc_id`. It must name two different accounts
+ * that both belong to this user, or the balances it produces are meaningless —
+ * and a destination pointing at someone else's account would be worse than
+ * meaningless. Returns the id to store, or throws for the caller to 400 on.
+ */
+async function transferTarget(uid: number, body: Record<string, unknown>): Promise<string | null> {
+  const to = body.toAccId ? String(body.toAccId) : null;
+  if (!to) return null;
+  const from = body.accId ? String(body.accId) : null;
+  if (!from) throw new Error('A transfer needs an account to move money from');
+  if (from === to) throw new Error('Pick two different accounts');
+  const own = await query<{ id: string }>(
+    'SELECT id::text FROM accounts WHERE user_id = $1 AND id = ANY($2::bigint[])',
+    [uid, [from, to]]
+  );
+  if (own.length !== 2) throw new Error('Account not found');
+  return to;
+}
+
 app.post(
   '/api/txns',
   requireAuth,
@@ -918,12 +940,20 @@ app.post(
     const uid = req.userId!;
     const amt = Number(req.body.amount);
     if (!amt) return res.status(400).json({ error: 'Amount required' });
-    const income = !!req.body.income;
-    const cat = String(req.body.cat || 'Other');
+    let toAccId: string | null;
+    try {
+      toAccId = await transferTarget(uid, req.body);
+    } catch (e) {
+      return res.status(400).json({ error: (e as Error).message });
+    }
+    // A transfer is never income: it always leaves the source account, and the
+    // destination side is derived from the sign when balances are computed.
+    const income = !toAccId && !!req.body.income;
+    const cat = toAccId ? 'Transfer' : String(req.body.cat || 'Other');
     const ts = req.body.ts ? new Date(Number(req.body.ts)) : new Date();
     const row = await one<{ id: string }>(
-      `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id::text`,
+      `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, to_acc_id, note, ts)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id::text`,
       [
         uid,
         String(req.body.name || cat),
@@ -931,6 +961,7 @@ app.post(
         income ? Math.abs(amt) : -Math.abs(amt),
         income,
         req.body.accId || null,
+        toAccId,
         req.body.note ? String(req.body.note) : null,
         ts,
       ]
@@ -948,18 +979,25 @@ app.patch(
     const uid = req.userId!;
     const amt = Number(req.body.amount);
     if (!amt) return res.status(400).json({ error: 'Amount required' });
-    const income = !!req.body.income;
-    const cat = String(req.body.cat || 'Other');
+    let toAccId: string | null;
+    try {
+      toAccId = await transferTarget(uid, req.body);
+    } catch (e) {
+      return res.status(400).json({ error: (e as Error).message });
+    }
+    const income = !toAccId && !!req.body.income;
+    const cat = toAccId ? 'Transfer' : String(req.body.cat || 'Other');
     const ts = req.body.ts ? new Date(Number(req.body.ts)) : new Date();
     await query(
-      `UPDATE txns SET name=$1, cat=$2, amount=$3, income=$4, acc_id=$5, note=$6, ts=$7
-       WHERE id=$8 AND user_id=$9`,
+      `UPDATE txns SET name=$1, cat=$2, amount=$3, income=$4, acc_id=$5, to_acc_id=$6, note=$7, ts=$8
+       WHERE id=$9 AND user_id=$10`,
       [
         String(req.body.name || cat),
         cat,
         income ? Math.abs(amt) : -Math.abs(amt),
         income,
         req.body.accId || null,
+        toAccId,
         req.body.note ? String(req.body.note) : null,
         ts,
         req.params.id,
@@ -1024,6 +1062,15 @@ app.delete(
   wrap(async (req, res) => {
     const uid = req.userId!;
     await tx(async (c) => {
+      // A transfer names both ends. With one of them gone the row describes a
+      // move to or from nowhere, and keeping it would be worse than dropping it:
+      // clearing the destination turns it into an ordinary expense, silently
+      // inflating spending for a month the user may already have reviewed.
+      // Ordinary transactions keep their history and merely lose the link.
+      await c.query(
+        'DELETE FROM txns WHERE user_id = $1 AND to_acc_id IS NOT NULL AND (acc_id = $2 OR to_acc_id = $2)',
+        [uid, req.params.id]
+      );
       await c.query('UPDATE txns SET acc_id = NULL WHERE acc_id = $1 AND user_id = $2', [req.params.id, uid]);
       await c.query('UPDATE recurring SET acc_id = NULL WHERE acc_id = $1 AND user_id = $2', [req.params.id, uid]);
       await c.query('DELETE FROM accounts WHERE id = $1 AND user_id = $2', [req.params.id, uid]);

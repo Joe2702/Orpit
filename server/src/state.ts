@@ -119,7 +119,8 @@ export async function buildState(userId: number) {
   const txns = await query(
     // The receipt image itself stays behind GET /api/txns/:id/photo — the state
     // bundle only carries whether one exists, so it stays small.
-    `SELECT t.id::text, t.name, t.cat, t.amount, t.income, t.acc_id::text AS "accId", t.note,
+    `SELECT t.id::text, t.name, t.cat, t.amount, t.income, t.acc_id::text AS "accId",
+            t.to_acc_id::text AS "toAccId", t.note,
             (p.txn_id IS NOT NULL) AS photo, ${TS('t.ts')}
      FROM txns t LEFT JOIN txn_photos p ON p.txn_id = t.id
      WHERE t.user_id = $1 AND t.ts > now() - interval '400 days' ORDER BY t.ts DESC`,
@@ -143,7 +144,8 @@ export async function buildState(userId: number) {
        (SELECT count(*) FROM txns       WHERE user_id = $1 AND ts <= now() - interval '400 days')::int AS txns,
        (SELECT count(*) FROM count_logs WHERE user_id = $1 AND ts <= now() - interval '400 days')::int AS "countLogs",
        (SELECT count(*) FROM habit_checkins WHERE user_id = $1 AND day <= (now() - interval '400 days')::date)::int AS checkins,
-       (SELECT coalesce(sum(amount), 0) FROM txns WHERE user_id = $1 AND ts <= now() - interval '400 days')::float8 AS "txnSum",
+       (SELECT coalesce(sum(amount), 0) FROM txns
+         WHERE user_id = $1 AND ts <= now() - interval '400 days' AND to_acc_id IS NULL)::float8 AS "txnSum",
        (SELECT count(DISTINCT d) FROM (
           SELECT date(ts) AS d FROM workouts   WHERE user_id = $1 AND ts <= now() - interval '400 days'
           UNION SELECT date(ts) FROM nights     WHERE user_id = $1 AND ts <= now() - interval '400 days'
@@ -163,9 +165,20 @@ export async function buildState(userId: number) {
   // Pre-window spend per account, so balances and net worth stay correct
   // without shipping years of transactions.
   const accSumRows = await query<{ accId: string | null; total: number }>(
-    `SELECT acc_id::text AS "accId", sum(amount)::float8 AS total
-     FROM txns WHERE user_id = $1 AND ts <= now() - interval '400 days'
-     GROUP BY acc_id`,
+    // A transfer moves money out of one account and into another, so it appears
+    // on both sides of this union. Summing only acc_id would leave the
+    // destination account permanently short once the rows aged out of the
+    // window — the balance would look right for 400 days and then quietly drop.
+    `SELECT "accId", sum(total)::float8 AS total FROM (
+       SELECT acc_id::text AS "accId", sum(amount)::float8 AS total
+         FROM txns WHERE user_id = $1 AND ts <= now() - interval '400 days'
+         GROUP BY acc_id
+       UNION ALL
+       SELECT to_acc_id::text AS "accId", sum(abs(amount))::float8 AS total
+         FROM txns WHERE user_id = $1 AND ts <= now() - interval '400 days'
+           AND to_acc_id IS NOT NULL
+         GROUP BY to_acc_id
+     ) s GROUP BY "accId"`,
     [userId]
   );
 

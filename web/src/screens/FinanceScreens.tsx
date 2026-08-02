@@ -42,19 +42,42 @@ export function FAddTx() {
   const edit: Txn | undefined = screenData?.edit;
   const fcats = state!.fcats;
   const accounts = state!.accounts;
-  const [kind, setKind] = useState<'expense' | 'income'>(edit ? (edit.amount >= 0 ? 'income' : 'expense') : 'expense');
+  const [kind, setKind] = useState<'expense' | 'income' | 'transfer'>(
+    edit ? (edit.toAccId ? 'transfer' : edit.amount >= 0 ? 'income' : 'expense') : 'expense'
+  );
   const [amount, setAmount] = useState<string>(edit ? String(Math.abs(edit.amount)) : '');
   const [exCat, setExCat] = useState<string>(edit && edit.amount < 0 ? edit.cat : fcats.find((c) => c.kind === 'expense')?.name || 'Food');
   const [incCat, setIncCat] = useState<string>(edit && edit.amount >= 0 ? edit.cat : fcats.find((c) => c.kind === 'income')?.name || 'Salary');
   const [accId, setAccId] = useState<string>(edit?.accId || accounts[0]?.id || '');
+  // Where a transfer lands. Defaults to the first account that isn't the source,
+  // so the form is never sitting on the one combination it must refuse.
+  const [toAccId, setToAccId] = useState<string>(
+    edit?.toAccId || accounts.find((a) => a.id !== (edit?.accId || accounts[0]?.id))?.id || ''
+  );
   const [date, setDate] = useState<string>(edit ? new Date(edit.ts).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState<string>(edit?.note || '');
   // Only used when creating: an existing transaction manages its receipt
   // directly through ReceiptField, which uploads on the spot.
   const [newPhoto, setNewPhoto] = useState<string | null>(null);
 
+  const isTransfer = kind === 'transfer';
   const income = kind === 'income';
-  const cat = income ? incCat : exCat;
+  const cat = isTransfer ? 'Transfer' : income ? incCat : exCat;
+  const fromAcc = accounts.find((a) => a.id === accId);
+  const toAcc = accounts.find((a) => a.id === toAccId);
+  // Two accounts, both real, and not the same one.
+  const transferOk = !isTransfer || (!!accId && !!toAccId && accId !== toAccId);
+
+  // Choosing the source that the destination already occupies would leave the
+  // form in a state it can't save, so the other side steps aside.
+  const pickFrom = (id: string) => {
+    setAccId(id);
+    if (isTransfer && id === toAccId) setToAccId(accounts.find((a) => a.id !== id)?.id || '');
+  };
+  const pickTo = (id: string) => {
+    setToAccId(id);
+    if (id === accId) setAccId(accounts.find((a) => a.id !== id)?.id || '');
+  };
 
   const press = (k: string) => {
     if (k === 'del') { setAmount((a) => a.slice(0, -1)); return; }
@@ -68,11 +91,21 @@ export function FAddTx() {
 
   const save = async () => {
     const amt = parseFloat(amount || '0');
-    if (!amt || amt <= 0) return;
+    if (!amt || amt <= 0 || !transferOk) return;
     haptic();
     const ts = new Date(date + 'T12:00:00').getTime();
-    const body = { name: cat, cat, amount: amt, income, accId, note: note.trim() || null, ts };
-    const signed = income ? amt : -amt;
+    const name = isTransfer ? `${fromAcc?.name || 'Account'} → ${toAcc?.name || 'Account'}` : cat;
+    const body = {
+      name, cat, amount: amt,
+      // A transfer is never income: it leaves the source account, and the money
+      // arriving at the other end is derived from toAccId when balances are
+      // computed. Storing it as income would double-count it.
+      income: isTransfer ? false : income,
+      accId,
+      toAccId: isTransfer ? toAccId : null,
+      note: note.trim() || null, ts,
+    };
+    const signed = isTransfer || !income ? -amt : amt;
     // Update the list immediately and leave the screen; the server call settles
     // in the background. Waiting on a sleepy free-tier host made saving feel
     // broken even though it always worked.
@@ -82,7 +115,7 @@ export function FAddTx() {
         ...s,
         txns: edit
           ? s.txns.map((t) => (t.id === edit.id ? { ...t, ...body, amount: signed, ts } : t))
-          : [...s.txns, { id: tempId, name: cat, cat, amount: signed, income, accId, note: note.trim() || null, photo: !!newPhoto, ts }],
+          : [...s.txns, { id: tempId, name, cat, amount: signed, income: body.income, accId, toAccId: body.toAccId, note: note.trim() || null, photo: !!newPhoto, ts }],
       }),
       () => (edit ? api.editTxn(edit.id, body) : api.addTxn({ ...body, ...(newPhoto ? { photo: newPhoto } : {}) })),
       edit ? 'Transaction updated' : 'Transaction saved'
@@ -100,19 +133,22 @@ export function FAddTx() {
     go('ftxns');
   };
 
-  const tab = (active: boolean, color: string): React.CSSProperties => ({ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 11, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(active ? { background: 'var(--surface)', color, boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) });
+  // Same 44px floor as the range tabs: three targets now share this row, so
+  // each is narrower than before and an under-height one is easier to miss.
+  const tab = (active: boolean, color: string): React.CSSProperties => ({ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, borderRadius: 11, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(active ? { background: 'var(--surface)', color, boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) });
   const catList = fcats.filter((c) => c.kind === kind);
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <Header title={edit ? 'Edit transaction' : 'Add transaction'} />
+      <Header title={edit ? (isTransfer ? 'Edit transfer' : 'Edit transaction') : 'Add transaction'} />
       <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: 3, marginBottom: 20 }}>
-        <div onClick={() => setKind('expense')} style={tab(!income, 'var(--text)')}>Expense</div>
+        <div onClick={() => setKind('expense')} style={tab(kind === 'expense', 'var(--text)')}>Expense</div>
         <div onClick={() => setKind('income')} style={tab(income, 'var(--emerald)')}>Income</div>
+        <div onClick={() => setKind('transfer')} style={tab(isTransfer, 'var(--blue)')}>Transfer</div>
       </div>
       <div style={{ textAlign: 'center', marginBottom: 16 }}>
         <span style={{ fontSize: 30, fontWeight: 600, color: 'var(--text2)', verticalAlign: 'top', lineHeight: 1.7 }}>{moneySymbol().trim()}</span>
-        <span style={{ fontSize: 56, fontWeight: 700, letterSpacing: '-.03em', color: income ? 'var(--emerald)' : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{amount === '' ? '0' : amount}</span>
+        <span style={{ fontSize: 56, fontWeight: 700, letterSpacing: '-.03em', color: income ? 'var(--emerald)' : isTransfer ? 'var(--blue)' : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{amount === '' ? '0' : amount}</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 22 }}>
         {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'].map((k) => (
@@ -121,6 +157,9 @@ export function FAddTx() {
           </div>
         ))}
       </div>
+      {/* A transfer has no category: it isn't spending, so there is nothing to
+          categorise. Showing an inert grid would only invite a wrong answer. */}
+      {!isTransfer && <>
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>Category</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 9, marginBottom: 22 }}>
         {catList.map((c) => {
@@ -133,21 +172,43 @@ export function FAddTx() {
           );
         })}
       </div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Account</div>
+      </>}
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{isTransfer ? 'From' : 'Account'}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 22 }}>
         {accounts.map((a) => (
-          <div key={a.id} onClick={() => setAccId(a.id)} style={chip(accId === a.id, `var(--${a.color})`)}>{a.name}</div>
+          <div key={a.id} onClick={() => pickFrom(a.id)} style={chip(accId === a.id, `var(--${a.color})`)}>{a.name}</div>
         ))}
       </div>
+      {isTransfer && (
+        <>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>To</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 10 }}>
+            {accounts.filter((a) => a.id !== accId).map((a) => (
+              <div key={a.id} onClick={() => pickTo(a.id)} style={chip(toAccId === a.id, `var(--${a.color})`)}>{a.name}</div>
+            ))}
+          </div>
+          {/* The one thing worth saying about transfers, said once, where the
+              question actually arises. */}
+          <div style={{ fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 22 }}>
+            {accounts.length < 2
+              ? 'Add a second account first — a transfer needs somewhere to go.'
+              : "Moves money between your own accounts. It won't count as spending or income."}
+          </div>
+        </>
+      )}
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Date</div>
       <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 14px', fontSize: 15, fontWeight: 600, color: 'var(--text)', outline: 'none', marginBottom: 22 }} />
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Note</div>
       <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note" style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 22 }} />
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Receipt</div>
-      <div style={{ marginBottom: 22 }}>
-        {edit ? <ReceiptField txn={edit} /> : <ReceiptPicker value={newPhoto} onChange={setNewPhoto} />}
-      </div>
-      <div onClick={save} className="press99" style={{ background: 'var(--indigo)', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 22px -12px rgba(40,36,28,.28)' }}>Save transaction</div>
+      {!isTransfer && (
+        <>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Receipt</div>
+          <div style={{ marginBottom: 22 }}>
+            {edit ? <ReceiptField txn={edit} /> : <ReceiptPicker value={newPhoto} onChange={setNewPhoto} />}
+          </div>
+        </>
+      )}
+      <div onClick={save} className="press99" style={{ background: transferOk ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: transferOk ? 'pointer' : 'default', boxShadow: '0 12px 22px -12px rgba(40,36,28,.28)' }}>{isTransfer ? 'Save transfer' : 'Save transaction'}</div>
       {edit && (
         <div onClick={del} className="press99" style={{ height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
           <IconTrash />Delete transaction
@@ -211,11 +272,21 @@ export function FTxns() {
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
               {g.items.map((t) => {
                 const fc = fcatByName(fcats, t.cat);
+                // A transfer shows both ends and a neutral colour: it is not a
+                // loss, and painting it like an expense is the whole confusion
+                // this feature exists to remove.
+                const xfer = !!t.toAccId;
                 return (
                   <SwipeRow key={t.id} onEdit={() => go('faddtx', { edit: t })} onDelete={() => remove('txn', t)}>
                     <div onClick={() => go('faddtx', { edit: t })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}>
-                      <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: `color-mix(in srgb,var(--${fc.color}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <FinIcon icon={fc.icon} color={`var(--${fc.color})`} size={20} />
+                      <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: `color-mix(in srgb,var(--${xfer ? 'blue' : fc.color}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {xfer ? (
+                          <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Transfer">
+                            <path d="M3 7h12M12 4l3 3-3 3M17 13H5M8 10l-3 3 3 3" />
+                          </svg>
+                        ) : (
+                          <FinIcon icon={fc.icon} color={`var(--${fc.color})`} size={20} />
+                        )}
                       </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -228,9 +299,13 @@ export function FTxns() {
                             </svg>
                           )}
                         </div>
-                        <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t.cat} · {accById[t.accId || '']?.name || '—'}</div>
+                        <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
+                          {xfer
+                            ? `Transfer · ${accById[t.accId || '']?.name || '—'} → ${accById[t.toAccId || '']?.name || '—'}`
+                            : `${t.cat} · ${accById[t.accId || '']?.name || '—'}`}
+                        </div>
                       </div>
-                      <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: t.amount >= 0 ? 'var(--emerald)' : 'var(--text)' }}>{(t.amount >= 0 ? '+ ' : '− ') + money(t.amount)}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: xfer ? 'var(--text2)' : t.amount >= 0 ? 'var(--emerald)' : 'var(--text)' }}>{(xfer ? '' : t.amount >= 0 ? '+ ' : '− ') + money(t.amount)}</div>
                     </div>
                   </SwipeRow>
                 );

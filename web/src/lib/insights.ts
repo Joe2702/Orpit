@@ -38,7 +38,12 @@ export function buildInsights(s: AppState): Insight[] {
 
   const workoutDays = byDay(s.workouts);
   const nightsByDay = byDay(s.nights);
-  const txnsByDay = byDay(s.txns);
+  // Transfers are money moving between the user's own accounts, so they are
+  // neither spending nor income. Left in, a payday sweep into savings reads as
+  // the biggest spending day of the month and every correlation below inherits
+  // the lie.
+  const spendTxns = s.txns.filter((t) => !t.toAccId);
+  const txnsByDay = byDay(spendTxns);
 
   // ---- 1. Workouts ↔ sleep ----
   // Compare sleep on nights following a training day vs. a rest day.
@@ -169,7 +174,7 @@ export function buildInsights(s: AppState): Insight[] {
     const weekStart = now - 7 * D;
     const cat = new Map<string, number>();
     const prior = new Map<string, number[]>();
-    s.txns
+    spendTxns
       .filter((t) => t.amount < 0)
       .forEach((t) => {
         if (t.ts >= weekStart) cat.set(t.cat, (cat.get(t.cat) || 0) + -t.amount);
@@ -373,8 +378,8 @@ export function buildInsights(s: AppState): Insight[] {
     if (sPrev > 0 && inRange(s.nights, m1, m0).length >= 5)
       moves.push({ label: 'Sleep', delta: pct(sNow, sPrev), better: sNow >= sPrev, detail: `${hm(sNow)} a night vs ${hm(sPrev)}.` });
 
-    const spNow = inRange(s.txns, m0, now).filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
-    const spPrev = inRange(s.txns, m1, m0).filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
+    const spNow = inRange(spendTxns, m0, now).filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
+    const spPrev = inRange(spendTxns, m1, m0).filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
     if (spPrev > 0) moves.push({ label: 'Spending', delta: pct(spNow, spPrev), better: spNow <= spPrev, detail: `${money(spNow)} vs ${money(spPrev)}.` });
 
     const biggest = moves.filter((m) => Math.abs(m.delta) >= 15).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))[0];

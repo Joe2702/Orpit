@@ -29,8 +29,9 @@ const nights = Array.from({ length: 12 }, (_, i) => ({
 }));
 
 const txns = [
-  { id: 't1', name: 'Groceries', cat: 'Food', amount: -120, income: false, accId: 'a1', note: null, photo: false, ts: now - DAY },
-  { id: 't2', name: 'Transport', cat: 'Transport', amount: -80, income: false, accId: 'a1', note: null, photo: false, ts: now - 2 * DAY },
+  { id: 't0', name: 'Main Bank → Savings', cat: 'Transfer', amount: -500, income: false, accId: 'a1', toAccId: 'a2', note: null, photo: false, ts: now - 3 * DAY },
+  { id: 't1', name: 'Groceries', cat: 'Food', amount: -120, income: false, accId: 'a1', toAccId: null, note: null, photo: false, ts: now - DAY },
+  { id: 't2', name: 'Transport', cat: 'Transport', amount: -80, income: false, accId: 'a1', toAccId: null, note: null, photo: false, ts: now - 2 * DAY },
 ];
 
 // The three counters from the screenshot — long names on purpose, since that is
@@ -50,7 +51,10 @@ export const state = {
     createdAt: now - 120 * DAY,
   },
   habits, checkins, wCats: [], workouts, nights, txns,
-  accounts: [{ id: 'a1', name: 'Main Bank', type: 'Bank', color: 'blue', opening: 1500 }],
+  accounts: [
+    { id: 'a1', name: 'Main Bank', type: 'Bank', color: 'blue', opening: 1500 },
+    { id: 'a2', name: 'Savings', type: 'Savings', color: 'emerald', opening: 0 },
+  ],
   fcats: [], budgets: [], goals: [], recurring: [],
   counters, countLogs: [], wTemplates: [],
   archive: { workouts: 0, nights: 0, txns: 0, countLogs: 0, checkins: 0, txnSum: 0, activeDays: 0, earliestTs: now - 120 * DAY, accSums: {} },

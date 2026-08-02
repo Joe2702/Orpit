@@ -234,6 +234,8 @@ export const api = {
     amount: number;
     income: boolean;
     accId?: string | null;
+    /** Set to make this a transfer into that account. */
+    toAccId?: string | null;
     note?: string | null;
     // A data URL attaches a receipt; null clears one; omit to leave it alone.
     photo?: string | null;
@@ -241,7 +243,7 @@ export const api = {
   }) => request<AppState>('/txns', { method: 'POST', body: JSON.stringify(b) }),
   editTxn: (
     id: string,
-    b: { name?: string; cat: string; amount: number; income: boolean; accId?: string | null; note?: string | null; photo?: string | null; ts?: number }
+    b: { name?: string; cat: string; amount: number; income: boolean; accId?: string | null; toAccId?: string | null; note?: string | null; photo?: string | null; ts?: number }
   ) => request<AppState>(`/txns/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteTxn: (id: string) => request<AppState>(`/txns/${id}`, { method: 'DELETE' }),
   /** Fetch a receipt on demand — images are never part of the state bundle. */
