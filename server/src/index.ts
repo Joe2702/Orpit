@@ -386,7 +386,7 @@ app.get(
         query('SELECT id::text, name, color FROM workout_categories WHERE user_id = $1 ORDER BY sort, id', [uid]),
         query(`SELECT id::text, name, category_id::text AS "catId", dur, dist, kcal, intensity, note, sets, ${TS('ts')} FROM workouts WHERE user_id = $1 ORDER BY ts`, [uid]),
         query(`SELECT id::text, hours, quality, bed_h AS "bedH", wake_h AS "wakeH", note, ${TS('ts')} FROM nights WHERE user_id = $1 ORDER BY ts`, [uid]),
-        query(`SELECT id::text, name, cat, amount, income, acc_id::text AS "accId", to_acc_id::text AS "toAccId", note, ${TS('ts')} FROM txns WHERE user_id = $1 ORDER BY ts`, [uid]),
+        query(`SELECT id::text, name, cat, amount, income, acc_id::text AS "accId", to_acc_id::text AS "toAccId", adjust, note, ${TS('ts')} FROM txns WHERE user_id = $1 ORDER BY ts`, [uid]),
         query('SELECT id::text, name, type, color, opening FROM accounts WHERE user_id = $1 ORDER BY sort, id', [uid]),
         query('SELECT id::text, name, icon, color, kind FROM fcats WHERE user_id = $1 ORDER BY sort, id', [uid]),
         query('SELECT id::text, name, unit, color, icon, step FROM counters WHERE user_id = $1 ORDER BY sort, id', [uid]),
@@ -948,20 +948,24 @@ app.post(
     }
     // A transfer is never income: it always leaves the source account, and the
     // destination side is derived from the sign when balances are computed.
-    const income = !toAccId && !!req.body.income;
-    const cat = toAccId ? 'Transfer' : String(req.body.cat || 'Other');
+    // A balance correction keeps the sign it was sent with — it can go either
+    // way, and which way is the whole content of the entry.
+    const adjust = !toAccId && !!req.body.adjust;
+    const income = !toAccId && !adjust && !!req.body.income;
+    const cat = toAccId ? 'Transfer' : adjust ? 'Adjustment' : String(req.body.cat || 'Other');
     const ts = req.body.ts ? new Date(Number(req.body.ts)) : new Date();
     const row = await one<{ id: string }>(
-      `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, to_acc_id, note, ts)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id::text`,
+      `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, to_acc_id, adjust, note, ts)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id::text`,
       [
         uid,
         String(req.body.name || cat),
         cat,
-        income ? Math.abs(amt) : -Math.abs(amt),
+        adjust ? amt : income ? Math.abs(amt) : -Math.abs(amt),
         income,
         req.body.accId || null,
         toAccId,
+        adjust,
         req.body.note ? String(req.body.note) : null,
         ts,
       ]

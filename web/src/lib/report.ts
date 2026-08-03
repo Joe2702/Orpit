@@ -81,7 +81,7 @@ export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset
 
   // Transfers between your own accounts are not spending and not income; a
   // week's report that counts them describes a week that didn't happen.
-  const txns = s.txns.filter((t) => inWin(t.ts) && !t.toAccId);
+  const txns = s.txns.filter((t) => inWin(t.ts) && !t.toAccId && !t.adjust);
   const spent = txns.filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
   const income = txns.filter((t) => t.amount > 0).reduce((a, t) => a + t.amount, 0);
   const net = income - spent;

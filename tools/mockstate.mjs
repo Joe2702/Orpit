@@ -29,9 +29,10 @@ const nights = Array.from({ length: 12 }, (_, i) => ({
 }));
 
 const txns = [
-  { id: 't0', name: 'Main Bank → Savings', cat: 'Transfer', amount: -500, income: false, accId: 'a1', toAccId: 'a2', note: null, photo: false, ts: now - 3 * DAY },
-  { id: 't1', name: 'Groceries', cat: 'Food', amount: -120, income: false, accId: 'a1', toAccId: null, note: null, photo: false, ts: now - DAY },
-  { id: 't2', name: 'Transport', cat: 'Transport', amount: -80, income: false, accId: 'a1', toAccId: null, note: null, photo: false, ts: now - 2 * DAY },
+  { id: 'tadj', name: 'Balance correction', cat: 'Adjustment', amount: 240, income: false, accId: 'a1', toAccId: null, adjust: true, note: null, photo: false, ts: now - 4 * DAY },
+  { id: 't0', name: 'Main Bank → Savings', cat: 'Transfer', amount: -500, income: false, accId: 'a1', toAccId: 'a2', adjust: false, note: null, photo: false, ts: now - 3 * DAY },
+  { id: 't1', name: 'Groceries', cat: 'Food', amount: -120, income: false, accId: 'a1', toAccId: null, adjust: false, note: null, photo: false, ts: now - DAY },
+  { id: 't2', name: 'Transport', cat: 'Transport', amount: -80, income: false, accId: 'a1', toAccId: null, adjust: false, note: null, photo: false, ts: now - 2 * DAY },
 ];
 
 // The three counters from the screenshot — long names on purpose, since that is

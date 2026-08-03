@@ -106,6 +106,11 @@ ALTER TABLE txns ADD COLUMN IF NOT EXISTS note TEXT;
 -- changes two balances and is neither income nor spending. Modelled as one row
 -- rather than a matched pair, so a half-deleted transfer cannot exist.
 ALTER TABLE txns ADD COLUMN IF NOT EXISTS to_acc_id BIGINT;
+-- Balance corrections. When the app's figure drifts from the bank's, the gap is
+-- recorded as a dated row rather than by rewriting the opening balance: the
+-- correction belongs to the day it was noticed, and history stays as it was.
+-- It changes net worth (the money is real) but is neither income nor spending.
+ALTER TABLE txns ADD COLUMN IF NOT EXISTS adjust BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- ===== v2: accounts, finance categories, budgets, goals, recurring, counters =====
 

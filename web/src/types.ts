@@ -97,6 +97,13 @@ export interface Txn {
    * what makes a two-account ledger read as a spending spree.
    */
   toAccId: string | null;
+  /**
+   * A balance correction, not a real-world event. It changes what the account
+   * holds — the money is genuinely there or genuinely gone — so it counts
+   * toward net worth, but it is neither income nor spending and must stay out
+   * of every budget, category total and insight.
+   */
+  adjust: boolean;
   note: string | null;
   // Whether a receipt exists. The image itself is fetched on demand so it
   // never rides along with every app open.
