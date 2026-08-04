@@ -141,6 +141,8 @@ export interface HabitDerived {
   streak: number;
   paused: boolean;
   why: string | null;
+  /** This habit's own reminder time (HH:MM), or null for the daily one. */
+  reminderTime: string | null;
   // One 0/1 per *scheduled* weekday in the current week (Sun→Sat order);
   // 1 = checked in that day, 0 = missed or still upcoming. Length equals the
   // number of days the habit is assigned per week.
@@ -221,6 +223,7 @@ export function deriveHabits(state: AppState, range: Range) {
       done,
       paused: h.paused,
       why: h.why,
+      reminderTime: h.reminderTime,
       total: set.size, // total days ever completed
       streak,
       weekSlots: weekSlotsFor(h.days, set),

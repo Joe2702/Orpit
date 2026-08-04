@@ -8,6 +8,7 @@ import { Ring } from '../lib/charts';
 import { BackButton, chip } from '../ui';
 import { IconTrash } from '../icons';
 import { SwipeRow } from '../SwipeRow';
+import { StickySave } from '../StickySave';
 import { ReceiptField, ReceiptPicker } from '../Receipt';
 import { useEntryActions } from '../lib/entryActions';
 import type { Txn } from '../types';
@@ -208,7 +209,13 @@ export function FAddTx() {
           </div>
         </>
       )}
-      <div onClick={save} className="press99" style={{ background: transferOk ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: transferOk ? 'pointer' : 'default', boxShadow: '0 12px 22px -12px rgba(40,36,28,.28)' }}>{isTransfer ? 'Save transfer' : 'Save transaction'}</div>
+      {/* 92 clears the tab bar, which overlays the bottom of the scroll area. */}
+      <StickySave
+        label={isTransfer ? 'Save transfer' : 'Save transaction'}
+        onClick={save}
+        enabled={transferOk}
+        bottom={92}
+      />
       {edit && (
         <div onClick={del} className="press99" style={{ height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
           <IconTrash />Delete transaction

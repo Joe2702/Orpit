@@ -21,7 +21,7 @@ export function Habits() {
     const col = `var(--${hb.color})`;
     return (
       <div
-        onClick={() => !hb.locked && open('habit', { id: hb.id, name: hb.name, color: hb.color, target: hb.target, days: hb.days, why: hb.why, paused: hb.paused })}
+        onClick={() => !hb.locked && open('habit', { id: hb.id, name: hb.name, color: hb.color, target: hb.target, days: hb.days, why: hb.why, paused: hb.paused, reminderTime: hb.reminderTime })}
         className={hb.locked ? undefined : 'press99'}
         style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: hb.locked ? 'default' : 'pointer', opacity: hb.paused ? 0.6 : 1 }}
       >
@@ -32,7 +32,21 @@ export function Habits() {
               {hb.name}
               {hb.paused && <span style={{ fontSize: 11.5, color: 'var(--warning)', fontWeight: 700, marginLeft: 7 }}>PAUSED</span>}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text2)' }}>{daysLabel(hb.days)}</div>
+            <div style={{ fontSize: 12, color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: 5 }}>
+              {daysLabel(hb.days)}
+              {/* A habit with its own reminder says so here. The setting lived
+                  only at the bottom of the edit sheet, so there was no way to
+                  tell which habits would actually nudge you — and no reason to
+                  believe the one you set had stuck. */}
+              {hb.reminderTime && !hb.paused && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: col, fontWeight: 600 }}>
+                  <svg width="11" height="11" style={{ fill: 'none', stroke: col, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+                    <path d="M5.5 2.2a3 3 0 0 0-3 3v2l-1 1.6h8L8.5 7.2v-2a3 3 0 0 0-3-3ZM4 10.2a1.6 1.6 0 0 0 3 0" />
+                  </svg>
+                  {hb.reminderTime}
+                </span>
+              )}
+            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, fontWeight: 700, padding: '4px 9px', borderRadius: 999, flex: 'none', background: `color-mix(in srgb,${col} 13%,transparent)`, color: col }}>
             {hb.total}<span style={{ opacity: 0.55, fontWeight: 600, marginLeft: 2 }}>days</span>
