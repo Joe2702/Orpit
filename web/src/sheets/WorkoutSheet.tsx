@@ -4,6 +4,7 @@ import { api } from '../api';
 import { chip } from '../ui';
 import { SetsEditor } from '../SetsEditor';
 import type { WorkoutSet } from '../types';
+import { StickySave } from '../StickySave';
 
 // Local YYYY-MM-DD (not UTC) for the date input's default.
 function todayISO(): string {
@@ -187,9 +188,8 @@ export function WorkoutSheet() {
         Save this as a preset
       </div>
 
-      <div onClick={save} className="press" style={{ background: 'var(--coral)', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>
-        Save workout
-      </div>
+      {/* A sheet has no tab bar under it, so this rests on the scrollport edge. */}
+      <StickySave label="Save workout" onClick={save} color="coral" />
     </div>
   );
 }
