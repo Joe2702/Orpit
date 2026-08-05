@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import { api, flushQueue, getToken, setToken, clearToken, ApiError } from './api';
 import { OfflineQueuedError, cacheState, readCachedState, clearCache, pending as pendingOps, subscribe as subscribeOffline, isOnline, watchConnectivity } from './lib/offline';
 import { setCurrency } from './lib/format';
+import { reportError } from './lib/crash';
 import type { AppState, Range } from './types';
 
 export type Screen =
@@ -459,7 +460,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
       if (r.synced > 0) {
         showToast(r.failed ? `Synced ${r.synced} · ${r.failed} couldn't be saved` : `Synced ${r.synced} ${r.synced === 1 ? 'entry' : 'entries'}`);
+      } else if (r.failed > 0) {
+        // Nothing went through and something was abandoned — say so, because
+        // the alternative is entries disappearing without a word, and because
+        // the previous behaviour here was a queue that sat there for days.
+        showToast(`${r.failed} ${r.failed === 1 ? 'entry' : 'entries'} couldn't be saved and ${r.failed === 1 ? 'was' : 'were'} discarded`);
       }
+      // Report what beat the queue, so a stuck sync leaves a trail instead of
+      // needing a screenshot to diagnose.
+      r.gaveUp.forEach((op) =>
+        reportError(
+          new Error(
+            `Offline op abandoned after ${op.tries} attempts: ${op.method} ${op.path} — ${op.lastError || 'unknown'}`
+          )
+        )
+      );
     } catch {
       /* still unreachable — the queue keeps everything for the next attempt */
     } finally {

@@ -52,11 +52,26 @@ app.use('/api', (req, res, next) => {
   res.status(503).json({ error: 'Starting up — the database is still waking. Try again in a moment.' });
 });
 
+/**
+ * Postgres classes 22 (data exception) and 23 (integrity violation) mean the
+ * request itself was malformed — a non-numeric id landing in a bigint column,
+ * NaN in a numeric one, a foreign key that doesn't exist. Those are the
+ * client's fault and will fail identically every time.
+ *
+ * Reporting them as 500 was quietly serious: the offline queue treats 5xx as
+ * "the server is having a moment" and retries forever, so one bad op blocked
+ * every entry behind it indefinitely. As a 400 the client drops it and the
+ * queue drains.
+ */
+const isClientDataError = (e: unknown): boolean =>
+  typeof (e as { code?: string })?.code === 'string' && /^(22|23)/.test((e as { code: string }).code);
+
 const wrap =
   (fn: (req: AuthedRequest, res: express.Response) => Promise<any>) =>
   (req: AuthedRequest, res: express.Response) =>
     fn(req, res).catch((e) => {
       console.error(e);
+      if (isClientDataError(e)) return res.status(400).json({ error: 'That entry could not be saved' });
       res.status(500).json({ error: 'Server error' });
     });
 
