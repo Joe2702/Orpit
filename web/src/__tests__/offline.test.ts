@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
+  MAX_TRIES,
   noteReachable,
   isOnline,
   enqueue,
@@ -175,5 +176,75 @@ describe('the state cache', () => {
   it('ignores a corrupt cache instead of throwing', () => {
     store['orbit_state_cache'] = '{not json';
     expect(readCachedState()).toBeNull();
+  });
+});
+
+
+// A queue that retries forever is not resilient, it is stuck.
+//
+// Reported from a real phone: three entries sat "waiting · tap to retry" for two
+// days on a working connection. Any 5xx was treated as a passing outage and
+// retried indefinitely, so a single op the server could never accept blocked
+// every entry behind it — invisibly, with no way out short of reinstalling.
+
+describe('an op the server keeps refusing', () => {
+  const failWith = (status: number) => async () => {
+    throw Object.assign(new Error('boom'), { status });
+  };
+
+  it('is given up on rather than blocking the queue forever', async () => {
+    clearQueue();
+    ['bad', 'good'].forEach((id) => enqueue(op(id)));
+    let r;
+    for (let i = 0; i < MAX_TRIES; i++) {
+      r = await flush(async (o) => {
+        if (o.id === 'bad') throw Object.assign(new Error('server error'), { status: 500 });
+        return okState();
+      });
+    }
+    expect(r!.failed).toBe(1);
+    expect(r!.gaveUp.map((x) => x.id)).toEqual(['bad']);
+    // …and crucially the entry stuck behind it finally goes through.
+    expect(r!.synced).toBe(1);
+    expect(pending()).toBe(0);
+  });
+
+  it('keeps trying for a while first — a real outage must not lose data', async () => {
+    clearQueue();
+    enqueue(op('x'));
+    for (let i = 0; i < MAX_TRIES - 1; i++) await flush(failWith(503));
+    expect(pending(), 'still queued before the limit').toBe(1);
+    expect(queuedOps()[0].tries).toBe(MAX_TRIES - 1);
+  });
+
+  it('records why it failed', async () => {
+    clearQueue();
+    enqueue(op('x'));
+    await flush(async () => {
+      throw Object.assign(new Error('Server error'), { status: 500 });
+    });
+    expect(queuedOps()[0].lastError).toContain('Server error');
+  });
+
+  it('never counts a network failure against an op', async () => {
+    // Being offline says nothing about whether the entry is sound. Counting
+    // these would discard a perfectly good workout for being logged on a plane.
+    clearQueue();
+    enqueue(op('x'));
+    for (let i = 0; i < MAX_TRIES * 3; i++) {
+      await flush(async () => {
+        throw new Error('Failed to fetch'); // no status: never reached a server
+      });
+    }
+    expect(pending()).toBe(1);
+    expect(queuedOps()[0].tries ?? 0).toBe(0);
+  });
+
+  it('still drops a 4xx immediately, without waiting out the limit', async () => {
+    clearQueue();
+    enqueue(op('x'));
+    const r = await flush(failWith(400));
+    expect(r.failed).toBe(1);
+    expect(pending()).toBe(0);
   });
 });

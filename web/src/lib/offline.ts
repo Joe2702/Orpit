@@ -33,7 +33,26 @@ export interface QueuedOp {
   method: string;
   body?: string;
   at: number;
+  /**
+   * How many times the *server* has refused this op with an error it might
+   * recover from. Network failures don't count: being offline says nothing
+   * about whether the op is sound, and counting them would discard a perfectly
+   * good entry just for being logged on a plane.
+   */
+  tries?: number;
+  /** Why it last failed, so a stuck queue can say something useful. */
+  lastError?: string;
 }
+
+/**
+ * How many server-side failures an op gets before it is given up on.
+ *
+ * A queue that retries forever is not resilient, it is stuck: one op the server
+ * cannot accept blocks every entry behind it, invisibly, for as long as the app
+ * is installed. Six attempts is far more than any transient outage needs, and
+ * far less than forever.
+ */
+export const MAX_TRIES = 6;
 
 /**
  * Endpoints safe to defer. Everything here either creates a new entry or
@@ -187,28 +206,52 @@ export const unsyncedMessage = (): string =>
  */
 export async function flush(
   send: (op: QueuedOp) => Promise<AppState>
-): Promise<{ synced: number; failed: number; state: AppState | null }> {
+): Promise<{ synced: number; failed: number; state: AppState | null; gaveUp: QueuedOp[] }> {
   let synced = 0;
   let failed = 0;
   let last: AppState | null = null;
+  // Ops abandoned this pass, so the caller can say so out loud instead of
+  // letting entries disappear without a word.
+  const giveUp: QueuedOp[] = [];
+
+  const drop = (id: string) => write(read().filter((x) => x.id !== id));
+  const bump = (id: string, why: string) =>
+    write(read().map((x) => (x.id === id ? { ...x, tries: (x.tries || 0) + 1, lastError: why } : x)));
 
   // Work against a snapshot; ops added while flushing stay for the next pass.
   for (const op of read()) {
     try {
       last = await send(op);
       synced++;
-      write(read().filter((x) => x.id !== op.id));
+      drop(op.id);
     } catch (e) {
       const status = (e as { status?: number })?.status;
-      if (typeof status === 'number' && status >= 400 && status < 500 && status !== 408 && status !== 429) {
+      const msg = (e as Error)?.message || 'Unknown error';
+
+      if (typeof status !== 'number') {
+        // No response at all: the connection failed. Nothing is wrong with the
+        // op, so it keeps its attempts and everything waits for a signal.
+        break;
+      }
+      if (status >= 400 && status < 500 && status !== 408 && status !== 429) {
         // Permanently rejected (deleted parent, validation): drop it rather
         // than block every later entry behind something that can never apply.
         failed++;
-        write(read().filter((x) => x.id !== op.id));
+        drop(op.id);
         continue;
       }
+      // The server answered, badly. That may be a passing outage — or an op it
+      // will never accept, which used to wedge the whole queue for good.
+      const tries = (op.tries || 0) + 1;
+      if (tries >= MAX_TRIES) {
+        failed++;
+        giveUp.push({ ...op, tries, lastError: msg });
+        drop(op.id);
+        continue; // let everything behind it through
+      }
+      bump(op.id, msg);
       break; // transient — keep this op and everything after it
     }
   }
-  return { synced, failed, state: last };
+  return { synced, failed, state: last, gaveUp: giveUp };
 }
