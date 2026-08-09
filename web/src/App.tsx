@@ -42,7 +42,7 @@ import { StoryReport } from './screens/StoryReport';
 import { Intro } from './screens/Intro';
 import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily } from './lib/notify';
 import { isOnline, subscribe as subscribeConnectivity } from './lib/offline';
-import { listenForShortcuts, type ShortcutAction } from './lib/shortcuts';
+import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
 import { updateWidget } from './lib/widget';
 import { syncSteps } from './lib/stepsSync';
@@ -579,13 +579,18 @@ export function App() {
   // ---- Home-screen shortcuts ----
   // A cold start arrives before the session is restored, so the action waits
   // for `ready` rather than firing at a screen that isn't mounted yet.
-  const [shortcut, setShortcut] = useState<ShortcutAction | null>(null);
+  const [shortcut, setShortcut] = useState<ShortcutTarget | null>(null);
   useEffect(() => listenForShortcuts(setShortcut), []);
   useEffect(() => {
     if (!shortcut || !ready || !authed) return;
     setShortcut(null);
-    if (shortcut === 'workout') open('workout');
-    else if (shortcut === 'sleep') open('sleep');
+    if (shortcut.kind === 'screen') {
+      // Tapping an analytics widget lands on the screen it summarises.
+      go(shortcut.screen);
+      return;
+    }
+    if (shortcut.action === 'workout') open('workout');
+    else if (shortcut.action === 'sleep') open('sleep');
     else go('faddtx'); // expenses use the full add-transaction screen
   }, [shortcut, ready, authed, open, go]);
 

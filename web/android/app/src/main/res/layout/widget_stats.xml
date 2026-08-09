@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One layout, five widgets.
+
+  Every analytics widget renders through this: a module name, the one number
+  worth a glance, what that number is, and up to three supporting rows. The
+  Java side hides rows it has no data for, so the same tree serves a panel with
+  three rows and one with none.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/stat_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_bg"
+    android:padding="14dp">
+
+    <TextView
+        android:id="@+id/stat_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/app_name"
+        android:textColor="#FF807A70"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/stat_value"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/widget_no_data"
+        android:textColor="#FF211F1B"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:paddingTop="2dp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/stat_caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FF807A70"
+        android:textSize="12sp"
+        android:paddingBottom="8dp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <LinearLayout
+        android:id="@+id/stat_row1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="3dp">
+        <TextView
+            android:id="@+id/stat_row1_label"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:textColor="#FF807A70"
+            android:textSize="13sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+        <TextView
+            android:id="@+id/stat_row1_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FF211F1B"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:maxLines="1" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/stat_row2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="3dp">
+        <TextView
+            android:id="@+id/stat_row2_label"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:textColor="#FF807A70"
+            android:textSize="13sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+        <TextView
+            android:id="@+id/stat_row2_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FF211F1B"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:maxLines="1" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/stat_row3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="3dp">
+        <TextView
+            android:id="@+id/stat_row3_label"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:textColor="#FF807A70"
+            android:textSize="13sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+        <TextView
+            android:id="@+id/stat_row3_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FF211F1B"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:maxLines="1" />
+    </LinearLayout>
+</LinearLayout>

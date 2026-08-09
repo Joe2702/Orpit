@@ -12,6 +12,14 @@
 
 export type ShortcutAction = 'workout' | 'sleep' | 'expense';
 
+/** Screens an analytics widget can send you to when tapped. */
+export type ShortcutScreen = 'habits' | 'workouts' | 'sleep' | 'finances';
+
+/** Where a deep link wants to go: log something, or open a screen. */
+export type ShortcutTarget =
+  | { kind: 'log'; action: ShortcutAction }
+  | { kind: 'screen'; screen: ShortcutScreen };
+
 /** `orbit://log/workout` → 'workout'. Anything unrecognised is ignored. */
 export function parseShortcut(url: string | null | undefined): ShortcutAction | null {
   if (!url) return null;
@@ -20,10 +28,28 @@ export function parseShortcut(url: string | null | undefined): ShortcutAction | 
 }
 
 /**
+ * `orbit://open/finances` → 'finances'. Bare `orbit://open` has no screen: it
+ * means "just open the app", which is what a summary widget wants.
+ */
+export function parseScreen(url: string | null | undefined): ShortcutScreen | null {
+  if (!url) return null;
+  const m = /^orbit:\/\/open\/(habits|workouts|sleep|finances)\b/i.exec(url.trim());
+  return m ? (m[1].toLowerCase() as ShortcutScreen) : null;
+}
+
+/** Both link shapes, in the order they are tried. */
+export function parseTarget(url: string | null | undefined): ShortcutTarget | null {
+  const action = parseShortcut(url);
+  if (action) return { kind: 'log', action };
+  const screen = parseScreen(url);
+  return screen ? { kind: 'screen', screen } : null;
+}
+
+/**
  * Watch for shortcut launches. `onAction` may be called immediately (cold
  * start) or much later (app resumed via a shortcut). Returns a cleanup fn.
  */
-export function listenForShortcuts(onAction: (a: ShortcutAction) => void): () => void {
+export function listenForShortcuts(onAction: (t: ShortcutTarget) => void): () => void {
   let cancelled = false;
   let remove: (() => void) | undefined;
 
@@ -32,14 +58,14 @@ export function listenForShortcuts(onAction: (a: ShortcutAction) => void): () =>
       if (cancelled) return;
       // Already-running case.
       const handle = await App.addListener('appUrlOpen', ({ url }) => {
-        const a = parseShortcut(url);
-        if (a) onAction(a);
+        const t = parseTarget(url);
+        if (t) onAction(t);
       });
       remove = () => handle.remove();
       // Cold-start case.
       const launch = await App.getLaunchUrl();
-      const a = parseShortcut(launch?.url);
-      if (a && !cancelled) onAction(a);
+      const t = parseTarget(launch?.url);
+      if (t && !cancelled) onAction(t);
     })
     .catch(() => {
       /* not running natively — there are no home-screen shortcuts on the web */
