@@ -1284,6 +1284,30 @@ app.delete(
 
 // ---------------- Counters ----------------
 
+// ---------------- Steps ----------------
+// The device pushes its running total for a day, repeatedly. An upsert keyed on
+// (user, day) means a re-send replaces rather than accumulates — and taking the
+// larger of the two protects the day's figure when a second device, or a phone
+// that rebooted, reports a smaller number for the same day.
+
+app.put(
+  '/api/steps',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const day = String(req.body.day || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return res.status(400).json({ error: 'Bad day' });
+    const n = Math.round(Number(req.body.steps));
+    if (!isFinite(n) || n < 0 || n > 500000) return res.status(400).json({ error: 'Bad step count' });
+    await query(
+      `INSERT INTO steps (user_id, day, steps) VALUES ($1,$2,$3)
+       ON CONFLICT (user_id, day) DO UPDATE SET steps = GREATEST(steps.steps, EXCLUDED.steps)`,
+      [uid, day, n]
+    );
+    res.json(await buildState(uid));
+  })
+);
+
 // ---------------- Milestones ----------------
 // A date counted forward from. Stored as a bare DATE, and validated as one:
 // anything else reaching a DATE column is a 400 rather than a crash.
@@ -1422,6 +1446,7 @@ app.post(
       await c.query('DELETE FROM nights WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM txns WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM milestones WHERE user_id = $1', [uid]);
+      await c.query('DELETE FROM steps WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM habit_checkins WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM count_logs WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM counters WHERE user_id = $1', [uid]);

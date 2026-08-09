@@ -58,6 +58,10 @@ export const state = {
   ],
   fcats: [], budgets: [], goals: [], recurring: [],
   counters, countLogs: [], wTemplates: [],
+  steps: Array.from({ length: 7 }, (_, i) => ({
+    day: new Date(now - (6 - i) * DAY).toISOString().slice(0, 10),
+    steps: [6100, 9300, 4200, 11800, 7400, 8900, 8432][i],
+  })),
   milestones: [
     { id: 'm1', name: 'No sugar', since: '2021-03-03', color: 'teal', icon: 'drop' },
     { id: 'm2', name: 'Together', since: '2022-11-14', color: 'coral', icon: 'heart' },

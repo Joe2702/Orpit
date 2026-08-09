@@ -331,4 +331,15 @@ CREATE TABLE IF NOT EXISTS milestones (
   sort    INT NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS milestones_user ON milestones(user_id);
+
+-- Steps, one row per day. Counted on the device from its own sensor and pushed
+-- up, so the number survives a reinstall and shows on every device. The unique
+-- key is what makes the push an upsert: the device re-sends today's running
+-- total many times a day, and each send must replace the last, not add a row.
+CREATE TABLE IF NOT EXISTS steps (
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  day     DATE NOT NULL,
+  steps   INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, day)
+);
 `;
