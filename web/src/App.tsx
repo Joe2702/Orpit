@@ -25,6 +25,7 @@ import { SyncStatus } from './SyncStatus';
 
 import { Chooser } from './sheets/Chooser';
 import { CounterSheet, CountLogSheet, CountPickSheet } from './sheets/CounterSheets';
+import { MilestoneSheet } from './sheets/MilestoneSheet';
 import { AccountSheet, FcatSheet, BudgetSheet, GoalSheet, RecurringSheet } from './sheets/FinanceSheets';
 import { WorkoutSheet } from './sheets/WorkoutSheet';
 import { SleepSheet } from './sheets/SleepSheet';
@@ -44,6 +45,7 @@ import { isOnline, subscribe as subscribeConnectivity } from './lib/offline';
 import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
 import { updateWidget } from './lib/widget';
+import { syncSteps } from './lib/stepsSync';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
 
@@ -130,6 +132,8 @@ function SheetBody() {
       return <ProfileSheet />;
     case 'counter':
       return <CounterSheet />;
+    case 'milestone':
+      return <MilestoneSheet />;
     case 'countlog':
       return <CountLogSheet />;
     case 'countpick':
@@ -519,6 +523,31 @@ export function App() {
   useEffect(() => {
     updateWidget(state);
   }, [state]);
+
+  // ---- Steps ----
+  // Read the phone's counter on launch and on every return to the foreground.
+  // There is no background service and no polling: the count the sensor keeps
+  // is cumulative, so a reading taken whenever the user happens to open the app
+  // is exactly as complete as one taken every minute would have been.
+  const stepsToday = React.useMemo(() => {
+    if (!state) return 0;
+    const today = dayKey();
+    return state.steps?.find((s) => s.day === today)?.steps ?? 0;
+  }, [state]);
+  const stepsRef = React.useRef(0);
+  stepsRef.current = stepsToday;
+  useEffect(() => {
+    if (!authed) return;
+    const pull = () => {
+      syncSteps(stepsRef.current, (day, n) => api.putSteps(day, n).then(applyState)).catch(() => {});
+    };
+    pull();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') pull();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [authed, applyState]);
 
   // ---- Reminder action buttons ----
   // "Done" on a habit reminder checks that habit off for today; "Snooze" pushes

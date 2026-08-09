@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { api } from '../api';
 import { parseClock } from '../lib/format';
+import { SleepDial, fmtClock } from '../SleepDial';
 
 // Local YYYY-MM-DD (not UTC) for the date input's default.
 function todayISO(): string {
@@ -13,25 +14,23 @@ function todayISO(): string {
 export function SleepSheet() {
   const { closeSheet, mutateOpt, haptic } = useStore();
   const [quality, setQuality] = useState(7);
-  const [bed, setBed] = useState('23:00');
-  const [wake, setWake] = useState('06:45');
+  // Fractional hours rather than "HH:MM" strings: the dial works in angles, and
+  // round-tripping through text on every drag frame is both slower and lossier.
+  const [bedH, setBedH] = useState(23);
+  const [wakeH, setWakeH] = useState(6.75);
+  const bed = fmtClock(bedH);
+  const wake = fmtClock(wakeH);
   const [day, setDay] = useState(todayISO());
   const [note, setNote] = useState('');
 
   // Duration is derived from bedtime → wake-up.
-  const hours = (() => {
-    let h = parseClock(wake) - parseClock(bed);
-    if (h <= 0) h += 24;
-    return h;
-  })();
+  const hours = ((wakeH - bedH) % 24 + 24) % 24;
   const durLabel = `${Math.floor(hours)}h ${String(Math.round((hours % 1) * 60)).padStart(2, '0')}m`;
 
   const save = () => {
     haptic();
     // Timestamp the night at the wake-up moment on the chosen morning.
     const ts = new Date(`${day}T${wake || '08:00'}`).getTime();
-    const bedH = parseClock(bed),
-      wakeH = parseClock(wake);
     const tempId = 'tmp_' + Date.now();
     mutateOpt(
       (s) => ({ ...s, nights: [...s.nights, { id: tempId, hours, quality, bedH, wakeH, note: note.trim() || null, ts }] }),
@@ -77,18 +76,23 @@ export function SleepSheet() {
         </label>
       </div>
 
-      <div style={{ textAlign: 'center', margin: '2px 0 22px' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text2)', marginBottom: 4 }}>Time asleep</div>
-        <span style={{ fontSize: 52, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{durLabel}</span>
+      <div style={{ textAlign: 'center', marginBottom: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text2)', marginBottom: 2 }}>Time asleep</div>
+        <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{durLabel}</span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'stretch', gap: 12, marginBottom: 26 }}>
+      <SleepDial bed={bedH} wake={wakeH} onChange={(b, w) => { setBedH(b); setWakeH(w); }} haptic={haptic} />
+
+      {/* The exact times, under the dial. Dragging is for the shape of the
+          night; these are for reading it back, and for typing an exact time
+          when you already know it. */}
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: 12, margin: '18px 0 26px' }}>
         {timeCard('Bedtime', 'indigo', (
           <svg width="16" height="16" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M14 9.3A5.6 5.6 0 1 1 6.7 2a4.4 4.4 0 0 0 7.3 7.3Z" /></svg>
-        ), bed, setBed)}
+        ), bed, (v) => setBedH(parseClock(v)))}
         {timeCard('Wake-up', 'warning', (
           <svg width="16" height="16" style={{ fill: 'none', stroke: 'var(--warning)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}><circle cx="8" cy="8" r="3.2" /><path d="M8 1.5v1.4M8 13.1v1.4M1.5 8h1.4M13.1 8h1.4M3.4 3.4l1 1M11.6 11.6l1 1M12.6 3.4l-1 1M4.4 11.6l-1 1" /></svg>
-        ), wake, setWake)}
+        ), wake, (v) => setWakeH(parseClock(v)))}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>

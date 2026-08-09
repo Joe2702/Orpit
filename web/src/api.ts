@@ -257,6 +257,16 @@ export const api = {
   confirmEmail: (token: string) =>
     request<{ ok: boolean }>('/verify/confirm', { method: 'POST', body: JSON.stringify({ token }) }),
 
+  /** Push the device's running total for a day. Safe to repeat. */
+  putSteps: (day: string, steps: number) =>
+    request<AppState>('/steps', { method: 'PUT', body: JSON.stringify({ day, steps }) }),
+
+  addMilestone: (b: { name: string; since: string; color: string; icon: string }) =>
+    request<AppState>('/milestones', { method: 'POST', body: JSON.stringify(b) }),
+  editMilestone: (id: string, b: { name: string; since: string; color: string; icon: string }) =>
+    request<AppState>(`/milestones/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+  deleteMilestone: (id: string) => request<AppState>(`/milestones/${id}`, { method: 'DELETE' }),
+
   addAccount: (b: { name: string; type: string; color: string; opening: number }) =>
     request<AppState>('/accounts', { method: 'POST', body: JSON.stringify(b) }),
   editAccount: (id: string, b: { name: string; type: string; color: string; opening: number }) =>

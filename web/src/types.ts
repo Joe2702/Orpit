@@ -172,6 +172,27 @@ export interface Counter {
   step: number;
 }
 
+/**
+ * A date you count forward from: "2 months vegan", "since born".
+ *
+ * `since` is a plain YYYY-MM-DD, not a timestamp. Nobody counts a relationship
+ * from 14:32, and a bare date can't be shifted across a day boundary by a
+ * timezone on the way to the screen.
+ */
+export interface Milestone {
+  id: string;
+  name: string;
+  since: string;
+  color: string;
+  icon: string;
+}
+
+/** Steps for one day, counted on the device and pushed up. */
+export interface StepDay {
+  day: string;
+  steps: number;
+}
+
 export interface CountLog {
   id: string;
   counterId: string;
@@ -194,6 +215,8 @@ export interface AppState {
   recurring: Recurring[];
   counters: Counter[];
   countLogs: CountLog[];
+  milestones: Milestone[];
+  steps: StepDay[];
   wTemplates: WTemplate[];
   /**
    * Totals for history older than the state window. The raw rows aren't sent —
