@@ -11,6 +11,8 @@ import { Avatar, SectionLabel } from '../ui';
 import { IconWorkout, IconSleep, IconExpense } from '../icons';
 import { enabled } from '../lib/modules';
 import { Glyph } from '../lib/appIcons';
+import { CIcon } from '../lib/iconPaths';
+import { elapsed, formatElapsed } from '../lib/since';
 
 
 /** ↑/↓ vs the previous week. `lowerIsBetter` flips the colour (e.g. spending). */
@@ -234,6 +236,53 @@ export function Home() {
       </>
     ),
 
+    milestones: (
+      <>
+        <SectionLabel>Counting since</SectionLabel>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+          {state!.milestones.map((m) => {
+            const col = `var(--${m.color})`;
+            const e = elapsed(new Date(`${m.since}T12:00:00`).getTime());
+            return (
+              <div
+                key={m.id}
+                onClick={() => open('milestone', m)}
+                className="pressRow"
+                style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+              >
+                <span style={{ width: 36, height: 36, borderRadius: 11, flex: 'none', background: `color-mix(in srgb,${col} 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CIcon icon={m.icon} color={col} size={19} />
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{formatElapsed(e)}</div>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: col, flex: 'none', fontVariantNumeric: 'tabular-nums' }}>
+                  {e.totalDays.toLocaleString()}<span style={{ opacity: 0.6, fontWeight: 600, marginLeft: 3 }}>d</span>
+                </div>
+              </div>
+            );
+          })}
+          <div
+            onClick={() => open('milestone')}
+            className="pressRow"
+            style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', cursor: 'pointer' }}
+          >
+            <span style={{ width: 36, height: 36, borderRadius: 11, flex: 'none', background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M9 4v10M4 9h10" /></svg>
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>
+                {state!.milestones.length ? 'Add another' : 'Count from a date'}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>
+                {state!.milestones.length ? 'Anything worth measuring' : 'Sober, vegan, together, born — anything'}
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    ),
     counters: (
       <>
         <SectionLabel>Counters</SectionLabel>
@@ -290,6 +339,9 @@ export function Home() {
     ...(enabled(state!, 'habits') ? ['habits'] : []),
     'week',
     ...(enabled(state!, 'counters') ? ['counters'] : []),
+    // Always offered: a milestone belongs to no tracker, and the empty state is
+    // the invitation to make the first one.
+    'milestones',
   ];
   const order = reconcile(parseLayout(profile.layout).home, blockList);
   const items = order.map((id) => ({ id, node: <div style={{ marginBottom: 22 }}>{blocks[id]}</div> }));

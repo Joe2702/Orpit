@@ -58,5 +58,10 @@ export const state = {
   ],
   fcats: [], budgets: [], goals: [], recurring: [],
   counters, countLogs: [], wTemplates: [],
+  milestones: [
+    { id: 'm1', name: 'No sugar', since: '2021-03-03', color: 'teal', icon: 'drop' },
+    { id: 'm2', name: 'Together', since: '2022-11-14', color: 'coral', icon: 'heart' },
+    { id: 'm3', name: 'Since born', since: '2001-12-12', color: 'indigo', icon: 'star' },
+  ],
   archive: { workouts: 0, nights: 0, txns: 0, countLogs: 0, checkins: 0, txnSum: 0, activeDays: 0, earliestTs: now - 120 * DAY, accSums: {} },
 };

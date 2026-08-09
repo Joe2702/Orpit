@@ -44,6 +44,7 @@ export type SheetKind =
   | 'wcat'
   | 'profile'
   | 'counter'
+  | 'milestone'
   | 'countlog'
   | 'countpick'
   | 'account'

@@ -103,6 +103,14 @@ export async function buildState(userId: number) {
     [userId]
   );
 
+  const milestones = await query(
+    // to_char, not the raw DATE: the driver would hand back a JS Date at UTC
+    // midnight, which is the previous day for anyone west of Greenwich.
+    `SELECT id::text, name, to_char(since, 'YYYY-MM-DD') AS since, color, icon FROM milestones
+     WHERE user_id = $1 ORDER BY sort, id`,
+    [userId]
+  );
+
   const countLogs = await query(
     `SELECT id::text, counter_id::text AS "counterId", amount, ${TS('ts')}
      FROM count_logs WHERE user_id = $1 AND ts > now() - interval '400 days' ORDER BY ts DESC`,
@@ -224,6 +232,7 @@ export async function buildState(userId: number) {
     goals,
     recurring,
     counters,
+    milestones,
     countLogs,
     archive,
   };

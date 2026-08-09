@@ -25,6 +25,7 @@ import { SyncStatus } from './SyncStatus';
 
 import { Chooser } from './sheets/Chooser';
 import { CounterSheet, CountLogSheet, CountPickSheet } from './sheets/CounterSheets';
+import { MilestoneSheet } from './sheets/MilestoneSheet';
 import { AccountSheet, FcatSheet, BudgetSheet, GoalSheet, RecurringSheet } from './sheets/FinanceSheets';
 import { WorkoutSheet } from './sheets/WorkoutSheet';
 import { SleepSheet } from './sheets/SleepSheet';
@@ -130,6 +131,8 @@ function SheetBody() {
       return <ProfileSheet />;
     case 'counter':
       return <CounterSheet />;
+    case 'milestone':
+      return <MilestoneSheet />;
     case 'countlog':
       return <CountLogSheet />;
     case 'countpick':

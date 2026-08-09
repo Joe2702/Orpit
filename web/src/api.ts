@@ -257,6 +257,12 @@ export const api = {
   confirmEmail: (token: string) =>
     request<{ ok: boolean }>('/verify/confirm', { method: 'POST', body: JSON.stringify({ token }) }),
 
+  addMilestone: (b: { name: string; since: string; color: string; icon: string }) =>
+    request<AppState>('/milestones', { method: 'POST', body: JSON.stringify(b) }),
+  editMilestone: (id: string, b: { name: string; since: string; color: string; icon: string }) =>
+    request<AppState>(`/milestones/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+  deleteMilestone: (id: string) => request<AppState>(`/milestones/${id}`, { method: 'DELETE' }),
+
   addAccount: (b: { name: string; type: string; color: string; opening: number }) =>
     request<AppState>('/accounts', { method: 'POST', body: JSON.stringify(b) }),
   editAccount: (id: string, b: { name: string; type: string; color: string; opening: number }) =>
