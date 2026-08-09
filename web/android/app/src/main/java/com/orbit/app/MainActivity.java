@@ -1,8 +1,22 @@
 package com.orbit.app;
 
+import android.os.Bundle;
+
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+
+    /**
+     * Plugins that live in this app rather than in an npm package have to be
+     * registered by hand, and before super.onCreate — the bridge builds its
+     * plugin list there, and anything added afterwards is invisible to
+     * JavaScript.
+     */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(OrbitSteps.class);
+        super.onCreate(savedInstanceState);
+    }
 
     /**
      * Refresh the home-screen widget as the app leaves the foreground.

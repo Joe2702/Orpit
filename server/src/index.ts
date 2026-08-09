@@ -1284,6 +1284,84 @@ app.delete(
 
 // ---------------- Counters ----------------
 
+// ---------------- Steps ----------------
+// The device pushes its running total for a day, repeatedly. An upsert keyed on
+// (user, day) means a re-send replaces rather than accumulates — and taking the
+// larger of the two protects the day's figure when a second device, or a phone
+// that rebooted, reports a smaller number for the same day.
+
+app.put(
+  '/api/steps',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const day = String(req.body.day || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return res.status(400).json({ error: 'Bad day' });
+    const n = Math.round(Number(req.body.steps));
+    if (!isFinite(n) || n < 0 || n > 500000) return res.status(400).json({ error: 'Bad step count' });
+    await query(
+      `INSERT INTO steps (user_id, day, steps) VALUES ($1,$2,$3)
+       ON CONFLICT (user_id, day) DO UPDATE SET steps = GREATEST(steps.steps, EXCLUDED.steps)`,
+      [uid, day, n]
+    );
+    res.json(await buildState(uid));
+  })
+);
+
+// ---------------- Milestones ----------------
+// A date counted forward from. Stored as a bare DATE, and validated as one:
+// anything else reaching a DATE column is a 400 rather than a crash.
+
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+app.post(
+  '/api/milestones',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const name = String(req.body.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'Name required' });
+    const since = String(req.body.since || '');
+    if (!DATE_ONLY.test(since)) return res.status(400).json({ error: 'Pick a date' });
+    const max = await one<{ m: number }>(
+      'SELECT COALESCE(MAX(sort), -1) + 1 AS m FROM milestones WHERE user_id = $1',
+      [uid]
+    );
+    await query(
+      'INSERT INTO milestones (user_id, name, since, color, icon, sort) VALUES ($1,$2,$3,$4,$5,$6)',
+      [uid, name.slice(0, 60), since, String(req.body.color || 'indigo'), String(req.body.icon || 'star'), max!.m]
+    );
+    res.json(await buildState(uid));
+  })
+);
+
+app.patch(
+  '/api/milestones/:id',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const name = String(req.body.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'Name required' });
+    const since = String(req.body.since || '');
+    if (!DATE_ONLY.test(since)) return res.status(400).json({ error: 'Pick a date' });
+    await query(
+      'UPDATE milestones SET name=$1, since=$2, color=$3, icon=$4 WHERE id=$5 AND user_id=$6',
+      [name.slice(0, 60), since, String(req.body.color || 'indigo'), String(req.body.icon || 'star'), req.params.id, uid]
+    );
+    res.json(await buildState(uid));
+  })
+);
+
+app.delete(
+  '/api/milestones/:id',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    await query('DELETE FROM milestones WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    res.json(await buildState(uid));
+  })
+);
+
 app.post(
   '/api/counters',
   requireAuth,
@@ -1367,6 +1445,8 @@ app.post(
       await c.query('DELETE FROM workouts WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM nights WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM txns WHERE user_id = $1', [uid]);
+      await c.query('DELETE FROM milestones WHERE user_id = $1', [uid]);
+      await c.query('DELETE FROM steps WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM habit_checkins WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM count_logs WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM counters WHERE user_id = $1', [uid]);

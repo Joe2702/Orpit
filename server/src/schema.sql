@@ -314,3 +314,29 @@ CREATE TABLE IF NOT EXISTS client_ops (
   PRIMARY KEY (user_id, op_id)
 );
 CREATE INDEX IF NOT EXISTS client_ops_created ON client_ops(created_at);
+
+-- ===== v3: milestones ("2 months vegan", "since born") =====
+-- A date you count forward from, rather than an entry you log. `since` is a
+-- DATE, not a timestamp: nobody counts a relationship from 14:32, and a bare
+-- date has no timezone to shift it across a boundary.
+CREATE TABLE IF NOT EXISTS milestones (
+  id      BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name    TEXT NOT NULL,
+  since   DATE NOT NULL,
+  color   TEXT NOT NULL DEFAULT 'indigo',
+  icon    TEXT NOT NULL DEFAULT 'star',
+  sort    INT NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS milestones_user ON milestones(user_id);
+
+-- Steps, one row per day. Counted on the device from its own sensor and pushed
+-- up, so the number survives a reinstall and shows on every device. The unique
+-- key is what makes the push an upsert: the device re-sends today's running
+-- total many times a day, and each send must replace the last, not add a row.
+CREATE TABLE IF NOT EXISTS steps (
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  day     DATE NOT NULL,
+  steps   INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, day)
+);

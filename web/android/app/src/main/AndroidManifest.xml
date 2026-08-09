@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- The step counter. An ordinary runtime permission, not health data: this
+         reads the sensor the OS already runs, so there is no Play declaration
+         and no dependency on any other app being installed. -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
