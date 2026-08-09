@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildInsights } from '../lib/insights';
 import { summarise } from '../lib/widget';
-import { parseShortcut } from '../lib/shortcuts';
+import { parseShortcut, parseScreen, parseTarget } from '../lib/shortcuts';
 import { dayKey } from '../lib/format';
 import type { AppState } from '../types';
 
@@ -185,5 +185,31 @@ describe('deep links', () => {
     expect(parseShortcut('orbit://open')).toBeNull();
     expect(parseShortcut(null)).toBeNull();
     expect(parseShortcut('https://example.com')).toBeNull();
+  });
+});
+
+
+// Analytics widgets deep-link to the screen they summarise. Bare orbit://open
+// stays screen-less on purpose: the summary widget means "just open the app".
+describe('widget deep links', () => {
+  it('routes each module widget to its screen', () => {
+    expect(parseScreen('orbit://open/finances')).toBe('finances');
+    expect(parseScreen('orbit://open/habits')).toBe('habits');
+    expect(parseScreen('orbit://open/workouts')).toBe('workouts');
+    expect(parseScreen('orbit://open/sleep')).toBe('sleep');
+  });
+
+  it('treats a bare open, and anything unknown, as no screen', () => {
+    expect(parseScreen('orbit://open')).toBeNull();
+    expect(parseScreen('orbit://open/nonsense')).toBeNull();
+    expect(parseScreen('https://example.com/open/habits')).toBeNull();
+    expect(parseScreen(null)).toBeNull();
+  });
+
+  it('keeps logging links and screen links apart', () => {
+    // 'sleep' names both a log sheet and a screen; the prefix decides which.
+    expect(parseTarget('orbit://log/sleep')).toEqual({ kind: 'log', action: 'sleep' });
+    expect(parseTarget('orbit://open/sleep')).toEqual({ kind: 'screen', screen: 'sleep' });
+    expect(parseTarget('orbit://open')).toBeNull();
   });
 });

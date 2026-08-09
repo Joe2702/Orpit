@@ -13,4 +13,10 @@
     <string name="shortcut_expense_long">Add a transaction</string>
     <string name="widget_no_data">Tap to log</string>
     <string name="widget_description">Today\'s progress and one-tap logging</string>
+    <string name="widget_stats_description">A number worth glancing at, on your home screen</string>
+    <string name="widget_habits_label">Orbit · Habits</string>
+    <string name="widget_workouts_label">Orbit · Workouts</string>
+    <string name="widget_sleep_label">Orbit · Sleep</string>
+    <string name="widget_finance_label">Orbit · Finances</string>
+    <string name="widget_summary_label">Orbit · Summary</string>
 </resources>

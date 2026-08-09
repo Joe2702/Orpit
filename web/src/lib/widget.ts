@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { dayKey } from './format';
+import { buildPanels, encodePanel, PANEL_KEYS } from './widgetStats';
 import type { AppState } from '../types';
 
 // Feeds the home-screen widget.
@@ -35,6 +36,14 @@ export async function updateWidget(state: AppState | null): Promise<void> {
   try {
     const { Preferences } = await import('@capacitor/preferences');
     await Preferences.set({ key: KEY, value: summarise(state) });
+    // The analytics widgets. Each is a separate home-screen widget the user can
+    // place independently, so all of them are written every time — whichever
+    // ones exist will find their data, and the ones that don't cost a key.
+    const panels = buildPanels(state);
+    for (const [name, panel] of Object.entries(panels)) {
+      const key = PANEL_KEYS[name];
+      if (key) await Preferences.set({ key, value: encodePanel(panel) });
+    }
   } catch {
     /* plugin missing or storage unavailable — the widget keeps its last value */
   }

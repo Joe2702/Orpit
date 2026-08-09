@@ -50,6 +50,66 @@
                 android:resource="@xml/widget_orbit_info" />
         </receiver>
 
+        <!-- Analytics widgets. One provider each, so every module is its own
+             entry in the widget picker and the user can place any combination
+             without a configuration screen. They share a layout and a provider
+             description; only the picker label differs. -->
+        <receiver
+            android:name=".HabitsWidget"
+            android:label="@string/widget_habits_label"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_stats_info" />
+        </receiver>
+        <receiver
+            android:name=".WorkoutsWidget"
+            android:label="@string/widget_workouts_label"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_stats_info" />
+        </receiver>
+        <receiver
+            android:name=".SleepWidget"
+            android:label="@string/widget_sleep_label"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_stats_info" />
+        </receiver>
+        <receiver
+            android:name=".FinanceWidget"
+            android:label="@string/widget_finance_label"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_stats_info" />
+        </receiver>
+        <receiver
+            android:name=".SummaryWidget"
+            android:label="@string/widget_summary_label"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_stats_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
