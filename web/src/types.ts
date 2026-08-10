@@ -187,12 +187,6 @@ export interface Milestone {
   icon: string;
 }
 
-/** Steps for one day, counted on the device and pushed up. */
-export interface StepDay {
-  day: string;
-  steps: number;
-}
-
 export interface CountLog {
   id: string;
   counterId: string;
@@ -216,7 +210,6 @@ export interface AppState {
   counters: Counter[];
   countLogs: CountLog[];
   milestones: Milestone[];
-  steps: StepDay[];
   wTemplates: WTemplate[];
   /**
    * Totals for history older than the state window. The raw rows aren't sent —

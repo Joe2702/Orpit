@@ -103,14 +103,6 @@ export async function buildState(userId: number) {
     [userId]
   );
 
-  const steps = await query(
-    // The window is the same 400 days as everything else; a step chart older
-    // than that is not worth the payload.
-    `SELECT to_char(day, 'YYYY-MM-DD') AS day, steps FROM steps
-     WHERE user_id = $1 AND day > (now() - interval '400 days')::date ORDER BY day`,
-    [userId]
-  );
-
   const milestones = await query(
     // to_char, not the raw DATE: the driver would hand back a JS Date at UTC
     // midnight, which is the previous day for anyone west of Greenwich.
@@ -241,7 +233,6 @@ export async function buildState(userId: number) {
     recurring,
     counters,
     milestones,
-    steps,
     countLogs,
     archive,
   };

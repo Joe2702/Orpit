@@ -13,7 +13,6 @@ import { enabled } from '../lib/modules';
 import { Glyph } from '../lib/appIcons';
 import { CIcon } from '../lib/iconPaths';
 import { elapsed, formatElapsed } from '../lib/since';
-import { StepsCard } from '../StepsCard';
 
 
 /** ↑/↓ vs the previous week. `lowerIsBetter` flips the colour (e.g. spending). */
@@ -287,10 +286,6 @@ export function Home() {
     counters: (
       <>
         <SectionLabel>Counters</SectionLabel>
-        {/* Steps first: it is the one number here nobody has to enter. */}
-        <div style={{ marginBottom: 12 }}>
-          <StepsCard />
-        </div>
         <div
           onClick={() => go('counters')}
           className="press99"
