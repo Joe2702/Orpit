@@ -1,8 +1,22 @@
 package com.orbit.app;
 
+import android.os.Bundle;
+
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+
+    /**
+     * Plugins that live in this app rather than in an npm package have to be
+     * registered by hand, and before super.onCreate — the bridge builds its
+     * plugin list there, and anything added afterwards is invisible to
+     * JavaScript.
+     */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(OrbitSms.class);
+        super.onCreate(savedInstanceState);
+    }
 
     /** Every analytics widget, so placing several doesn't leave some stale. */
     private static final StatsWidget[] STATS_WIDGETS = {

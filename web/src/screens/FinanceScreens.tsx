@@ -307,6 +307,18 @@ export function FTxns() {
                         <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
                           {t.name}
                           <UnsyncedDot id={t.id} />
+                          {t.sms && (
+                            // Read out of a bank message rather than entered.
+                            // Worth a tag: a machine picked the name and the
+                            // category, and the user should be able to see at a
+                            // glance which figures came from that.
+                            <span
+                              style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: '.04em', color: 'var(--emerald)', background: 'color-mix(in srgb,var(--emerald) 14%,transparent)', borderRadius: 5, padding: '2px 5px', flex: 'none' }}
+                              aria-label="Imported from a bank message"
+                            >
+                              SMS
+                            </span>
+                          )}
                           {t.photo && (
                             <svg width="13" height="13" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.8, strokeLinejoin: 'round', flex: 'none' }} aria-label="Has a receipt">
                               <path d="M1.5 4h2.2l1-1.4h3.6L9.3 4h2.2v7h-10z" />

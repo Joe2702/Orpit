@@ -113,6 +113,30 @@ ALTER TABLE txns ADD COLUMN IF NOT EXISTS to_acc_id BIGINT;
 -- correction belongs to the day it was noticed, and history stays as it was.
 -- It changes net worth (the money is real) but is neither income nor spending.
 ALTER TABLE txns ADD COLUMN IF NOT EXISTS adjust BOOLEAN NOT NULL DEFAULT FALSE;
+-- Where an entry came from. Set when it was read out of a bank SMS rather than
+-- typed, so the app can mark it as unchecked and the user knows which figures
+-- came from a machine reading a message.
+--
+-- \`sms_key\` is a hash of the message, and the unique index on it is what makes
+-- importing safe to repeat: re-scanning the inbox, reinstalling the app, or
+-- adding a second phone all re-offer the same messages, and every one of them
+-- has to land on the row that already exists rather than beside it. Enforcing
+-- that here rather than on the device is the point — a device only knows what
+-- it has seen itself.
+ALTER TABLE txns ADD COLUMN IF NOT EXISTS sms_key TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS txns_sms_key ON txns(user_id, sms_key) WHERE sms_key IS NOT NULL;
+
+-- Imported payments the user threw away.
+--
+-- Deleting the transaction is not enough on its own: the message it came from
+-- is still sitting in the phone's inbox, so a later re-scan would import it
+-- again and the user would have to delete the same thing twice. Remembering the
+-- key is what makes "delete" mean deleted.
+CREATE TABLE IF NOT EXISTS sms_ignored (
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sms_key TEXT NOT NULL,
+  PRIMARY KEY (user_id, sms_key)
+);
 
 -- ===== v2: accounts, finance categories, budgets, goals, recurring, counters =====
 

@@ -990,6 +990,59 @@ app.post(
   })
 );
 
+// Payments read out of the phone's bank messages.
+//
+// A batch, because the device catches up on everything since it last looked and
+// sending twenty separate requests over a patchy connection is twenty chances
+// to half-fail.
+//
+// The message text is not sent and is not stored. What arrives is what the
+// device read out of it — an amount, a name, a date — and a hash of the
+// message, which is the only thing that makes a repeat recognisable.
+//
+// Every entry is inserted ON CONFLICT DO NOTHING against the unique index on
+// (user_id, sms_key). That is the whole duplicate story, and it belongs here
+// rather than on the device: a phone only knows the messages it has read
+// itself, so two phones on one account would each import the same payment.
+app.post(
+  '/api/txns/sms',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const items = Array.isArray(req.body.items) ? req.body.items.slice(0, 200) : [];
+    // Not "now": a first import walks back through old messages, and dating
+    // them today would pile a year of spending onto one afternoon.
+    const soon = Date.now() + 86400000;
+    let added = 0;
+
+    for (const it of items) {
+      const key = String(it?.key || '').slice(0, 80);
+      if (!key) continue;
+      const amt = Math.abs(Number(it.amount));
+      if (!isFinite(amt) || amt <= 0 || amt > 1e9) continue;
+      const t = Number(it.ts);
+      if (!isFinite(t) || t <= 0 || t > soon) continue;
+      const income = !!it.income;
+      const name = String(it.name || 'Bank').trim().slice(0, 120) || 'Bank';
+      const cat = String(it.cat || (income ? 'Income' : 'Other')).slice(0, 60);
+      const note = it.note ? String(it.note).slice(0, 200) : null;
+
+      const row = await one<{ id: string }>(
+        `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts, sms_key)
+         SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9
+         WHERE NOT EXISTS (SELECT 1 FROM sms_ignored WHERE user_id = $1 AND sms_key = $9)
+         ON CONFLICT (user_id, sms_key) WHERE sms_key IS NOT NULL DO NOTHING
+         RETURNING id::text`,
+        [uid, name, cat, income ? amt : -amt, income, it.accId || null, note, new Date(t), key]
+      );
+      if (row) added++;
+    }
+
+    res.json({ added, state: await buildState(uid) });
+  })
+);
+
 app.patch(
   '/api/txns/:id',
   requireAuth,
@@ -1034,7 +1087,16 @@ app.delete(
   idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    await query('DELETE FROM txns WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    const gone = await one<{ k: string | null }>(
+      'DELETE FROM txns WHERE id = $1 AND user_id = $2 RETURNING sms_key AS k',
+      [req.params.id, uid]
+    );
+    // An imported payment that gets deleted must stay deleted: the message it
+    // came from is still in the phone's inbox and a later re-scan would find it
+    // again. See the sms_ignored table.
+    if (gone?.k) {
+      await query('INSERT INTO sms_ignored (user_id, sms_key) VALUES ($1,$2) ON CONFLICT DO NOTHING', [uid, gone.k]);
+    }
     res.json(await buildState(uid));
   })
 );
@@ -1421,6 +1483,7 @@ app.post(
       await c.query('DELETE FROM workouts WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM nights WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM txns WHERE user_id = $1', [uid]);
+      await c.query('DELETE FROM sms_ignored WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM milestones WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM habit_checkins WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM count_logs WHERE user_id = $1', [uid]);

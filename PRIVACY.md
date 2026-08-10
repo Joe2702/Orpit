@@ -36,9 +36,26 @@ contact: **youssif_mohammed@aucegypt.edu**
 - If you send feedback, we store your message alongside your name and email so
   we can reply.
 
+**Bank messages (optional, Android only)**
+- If you turn on Profile → Bank messages → Import from SMS, the app asks Android
+  for permission to read your text messages, so that payment alerts from your
+  bank become transactions without you typing them in.
+- The app only looks at messages whose sender matches a known bank or wallet
+  (for example NBE, CIB, InstaPay, Vodafone Cash). Personal messages are not
+  read.
+- **The text of your messages never leaves your phone and is never sent to our
+  servers.** The app works out the amount, the merchant name and the date on the
+  device, and stores only those — together with the last four digits of the card
+  when the message mentions them, and a one-way hash of the message that is used
+  solely to avoid importing the same payment twice.
+- This is entirely optional. Every part of the app works without it, and you can
+  turn it off at any time in Profile → Bank messages, or revoke the permission in
+  Android's own settings.
+
 **What we do NOT collect:** we do not use advertising or analytics SDKs, we do
 not track your location, we do not read your contacts, photos, or any data from
-other apps, and we do not build advertising profiles.
+other apps, and we do not build advertising profiles. We do not read, store or
+transmit the content of your text messages.
 
 ## Why we store it
 
@@ -75,6 +92,8 @@ routine backups for a short period before being overwritten.
 - **Delete your account**: Profile → Delete my account. This permanently removes
   your account and all associated data.
 - **Turn off reminders**: Profile → Preferences → Daily reminders.
+- **Turn off bank message importing**: Profile → Bank messages → Import from SMS.
+  Transactions already imported stay until you delete them.
 
 ## Security
 

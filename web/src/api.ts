@@ -1,4 +1,5 @@
 import type { AppState, WorkoutSet } from './types';
+import type { SmsRow } from './lib/smsSync';
 import { enqueue, flush, isQueueable, newOpId, noteReachable, OfflineQueuedError, type QueuedOp } from './lib/offline';
 
 // On the web the frontend is served by the same server as the API, so a
@@ -248,6 +249,18 @@ export const api = {
     b: { name?: string; cat: string; amount: number; income: boolean; accId?: string | null; toAccId?: string | null; note?: string | null; photo?: string | null; ts?: number }
   ) => request<AppState>(`/txns/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteTxn: (id: string) => request<AppState>(`/txns/${id}`, { method: 'DELETE' }),
+  /**
+   * Import a batch of payments read from bank messages.
+   *
+   * Returns how many were new: the server drops repeats on a unique key, so a
+   * batch can be re-sent after a failed connection without any of it landing
+   * twice. The message text is not sent.
+   */
+  importSms: (items: SmsRow[]) =>
+    request<{ added: number; state: AppState }>('/txns/sms', {
+      method: 'POST',
+      body: JSON.stringify({ items }),
+    }),
   /** Fetch a receipt on demand — images are never part of the state bundle. */
   txnPhoto: (id: string) => request<{ photo: string }>(`/txns/${id}/photo`),
   setTxnPhoto: (id: string, photo: string | null) =>
@@ -257,7 +270,6 @@ export const api = {
   confirmEmail: (token: string) =>
     request<{ ok: boolean }>('/verify/confirm', { method: 'POST', body: JSON.stringify({ token }) }),
 
-  /** Push the device's running total for a day. Safe to repeat. */
 
   addMilestone: (b: { name: string; since: string; color: string; icon: string }) =>
     request<AppState>('/milestones', { method: 'POST', body: JSON.stringify(b) }),
