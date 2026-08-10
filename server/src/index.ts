@@ -1014,7 +1014,6 @@ app.post(
     // Not "now": a first import walks back through old messages, and dating
     // them today would pile a year of spending onto one afternoon.
     const soon = Date.now() + 86400000;
-    let added = 0;
 
     for (const it of items) {
       const key = String(it?.key || '').slice(0, 80);
@@ -1028,18 +1027,21 @@ app.post(
       const cat = String(it.cat || (income ? 'Income' : 'Other')).slice(0, 60);
       const note = it.note ? String(it.note).slice(0, 200) : null;
 
-      const row = await one<{ id: string }>(
+      await query(
         `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts, sms_key)
          SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9
          WHERE NOT EXISTS (SELECT 1 FROM sms_ignored WHERE user_id = $1 AND sms_key = $9)
-         ON CONFLICT (user_id, sms_key) WHERE sms_key IS NOT NULL DO NOTHING
-         RETURNING id::text`,
+         ON CONFLICT (user_id, sms_key) WHERE sms_key IS NOT NULL DO NOTHING`,
         [uid, name, cat, income ? amt : -amt, income, it.accId || null, note, new Date(t), key]
       );
-      if (row) added++;
     }
 
-    res.json({ added, state: await buildState(uid) });
+    // A plain state, like every other write. The count of what was actually
+    // new is worked out on the device by diffing ids: this response also
+    // travels through the offline queue, which replays a failed op later and
+    // applies whatever comes back as the app state, so it cannot be a
+    // different shape from every other one.
+    res.json(await buildState(uid));
   })
 );
 

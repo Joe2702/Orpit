@@ -257,10 +257,7 @@ export const api = {
    * twice. The message text is not sent.
    */
   importSms: (items: SmsRow[]) =>
-    request<{ added: number; state: AppState }>('/txns/sms', {
-      method: 'POST',
-      body: JSON.stringify({ items }),
-    }),
+    request<AppState>('/txns/sms', { method: 'POST', body: JSON.stringify({ items }) }),
   /** Fetch a receipt on demand — images are never part of the state bundle. */
   txnPhoto: (id: string) => request<{ photo: string }>(`/txns/${id}/photo`),
   setTxnPhoto: (id: string, photo: string | null) =>

@@ -128,7 +128,7 @@ const BANK_SENDERS = [
  */
 export async function syncSms(
   state: AppState,
-  push: (items: SmsRow[]) => Promise<{ added: number; state: AppState }>
+  push: (items: SmsRow[]) => Promise<AppState>
 ): Promise<SmsImport> {
   const none: SmsImport = { added: 0, read: 0 };
   if (!smsSupported() || !smsEnabled()) return none;
@@ -157,13 +157,23 @@ export async function syncSms(
   }
 
   const rows = parsed.map((p) => toRow(p, state));
+  // Which entries existed before, so what the server actually took can be
+  // counted by difference. The server drops repeats silently — it has to, since
+  // a second device would otherwise import the same payment — so "how many were
+  // new" is not something the response can be asked for without giving this
+  // endpoint a different shape from every other write. See api.importSms.
+  const had = new Set(state.txns.map((t) => t.id));
   try {
-    const r = await push(rows);
+    const next = await push(rows);
     // Only after the server has them. If the push failed, the watermark stays
     // where it was and the same messages are offered again next time — the
     // unique key on the server makes that safe to repeat.
     set(MARK_KEY, String(newest));
-    return { added: r.added, read: parsed.length, state: r.state };
+    return {
+      added: next.txns.filter((t) => t.sms && !had.has(t.id)).length,
+      read: parsed.length,
+      state: next,
+    };
   } catch {
     return none;
   }
