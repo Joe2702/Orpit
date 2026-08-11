@@ -1,11 +1,22 @@
 import React from 'react';
 import { useStore } from '../store';
 import { api, setToken } from '../api';
-import { Avatar, SectionLabel, toggleTrack, toggleKnob } from '../ui';
+import { Avatar, SectionLabel, toggleTrack, toggleKnob, chip } from '../ui';
 import { IconChevron } from '../icons';
 import { deviceTimezone } from '../lib/push';
 import { enableReminders, disableReminders, updateReminderTime, sendTestNotification, diagnose, requestExactAlarms, isNative, type NotifyDiagnostics } from '../lib/notify';
 import { Glyph } from '../lib/appIcons';
+import {
+  smsSupported,
+  smsEnabled,
+  smsStatus,
+  enableSms,
+  disableSms,
+  rewindSms,
+  syncSms,
+  smsAccount,
+  setSmsAccount,
+} from '../lib/smsSync';
 
 export const MODULE_OPTS = [
   { key: 'habits', label: 'Habits', icon: 'sprout' as const, color: 'teal' },
@@ -60,6 +71,75 @@ export function Settings() {
   const setTheme = (val: 'light' | 'dark' | 'system') => {
     mutateOpt((s) => ({ ...s, profile: { ...s.profile, theme: val } }), () => api.updateMe({ theme: val }));
   };
+
+  // ---- Bank messages ----
+  // Two pieces of state the server knows nothing about: whether the phone has
+  // been given permission to read its inbox, and which account the payments it
+  // finds belong to. Both are per-device by nature — a second phone has its own
+  // messages and its own permission.
+  const [smsOn, setSmsOn] = React.useState(smsEnabled());
+  const [smsAcc, setSmsAcc] = React.useState(smsAccount());
+  const [scanning, setScanning] = React.useState(false);
+
+  const scanMessages = async (announceNothing: boolean) => {
+    if (!state) return;
+    setScanning(true);
+    const r = await syncSms(state, (items) => api.importSms(items));
+    setScanning(false);
+    if (r.state) applyState(r.state);
+    if (r.added > 0) {
+      showToast(`${r.added} ${r.added === 1 ? 'payment' : 'payments'} added`);
+    } else if (announceNothing) {
+      // "Nothing found" is a real answer and a useful one — silence after a
+      // deliberate tap reads as a broken button.
+      showToast(r.read > 0 ? 'Already up to date' : 'No new bank messages found');
+    }
+  };
+
+  const toggleSms = async () => {
+    if (smsOn) {
+      disableSms();
+      setSmsOn(false);
+      showToast('Bank messages off');
+      return;
+    }
+    const st = await enableSms();
+    if (!st.available) {
+      showToast('This device does not receive SMS');
+      return;
+    }
+    if (!st.granted) {
+      showToast('Orbit needs permission to read your messages');
+      return;
+    }
+    setSmsOn(true);
+    scanMessages(true);
+  };
+
+  const importOlder = async () => {
+    const ok = await confirm({
+      title: 'Import older messages?',
+      message:
+        'Orbit will look back a year for bank messages it has not read yet. Payments already imported will not be added twice.',
+      confirmLabel: 'Import',
+    });
+    if (!ok) return;
+    rewindSms(365);
+    scanMessages(true);
+  };
+
+  // The permission can be taken away from outside the app, in Android's own
+  // settings, and nothing tells us when that happens. Re-checking on open is
+  // what stops the switch from claiming to be on while nothing is being read.
+  React.useEffect(() => {
+    if (!smsOn) return;
+    smsStatus().then((st) => {
+      if (!st.granted) {
+        disableSms();
+        setSmsOn(false);
+      }
+    });
+  }, [smsOn]);
 
   const toggle = (key: 'reminders' | 'haptics') => {
     const next = !profile[key];
@@ -607,6 +687,87 @@ export function Settings() {
           }
         />
       </div>
+
+      {smsSupported() && (
+        <>
+          <SectionLabel>Bank messages</SectionLabel>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+            <PrefRow
+              iconKey="emerald"
+              title="Import from SMS"
+              sub="Turn bank alerts into transactions"
+              on={smsOn}
+              onToggle={toggleSms}
+              icon={
+                <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--emerald)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+                  <path d="M3 5.5h14v9H7l-4 3v-12Z" />
+                  <path d="M7 9.5h6M7 12h4" />
+                </svg>
+              }
+              border={smsOn}
+            />
+
+            {smsOn && (
+              <>
+                <div style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>Add them to</div>
+                  <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 10 }}>
+                    The account your card and wallet payments come out of.
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                    {[{ id: '', name: 'No account' }, ...state!.accounts].map((a) => {
+                      const on = (smsAcc || '') === a.id;
+                      return (
+                        <div
+                          key={a.id || 'none'}
+                          onClick={() => {
+                            setSmsAccount(a.id || null);
+                            setSmsAcc(a.id || null);
+                          }}
+                          className="press99"
+                          style={chip(on, 'var(--emerald)')}
+                        >
+                          {a.name}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => !scanning && scanMessages(true)}
+                  className="pressRow"
+                  style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                >
+                  <span style={{ width: 36, flex: 'none' }} />
+                  <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--emerald)' }}>
+                    {scanning ? 'Checking…' : 'Check for new messages now'}
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => !scanning && importOlder()}
+                  className="pressRow"
+                  style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                >
+                  <span style={{ width: 36, flex: 'none' }} />
+                  <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--emerald)' }}>Import the past year</div>
+                </div>
+              </>
+            )}
+
+            {/* Said plainly, and said here rather than buried in a policy page:
+                this is the permission people are most right to be wary of. */}
+            <div style={{ padding: '13px 16px', fontSize: 12, lineHeight: 1.55, color: 'var(--text2)' }}>
+              Orbit reads only messages from banks and wallets, and only on this phone. The text of your
+              messages is never sent anywhere — Orbit works out the amount, the shop and the date on the
+              device, and stores just those. Imported payments are marked{' '}
+              <span style={{ fontWeight: 700, color: 'var(--emerald)' }}>SMS</span> so you can check them,
+              and you can edit or delete any of them like anything else.
+            </div>
+          </div>
+        </>
+      )}
 
       <SectionLabel>Manage</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>

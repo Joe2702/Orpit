@@ -45,7 +45,7 @@ import { isOnline, subscribe as subscribeConnectivity } from './lib/offline';
 import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
 import { updateWidget } from './lib/widget';
-import { syncSteps } from './lib/stepsSync';
+import { syncSms, smsEnabled } from './lib/smsSync';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
 
@@ -392,7 +392,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 }
 
 export function App() {
-  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, open, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, passwordState, report, closeReport, applyState } = useStore();
+  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, open, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, passwordState, report, closeReport, applyState, showToast } = useStore();
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
 
   // Track the phone's own light/dark setting so "System" can follow it live.
@@ -524,30 +524,36 @@ export function App() {
     updateWidget(state);
   }, [state]);
 
-  // ---- Steps ----
-  // Read the phone's counter on launch and on every return to the foreground.
-  // There is no background service and no polling: the count the sensor keeps
-  // is cumulative, so a reading taken whenever the user happens to open the app
-  // is exactly as complete as one taken every minute would have been.
-  const stepsToday = React.useMemo(() => {
-    if (!state) return 0;
-    const today = dayKey();
-    return state.steps?.find((s) => s.day === today)?.steps ?? 0;
-  }, [state]);
-  const stepsRef = React.useRef(0);
-  stepsRef.current = stepsToday;
+  // ---- Bank messages ----
+  // Read the phone's inbox on launch and on every return to the foreground.
+  // There is no background service and no listener: the inbox keeps the
+  // messages, so a scan taken whenever the user happens to open the app finds
+  // exactly what a listener would have caught, including whatever arrived while
+  // the phone was off. Does nothing at all unless the user turned it on.
+  const smsState = React.useRef(state);
+  smsState.current = state;
   useEffect(() => {
-    if (!authed) return;
-    const pull = () => {
-      syncSteps(stepsRef.current, (day, n) => api.putSteps(day, n).then(applyState)).catch(() => {});
+    if (!authed || !smsEnabled()) return;
+    const scan = () => {
+      const cur = smsState.current;
+      if (!cur) return;
+      syncSms(cur, (items) => api.importSms(items))
+        .then((r) => {
+          if (!r.state) return;
+          applyState(r.state);
+          if (r.added > 0) {
+            showToast(`${r.added} ${r.added === 1 ? 'payment' : 'payments'} added from your messages`);
+          }
+        })
+        .catch(() => {});
     };
-    pull();
+    scan();
     const onVisible = () => {
-      if (document.visibilityState === 'visible') pull();
+      if (document.visibilityState === 'visible') scan();
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [authed, applyState]);
+  }, [authed, applyState, showToast]);
 
   // ---- Reminder action buttons ----
   // "Done" on a habit reminder checks that habit off for today; "Snooze" pushes

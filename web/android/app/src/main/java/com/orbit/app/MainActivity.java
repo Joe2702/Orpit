@@ -6,15 +6,6 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
-    /** Every analytics widget, so placing several doesn't leave some stale. */
-    private static final StatsWidget[] STATS_WIDGETS = {
-        new HabitsWidget(),
-        new WorkoutsWidget(),
-        new SleepWidget(),
-        new FinanceWidget(),
-        new SummaryWidget(),
-    };
-
     /**
      * Plugins that live in this app rather than in an npm package have to be
      * registered by hand, and before super.onCreate — the bridge builds its
@@ -23,9 +14,18 @@ public class MainActivity extends BridgeActivity {
      */
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        registerPlugin(OrbitSteps.class);
+        registerPlugin(OrbitSms.class);
         super.onCreate(savedInstanceState);
     }
+
+    /** Every analytics widget, so placing several doesn't leave some stale. */
+    private static final StatsWidget[] STATS_WIDGETS = {
+        new HabitsWidget(),
+        new WorkoutsWidget(),
+        new SleepWidget(),
+        new FinanceWidget(),
+        new SummaryWidget(),
+    };
 
     /**
      * Refresh the home-screen widgets as the app leaves the foreground.

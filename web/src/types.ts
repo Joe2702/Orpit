@@ -108,6 +108,13 @@ export interface Txn {
   // Whether a receipt exists. The image itself is fetched on demand so it
   // never rides along with every app open.
   photo: boolean;
+  /**
+   * Read out of a bank message rather than entered. Shown as a tag on the
+   * entry: a machine read a bank's wording and picked the category, and the
+   * user should be able to tell at a glance which figures came from that
+   * rather than from their own hands.
+   */
+  sms?: boolean;
   ts: number;
 }
 
@@ -187,12 +194,6 @@ export interface Milestone {
   icon: string;
 }
 
-/** Steps for one day, counted on the device and pushed up. */
-export interface StepDay {
-  day: string;
-  steps: number;
-}
-
 export interface CountLog {
   id: string;
   counterId: string;
@@ -216,7 +217,6 @@ export interface AppState {
   counters: Counter[];
   countLogs: CountLog[];
   milestones: Milestone[];
-  steps: StepDay[];
   wTemplates: WTemplate[];
   /**
    * Totals for history older than the state window. The raw rows aren't sent —

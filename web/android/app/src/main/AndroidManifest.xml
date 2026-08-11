@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- The step counter. An ordinary runtime permission, not health data: this
-         reads the sensor the OS already runs, so there is no Play declaration
-         and no dependency on any other app being installed. -->
-    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <!-- Reading bank messages so payments become transactions without being
+         typed in. Read-only, and only ever asked for when the user turns the
+         feature on: the app is fully usable with this permission refused.
+
+         Note for whoever ships this: Play restricts READ_SMS to apps whose
+         core function needs it, and a finance app is on the accepted list but
+         must fill in the Permissions Declaration Form. On a directly-installed
+         APK it just works. -->
+    <uses-permission android:name="android.permission.READ_SMS" />
+
 
     <application
         android:allowBackup="true"

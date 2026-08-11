@@ -103,14 +103,6 @@ export async function buildState(userId: number) {
     [userId]
   );
 
-  const steps = await query(
-    // The window is the same 400 days as everything else; a step chart older
-    // than that is not worth the payload.
-    `SELECT to_char(day, 'YYYY-MM-DD') AS day, steps FROM steps
-     WHERE user_id = $1 AND day > (now() - interval '400 days')::date ORDER BY day`,
-    [userId]
-  );
-
   const milestones = await query(
     // to_char, not the raw DATE: the driver would hand back a JS Date at UTC
     // midnight, which is the previous day for anyone west of Greenwich.
@@ -137,6 +129,7 @@ export async function buildState(userId: number) {
     // bundle only carries whether one exists, so it stays small.
     `SELECT t.id::text, t.name, t.cat, t.amount, t.income, t.acc_id::text AS "accId",
             t.to_acc_id::text AS "toAccId", t.adjust, t.note,
+            (t.sms_key IS NOT NULL) AS sms,
             (p.txn_id IS NOT NULL) AS photo, ${TS('t.ts')}
      FROM txns t LEFT JOIN txn_photos p ON p.txn_id = t.id
      WHERE t.user_id = $1 AND t.ts > now() - interval '400 days' ORDER BY t.ts DESC`,
@@ -241,7 +234,6 @@ export async function buildState(userId: number) {
     recurring,
     counters,
     milestones,
-    steps,
     countLogs,
     archive,
   };
