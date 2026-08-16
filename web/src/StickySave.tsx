@@ -53,8 +53,11 @@ export function StickySave({
         aria-hidden
         style={{
           position: 'absolute',
-          left: -24,
-          right: -24,
+          // Exactly the 20px page padding every screen using this uses, no
+          // more: a wider bleed reaches past the right edge of the scrollport
+          // and gives the form a few pixels of sideways scroll.
+          left: -20,
+          right: -20,
           bottom: -26,
           top: -40,
           backdropFilter: 'blur(14px)',

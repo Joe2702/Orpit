@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import { api } from '../api';
 import { parseClock } from '../lib/format';
 import { SleepDial, fmtClock } from '../SleepDial';
+import { StickySave } from '../StickySave';
 
 // Local YYYY-MM-DD (not UTC) for the date input's default.
 function todayISO(): string {
@@ -47,12 +48,17 @@ export function SleepSheet() {
     value: string,
     setValue: (v: string) => void
   ) => (
-    <div style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 18, padding: '14px 15px' }}>
+    // minWidth 0 on both the card and the input: a flex item defaults to
+    // min-width:auto, so it refuses to shrink below its content's intrinsic
+    // width — and a time input's is wide, because of the clock affordance the
+    // browser draws inside it. Without this the two cards claim more than the
+    // row has and the wake-up time is cut off by the right edge of the screen.
+    <div style={{ flex: 1, minWidth: 0, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 18, padding: '14px 15px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
         <span style={{ width: 28, height: 28, borderRadius: 9, flex: 'none', background: `color-mix(in srgb,var(--${tint}) 15%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
         <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>{labelText}</span>
       </div>
-      <input type="time" value={value} onChange={(e) => setValue(e.target.value)} style={{ width: '100%', border: 'none', background: 'none', fontSize: 25, fontWeight: 700, color: 'var(--text)', outline: 'none', fontVariantNumeric: 'tabular-nums', letterSpacing: '-.01em', padding: 0 }} />
+      <input type="time" value={value} onChange={(e) => setValue(e.target.value)} className="timeField" style={{ width: '100%', minWidth: 0, border: 'none', background: 'none', fontSize: 23, fontWeight: 700, color: 'var(--text)', outline: 'none', fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em', padding: 0 }} />
     </div>
   );
 
@@ -114,7 +120,8 @@ export function SleepSheet() {
         style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 24 }}
       />
 
-      <div onClick={save} className="press" style={{ background: 'var(--blue)', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>Save sleep</div>
+      {/* A sheet has no tab bar under it, so this rests on the scrollport edge. */}
+      <StickySave label="Save sleep" onClick={save} color="blue" />
     </div>
   );
 }

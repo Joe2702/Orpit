@@ -248,3 +248,15 @@ body {
   from { opacity: 0; transform: translate3d(-26px, 0, 0); }
   to   { opacity: 1; transform: translate3d(0, 0, 0); }
 }
+
+/* The bedtime / wake-up fields.
+ *
+ * A time input carries a browser-drawn clock button inside it, and it is not
+ * part of the layout box you can size — it simply takes width off the text.
+ * In a card that is already labelled with its own clock icon it says nothing
+ * new, and on a narrow phone it steals just enough room to clip the last
+ * character, so "11:00 PM" reads as "11:00 PN". Tapping the field still opens
+ * the picker without it. */
+.timeField::-webkit-calendar-picker-indicator {
+  display: none;
+}
