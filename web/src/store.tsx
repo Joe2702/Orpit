@@ -31,7 +31,9 @@ export type Screen =
   | 'privacy'
   | 'insights'
   | 'search'
-  | 'verify';
+  | 'verify'
+  | 'partner'
+  | 'partnerThread';
 
 export type SheetKind =
   | 'chooser'
@@ -55,6 +57,7 @@ export type SheetKind =
   | 'feedback'
   | 'habitcal'
   | 'catchup'
+  | 'partnerReport'
   | null;
 
 interface StoreCtx {
@@ -87,7 +90,7 @@ interface StoreCtx {
   runUndo: () => void;
   // auth
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<void>;
+  signup: (email: string, password: string, name: string, dob?: string) => Promise<void>;
   googleAuth: (credential: string) => Promise<void>;
   resetPassword: (resetToken: string, password: string) => Promise<void>;
   signOut: () => void;
@@ -399,8 +402,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setScreen('home');
   }, []);
 
-  const signup = useCallback(async (email: string, password: string, name: string) => {
-    const { token, state: s } = await api.signup(email, password, name);
+  const signup = useCallback(async (email: string, password: string, name: string, dob?: string) => {
+    const { token, state: s } = await api.signup(email, password, name, dob);
     setToken(token);
     setState(s);
     setScreen('home');

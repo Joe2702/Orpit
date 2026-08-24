@@ -14,6 +14,7 @@ import { seedUser } from './seed.js';
 import { buildState } from './state.js';
 import { SCHEMA_SQL } from './schema.js';
 import { legalRouter } from './legal.js';
+import { partnerRouter, listReports } from './partner.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -178,6 +179,11 @@ app.post(
     const email = String(req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '');
     const name = String(req.body.name || '').trim() || 'Alex Rivera';
+    // Date of birth, taken at sign-up because it is the only moment everyone
+    // passes through. Not required: refusing to create an account over it would
+    // cost more real users than the one feature it gates is worth, and anyone
+    // who skips it is simply not eligible until they add it.
+    const dob = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.dob || '')) ? String(req.body.dob) : null;
     if (!emailOk(email)) return res.status(400).json({ error: 'Enter a valid email' });
     if (password.length < MIN_PASSWORD)
       return res.status(400).json({ error: PASSWORD_RULE });
@@ -188,8 +194,14 @@ app.post(
     const hash = await bcrypt.hash(password, 10);
     const user = await tx(async (c) => {
       const { rows } = await c.query(
-        `INSERT INTO users (email, password_hash, name, onboarded, intro_done) VALUES ($1,$2,$3,TRUE,FALSE) RETURNING id`,
-        [email, hash, name]
+        `INSERT INTO users (email, password_hash, name, onboarded, intro_done, dob)
+         VALUES ($1,$2,$3,TRUE,FALSE,
+                 CASE WHEN $4::date IS NOT NULL
+                       AND $4::date <= CURRENT_DATE
+                       AND $4::date >= CURRENT_DATE - INTERVAL '120 years'
+                      THEN $4::date END)
+         RETURNING id`,
+        [email, hash, name, dob]
       );
       const id = rows[0].id as number;
       await seedUser(c, id);
@@ -1835,6 +1847,32 @@ function adminOk(req: AuthedRequest): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+// Abuse reports from accountability partners, unhandled first. Same gate as the
+// rest of the inbox: a report names two accounts, so it is not readable by an
+// ordinary signed-in user.
+app.get(
+  '/api/admin/partner-reports',
+  requireAuth,
+  rateLimit('admin', 20, 15 * 60 * 1000),
+  wrap(async (req, res) => {
+    if (!ADMIN_PASSWORD) return res.status(503).json({ error: 'Inbox not configured on the server' });
+    if (!adminOk(req)) return res.status(403).json({ error: 'Wrong password' });
+    res.json({ reports: await listReports() });
+  })
+);
+
+app.post(
+  '/api/admin/partner-reports/:id/handled',
+  requireAuth,
+  rateLimit('admin', 60, 15 * 60 * 1000),
+  wrap(async (req, res) => {
+    if (!ADMIN_PASSWORD) return res.status(503).json({ error: 'Inbox not configured on the server' });
+    if (!adminOk(req)) return res.status(403).json({ error: 'Wrong password' });
+    await query('UPDATE partner_reports SET handled = TRUE WHERE id = $1', [req.params.id]);
+    res.json({ ok: true });
+  })
+);
+
 // Recent client crash reports, newest first.
 app.get(
   '/api/admin/errors',
@@ -1940,6 +1978,8 @@ app.get('/.well-known/assetlinks.json', (_req, res) => {
 });
 
 // ---------------- Public legal pages ----------------
+app.use(partnerRouter);
+
 // Ahead of the SPA, so /privacy and /delete-account are real documents a Play
 // reviewer can read with no account, no sign-in and no JavaScript. Play requires
 // both to be reachable that way; the in-app privacy screen sits behind auth and

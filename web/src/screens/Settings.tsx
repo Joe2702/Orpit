@@ -141,6 +141,36 @@ export function Settings() {
     });
   }, [smsOn]);
 
+  // A one-line summary on the row. Fetched rather than derived: none of this is
+  // part of the app state, because it is another person's information and must
+  // never come out of the offline cache.
+  const [partnerHint, setPartnerHint] = React.useState('Someone to keep you honest');
+  const [partnerUnread, setPartnerUnread] = React.useState(0);
+  React.useEffect(() => {
+    let alive = true;
+    api
+      .partner()
+      .then((r) => {
+        if (!alive) return;
+        setPartnerUnread(r.partner?.unread || 0);
+        setPartnerHint(
+          r.partner
+            ? `Partnered with ${r.partner.name.split(' ')[0]}`
+            : r.queued
+              ? 'Looking for a match…'
+              : r.eligible
+                ? 'Not matched yet'
+                : 'For members aged 18 and over'
+        );
+      })
+      .catch(() => {
+        /* offline or asleep: the row still opens, and the screen says why */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const toggle = (key: 'reminders' | 'haptics') => {
     const next = !profile[key];
     if (key === 'haptics' && next && 'vibrate' in navigator) navigator.vibrate(18);
@@ -768,6 +798,39 @@ export function Settings() {
           </div>
         </>
       )}
+
+      {/* Its own section rather than a row under Manage: it is the only part
+          of the app that involves another person, and burying it among the
+          tracker settings would understate what turning it on does. */}
+      <SectionLabel>Accountability</SectionLabel>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+        <div
+          onClick={() => go('partner')}
+          className="pressRow"
+          style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}
+        >
+          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+              <circle cx="7.2" cy="7" r="2.8" />
+              <path d="M2.4 16a4.8 4.8 0 0 1 9.6 0" />
+              <circle cx="14.5" cy="8.4" r="2.2" />
+              <path d="M12.4 15.4a4 4 0 0 1 5.6-2.9" />
+            </svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Accountability partner</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
+              {partnerHint}
+            </div>
+          </div>
+          {partnerUnread > 0 && (
+            <span style={{ minWidth: 22, height: 22, padding: '0 6px', borderRadius: 11, background: 'var(--danger)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', marginRight: 4 }}>
+              {partnerUnread}
+            </span>
+          )}
+          <IconChevron />
+        </div>
+      </div>
 
       <SectionLabel>Manage</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>

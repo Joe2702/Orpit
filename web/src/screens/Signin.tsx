@@ -9,6 +9,7 @@ export function Signin() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [dob, setDob] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -17,7 +18,7 @@ export function Signin() {
     setError('');
     setBusy(true);
     try {
-      if (signUp) await signup(email.trim(), password, name.trim());
+      if (signUp) await signup(email.trim(), password, name.trim(), dob || undefined);
       else await login(email.trim(), password);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong');
@@ -66,6 +67,29 @@ export function Signin() {
               placeholder="Your name"
               style={inputStyle}
             />
+          </div>
+        )}
+
+        {/* Optional, and said so plainly.
+            Refusing to create an account over a field that gates one optional
+            section would cost real users for no gain — and a required birthday
+            field on a sign-up form is exactly the kind of thing people lie to.
+            Left blank, the accountability section simply stays locked until it
+            is filled in, which is a smaller, more honest cost. */}
+        {signUp && (
+          <div style={{ marginTop: 16 }}>
+            <div style={labelStyle}>Date of birth · optional</div>
+            <input
+              type="date"
+              value={dob}
+              onChange={(e) => setDob(e.target.value)}
+              className="timeField"
+              style={inputStyle}
+            />
+            <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 7, lineHeight: 1.5 }}>
+              Only used to unlock accountability partners, which is for members aged 18 and over. Never shown to
+              anyone.
+            </div>
           </div>
         )}
 

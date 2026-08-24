@@ -52,6 +52,22 @@ contact: **youssif_mohammed@aucegypt.edu**
   turn it off at any time in Profile → Bank messages, or revoke the permission in
   Android's own settings.
 
+**Accountability partners (optional, 18+)**
+- Your date of birth, if you give it. It is used only to check that you are 18
+  or over, which this feature requires. Your partner never sees it or your age.
+- Your self-declared gender, if you set one. It is used only so that other
+  people's matching preference can be honoured. It is never shown on your
+  profile.
+- If you are matched with a partner, they can see **your name and profile
+  photo**, and **only** the trackers you have explicitly switched on for them,
+  at the level you chose. Everything starts switched off. Turning one off takes
+  effect immediately.
+- Your partner never sees your email address, your date of birth, your age, your
+  account balances or account names, or any tracker you have not shared.
+- Messages between partners are stored so you can both read them. If you report
+  someone, a copy of your conversation is kept for review.
+- Ending a partnership deletes the sharing settings and stops all access at once.
+
 **What we do NOT collect:** we do not use advertising or analytics SDKs, we do
 not track your location, we do not read your contacts, photos, or any data from
 other apps, and we do not build advertising profiles. We do not read, store or
@@ -92,6 +108,9 @@ routine backups for a short period before being overwritten.
 - **Delete your account**: Profile → Delete my account. This permanently removes
   your account and all associated data.
 - **Turn off reminders**: Profile → Preferences → Daily reminders.
+- **End a partnership**: Profile → Accountability partner → End partnership. All
+  sharing stops immediately and you will not be matched with that person again.
+- **Report a partner**: Profile → Accountability partner → Report.
 - **Turn off bank message importing**: Profile → Bank messages → Import from SMS.
   Transactions already imported stay until you delete them.
 
