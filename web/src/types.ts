@@ -28,6 +28,57 @@ export interface Profile {
   createdAt: number;
 }
 
+/**
+ * A partner's tracker, as much of it as they have chosen to show.
+ *
+ * Assembled on the server from their share level, never filtered on the device:
+ * `stats` is absent rather than hidden when the level does not reach it, so
+ * there is nothing on this object that the viewer was not meant to have.
+ */
+export interface PartnerCard {
+  module: 'habits' | 'workouts' | 'sleep' | 'counters' | 'finances';
+  level: number;
+  today: boolean;
+  /** Last 7 days, oldest first. */
+  week: boolean[];
+  streak: number;
+  stats?: { label: string; value: string }[];
+}
+
+export interface PartnerNote {
+  id: string;
+  /** Which tracker it is about; null means it was sent to the person. */
+  module: string | null;
+  body: string;
+  /** Whether the viewer wrote it. Decided by the server, never inferred here. */
+  mine: boolean;
+  ts: number;
+}
+
+export interface PartnerInfo {
+  pshipId: string;
+  name: string;
+  avatar: string | null;
+  since: number;
+  cards: PartnerCard[];
+  /** What *I* show *them* — the share screen renders from this. */
+  myLevels: Record<string, number>;
+  chat: { mine: boolean; theirs: boolean; open: boolean };
+  notes: PartnerNote[];
+  unread: number;
+}
+
+export interface PartnerState {
+  /** A partner who has recently left, still within the reporting window. */
+  recent?: { name: string } | null;
+  eligible: boolean;
+  dob: string | null;
+  gender: string | null;
+  want: string;
+  queued: boolean;
+  partner: PartnerInfo | null;
+}
+
 export interface Habit {
   id: string;
   name: string;

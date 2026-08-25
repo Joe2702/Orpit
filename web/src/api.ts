@@ -1,4 +1,4 @@
-import type { AppState, WorkoutSet } from './types';
+import type { AppState, WorkoutSet, PartnerState } from './types';
 import type { SmsRow } from './lib/smsSync';
 import { enqueue, flush, isQueueable, newOpId, noteReachable, OfflineQueuedError, type QueuedOp } from './lib/offline';
 
@@ -120,10 +120,10 @@ export const flushQueue = () =>
   );
 
 export const api = {
-  signup: (email: string, password: string, name: string) =>
+  signup: (email: string, password: string, name: string, dob?: string) =>
     request<AuthResp>('/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({ email, password, name, dob }),
     }),
   login: (email: string, password: string) =>
     request<AuthResp>('/auth/login', {
@@ -262,6 +262,26 @@ export const api = {
   txnPhoto: (id: string) => request<{ photo: string }>(`/txns/${id}/photo`),
   setTxnPhoto: (id: string, photo: string | null) =>
     request<AppState>(`/txns/${id}/photo`, { method: 'PUT', body: JSON.stringify({ photo }) }),
+
+  // ---- Accountability partners ----
+  // Deliberately outside the app state: this is another person's information,
+  // it changes without anything happening on this device, and it must never be
+  // served from the offline cache. Every read is a live read.
+  partner: () => request<PartnerState>('/partner'),
+  setPartnerIdentity: (b: { dob?: string; gender?: string | null }) =>
+    request<{ ok: boolean }>('/partner/me', { method: 'PATCH', body: JSON.stringify(b) }),
+  findPartner: (want: string) =>
+    request<{ matched: boolean; queued: boolean }>('/partner/find', { method: 'POST', body: JSON.stringify({ want }) }),
+  cancelPartnerSearch: () => request<{ ok: boolean }>('/partner/cancel', { method: 'POST' }),
+  /** `module` is a tracker name, or 'chat' with `on` for the chat consent. */
+  setPartnerShare: (b: { module: string; level?: number; on?: boolean }) =>
+    request<{ ok: boolean }>('/partner/share', { method: 'PATCH', body: JSON.stringify(b) }),
+  sendPartnerNote: (b: { module: string | null; body: string }) =>
+    request<{ ok: boolean }>('/partner/note', { method: 'POST', body: JSON.stringify(b) }),
+  markPartnerSeen: () => request<{ ok: boolean }>('/partner/seen', { method: 'POST' }),
+  endPartnership: () => request<{ ok: boolean }>('/partner/end', { method: 'POST' }),
+  reportPartner: (b: { reason: string; detail?: string }) =>
+    request<{ ok: boolean }>('/partner/report', { method: 'POST', body: JSON.stringify(b) }),
 
   sendVerifyEmail: () => request<{ ok: boolean; already?: boolean }>('/verify/send', { method: 'POST' }),
   confirmEmail: (token: string) =>

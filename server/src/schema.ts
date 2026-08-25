@@ -355,4 +355,107 @@ CREATE TABLE IF NOT EXISTS milestones (
   sort    INT NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS milestones_user ON milestones(user_id);
+
+-- ===== Accountability partners =====
+--
+-- Two people, matched at random, who can see enough of each other's tracking to
+-- keep each other honest. Everything here is built around one rule: **nothing is
+-- shared until its owner turns it on, and turning it off takes effect at once.**
+-- The share level is per tracker and per direction, so what I show you has
+-- nothing to do with what you show me.
+--
+-- Date of birth rather than an age: an age is right for one year and wrong
+-- afterwards, and this gates an adults-only feature, so it has to keep being
+-- true. Storing the date means the gate opens by itself on the user's birthday.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS dob DATE;
+-- Self-declared, and used only so other people's matching preference can be
+-- honoured. Never shown as a label on anyone's profile.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT;
+
+CREATE TABLE IF NOT EXISTS partner_prefs (
+  user_id   BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  -- Who they would like to be matched with: 'male', 'female' or 'any'.
+  want      TEXT NOT NULL DEFAULT 'any',
+  -- Non-null means "waiting in the queue, since this moment". Nullable rather
+  -- than a boolean so the oldest waiter can be served first.
+  queued_at TIMESTAMPTZ
+);
+
+-- One row per pair, for its whole life. \`a_id < b_id\` is enforced so that a
+-- given pair can only ever be written one way round — without it the same two
+-- people could hold two partnerships, one in each direction.
+CREATE TABLE IF NOT EXISTS partnerships (
+  id         BIGSERIAL PRIMARY KEY,
+  a_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  b_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  ended_at   TIMESTAMPTZ,
+  ended_by   BIGINT,
+  CHECK (a_id < b_id)
+);
+-- At most one *live* partnership per pair; ended ones stay for history.
+CREATE UNIQUE INDEX IF NOT EXISTS partnerships_live ON partnerships(a_id, b_id) WHERE ended_at IS NULL;
+CREATE INDEX IF NOT EXISTS partnerships_a ON partnerships(a_id) WHERE ended_at IS NULL;
+CREATE INDEX IF NOT EXISTS partnerships_b ON partnerships(b_id) WHERE ended_at IS NULL;
+
+-- How much of one tracker one person shows their partner.
+--   0 off · 1 whether they tracked it · 2 the numbers too · 3 and you may comment
+-- Absent row means 0. Nothing is shared by default, ever.
+CREATE TABLE IF NOT EXISTS partner_shares (
+  pship_id BIGINT NOT NULL REFERENCES partnerships(id) ON DELETE CASCADE,
+  user_id  BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  module   TEXT NOT NULL,
+  level    SMALLINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (pship_id, user_id, module)
+);
+
+-- One row per person per partnership, for the things that are about the pairing
+-- rather than about a tracker.
+CREATE TABLE IF NOT EXISTS partner_sides (
+  pship_id BIGINT NOT NULL REFERENCES partnerships(id) ON DELETE CASCADE,
+  user_id  BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  -- Chat opens only when BOTH sides have said yes. A one-sided switch would let
+  -- one person open a channel into someone who never agreed to one.
+  chat_ok  BOOLEAN NOT NULL DEFAULT FALSE,
+  -- Watermark for the unread count.
+  seen_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (pship_id, user_id)
+);
+
+-- Comments on a tracker and chat messages are the same thing with a different
+-- address: a null module means it was sent to the person rather than about a
+-- tracker. One table keeps ordering, unread counts and moderation in one place.
+CREATE TABLE IF NOT EXISTS partner_notes (
+  id         BIGSERIAL PRIMARY KEY,
+  pship_id   BIGINT NOT NULL REFERENCES partnerships(id) ON DELETE CASCADE,
+  author_id  BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  module     TEXT,
+  body       TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS partner_notes_pship ON partner_notes(pship_id, created_at);
+
+-- Two people who must never be matched again. Written whenever a partnership is
+-- ended by a person, not only on a report: "find me someone else" has to mean
+-- someone else, and a random matcher that can hand back the person you just
+-- walked away from is worse than no matcher.
+CREATE TABLE IF NOT EXISTS partner_blocks (
+  user_id  BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  other_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, other_id)
+);
+
+CREATE TABLE IF NOT EXISTS partner_reports (
+  id          BIGSERIAL PRIMARY KEY,
+  pship_id    BIGINT REFERENCES partnerships(id) ON DELETE SET NULL,
+  reporter_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  accused_id  BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  reason      TEXT NOT NULL,
+  detail      TEXT,
+  -- A copy of what was said, taken at report time. The accused can delete their
+  -- account, and the evidence has to outlive that or a report is unreviewable.
+  transcript  TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  handled     BOOLEAN NOT NULL DEFAULT FALSE
+);
 `;

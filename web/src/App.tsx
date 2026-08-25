@@ -40,6 +40,9 @@ import { CatchUpSheet } from './sheets/CatchUpSheet';
 import { ReminderOnboarding } from './ReminderOnboarding';
 import { StoryReport } from './screens/StoryReport';
 import { Intro } from './screens/Intro';
+import { Partner } from './screens/Partner';
+import { PartnerThread } from './screens/PartnerThread';
+import { PartnerReportSheet } from './sheets/PartnerReportSheet';
 import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily } from './lib/notify';
 import { isOnline, subscribe as subscribeConnectivity } from './lib/offline';
 import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
@@ -104,9 +107,23 @@ function CurrentScreen() {
       return <Insights />;
     case 'search':
       return <Search />;
+    case 'partner':
+      return <Partner />;
+    case 'partnerThread':
+      return <PartnerThreadScreen />;
     default:
       return null;
   }
+}
+
+function PartnerThreadScreen() {
+  const { screenData } = useStore();
+  return <PartnerThread module={screenData?.module ?? null} />;
+}
+
+function PartnerReportBody() {
+  const { sheetData } = useStore();
+  return <PartnerReportSheet name={sheetData?.name || 'your partner'} reload={sheetData?.reload || (() => {})} />;
 }
 
 function SheetBody() {
@@ -154,6 +171,8 @@ function SheetBody() {
       return <HabitCalendarSheet />;
     case 'catchup':
       return <CatchUpSheet />;
+    case 'partnerReport':
+      return <PartnerReportBody />;
     default:
       return null;
   }
