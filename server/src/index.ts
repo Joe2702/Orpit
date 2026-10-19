@@ -1942,19 +1942,37 @@ app.get(
   })
 );
 
-app.get('/api/health', async (_req, res) => {
-  // Touch the database too, so the keep-awake pinger keeps BOTH the server and
-  // the (free, auto-sleeping) Postgres warm — otherwise the first action after
-  // idle waits for the database to wake up. Also reports migration state, so a
-  // stuck deploy can be diagnosed by opening this URL in a browser.
+/**
+ * Liveness, and — only when asked — a database check.
+ *
+ * This endpoint used to run `SELECT 1` on every call so that an uptime pinger
+ * would keep the Postgres warm as well as the web service. That was a mistake,
+ * and an expensive one: a managed Postgres on a metered plan bills for the time
+ * its compute is awake, so a ping every few minutes holds the database open
+ * around the clock and burns a monthly allowance in days. It did exactly that
+ * here, and the whole app went down with a quota error until the allowance
+ * reset.
+ *
+ * So the default answer touches nothing. A pinger aimed at this URL now keeps
+ * the *web service* warm — which is what it was wanted for — and lets the
+ * database sleep, which is what the database's own pricing wants. The first
+ * request after idle pays a second or two to wake Postgres, and that is a far
+ * better trade than paying for 24 hours of compute to avoid it.
+ *
+ * `?db=1` still does the real check, for diagnosing a stuck deploy by hand.
+ * `schema` and any boot error are reported either way: both are already known
+ * from the migration loop and cost nothing to read.
+ */
+app.get('/api/health', async (req, res) => {
+  const base = { ok: true, schema: dbReady, ...(dbError ? { error: dbError } : {}) };
+  if (req.query.db !== '1') return res.json(base);
   try {
     await pool.query('SELECT 1');
-    res.json({ ok: true, db: true, schema: dbReady });
+    res.json({ ...base, db: true });
   } catch (e) {
     res.json({
-      ok: true,
+      ...base,
       db: false,
-      schema: dbReady,
       error: dbError || (e instanceof Error ? e.message : 'database unreachable'),
     });
   }

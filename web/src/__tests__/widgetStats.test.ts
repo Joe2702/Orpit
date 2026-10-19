@@ -117,8 +117,15 @@ describe('the panels themselves', () => {
   });
 
   it('formats money with the account currency, not a bare number', () => {
+    // Dated from the real clock, not the frozen `now` the rest of this file
+    // uses. The finance figure is "spent this month" and comes from derive(),
+    // which reads the current date itself and takes no `now` — so a frozen
+    // August timestamp silently falls outside the month and the panel reads
+    // zero. That is harmless in the app, where both clocks are the real one,
+    // but it quietly rotted this test the moment the month turned.
     setCurrency('EGP');
-    const panels = buildPanels(state({ txns: [txn(-1234)] }), now);
+    const today = Date.now();
+    const panels = buildPanels(state({ txns: [{ ...txn(-1234), ts: today }] }), today);
     expect(panels.finance.value).not.toBe('1234');
     expect(panels.finance.value).toMatch(/1,?234/);
   });

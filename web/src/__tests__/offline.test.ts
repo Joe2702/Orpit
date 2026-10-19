@@ -212,9 +212,38 @@ describe('an op the server keeps refusing', () => {
   it('keeps trying for a while first — a real outage must not lose data', async () => {
     clearQueue();
     enqueue(op('x'));
-    for (let i = 0; i < MAX_TRIES - 1; i++) await flush(failWith(503));
+    for (let i = 0; i < MAX_TRIES - 1; i++) await flush(failWith(500));
     expect(pending(), 'still queued before the limit').toBe(1);
     expect(queuedOps()[0].tries).toBe(MAX_TRIES - 1);
+  });
+
+  it('never counts "the server is not serving yet" against an op', async () => {
+    // 502/503/504 mean the request never reached the code that would act on
+    // it: still booting, database asleep, or a gateway with nothing behind it.
+    // The entry is not suspect, so it must not burn an attempt.
+    //
+    // This is not hypothetical. The app's Postgres hit a monthly compute quota
+    // and refused every connection for days, and the server answered 503 to
+    // everything. Counting those would have thrown away each queued entry after
+    // MAX_TRIES app-opens — losing real workouts to an outage that had nothing
+    // to do with them.
+    for (const status of [502, 503, 504]) {
+      clearQueue();
+      enqueue(op('x'));
+      for (let i = 0; i < MAX_TRIES * 3; i++) await flush(failWith(status));
+      expect(pending(), `still queued after a long ${status} outage`).toBe(1);
+      expect(queuedOps()[0].tries ?? 0, `${status} must not burn attempts`).toBe(0);
+    }
+  });
+
+  it('drains everything once the outage ends', async () => {
+    clearQueue();
+    ['a', 'b'].forEach((id) => enqueue(op(id)));
+    for (let i = 0; i < MAX_TRIES * 2; i++) await flush(failWith(503));
+    expect(pending(), 'nothing lost while down').toBe(2);
+    const r = await flush(async () => okState());
+    expect(r.synced).toBe(2);
+    expect(pending()).toBe(0);
   });
 
   it('records why it failed', async () => {
