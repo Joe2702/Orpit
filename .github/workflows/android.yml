@@ -29,7 +29,20 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Pinned, not `ubuntu-latest`.
+    #
+    # GitHub began moving that label to Ubuntu 26 on 19 October 2026, and
+    # android-actions/setup-android@v3 fails on it — the build broke on a merge
+    # that touched only server and web source, with no Android or workflow
+    # changes at all. Nothing in this repository caused it; the machine under it
+    # was replaced.
+    #
+    # An unpinned runner means the build can break on a day nobody committed
+    # anything, which is the worst kind of failure to diagnose: the evidence
+    # points at whatever was merged last. Naming the image costs a line and an
+    # occasional deliberate bump, and in exchange a red build always means
+    # somebody changed something.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
