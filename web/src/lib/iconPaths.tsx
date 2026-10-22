@@ -14,8 +14,38 @@ const FIN: Record<string, string[]> = {
   gift: ['M4 9h12v8H4zM4 6h12v3H4zM10 6v11M10 6C10 4 8.5 3 7.5 4S8 6 10 6M10 6c0-2 1.5-3 2.5-2S12 6 10 6'],
   coffee: ['M4 8h10v4a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM14 9h2a2 2 0 0 1 0 4h-2M6 3v2M9 3v2'],
   phone: ['M7 3h6v14H7zM9.5 14.5h1'],
-  other: ['M10 4a6 6 0 1 0 0 12A6 6 0 0 0 10 4zM10 9v4M10 6.5h0'],
+  // A price tag: the generic "something you paid for". It used to be an
+  // info-circle, which on a list of purchases read as a warning.
+  other: ['M3.6 10.4V4.2a.6.6 0 0 1 .6-.6h6.2l6.4 6.4a.9.9 0 0 1 0 1.3l-5 5a.9.9 0 0 1-1.3 0z', 'M7.2 7.2h0'],
+  cart: ['M2.8 3.8h2l1.7 8.4h8.2l1.5-5.8H6', 'M8 15.6h0M13.8 15.6h0'],
+  bolt: ['M11 3l-6 8.2h4l-1 5.8 6-8.2h-4L11 3Z'],
+  repeat: ['M4.5 8.5a5.5 5.5 0 0 1 9.6-2.6M14.5 3.2v2.9h-2.9M15.5 11.5a5.5 5.5 0 0 1-9.6 2.6M5.5 16.8v-2.9h2.9'],
 };
+
+/**
+ * An icon and colour for a category the user never set one for — the ones a
+ * bank message or an import created. Guessed from the name, so "Groceries"
+ * gets a cart rather than a generic mark.
+ */
+export function guessFinIcon(name: string): { icon: string; color: string } {
+  const n = name.toLowerCase();
+  const rules: [RegExp, string, string][] = [
+    [/salary|income|freelance|invest|bonus|refund|cash/, 'cash', 'emerald'],
+    [/grocer|supermarket|market/, 'cart', 'emerald'],
+    [/coffee|cafe|café/, 'coffee', 'amber'],
+    [/eat|food|restaurant|dining|lunch|dinner|takeaway|delivery/, 'food', 'coral'],
+    [/transport|uber|careem|taxi|fuel|petrol|car|metro|travel/, 'car', 'blue'],
+    [/rent|hous|home|mortgage/, 'home', 'indigo'],
+    [/bill|electric|utilit|internet|phone|mobile/, 'bolt', 'warning'],
+    [/health|gym|pharma|doctor|medical|fitness/, 'heart', 'rose'],
+    [/shop|cloth|fashion|amazon|noon/, 'bag', 'pink'],
+    [/subscri|netflix|spotify|membership/, 'repeat', 'purple'],
+    [/gift|charity|donat/, 'gift', 'pink'],
+    [/tech|laptop|electronic/, 'laptop', 'cyan'],
+  ];
+  for (const [re, icon, color] of rules) if (re.test(n)) return { icon, color };
+  return { icon: 'other', color: 'text2' };
+}
 
 const CTR: Record<string, string[]> = {
   reps: ['M4 8v4M6.5 6.2v7.6M13.5 6.2v7.6M16 8v4M6.5 10h7'],

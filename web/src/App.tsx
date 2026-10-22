@@ -44,7 +44,7 @@ import { Partner } from './screens/Partner';
 import { PartnerThread } from './screens/PartnerThread';
 import { PartnerReportSheet } from './sheets/PartnerReportSheet';
 import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily } from './lib/notify';
-import { isOnline, subscribe as subscribeConnectivity } from './lib/offline';
+import { connectivity, subscribe as subscribeConnectivity } from './lib/offline';
 import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
 import { updateWidget } from './lib/widget';
@@ -335,10 +335,10 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
   // ...but only blame the server when the phone actually has a connection.
   // Telling someone in airplane mode to wait for a server to wake up is a lie
   // they can't act on, and it's the message they'd stare at the longest.
-  const [offline, setOffline] = useState(!isOnline());
+  const [offline, setOffline] = useState(connectivity() === 'offline');
   useEffect(() => {
     const t = setTimeout(() => setSlow(true), 4000);
-    const off = subscribeConnectivity(() => setOffline(!isOnline()));
+    const off = subscribeConnectivity(() => setOffline(connectivity() === 'offline'));
     return () => {
       clearTimeout(t);
       off();

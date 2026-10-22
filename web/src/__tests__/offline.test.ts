@@ -14,6 +14,9 @@ import {
   newOpId,
   isUnsynced,
   unsyncedMessage,
+  connectivity,
+  noteDevice,
+  queuedMessage,
   cacheState,
   readCachedState,
 } from '../lib/offline';
@@ -162,6 +165,40 @@ describe('connectivity', () => {
     noteReachable(false); // no change, no notification
     expect(calls).toBe(1);
     off();
+  });
+});
+
+describe('device vs server', () => {
+  it('tells a phone with no signal apart from a server that is not answering', () => {
+    // Merging the two is what made the app say "Offline" while every other
+    // app on the phone worked: one failed request during a cold start was
+    // enough.
+    noteDevice(true);
+    noteReachable(false);
+    expect(connectivity()).toBe('unreachable');
+    noteDevice(false);
+    expect(connectivity()).toBe('offline');
+    noteDevice(true);
+    noteReachable(true);
+    expect(connectivity()).toBe('online');
+  });
+
+  it('trusts the OS over navigator.onLine once it has spoken', () => {
+    setOnline(true);
+    noteDevice(false);
+    expect(connectivity()).toBe('offline');
+    noteDevice(true);
+  });
+
+  it('only promises "back online" when the phone is actually offline', () => {
+    noteDevice(true);
+    noteReachable(false);
+    expect(queuedMessage()).toContain('in a moment');
+    expect(unsyncedMessage()).toContain('Still saving');
+    noteDevice(false);
+    expect(queuedMessage()).toContain('back online');
+    noteDevice(true);
+    noteReachable(true);
   });
 });
 

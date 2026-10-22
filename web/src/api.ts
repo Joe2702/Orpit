@@ -1,6 +1,17 @@
 import type { AppState, WorkoutSet, PartnerState } from './types';
 import type { SmsRow } from './lib/smsSync';
-import { enqueue, flush, isQueueable, newOpId, noteReachable, OfflineQueuedError, type QueuedOp } from './lib/offline';
+import {
+  enqueue,
+  flush,
+  isQueueable,
+  isUnavailable,
+  networkMessage,
+  newOpId,
+  noteReachable,
+  OfflineQueuedError,
+  serverMessage,
+  type QueuedOp,
+} from './lib/offline';
 
 // On the web the frontend is served by the same server as the API, so a
 // relative path works. Inside a native (Capacitor) build the app runs from a
@@ -47,26 +58,41 @@ async function request<T>(path: string, opts: RequestInit = {}, opId?: string): 
         ...(opts.headers || {}),
       },
     });
-  } catch (netErr) {
+  } catch {
     // fetch only rejects on a network-level failure — exactly the case worth
-    // deferring. Anything the server answered, even an error, is not queued.
-    // This is also the most reliable connectivity signal there is.
+    // deferring. This is also the most reliable connectivity signal there is.
     noteReachable(false);
     if (id && !opId) {
       enqueue({ id, path, method, body: typeof opts.body === 'string' ? opts.body : undefined, at: Date.now() });
       throw new OfflineQueuedError();
     }
-    throw netErr;
+    throw new Error(networkMessage());
   }
 
-  noteReachable(true); // the server answered, whatever it said
+  if (isUnavailable(res.status)) {
+    // Answered, but not serving: booting, the database waking, or a gateway
+    // with nothing behind it. The request never reached the code that would act
+    // on it, so a log is as safe to defer here as with no signal at all — and
+    // far better than rolling it back with "try again".
+    noteReachable(false);
+    if (id && !opId) {
+      enqueue({ id, path, method, body: typeof opts.body === 'string' ? opts.body : undefined, at: Date.now() });
+      throw new OfflineQueuedError();
+    }
+    throw new ApiError(res.status, serverMessage(res.status));
+  }
+
+  noteReachable(true); // the server answered and is serving, whatever it said
   if (!res.ok) {
-    let msg = `Request failed (${res.status})`;
-    try {
-      const body = await res.json();
-      if (body?.error) msg = body.error;
-    } catch {
-      /* ignore */
+    let msg = serverMessage(res.status);
+    if (res.status < 500) {
+      msg = `That didn’t work (${res.status})`;
+      try {
+        const body = await res.json();
+        if (body?.error) msg = body.error;
+      } catch {
+        /* ignore */
+      }
     }
     throw new ApiError(res.status, msg);
   }
@@ -107,6 +133,31 @@ export interface FeedbackItem {
   createdAt: number;
   name: string;
   email: string;
+}
+
+/**
+ * Is Orbit's server up and serving? Asks the health endpoint, which answers
+ * without touching the database — so probing every few seconds while the
+ * server is unreachable costs nothing and never keeps a metered database
+ * awake. Records the answer either way.
+ */
+export async function probeServer(): Promise<boolean> {
+  const ctl = typeof AbortController === 'undefined' ? null : new AbortController();
+  const t = ctl ? setTimeout(() => ctl.abort(), 10_000) : undefined;
+  try {
+    const res = await fetch(`${API_BASE}/api/health`, { signal: ctl?.signal, cache: 'no-store' });
+    const body = res.ok ? await res.json().catch(() => null) : null;
+    // `schema` is false while the database is still waking: the server is up,
+    // but every real request would get a 503.
+    const ok = !!body?.ok && body?.schema !== false;
+    noteReachable(ok);
+    return ok;
+  } catch {
+    noteReachable(false);
+    return false;
+  } finally {
+    if (t) clearTimeout(t);
+  }
 }
 
 /**

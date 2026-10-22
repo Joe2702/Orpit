@@ -120,7 +120,7 @@ export function FcatSheet() {
   const [color, setColor] = useState(sheetData?.color ?? 'coral');
   const [icon, setIcon] = useState(sheetData?.icon ?? 'food');
   const canSave = !!name.trim();
-  const ICONS = ['food', 'coffee', 'car', 'home', 'cash', 'bag', 'laptop', 'chart', 'gift', 'phone', 'heart', 'star', 'other'];
+  const ICONS = ['food', 'coffee', 'cart', 'car', 'home', 'bolt', 'cash', 'bag', 'laptop', 'chart', 'gift', 'phone', 'heart', 'repeat', 'star', 'other'];
 
   const save = async () => {
     if (!canSave) return;
@@ -174,7 +174,7 @@ export function BudgetSheet() {
   const canSave = parseFloat(limit) > 0;
 
   const save = async () => {
-    if (!canSave) { showToast('Enter a limit'); return; }
+    if (!canSave) { showToast('Set a monthly limit first'); return; }
     haptic();
     const body = { cat, limit: parseFloat(limit), rollover };
     mutate(() => (editId ? api.editBudget(editId, body) : api.addBudget(body)), editId ? 'Budget updated' : 'Budget added').catch(() => {});
@@ -231,7 +231,7 @@ export function GoalSheet() {
   const canSave = !!name.trim() && parseFloat(target) > 0;
 
   const save = async () => {
-    if (!canSave) { showToast('Name and target required'); return; }
+    if (!canSave) { showToast('Add a name and a target'); return; }
     haptic();
     const body = { name: name.trim(), target: parseFloat(target), current: parseFloat(current || '0') || 0, color, dueTs: due ? new Date(due).getTime() : null };
     mutate(() => (editId ? api.editGoal(editId, body) : api.addGoal(body)), editId ? 'Goal updated' : 'Goal added').catch(() => {});
@@ -273,7 +273,7 @@ export function RecurringSheet() {
   const canSave = !!name.trim() && parseFloat(amount) > 0;
 
   const save = async () => {
-    if (!canSave) { showToast('Name and amount required'); return; }
+    if (!canSave) { showToast('Add a name and an amount'); return; }
     haptic();
     const body = { name: name.trim(), cat, amount: parseFloat(amount), freq, accId, income };
     mutate(() => (editId ? api.editRecurring(editId, body) : api.addRecurring(body)), editId ? 'Recurring updated' : 'Recurring added').catch(() => {});

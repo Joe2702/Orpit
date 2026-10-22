@@ -22,7 +22,7 @@ const STATE_KEY = 'orbit_state_cache';
 /** Thrown instead of a network error when a mutation was safely queued. */
 export class OfflineQueuedError extends Error {
   constructor() {
-    super('Saved on this device — it will sync when you’re back online');
+    super(queuedMessage());
     this.name = 'OfflineQueuedError';
   }
 }
@@ -148,36 +148,69 @@ export function clearCache(): void {
 
 // ---- connectivity -------------------------------------------------------
 
-// Real connectivity, not navigator.onLine.
+// Connectivity, as two separate facts.
 //
-// Inside the Android WebView `navigator.onLine` is effectively always true —
-// the page is served from a local origin, so the browser sees a live
-// connection even in airplane mode. Relying on it meant the offline paths
-// never triggered on the one platform they exist for. The native Network
-// plugin reports the actual radio state; the browser flag is only a fallback,
-// and a failed request corrects both.
-let liveOnline: boolean | null = null;
+// "Is this phone connected?" and "is Orbit's server answering?" are different
+// questions, and the app used to merge them into one flag. The merge had two
+// visible consequences:
+//
+//   * A single failed request — the WebView waking after the app is reopened, a
+//     cold start on the host, a deploy restarting the server — marked the app
+//     "Offline" while the phone was plainly online.
+//   * Nothing ever cleared it. Only a successful request set the flag back, but
+//     the retry timer ran `isOnline() && sync()`, so once offline it never made
+//     one. The pill sat on "Offline" until the user happened to do something.
+//
+// Now the device's radio state comes from the native Network plugin, the
+// server's state comes from what actually happened on the wire, and while the
+// server is unreachable the store probes a cheap health endpoint until it
+// answers. Inside the Android WebView `navigator.onLine` is effectively always
+// true, so it is only a fallback for the browser build.
+let deviceOnline: boolean | null = null;
+let serverOk = true;
 
-export const isOnline = (): boolean => {
-  if (liveOnline !== null) return liveOnline;
-  return typeof navigator === 'undefined' ? true : navigator.onLine !== false;
-};
+export type Connectivity = 'online' | 'offline' | 'unreachable';
+
+export function connectivity(): Connectivity {
+  const device = deviceOnline ?? (typeof navigator === 'undefined' ? true : navigator.onLine !== false);
+  if (!device) return 'offline';
+  return serverOk ? 'online' : 'unreachable';
+}
+
+export const isOnline = (): boolean => connectivity() === 'online';
 
 /** Record what actually happened on the wire; the truest signal available. */
 export function noteReachable(ok: boolean): void {
-  if (liveOnline === ok) return;
-  liveOnline = ok;
+  if (serverOk === ok) return;
+  serverOk = ok;
   emit();
+}
+
+/** Record the device's own connection state, from the OS. */
+export function noteDevice(connected: boolean): void {
+  if (deviceOnline === connected) return;
+  deviceOnline = connected;
+  emit();
+}
+
+let nativeNetwork = false;
+
+/**
+ * The browser's own online/offline events. Ignored once the native plugin is
+ * attached: inside the WebView they lag the OS, or never fire at all.
+ */
+export function noteBrowserOnline(connected: boolean): void {
+  if (!nativeNetwork) noteDevice(connected);
 }
 
 /** Subscribe to the native connectivity status. No-op off-device. */
 export function watchConnectivity(): void {
   import('@capacitor/network')
     .then(async ({ Network }) => {
-      const apply = (connected: boolean) => noteReachable(connected);
       const status = await Network.getStatus();
-      apply(status.connected);
-      Network.addListener('networkStatusChange', (st) => apply(st.connected));
+      nativeNetwork = true;
+      noteDevice(status.connected);
+      Network.addListener('networkStatusChange', (st) => noteDevice(st.connected));
     })
     .catch(() => {
       /* not native — navigator.onLine and request outcomes carry it */
@@ -194,7 +227,37 @@ export const isUnsynced = (id: string): boolean => id.startsWith('tmp_');
 
 /** What to tell someone who tried to act on an entry that hasn't synced yet. */
 export const unsyncedMessage = (): string =>
-  isOnline() ? 'Still saving — try again in a moment' : "Waiting to sync — you can change this once you're back online";
+  connectivity() === 'offline'
+    ? "Waiting to sync — you can change this once you're back online"
+    : 'Still saving — try again in a moment';
+
+/** What to say when a mutation was queued rather than sent. */
+export const queuedMessage = (): string =>
+  connectivity() === 'offline'
+    ? 'Saved on this device — it will sync when you’re back online'
+    : 'Saved on this device — syncing in a moment';
+
+/**
+ * Server failures, in words a person would use.
+ *
+ * A 5xx carries whatever the server said about itself ("Server error",
+ * "Starting up — the database is still waking…"), and a failed fetch carries
+ * the browser's ("Failed to fetch", "Load failed"). Neither belongs on a phone
+ * screen. A 4xx keeps the server's own message, because those are written for
+ * people — "That password is incorrect" is the right thing to show.
+ */
+export function serverMessage(status: number): string {
+  if (status === 502 || status === 503 || status === 504) return 'Orbit is waking up — try again in a few seconds';
+  return 'Something went wrong on our side — please try again';
+}
+
+export const networkMessage = (): string =>
+  connectivity() === 'offline'
+    ? 'No connection — try again when you’re back online'
+    : 'Couldn’t reach Orbit — please try again in a moment';
+
+/** Status codes that mean "not serving yet", not "your request was wrong". */
+export const isUnavailable = (status: number): boolean => status === 502 || status === 503 || status === 504;
 
 /**
  * Replay the queue in order. Stops at the first op that fails for a reason
@@ -233,7 +296,7 @@ export async function flush(
         // op, so it keeps its attempts and everything waits for a signal.
         break;
       }
-      if (status === 502 || status === 503 || status === 504) {
+      if (isUnavailable(status)) {
         // The server is reachable but not serving: still booting, its database
         // asleep, or a gateway in front of it with nothing behind. The request
         // never reached the code that would act on it, so the entry is no more

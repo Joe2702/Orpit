@@ -46,8 +46,10 @@ export function Insights() {
             <div
               key={it.id}
               style={{
-                background: `color-mix(in srgb,var(--${it.color}) 9%,var(--surface))`,
-                border: `1px solid color-mix(in srgb,var(--${it.color}) 26%,var(--border))`,
+                // Neutral cards, colour only in the icon and label: a column of
+                // tinted cards, each a different hue, read as a wall of alerts.
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
                 borderRadius: 20,
                 boxShadow: 'var(--shadow)',
                 padding: '16px 18px',

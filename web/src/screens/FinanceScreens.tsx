@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import { useData } from '../hooks';
 import { api } from '../api';
 import { money, signMoney, fmtDate, relLabel, moneySymbol } from '../lib/format';
-import { FinIcon } from '../lib/iconPaths';
+import { guessFinIcon, FinIcon } from '../lib/iconPaths';
 import { Ring } from '../lib/charts';
 import { BackButton, chip } from '../ui';
 import { IconTrash } from '../icons';
@@ -26,7 +26,7 @@ function Header({ title, action }: { title: string; action?: React.ReactNode }) 
 }
 
 function fcatByName(fcats: { name: string; icon: string; color: string }[], name: string) {
-  return fcats.find((c) => c.name === name) || { icon: name === 'Salary' || name === 'Freelance' || name === 'Investment' ? 'cash' : 'other', color: 'text2', name };
+  return fcats.find((c) => c.name === name) || { ...guessFinIcon(name), name };
 }
 
 function AddBtn({ color, onClick }: { color: string; onClick: () => void }) {
@@ -264,12 +264,12 @@ export function FTxns() {
       </div>
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 9, paddingBottom: 2 }}>
         {['All', ...fcats.map((c) => c.name)].map((c) => (
-          <div key={c} onClick={() => setFcat(c)} style={{ ...chip(fcat === c, 'var(--emerald)'), flex: 'none' }}>{c}</div>
+          <div key={c} onClick={() => setFcat(c)} style={{ ...chip(fcat === c, 'var(--emerald)'), flex: 'none' }}>{c === 'All' ? 'All categories' : c}</div>
         ))}
       </div>
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 2 }}>
         {['All', ...state!.accounts.map((a) => a.name)].map((a) => (
-          <div key={a} onClick={() => setFacc(a)} style={{ ...chip(facc === a, 'var(--blue)'), flex: 'none' }}>{a}</div>
+          <div key={a} onClick={() => setFacc(a)} style={{ ...chip(facc === a, 'var(--blue)'), flex: 'none' }}>{a === 'All' ? 'All accounts' : a}</div>
         ))}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -334,7 +334,7 @@ export function FTxns() {
                               : `${t.cat} · ${accById[t.accId || '']?.name || '—'}`}
                         </div>
                       </div>
-                      <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: xfer || adj ? 'var(--text2)' : t.amount >= 0 ? 'var(--emerald)' : 'var(--text)' }}>{(xfer ? '' : t.amount >= 0 ? '+ ' : '− ') + money(t.amount)}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: xfer || adj ? 'var(--text2)' : t.amount >= 0 ? 'var(--emerald)' : 'var(--text)' }}>{(xfer ? '' : t.amount >= 0 ? '+' : '−') + money(t.amount)}</div>
                     </div>
                   </SwipeRow>
                 );
@@ -345,7 +345,7 @@ export function FTxns() {
       </div>
       {matched.length > shown && (
         <div onClick={() => setShown(shown + 80)} className="press99" role="button" style={{ marginTop: 16, height: 48, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
-          Show older ({matched.length - shown} more)
+          Show older · {matched.length - shown} more
         </div>
       )}
       {matched.length === 0 && (
@@ -453,9 +453,12 @@ export function FAccounts() {
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <Header title="Accounts" action={<AddBtn color="coral" onClick={() => open('account')} />} />
-      <div style={{ background: 'var(--indigo)', borderRadius: 22, padding: '20px 22px', marginBottom: 16, boxShadow: '0 10px 26px -14px rgba(40,36,28,.30)' }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,.85)' }}>Net worth</div>
-        <div style={{ fontSize: 38, fontWeight: 700, letterSpacing: '-.03em', color: '#fff', marginTop: 3 }}>{money(d.netWorth)}</div>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '18px 18px', marginBottom: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--text3)' }}>Net worth</div>
+        <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.035em', color: 'var(--text)', marginTop: 6 }}>{money(Math.round(d.netWorth))}</div>
+        <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 3 }}>
+          Across {d.accounts.length} {d.accounts.length === 1 ? 'account' : 'accounts'}
+        </div>
       </div>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         {d.accounts.map((a) => (
@@ -483,8 +486,13 @@ export function FRecurring() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <Header title="Recurring" action={<AddBtn color="teal" onClick={() => open('recurring')} />} />
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '16px 18px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text2)' }}>Monthly total</span>
-        <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{money(d.recurringMonthly)}</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text2)' }}>Bills a month</span>
+        <span style={{ textAlign: 'right' }}>
+          <span style={{ display: 'block', fontSize: 20, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{money(Math.round(d.recurringMonthly))}</span>
+          {d.recurringIncomeMonthly > 0 && (
+            <span style={{ display: 'block', fontSize: 12.5, color: 'var(--emerald)', marginTop: 2 }}>+{money(Math.round(d.recurringIncomeMonthly))} coming in</span>
+          )}
+        </span>
       </div>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         {d.recurring.map((r) => {

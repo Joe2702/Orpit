@@ -148,7 +148,7 @@ export function Partner() {
       showToast('Partnership ended');
       load();
     } catch {
-      showToast('Could not do that');
+      showToast('That didn’t go through — try again');
     }
     setBusy(false);
   };

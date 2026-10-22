@@ -1,122 +1,87 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
-import { Bars, Donut } from '../lib/charts';
-import { relLabel } from '../lib/format';
-import { DetailHeader, RangeSeg, SectionLabel, rangeWord } from '../ui';
+import { BarChart, Donut } from '../lib/charts';
+import { minutes, relLabel } from '../lib/format';
+import { Card, ChartCard, DetailHeader, RangeSeg, SectionLabel, Stat, StatRow, TrackerAction } from '../ui';
 import { IconWorkout } from '../icons';
 import { SwipeRow } from '../SwipeRow';
 import { volume } from '../SetsEditor';
 import { useEntryActions } from '../lib/entryActions';
 import { UnsyncedDot } from '../UnsyncedDot';
 
-// Round a minutes value up to a clean axis maximum (15/30/45/60/90/120…), so the
-// y-axis reads sensibly instead of arbitrary numbers like "47m".
-function niceMinutes(v: number): number {
-  if (v <= 0) return 30;
-  const steps = [15, 30, 45, 60, 90, 120, 180, 240, 300, 420, 600, 720];
-  for (const s of steps) if (v <= s) return s;
-  return Math.ceil(v / 120) * 120;
-}
-
 export function Workouts() {
-  const { state, open, range } = useStore();
+  const { state, open } = useStore();
   const { remove } = useEntryActions();
   const { d } = useData();
+  const P = d.period;
   // Render a page at a time so hundreds of entries don't stall the screen.
   const [shown, setShown] = useState(50);
   const cat = (id: string | null) => (id ? d.catById[id] : undefined);
-  const yMax = niceMinutes(d.wYMax);
-
-  const tri = (a: React.ReactNode, b: React.ReactNode, c: React.ReactNode) => (
-    <div style={{ display: 'flex' }}>
-      {a}
-      <div style={{ width: 1, background: 'var(--border)' }} />
-      {b}
-      <div style={{ width: 1, background: 'var(--border)' }} />
-      {c}
-    </div>
-  );
-  const stat = (val: React.ReactNode, label: string, color = 'var(--text)', big = true) => (
-    <div style={{ flex: 1, textAlign: 'center' }}>
-      <div style={{ fontSize: big ? 30 : 22, fontWeight: 700, letterSpacing: '-.02em', color }}>{val}</div>
-      <div style={{ fontSize: big ? 12 : 11.5, color: 'var(--text2)', marginTop: 3 }}>{label}</div>
-    </div>
+  // The list follows the period above it, so stepping back to March shows
+  // March's sessions rather than the same recent ones under a March chart.
+  const list = React.useMemo(
+    () => state!.workouts.filter((w) => w.ts >= P.start && w.ts < P.end).sort((a, b) => b.ts - a.ts),
+    [state, P.start, P.end]
   );
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <DetailHeader title="Workouts" iconColor="coral" icon={<IconWorkout size={22} />} />
-      <RangeSeg />
+      <DetailHeader title="Workouts" iconColor="coral" icon={<IconWorkout size={21} />} />
+      <TrackerAction color="coral" label="Log workout" onClick={() => open('workout')} />
+      <RangeSeg period={P} />
 
-      <div onClick={() => open('workout')} className="press99" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, background: 'var(--coral)', color: '#fff', height: 52, borderRadius: 16, fontSize: 15, fontWeight: 700, cursor: 'pointer', marginBottom: 16, boxShadow: '0 10px 22px -12px rgba(40,36,28,.30)' }}>
-        <svg width="20" height="20" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M10 4v12M4 10h12" /></svg>
-        Log workout
-      </div>
+      <StatRow>
+        <Stat value={d.wCount} label={d.wCount === 1 ? 'Session' : 'Sessions'} />
+        <Stat value={d.wTotalMin ? minutes(d.wTotalMin) : '—'} label="Training time" />
+        <Stat value={d.wActiveDays} label="Active days" />
+      </StatRow>
+      <StatRow>
+        <Stat value={d.wAvg ? minutes(d.wAvg) : '—'} label="Avg session" size="sm" />
+        <Stat value={d.wLongest ? minutes(d.wLongest) : '—'} label="Longest" size="sm" />
+        <Stat value={d.wStreak ? `${d.wStreak} ${d.wStreak === 1 ? 'day' : 'days'}` : '—'} label="Current streak" size="sm" color={d.wStreak ? 'var(--coral)' : 'var(--text)'} />
+      </StatRow>
 
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '18px 8px', marginBottom: 14 }}>
-        {tri(stat(d.wCount, 'Workouts'), stat(d.wTotalMin, 'Minutes'), stat(d.wStreak, 'Day streak', 'var(--coral)'))}
-      </div>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '16px 8px', marginBottom: 14 }}>
-        {tri(
-          stat(d.wAvg + 'm', 'Avg session', 'var(--text)', false),
-          stat(d.wLongest + 'm', 'Longest', 'var(--text)', false),
-          stat(d.wActiveDays, 'Active days', 'var(--text)', false)
-        )}
-      </div>
+      <ChartCard title="Training time" value={d.wTotalMin ? minutes(d.wTotalMin) : '0 min'} note={P.caption}>
+        <BarChart buckets={d.buckets} values={d.wMinBuckets} color="coral" format={(v) => minutes(v)} />
+      </ChartCard>
 
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 18, marginBottom: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text2)' }}>Minutes</span>
-          <span style={{ fontSize: 12, color: 'var(--text2)' }}>{rangeWord(range)}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <div style={{ position: 'relative', width: 30, height: 120, flex: 'none', fontSize: 10, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
-            <span style={{ position: 'absolute', top: -5, right: 0 }}>{yMax}m</span>
-            <span style={{ position: 'absolute', top: 'calc(50% - 6px)', right: 0 }}>{Math.round(yMax / 2)}m</span>
-            <span style={{ position: 'absolute', bottom: -5, right: 0 }}>0</span>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ height: 120 }}>
-              <Bars values={d.wMinSeries} colorKey="coral" w={300} h={120} gap={9} max={yMax} />
+      {d.wTypeSegs.length > 0 && (
+        <ChartCard title="By type" action={{ label: 'Manage', onClick: () => open('wcats') }}>
+          {/* Wraps: with a large text size the legend drops under the ring
+              instead of being squeezed to a sliver beside it. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div style={{ position: 'relative', width: 128, height: 128, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Donut segs={d.wTypeSegs} size={128} stroke={16} />
+              <div style={{ position: 'absolute', textAlign: 'center' }}>
+                <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)' }}>{d.wCount}</div>
+                <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: -1 }}>sessions</div>
+              </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
-              {d.xLabels.map((l, i) => (
-                <span key={i}>{l}</span>
+            <div style={{ flex: '1 1 150px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {d.wTypeSegs.map((s) => (
+                <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                  <span style={{ width: 9, height: 9, borderRadius: 3, flex: 'none', background: s.color }} />
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.label}</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text2)' }}>{s.value}</span>
+                </div>
               ))}
             </div>
           </div>
+        </ChartCard>
+      )}
+      {d.wTypeSegs.length === 0 && d.wCount > 0 && (
+        <div onClick={() => open('wcats')} className="pressRow" role="button" style={{ fontSize: 13, color: 'var(--text2)', textAlign: 'center', padding: '6px 0 14px', cursor: 'pointer' }}>
+          Add workout types to see how your training splits up
         </div>
-      </div>
+      )}
 
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 18, marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text2)' }}>Category split</span>
-          <span onClick={() => open('wcats')} style={{ fontSize: 13, fontWeight: 600, color: 'var(--coral)', cursor: 'pointer' }}>Manage</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ position: 'relative', width: 146, height: 146, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Donut segs={d.wTypeSegs} size={146} stroke={24} />
-            <div style={{ position: 'absolute', textAlign: 'center' }}>
-              <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>{d.wCount}</div>
-              <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: -2 }}>sessions</div>
-            </div>
-          </div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 11 }}>
-            {d.wTypeSegs.map((s) => (
-              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 3, flex: 'none', background: s.color }} />
-                <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{s.label}</span>
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text2)' }}>{s.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <SectionLabel>Recent</SectionLabel>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
-        {[...state!.workouts].sort((a, b) => b.ts - a.ts).slice(0, shown).map((w) => {
+      <SectionLabel style={{ marginTop: 14 }}>{list.length ? `${P.title} · ${list.length} ${list.length === 1 ? 'session' : 'sessions'}` : P.title}</SectionLabel>
+      {list.length === 0 && (
+        <Card style={{ padding: '22px 18px', textAlign: 'center', fontSize: 14, color: 'var(--text2)' }}>No workouts {P.phrase}</Card>
+      )}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', display: list.length ? undefined : 'none' }}>
+        {list.slice(0, shown).map((w) => {
           const c = cat(w.catId);
           const cc = c?.color || 'coral';
           const meta =
@@ -158,7 +123,7 @@ export function Workouts() {
                   )}
                 </div>
                 <div style={{ textAlign: 'right', flex: 'none' }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{w.dur}m</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{minutes(w.dur)}</div>
                   <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 1 }}>{relLabel(w.ts)}</div>
                 </div>
               </div>
@@ -166,9 +131,9 @@ export function Workouts() {
           );
         })}
       </div>
-      {state!.workouts.length > shown && (
+      {list.length > shown && (
         <div onClick={() => setShown(shown + 50)} className="press99" role="button" style={{ marginTop: 12, height: 48, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
-          Show older ({state!.workouts.length - shown} more)
+          Show {Math.min(50, list.length - shown)} more
         </div>
       )}
     </div>

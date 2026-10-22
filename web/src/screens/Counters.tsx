@@ -78,7 +78,7 @@ export function Counters() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{c.name}</div>
                       <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
-                        {c.unit} · {t.lastTs ? 'last ' + relLabel(t.lastTs).toLowerCase() : 'no logs yet'}
+                        {c.unit} · {t.lastTs ? `last logged ${relLabel(t.lastTs) === 'Today' || relLabel(t.lastTs) === 'Yesterday' ? relLabel(t.lastTs).toLowerCase() : relLabel(t.lastTs)}` : 'nothing logged yet'}
                       </div>
                     </div>
                     <div

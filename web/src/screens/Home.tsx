@@ -2,11 +2,12 @@ import React from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
 import { api } from '../api';
-import { greeting, todayStr, weekOfYear, money, cNum, counterTotals, dayKey } from '../lib/format';
+import { greeting, minutes, hm, money0, moneyShort, cNum, counterTotals, dayKey } from '../lib/format';
+import { addDays, period, weekOfYear } from '../lib/period';
 import { computeBadges } from '../lib/badges';
 import { parseLayout, reconcile } from '../lib/layout';
 import { Reorderable } from '../Reorderable';
-import { Bars, Spark, Ring } from '../lib/charts';
+import { BarChart } from '../lib/charts';
 import { Avatar, SectionLabel } from '../ui';
 import { IconWorkout, IconSleep, IconExpense } from '../icons';
 import { enabled } from '../lib/modules';
@@ -28,9 +29,9 @@ import { elapsed, formatElapsed } from '../lib/since';
  * instead.
  */
 const subLabel: React.CSSProperties = {
-  fontSize: 11.5,
+  fontSize: 12,
   color: 'var(--text2)',
-  marginTop: -2,
+  marginTop: 0,
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'baseline',
@@ -52,10 +53,17 @@ function Delta({ pct, lowerIsBetter }: { pct: number | null; lowerIsBetter?: boo
   );
 }
 
+const bigNum: React.CSSProperties = { fontSize: 28, fontWeight: 700, letterSpacing: '-.035em', color: 'var(--text)', lineHeight: 1.05, whiteSpace: 'nowrap' };
+const unit: React.CSSProperties = { fontSize: 17, fontWeight: 600, color: 'var(--text2)', marginLeft: 1 };
+const headBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer', flex: 'none' };
+
 export function Home() {
   const { state, go, mutate, mutateOpt, open, haptic, claimedBadges } = useStore();
   const { d, h } = useData();
   const profile = state!.profile;
+  const firstName = (profile.name || '').trim().split(/\s+/)[0] || '';
+  const weekCaption = period('Week', 0).caption;
+  const monthName = new Date().toLocaleDateString('en-US', { month: 'long' });
   // Only show habits scheduled for today's weekday (Sun=0 … Sat=6).
   const dow = new Date().getDay();
   const todaysHabits = h.habits.filter((hb) => !hb.paused && (hb.days || '1111111')[dow] === '1');
@@ -85,9 +93,10 @@ export function Home() {
   // ---- Never miss twice ----
   // The best-known habit-recovery mechanic: after ONE missed day, a gentle
   // nudge (with the user's own reason) so a slip doesn't become a spiral.
-  const yesterdayKey = dayKey(Date.now() - 86400000);
+  const yesterday = addDays(Date.now(), -1);
+  const yesterdayKey = dayKey(yesterday);
   const missedYesterday = todaysHabits.filter((hb) => {
-    const dowY = new Date(Date.now() - 86400000).getDay();
+    const dowY = new Date(yesterday).getDay();
     const scheduledY = (hb.days || '1111111')[dowY] === '1';
     if (!scheduledY || hb.done) return false;
     return !state!.checkins.some((c) => c.habitId === hb.id && c.day === yesterdayKey);
@@ -111,19 +120,27 @@ export function Home() {
   const blocks: Record<string, React.ReactNode> = {
     habits: (
       <>
-        <SectionLabel style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ whiteSpace: 'nowrap' }}>Today's habits</span>
-          <span style={{ color: 'var(--text2)', fontWeight: 500, textTransform: 'none', letterSpacing: 0, fontSize: 13 }}>
-            {doneCount} of {todaysHabits.length} done
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '4px 2px 10px' }}>
+          <SectionLabel style={{ flex: 1, margin: 0 }}>Today</SectionLabel>
+          <span style={{ fontSize: 13, color: 'var(--text2)' }}>
+            {todaysHabits.length ? `${doneCount} of ${todaysHabits.length} done` : ''}
           </span>
-        </SectionLabel>
-        <div style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+        </div>
+        {todaysHabits.length === 0 && (
+          <div style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', boxShadow: 'var(--shadow)', padding: '18px 16px', fontSize: 14, color: 'var(--text2)', textAlign: 'center' }}>
+            Nothing scheduled today
+          </div>
+        )}
+        <div style={{ background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', boxShadow: 'var(--shadow)', overflow: 'hidden', display: todaysHabits.length ? undefined : 'none' }}>
           {todaysHabits.map((hb) => {
             const col = `var(--${hb.color})`;
             return (
-              <div key={hb.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px', borderBottom: '1px solid var(--border)' }}>
+              <div key={hb.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderBottom: '1px solid var(--hairline)' }}>
                 <div
                   onClick={() => toggleHabit(hb.id)}
+                  role="checkbox"
+                  aria-checked={hb.done}
+                  aria-label={hb.name}
                   style={{
                     width: 30,
                     height: 30,
@@ -156,15 +173,14 @@ export function Home() {
                     <path d="M4 9l3.2 3.2L13.5 5.5" />
                   </svg>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{hb.name}</div>
-                  <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
-                    {hb.done ? 'Completed today' : 'Tap to complete'}
+                <div onClick={() => toggleHabit(hb.id)} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: hb.done ? 'var(--text2)' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color .2s' }}>{hb.name}</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--text3)', marginTop: 1 }}>
+                    {hb.done ? 'Done for today' : hb.reminderTime ? `Reminder at ${hb.reminderTime}` : 'Not yet today'}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, fontWeight: 700, padding: '4px 9px', borderRadius: 999, flex: 'none', background: `color-mix(in srgb,${col} 13%,transparent)`, color: col }}>
-                  {hb.total}
-                  <span style={{ opacity: 0.55, fontWeight: 600, marginLeft: 2 }}>days</span>
+                <div style={{ fontSize: 12.5, color: 'var(--text2)', flex: 'none', fontVariantNumeric: 'tabular-nums' }}>
+                  <span style={{ fontWeight: 700, color: 'var(--text)' }}>{hb.total}</span> {hb.total === 1 ? 'day' : 'days'}
                 </div>
               </div>
             );
@@ -175,61 +191,67 @@ export function Home() {
 
     week: (
       <>
-        <SectionLabel>This week</SectionLabel>
+        <SectionLabel action={{ label: 'Analytics', onClick: () => go('analytics') }}>This week · {weekCaption}</SectionLabel>
         {/* auto-fit rather than a hard 1fr 1fr: below ~310px of usable width —
             a small phone, or any phone with the in-app text size turned up,
             which shrinks the layout viewport — two columns cannot hold their
             content and the right-hand cards used to run off the screen. This
             folds to a single column instead, with no media query, so it also
             reacts to `zoom` the way a media query would not. */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(148px, 1fr))', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(148px, 1fr))', gap: 10 }}>
           <StatCard onClick={() => go('workouts')} label="Workouts" iconKey="coral" icon={<IconWorkout c="var(--coral)" size={14} sw={2.1} />}>
-            <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', lineHeight: 1.05 }}>{d.homeWorkoutCount}</div>
+            <div style={bigNum}>{d.homeWorkoutCount}</div>
             <div style={subLabel}>
-              <span>sessions this week</span><Delta pct={d.deltas.workouts} />
+              <span>{d.homeWorkoutCount === 1 ? 'session' : 'sessions'}</span>
+              <Delta pct={d.deltas.workouts} />
             </div>
-            <div style={{ height: 42, marginTop: 4 }}>
-              <Bars values={d.homeWorkoutSeries} colorKey="coral" />
+            <div style={{ marginTop: 10 }}>
+              <BarChart buckets={d.weekBuckets} values={d.homeWorkoutBuckets} color="coral" height={34} grid={false} interactive={false} format={(v) => minutes(v)} />
             </div>
           </StatCard>
 
-          <StatCard onClick={() => go('sleep')} label="Avg sleep" iconKey="blue" icon={<IconSleep c="var(--blue)" size={14} sw={2.1} />}>
-            <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', lineHeight: 1.05 }}>
-              {Math.floor(d.homeSlAvg)}<span style={{ fontSize: 20, fontWeight: 600 }}>h</span>{' '}
-              {String(Math.round((d.homeSlAvg % 1) * 60)).padStart(2, '0')}<span style={{ fontSize: 20, fontWeight: 600 }}>m</span>
+          <StatCard onClick={() => go('sleep')} label="Sleep" iconKey="blue" icon={<IconSleep c="var(--blue)" size={14} sw={2.1} />}>
+            <div style={bigNum}>
+              {d.homeSleepData.length ? (
+                <>
+                  {Math.floor(d.homeSlAvg)}
+                  <span style={unit}>h</span> {String(Math.round((d.homeSlAvg % 1) * 60)).padStart(2, '0')}
+                  <span style={unit}>m</span>
+                </>
+              ) : (
+                '—'
+              )}
             </div>
             <div style={subLabel}>
-              <span>nightly average</span><Delta pct={d.deltas.sleep} />
+              <span>a night</span>
+              <Delta pct={d.deltas.sleep} />
             </div>
-            <div style={{ height: 42, marginTop: 4 }}>
-              <Spark values={d.homeSleepData.length > 1 ? d.homeSleepData : [0, 0]} colorKey="blue" />
+            <div style={{ marginTop: 10 }}>
+              <BarChart buckets={d.weekBuckets} values={d.homeSleepBuckets} color="blue" height={34} grid={false} interactive={false} max={10} format={(v) => hm(v)} />
             </div>
           </StatCard>
 
-          <div onClick={() => go('habits')} className="press" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, overflow: 'hidden' }}>
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>Habits</span>
-              <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', lineHeight: 1.05 }}>
-                {h.habitPct}<span style={{ fontSize: 20, fontWeight: 600 }}>%</span>
-              </div>
-              <div style={subLabel}>
-                <span>completion</span><Delta pct={d.deltas.habits} />
-              </div>
+          <StatCard onClick={() => go('habits')} label="Habits" iconKey="teal" icon={<Glyph name="check" size={14} color="var(--teal)" sw={2.4} />}>
+            <div style={bigNum}>
+              {h.habitPct}
+              <span style={unit}>%</span>
             </div>
-            <div style={{ position: 'relative', width: 56, height: 56, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Ring pct={h.habitPct} colorKey="teal" size={56} stroke={7} />
+            <div style={subLabel}>
+              <span>{h.weekDone} of {h.weekTotal} so far</span>
             </div>
-          </div>
+            <div style={{ marginTop: 10 }}>
+              <BarChart buckets={d.weekBuckets} values={h.weekDaily} color="teal" height={34} grid={false} interactive={false} max={100} format={(v) => `${v}%`} />
+            </div>
+          </StatCard>
 
           <StatCard onClick={() => go('finances')} label="Spent" iconKey="emerald" icon={<IconExpense c="var(--emerald)" size={14} sw={2.1} />}>
-            <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', lineHeight: 1.05 }}>
-              {money(d.homeWeekSpend)}
-            </div>
+            <div style={{ ...bigNum, fontSize: d.homeWeekSpend >= 100000 ? 22 : 26 }}>{money0(d.homeWeekSpend)}</div>
             <div style={subLabel}>
-              <span>this week</span><Delta pct={d.deltas.spend} lowerIsBetter />
+              <span>this week</span>
+              <Delta pct={d.deltas.spend} lowerIsBetter />
             </div>
-            <div style={{ height: 42, marginTop: 4 }}>
-              <Spark values={d.homeSpendSeries.map((v) => v || 0.001)} colorKey="emerald" />
+            <div style={{ marginTop: 10 }}>
+              <BarChart buckets={d.weekBuckets} values={d.homeSpendBuckets} color="emerald" height={34} grid={false} interactive={false} format={(v) => moneyShort(v)} />
             </div>
           </StatCard>
         </div>
@@ -248,17 +270,17 @@ export function Home() {
                 key={m.id}
                 onClick={() => open('milestone', m)}
                 className="pressRow"
-                style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--hairline)', cursor: 'pointer' }}
               >
-                <span style={{ width: 36, height: 36, borderRadius: 11, flex: 'none', background: `color-mix(in srgb,${col} 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ width: 34, height: 34, borderRadius: 10, flex: 'none', background: `color-mix(in srgb,${col} 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <CIcon icon={m.icon} color={col} size={19} />
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</div>
                   <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{formatElapsed(e)}</div>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: col, flex: 'none', fontVariantNumeric: 'tabular-nums' }}>
-                  {e.totalDays.toLocaleString()}<span style={{ opacity: 0.6, fontWeight: 600, marginLeft: 3 }}>d</span>
+                <div style={{ fontSize: 12.5, color: 'var(--text2)', flex: 'none', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>
+                  <span style={{ fontWeight: 700, color: 'var(--text)' }}>{e.totalDays.toLocaleString()}</span> {e.totalDays === 1 ? 'day' : 'days'}
                 </div>
               </div>
             );
@@ -285,47 +307,38 @@ export function Home() {
     ),
     counters: (
       <>
-        <SectionLabel>Counters</SectionLabel>
+        <SectionLabel action={state!.counters.length ? { label: 'Open', onClick: () => go('counters') } : undefined}>
+          {state!.counters.length ? `Counters · ${monthName}` : 'Counters'}
+        </SectionLabel>
         <div
           onClick={() => go('counters')}
           className="press99"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 12 }}
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', cursor: 'pointer', overflow: 'hidden' }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 24, height: 24, borderRadius: 8, background: 'color-mix(in srgb,var(--indigo) 14%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="14" height="14" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.1, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-                <path d="M5 3l-.8 8M9 3l-.8 8M3 6h8M2.5 9h8" />
-              </svg>
-            </span>
-            <span style={{ flex: 1, fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>
-              {state!.counters.length ? 'Counters · this month' : 'Counters'}
-            </span>
-            <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M7 4l5 5-5 5" /></svg>
-          </div>
           {state!.counters.length ? (
-            <div style={{ display: 'flex', gap: 10 }}>
-              {state!.counters.slice(0, 3).map((c) => {
-                const t = counterTotals(state!.countLogs, c.id);
-                return (
-                  <div key={c.id} style={{ flex: 1, minWidth: 0, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: '11px 12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-                      <span style={{ width: 9, height: 9, borderRadius: 3, flex: 'none', background: `var(--${c.color})` }} />
-                      <span style={{ fontSize: 11.5, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
-                    </div>
-                    <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em', whiteSpace: 'nowrap' }}>{cNum(t.month)} {c.unit}</div>
-                  </div>
-                );
-              })}
-            </div>
+            state!.counters.slice(0, 4).map((c) => {
+              const t = counterTotals(state!.countLogs, c.id);
+              return (
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', borderBottom: '1px solid var(--hairline)' }}>
+                  <span style={{ width: 34, height: 34, borderRadius: 10, flex: 'none', background: `color-mix(in srgb,var(--${c.color}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <CIcon icon={c.icon} color={`var(--${c.color})`} size={18} />
+                  </span>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', flex: 'none', fontVariantNumeric: 'tabular-nums' }}>
+                    {cNum(t.month)} <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text2)' }}>{c.unit}</span>
+                  </span>
+                </div>
+              );
+            })
           ) : (
             // Empty state: nudge people to create their first counter.
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg)', border: '1px dashed color-mix(in srgb,var(--indigo) 32%,var(--border))', borderRadius: 14, padding: '13px 14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px' }}>
               <span style={{ width: 34, height: 34, borderRadius: 10, flex: 'none', background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M9 4v10M4 9h10" /></svg>
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Start a counter</div>
-                <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>Track water, steps, pages — anything you want to count.</div>
+                <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>Start a counter</div>
+                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Water, pages, pull-ups — anything you count</div>
               </div>
             </div>
           )}
@@ -352,61 +365,52 @@ export function Home() {
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .4s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 18 }}>
-        {/* The greeting yields; the controls keep their tap targets. Without
-            this the date and greeting held their intrinsic width and pushed the
-            avatar off the right edge on a narrow screen. */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', letterSpacing: '.01em', overflowWrap: 'break-word' }}>
-            {todayStr()} · Week {weekOfYear()} of 52
-          </div>
-          <div style={{ fontSize: 27, fontWeight: 700, letterSpacing: '-.025em', marginTop: 3, color: 'var(--text)', overflowWrap: 'break-word' }}>
-            {greeting()}
-          </div>
+      {/* Date and controls on one row, the greeting on its own beneath them.
+          Side by side, the greeting wrapped onto two lines on most phones. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+        <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · Week {weekOfYear(Date.now()).week}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 'none' }}>
-          <div
-            onClick={() => go('search')}
-            className="press96"
-            role="button"
-            aria-label="Search"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer', boxShadow: 'var(--shadow)' }}
-          >
-            <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
-              <circle cx="8.5" cy="8.5" r="5.5" />
-              <path d="M13 13l3 3" />
-            </svg>
-          </div>
-          <div
-            onClick={() => go('achievements')}
-            className="press96"
-            style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 5, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 999, padding: '7px 11px', cursor: 'pointer', boxShadow: 'var(--shadow)' }}
-          >
-            <Glyph name="trophy" size={15} color="var(--warning)" sw={2} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
-              {badgeCount}<span style={{ color: 'var(--text2)', fontWeight: 600 }}>/{badges.length}</span>
-            </span>
-            {claimable > 0 && (
-              <span style={{ position: 'absolute', top: -5, right: -5, minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, background: 'var(--danger)', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--app-bg)', boxShadow: '0 2px 6px rgba(0,0,0,.25)' }}>
-                {claimable}
-              </span>
-            )}
-          </div>
-          <Avatar name={profile.name} src={profile.avatar} size={46} onClick={() => go('settings')} />
+        <div
+          onClick={() => go('search')}
+          className="press96"
+          role="button"
+          aria-label="Search"
+          style={headBtn}
+        >
+          <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+            <circle cx="8.5" cy="8.5" r="5.5" />
+            <path d="M13 13l3 3" />
+          </svg>
         </div>
+        <div
+          onClick={() => go('achievements')}
+          className="press96"
+          role="button"
+          aria-label={`Achievements: ${badgeCount} of ${badges.length}${claimable ? `, ${claimable} new` : ''}`}
+          style={{ ...headBtn, position: 'relative' }}
+        >
+          <Glyph name="trophy" size={18} color="var(--warning)" sw={2} />
+          {claimable > 0 && (
+            <span style={{ position: 'absolute', top: 6, right: 6, width: 9, height: 9, borderRadius: 99, background: 'var(--danger)', border: '2px solid var(--surface)' }} />
+          )}
+        </div>
+        <Avatar name={profile.name} src={profile.avatar} size={38} onClick={() => go('settings')} />
+      </div>
+      <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-.035em', color: 'var(--text)', marginBottom: 20, lineHeight: 1.15 }}>
+        {greeting()}
+        {firstName ? `, ${firstName}` : ''}
       </div>
 
       {nudge && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: `color-mix(in srgb,var(--${nudge.color}) 12%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${nudge.color}) 30%,var(--border))`, borderRadius: 18, padding: '14px 16px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', borderRadius: 18, padding: '14px 14px 14px 16px', marginBottom: 22 }}>
           <span style={{ flex: 'none', width: 36, height: 36, borderRadius: 11, background: `color-mix(in srgb,var(--${nudge.color}) 18%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Glyph name="target" size={20} color={`var(--${nudge.color})`} />
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>
-              Don't miss "{nudge.name}" twice
-            </div>
+            <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>Don’t miss {nudge.name} twice</div>
             <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>
-              {nudge.why ? `"${nudge.why}"` : 'You skipped it yesterday — one tap today keeps it alive.'}
+              {nudge.why ? `“${nudge.why}”` : 'You missed it yesterday. One today keeps it going.'}
             </div>
           </div>
           <div
@@ -414,9 +418,9 @@ export function Home() {
             className="press92"
             role="button"
             aria-label={`Check off ${nudge.name}`}
-            style={{ flex: 'none', padding: '9px 14px', borderRadius: 999, background: `var(--${nudge.color})`, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+            style={{ flex: 'none', padding: '9px 14px', borderRadius: 999, background: `color-mix(in srgb,var(--${nudge.color}) 15%,transparent)`, color: `var(--${nudge.color})`, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
           >
-            Do it
+            Done
           </div>
         </div>
       )}
@@ -449,11 +453,8 @@ export function Home() {
         </div>
       )}
 
-      <div style={{ fontSize: 11.5, color: 'var(--text2)', textAlign: 'center', marginBottom: 14, opacity: 0.75 }}>
-        Hold &amp; drag a section to rearrange
-      </div>
-
       <Reorderable items={items} onReorder={saveOrder} />
+      <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', marginTop: -6 }}>Hold a section to move it</div>
     </div>
   );
 }

@@ -47,12 +47,14 @@ export function SleepSheet() {
     value: string,
     setValue: (v: string) => void
   ) => (
-    <div style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 18, padding: '14px 15px' }}>
+    // minWidth 0: a time input has a wide intrinsic size, and without it the
+    // second card was pushed past the edge of the sheet on a 390px phone.
+    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 18, padding: '14px 15px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
         <span style={{ width: 28, height: 28, borderRadius: 9, flex: 'none', background: `color-mix(in srgb,var(--${tint}) 15%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
         <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>{labelText}</span>
       </div>
-      <input type="time" value={value} onChange={(e) => setValue(e.target.value)} style={{ width: '100%', border: 'none', background: 'none', fontSize: 25, fontWeight: 700, color: 'var(--text)', outline: 'none', fontVariantNumeric: 'tabular-nums', letterSpacing: '-.01em', padding: 0 }} />
+      <input type="time" value={value} onChange={(e) => setValue(e.target.value)} style={{ width: '100%', minWidth: 0, border: 'none', background: 'none', fontSize: 22, fontWeight: 700, color: 'var(--text)', outline: 'none', fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em', padding: 0 }} />
     </div>
   );
 
