@@ -14,6 +14,33 @@ export const pool = new Pool({
   ssl: isLocal ? undefined : { rejectUnauthorized: false },
 });
 
+/**
+ * Required, not optional: without this the process dies.
+ *
+ * node-postgres emits 'error' on the pool when a connection sitting *idle* in
+ * it is dropped by the server, and an unhandled 'error' event in Node throws
+ * and takes the process with it. There is no request in flight to catch it —
+ * nobody is awaiting anything, so no try/catch anywhere can help.
+ *
+ * This is the normal way a serverless Postgres behaves, not an edge case. It
+ * suspends its compute when idle or out of quota and terminates whatever was
+ * connected, which produced exactly this crash in testing:
+ *
+ *     error: terminating connection due to administrator command
+ *     Emitted 'error' event on BoundPool instance
+ *
+ * The server is written to stay up and answer /api/health with the database
+ * down, so that an outage is visible rather than looking like a hang. That
+ * promise is worth nothing if the first dropped connection kills it, and a
+ * host that restarts the process just turns the outage into a crash loop.
+ *
+ * A dead idle connection needs no action: the pool discards it and opens a
+ * fresh one on the next query. Logging it and carrying on is the whole fix.
+ */
+pool.on('error', (err) => {
+  console.error('[db] idle client error (connection dropped, pool will reconnect):', err.message);
+});
+
 export async function query<T = any>(text: string, params: any[] = []) {
   const res = await pool.query(text, params);
   return res.rows as T[];

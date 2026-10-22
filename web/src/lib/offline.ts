@@ -233,6 +233,19 @@ export async function flush(
         // op, so it keeps its attempts and everything waits for a signal.
         break;
       }
+      if (status === 502 || status === 503 || status === 504) {
+        // The server is reachable but not serving: still booting, its database
+        // asleep, or a gateway in front of it with nothing behind. The request
+        // never reached the code that would act on it, so the entry is no more
+        // suspect than it was a moment ago.
+        //
+        // This must not burn an attempt. An outage lasting longer than
+        // MAX_TRIES app-opens would otherwise discard every queued entry one by
+        // one — and a database being down for a day is exactly when somebody's
+        // logged workouts matter most. Wait it out instead; the queue drains
+        // when the server comes back.
+        break;
+      }
       if (status >= 400 && status < 500 && status !== 408 && status !== 429) {
         // Permanently rejected (deleted parent, validation): drop it rather
         // than block every later entry behind something that can never apply.
