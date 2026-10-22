@@ -43,6 +43,11 @@ jobs:
     # occasional deliberate bump, and in exchange a red build always means
     # somebody changed something.
     runs-on: ubuntu-24.04
+    # Needed to create the release and its tag. The default token is read-only
+    # for contents, and a release step that fails on permissions after a
+    # three-minute build is a poor way to find that out.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -168,3 +173,69 @@ jobs:
           name: orbit-android-release-aab
           path: web/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
+
+      # ---- Publish a release so the APK has a plain download link ----
+      #
+      # An Actions artifact can only be downloaded by someone signed in to
+      # GitHub with access to the repository, which makes it useless for
+      # handing the app to a friend. A release asset is a direct link.
+      #
+      # Done with the `gh` CLI, which is preinstalled on the runner, rather
+      # than a marketplace action. That is a deliberate choice: this build was
+      # broken for weeks because android-actions/setup-android@v3 stopped
+      # working when GitHub retired Node 20 under it. Every third-party action
+      # is a dependency that can break on a day nobody touched the repository,
+      # and `gh` has no such moving parts.
+      #
+      # Only from main. Builds dispatched from a branch are experiments, and
+      # each one minting a public release would bury the real ones.
+      - name: Publish a release with the APK
+        if: ${{ github.ref == 'refs/heads/main' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: build-${{ github.run_number }}
+          VERSION: ${{ inputs.version_name || '1.0.0' }}
+        run: |
+          set -euo pipefail
+          APK="orbit-$VERSION-build$GITHUB_RUN_NUMBER.apk"
+          cp web/android/app/build/outputs/apk/debug/app-debug.apk "$APK"
+
+          # The AAB only exists when the signing secrets are configured.
+          FILES=("$APK")
+          AAB=web/android/app/build/outputs/bundle/release/app-release.aab
+          if [ -f "$AAB" ]; then
+            cp "$AAB" "orbit-$VERSION-build$GITHUB_RUN_NUMBER.aab"
+            FILES+=("orbit-$VERSION-build$GITHUB_RUN_NUMBER.aab")
+          fi
+
+          cat > notes.md <<NOTES
+          **Build $GITHUB_RUN_NUMBER** · version $VERSION
+          Commit \`${GITHUB_SHA:0:7}\`
+
+          ### Install on Android
+          Download the \`.apk\` below and open it on your phone.
+
+          Google Play Protect will warn about this app, because it reads bank
+          SMS to turn payment alerts into transactions. To install anyway:
+          Play Store → your profile → **Play Protect** → gear icon → turn off
+          "Scan apps with Play Protect" → install → turn it back on.
+
+          ### Note
+          This is a debug-signed build for testing, not a Play Store release.
+          NOTES
+
+          # "Re-run jobs" keeps the run number, so the tag can already exist.
+          # Replace the files on that release rather than failing a build that
+          # produced a perfectly good APK.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${FILES[@]}" --clobber
+          else
+            # A pre-release: these are debug-signed test builds, and labelling
+            # one "latest stable" would be untrue.
+            gh release create "$TAG" "${FILES[@]}" \
+              --title "Orbit $VERSION (build $GITHUB_RUN_NUMBER)" \
+              --notes-file notes.md \
+              --prerelease
+          fi
+
+          echo "Released: $(gh release view "$TAG" --json url --jq .url)"
