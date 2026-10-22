@@ -16,6 +16,8 @@ import {
   syncSms,
   smsAccount,
   setSmsAccount,
+  smsDiag,
+  type SmsDiag,
 } from '../lib/smsSync';
 
 export const MODULE_OPTS = [
@@ -25,6 +27,15 @@ export const MODULE_OPTS = [
   { key: 'finances', label: 'Finances', icon: 'wallet' as const, color: 'emerald' },
   { key: 'counters', label: 'Counters', icon: 'tally' as const, color: 'indigo' },
 ];
+
+/** "just now", "4 min ago", "3 h ago", "2 d ago". */
+function ago(t: number): string {
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  return `${Math.round(s / 86400)} d ago`;
+}
 
 export function Settings() {
   const { state, go, open, mutate, mutateOpt, signOut, showToast, haptic, confirm, askPassword, applyState } = useStore();
@@ -81,11 +92,15 @@ export function Settings() {
   const [smsAcc, setSmsAcc] = React.useState(smsAccount());
   const [scanning, setScanning] = React.useState(false);
 
+  const [smsInfo, setSmsInfo] = React.useState<SmsDiag | null>(smsDiag());
+  const [diagOpenSms, setDiagOpenSms] = React.useState(false);
+
   const scanMessages = async (announceNothing: boolean) => {
     if (!state) return;
     setScanning(true);
     const r = await syncSms(state, (items) => api.importSms(items));
     setScanning(false);
+    setSmsInfo(smsDiag());
     if (r.state) applyState(r.state);
     if (r.added > 0) {
       showToast(`${r.added} ${r.added === 1 ? 'payment' : 'payments'} added`);
@@ -344,7 +359,7 @@ export function Settings() {
       setToken(r.token);
       showToast('Other devices signed out');
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Could not do that');
+      showToast(e instanceof Error ? e.message : 'That didn’t go through — try again');
     }
   };
 
@@ -508,7 +523,7 @@ export function Settings() {
                   const cur = profile.modules || MODULE_OPTS.map((x) => x.key);
                   const next = on ? cur.filter((k) => k !== m.key) : [...cur, m.key];
                   if (!next.length) {
-                    showToast('Keep at least one');
+                    showToast('You need at least one');
                     return;
                   }
                   mutateOpt((st) => ({ ...st, profile: { ...st.profile, modules: next } }), () => api.updateMe({ modules: next }));
@@ -783,6 +798,50 @@ export function Settings() {
                   <span style={{ width: 36, flex: 'none' }} />
                   <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--emerald)' }}>Import the past year</div>
                 </div>
+
+                {/* What the last scan actually saw. This is the difference between
+                    "it doesn't work" and a fixable sentence: a native error, no
+                    bank messages found, or bank messages that didn't read as
+                    payments each look completely different here. */}
+                <div
+                  onClick={() => smsInfo && setDiagOpenSms((v) => !v)}
+                  className={smsInfo ? 'pressRow' : undefined}
+                  style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: smsInfo ? 'pointer' : 'default' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Last check</div>
+                    <div style={{ fontSize: 12, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
+                      {smsInfo ? ago(smsInfo.at) : 'Not yet'}
+                    </div>
+                  </div>
+                  {smsInfo && (
+                    <div style={{ fontSize: 12, color: smsInfo.error ? 'var(--danger)' : 'var(--text2)', marginTop: 4, lineHeight: 1.5 }}>
+                      {smsInfo.error
+                        ? smsInfo.error
+                        : `${smsInfo.scanned} message${smsInfo.scanned === 1 ? '' : 's'} checked · ${smsInfo.fromBanks} from banks · ${smsInfo.parsed} read as payments · ${smsInfo.added} added`}
+                    </div>
+                  )}
+                  {smsInfo && !smsInfo.error && smsInfo.recent.length > 0 && (
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--emerald)', marginTop: 6 }}>
+                      {diagOpenSms ? 'Hide' : 'Show'} recent bank messages
+                    </div>
+                  )}
+                </div>
+                {diagOpenSms && smsInfo && smsInfo.recent.length > 0 && (
+                  <div style={{ padding: '4px 16px 12px', borderBottom: '1px solid var(--border)' }}>
+                    {smsInfo.recent.map((r, i) => (
+                      <div key={i} style={{ padding: '9px 0', borderTop: i ? '1px solid var(--border)' : 'none' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.sender}</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 600, color: r.ok ? 'var(--emerald)' : 'var(--text2)', flex: 'none' }}>{r.outcome}</span>
+                        </div>
+                        <div dir="auto" style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3, lineHeight: 1.45, overflowWrap: 'anywhere' }}>
+                          {r.snippet}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
 

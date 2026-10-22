@@ -1,18 +1,26 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
-import { parseAll, guessCategory, type SmsMessage, type ParsedSms } from './smsParse';
+import { analyseSms, guessCategory, SKIP_LABEL, type SmsMessage, type ParsedSms } from './smsParse';
 import type { AppState, Txn } from '../types';
 
 // Getting bank messages off the phone and into the ledger.
 //
 // The reading itself is in `smsParse.ts`, where it is tested. This file is the
 // plumbing: ask the native side for messages we have not seen, read them, pick
-// a category, send them up. It holds two pieces of local state — whether the
-// user turned this on, and how far through the inbox we got — and nothing else.
+// a category, send them up. It keeps three things on the device — whether the
+// user turned this on, how far through the inbox it got, and a record of the
+// last scan for the diagnostic in Settings — and nothing else.
 
 interface OrbitSmsPlugin {
   check(): Promise<{ available: boolean; granted: boolean }>;
   request(): Promise<{ available: boolean; granted: boolean }>;
-  read(o: { since: number; senders?: string[] }): Promise<{ messages: SmsMessage[]; more: boolean }>;
+  read(o: { since: number; senders?: string[] }): Promise<{
+    messages: SmsMessage[];
+    more: boolean;
+    /** Inbox rows examined, banks or not. Absent on builds before this field. */
+    scanned?: number;
+    /** Timestamp of the last row examined. */
+    scannedUntil?: number;
+  }>;
 }
 
 const OrbitSms = registerPlugin<OrbitSmsPlugin>('OrbitSms');
@@ -103,28 +111,67 @@ export interface SmsImport {
   state?: AppState;
 }
 
-/**
- * The senders worth reading.
- *
- * Bank messages come from short alphanumeric sender ids, and the native side
- * filters on them so personal messages are never fetched at all. The list is
- * matched loosely (a substring, case-insensitively by the provider), which is
- * why a short generic word is not on it — "bank" alone would pull in half an
- * inbox.
- */
-const BANK_SENDERS = [
-  'NBE', 'CIB', 'QNB', 'BanqueMisr', 'BM', 'AAIB', 'HSBC', 'ADIB', 'Alex Bank',
-  'AlexBank', 'Banque', 'Bank', 'CreditAgricole', 'FaisalBank', 'SAIB', 'EGBank',
-  'AlBaraka', 'Emirates NBD', 'ENBD', 'Mashreq', 'Attijari', 'Housing',
-  'InstaPay', 'Meeza', 'Fawry', 'VodafoneCash', 'Vodafone Cash', 'OrangeCash',
-  'EtisalatCash', 'WeCash', 'ValU', 'Halan', 'Telda', 'Lucky',
-];
+// ---------------------------------------------------------------------------
+// Diagnostics
+//
+// The first version of this feature failed silently: a native error, a bank
+// whose sender id wasn't on a list, a message in Arabic — each produced the same
+// result, nothing, with no way for anyone to tell which. Every scan now leaves
+// a record of what it saw, kept on the device and shown in Settings, so "it
+// doesn't work" becomes "my bank's messages say 'no amount found'".
+//
+// The record holds a short snippet of each recent bank message so the user can
+// recognise it. It is the user's own SMS on the user's own phone, never sent
+// anywhere, and limited to the last few messages from alphanumeric senders.
+
+export interface SmsDiagEntry {
+  sender: string;
+  snippet: string;
+  ts: number;
+  /** 'imported', 'duplicate' or a human-readable reason it was skipped. */
+  outcome: string;
+  ok: boolean;
+}
+
+export interface SmsDiag {
+  at: number;
+  /** Inbox messages looked at. */
+  scanned: number;
+  /** Of those, how many came from a bank-like sender. */
+  fromBanks: number;
+  /** Of those, how many read as payments. */
+  parsed: number;
+  /** Of those, how many were new to the server. */
+  added: number;
+  error: string | null;
+  recent: SmsDiagEntry[];
+}
+
+const DIAG_KEY = 'orbit_sms_diag';
+const PARSER_KEY = 'orbit_sms_parser';
+/** Bump whenever smsParse learns to read something it used to skip. */
+const PARSER_VERSION = 2;
+
+export function smsDiag(): SmsDiag | null {
+  try {
+    const v = JSON.parse(get(DIAG_KEY) || 'null');
+    return v && typeof v.at === 'number' ? (v as SmsDiag) : null;
+  } catch {
+    return null;
+  }
+}
+
+const saveDiag = (d: SmsDiag) => set(DIAG_KEY, JSON.stringify(d));
+
+/** Batches per scan. 10 × 500 messages is far beyond any real catch-up. */
+const MAX_BATCHES = 10;
 
 /**
  * Read whatever has arrived since last time and import it.
  *
  * Never throws. This runs on resume, and a refused permission, a locked-down
- * SMS provider or a dead connection are all ordinary states of the world.
+ * SMS provider or a dead connection are all ordinary states of the world — but
+ * each one is now written to the diagnostic rather than swallowed.
  */
 export async function syncSms(
   state: AppState,
@@ -133,26 +180,68 @@ export async function syncSms(
   const none: SmsImport = { added: 0, read: 0 };
   if (!smsSupported() || !smsEnabled()) return none;
 
-  let batch: { messages: SmsMessage[]; more: boolean };
-  const since = Number(get(MARK_KEY)) || Date.now() - FIRST_IMPORT_DAYS * 86400000;
-  try {
-    const st = await OrbitSms.check();
-    if (!st.available || !st.granted) return none;
-    batch = await OrbitSms.read({ since, senders: BANK_SENDERS });
-  } catch {
+  const home = state.profile.currency || 'EGP';
+  const diag: SmsDiag = { at: Date.now(), scanned: 0, fromBanks: 0, parsed: 0, added: 0, error: null, recent: [] };
+  const fail = (msg: string): SmsImport => {
+    saveDiag({ ...diag, error: msg });
     return none;
+  };
+
+  // When the reader improves, look again at messages it already passed over.
+  // The first version could not read Arabic, yet still moved its watermark past
+  // every Arabic alert it saw, so without this those payments would never be
+  // looked at again. Re-reading is safe: the server drops anything it already
+  // has, by message key.
+  if ((Number(get(PARSER_KEY)) || 0) < PARSER_VERSION) {
+    set(MARK_KEY, String(Date.now() - FIRST_IMPORT_DAYS * 86400000));
+    set(PARSER_KEY, String(PARSER_VERSION));
   }
 
-  if (!batch.messages.length) return none;
+  let since = Number(get(MARK_KEY)) || Date.now() - FIRST_IMPORT_DAYS * 86400000;
+  const messages: SmsMessage[] = [];
+  let reachedUntil = since;
+  try {
+    const st = await OrbitSms.check();
+    if (!st.available) return fail('This phone does not receive SMS.');
+    if (!st.granted) return fail('Permission to read messages was turned off in Android settings.');
+    for (let i = 0; i < MAX_BATCHES; i++) {
+      const batch = await OrbitSms.read({ since });
+      messages.push(...batch.messages);
+      diag.scanned += batch.scanned ?? batch.messages.length;
+      const newest = batch.messages.reduce((m, x) => Math.max(m, x.ts), 0);
+      reachedUntil = Math.max(reachedUntil, batch.scannedUntil ?? 0, newest);
+      if (!batch.more || reachedUntil <= since) break;
+      since = reachedUntil;
+    }
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : String(e));
+  }
+  diag.fromBanks = messages.length;
 
-  // Advance the watermark to the newest message *read*, not the newest
-  // imported: a message that did not parse is still a message we have seen, and
-  // re-reading it on every resume forever would be pure waste.
-  const newest = batch.messages.reduce((m, x) => Math.max(m, x.ts), since);
+  // Read every message, keeping the reason for each one that is skipped.
+  const parsed: ParsedSms[] = [];
+  const seen = new Set<string>();
+  for (const m of messages) {
+    const a = analyseSms(m, home);
+    const entry: SmsDiagEntry = {
+      sender: m.sender,
+      snippet: m.body.replace(/\s+/g, ' ').trim().slice(0, 90),
+      ts: m.ts,
+      outcome: a.ok ? 'Read as a payment' : SKIP_LABEL[a.reason],
+      ok: a.ok,
+    };
+    if (a.ok && !seen.has(a.parsed.key)) {
+      seen.add(a.parsed.key);
+      parsed.push(a.parsed);
+    }
+    diag.recent.push(entry);
+  }
+  diag.recent = diag.recent.slice(-12).reverse();
+  diag.parsed = parsed.length;
 
-  const parsed = parseAll(batch.messages, state.profile.currency || 'EGP');
   if (!parsed.length) {
-    set(MARK_KEY, String(newest));
+    set(MARK_KEY, String(reachedUntil));
+    saveDiag(diag);
     return none;
   }
 
@@ -168,14 +257,12 @@ export async function syncSms(
     // Only after the server has them. If the push failed, the watermark stays
     // where it was and the same messages are offered again next time — the
     // unique key on the server makes that safe to repeat.
-    set(MARK_KEY, String(newest));
-    return {
-      added: next.txns.filter((t) => t.sms && !had.has(t.id)).length,
-      read: parsed.length,
-      state: next,
-    };
-  } catch {
-    return none;
+    set(MARK_KEY, String(reachedUntil));
+    diag.added = next.txns.filter((t) => t.sms && !had.has(t.id)).length;
+    saveDiag(diag);
+    return { added: diag.added, read: parsed.length, state: next };
+  } catch (e) {
+    return fail(`Read ${parsed.length} payment${parsed.length === 1 ? '' : 's'} but could not save them: ${e instanceof Error ? e.message : 'no connection'}. Will retry.`);
   }
 }
 
