@@ -55,7 +55,42 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - uses: android-actions/setup-android@v3
+      # Deliberately not android-actions/setup-android.
+      #
+      # That action targets Node 20. GitHub retired Node 20 on its runners and
+      # now forces such actions onto Node 24, which the action does not survive
+      # — it failed on every build from 19 October onwards, including one whose
+      # only change was a line in a server file. Pinning the runner image did
+      # not help, because the runtime is forced regardless of the OS.
+      #
+      # There is nothing for it to install anyway: GitHub's Ubuntu images ship
+      # the Android SDK already. All that was ever needed is the path to it, so
+      # that is all this does — and a step that only exports two variables
+      # cannot be broken by a Node runtime change.
+      - name: Locate the preinstalled Android SDK
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          if [ -z "$SDK" ] || [ ! -d "$SDK" ]; then
+            echo "::error::No preinstalled Android SDK on this runner (ANDROID_SDK_ROOT and ANDROID_HOME are unset or missing). If GitHub has stopped shipping it, install the command-line tools here instead."
+            exit 1
+          fi
+          # cmdline-tools is normally at latest/, but take whatever is there
+          # rather than assuming the layout.
+          BIN="$SDK/cmdline-tools/latest/bin"
+          if [ ! -d "$BIN" ]; then
+            BIN=$(find "$SDK/cmdline-tools" -maxdepth 2 -type d -name bin 2>/dev/null | head -1)
+          fi
+          if [ -z "$BIN" ] || [ ! -x "$BIN/sdkmanager" ]; then
+            echo "::error::Found an SDK at $SDK but no sdkmanager under cmdline-tools."
+            ls -la "$SDK" || true
+            exit 1
+          fi
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "$BIN" >> "$GITHUB_PATH"
+          echo "$SDK/platform-tools" >> "$GITHUB_PATH"
+          echo "Android SDK: $SDK"
+          echo "sdkmanager: $BIN/sdkmanager"
 
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses > /dev/null 2>&1 || true
