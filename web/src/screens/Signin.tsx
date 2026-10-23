@@ -39,10 +39,8 @@ export function Signin() {
     outline: 'none',
   };
   const labelStyle: React.CSSProperties = {
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: 600,
-    textTransform: 'uppercase',
-    letterSpacing: '.06em',
     color: 'var(--text2)',
     marginBottom: 8,
   };

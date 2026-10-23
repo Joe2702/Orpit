@@ -89,19 +89,19 @@ export function ExpenseSheet() {
 
       <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: 3, marginBottom: 18 }}>
         <div onClick={() => setKind('expense')} style={tab(!income, 'var(--text)')}>Expense</div>
-        <div onClick={() => setKind('income')} style={tab(income, 'var(--emerald)')}>Income</div>
+        <div onClick={() => setKind('income')} style={tab(income, 'var(--indigo)')}>Income</div>
       </div>
 
       <div style={{ textAlign: 'center', marginBottom: 18 }}>
         <span style={{ fontSize: 30, fontWeight: 600, color: 'var(--text2)', verticalAlign: 'top', lineHeight: 1.6 }}>{moneySymbol().trim()}</span>
-        <span style={{ fontSize: 52, fontWeight: 700, letterSpacing: '-.03em', color: income ? 'var(--emerald)' : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+        <span style={{ fontSize: 52, fontWeight: 700, letterSpacing: '-.03em', color: income ? 'var(--indigo)' : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
           {amount === '' ? '0' : amount}
         </span>
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, justifyContent: 'center', marginBottom: 18 }}>
         {(income ? INCOME_CATS : EXPENSE_CATS).map((c) => (
-          <div key={c} onClick={() => (income ? setIncCat(c) : setExCat(c))} style={chip(cat === c, 'var(--emerald)')}>
+          <div key={c} onClick={() => (income ? setIncCat(c) : setExCat(c))} style={chip(cat === c, 'var(--indigo)')}>
             {c}
           </div>
         ))}
@@ -121,7 +121,7 @@ export function ExpenseSheet() {
         ))}
       </div>
 
-      <div onClick={save} className="press" style={{ background: 'var(--emerald)', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>
+      <div onClick={save} className="press" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>
         Save
       </div>
     </div>

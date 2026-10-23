@@ -162,7 +162,10 @@ export function Ring({
 // Long was coral beside short's red — the legend showed two near-identical
 // reds for opposite problems.
 export function sleepColor(h: number): string {
-  return h < 7 ? 'var(--amber)' : h <= 9 ? 'var(--blue)' : 'var(--purple)';
+  // In the healthy range the bar takes the accent; outside it, quiet grey.
+  // Three hues for short, healthy and long sleep was one more rainbow on a
+  // screen that only needs to answer "was this a good night?".
+  return h >= 7 && h <= 9 ? 'var(--indigo)' : 'var(--text3)';
 }
 
 // Heatmap rendered from REAL per-day check-in levels (0-4). grid[col][row].

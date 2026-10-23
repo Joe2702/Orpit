@@ -50,11 +50,11 @@ export type SkipReason = 'empty' | 'otp' | 'promo' | 'declined' | 'not-yet' | 'r
 
 export const SKIP_LABEL: Record<SkipReason, string> = {
   empty: 'Empty message',
-  otp: 'Security code — ignored',
-  promo: 'Promotion — ignored',
-  declined: 'Declined payment — ignored',
-  'not-yet': 'Reminder or future charge — ignored',
-  request: 'Payment request — ignored',
+  otp: 'Security code, ignored',
+  promo: 'Promotion, ignored',
+  declined: 'Declined payment, ignored',
+  'not-yet': 'Reminder or future charge, ignored',
+  request: 'Payment request, ignored',
   'no-amount': 'No amount found',
   'no-verb': "Couldn't tell if money went in or out",
 };

@@ -208,8 +208,8 @@ function StatusBar() {
 function TabBar() {
   const { screen, go, open } = useStore();
 
-  // A floating rounded-pill nav: a solid light bar that hovers over the screen,
-  // with the active destination marked by a pill behind its icon. Icons only.
+  // A floating bar over the screen. Each destination is labelled: an icon
+  // alone makes people guess, and the guess is the moment an app feels unsure.
   const item = (active: boolean, onClick: () => void, path: React.ReactNode, label: string) => (
     <div
       onClick={onClick}
@@ -217,25 +217,12 @@ function TabBar() {
       role="tab"
       aria-label={label}
       aria-selected={active}
-      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 48 }}
+      style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, cursor: 'pointer', minHeight: 52, color: active ? 'var(--text)' : 'var(--text3)', transition: 'color .2s' }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 58,
-          height: 44,
-          borderRadius: 999,
-          color: active ? 'var(--indigo)' : 'var(--text2)',
-          background: active ? 'color-mix(in srgb,var(--indigo) 15%,transparent)' : 'transparent',
-          transition: 'background .2s, color .2s',
-        }}
-      >
-        <svg width="24" height="24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: active ? 2.3 : 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
-          {path}
-        </svg>
-      </div>
+      <svg width="22" height="22" viewBox="0 0 24 24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: active ? 2.2 : 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+        {path}
+      </svg>
+      <span style={{ fontSize: 10.5, fontWeight: active ? 650 : 550, letterSpacing: '.01em' }}>{label}</span>
     </div>
   );
 
@@ -251,12 +238,12 @@ function TabBar() {
           pointerEvents: 'auto',
           // Frosted glass: translucent + backdrop blur, so text scrolling under
           // it shows through blurred rather than sitting on a solid bar.
-          background: 'color-mix(in srgb, var(--surface) 68%, transparent)',
-          backdropFilter: 'blur(20px) saturate(1.7)',
-          WebkitBackdropFilter: 'blur(20px) saturate(1.7)',
-          border: '1px solid color-mix(in srgb, var(--border) 70%, transparent)',
-          borderRadius: 999,
-          boxShadow: '0 12px 30px -10px rgba(8,9,14,.28)',
+          background: 'color-mix(in srgb, var(--surface) 82%, transparent)',
+          backdropFilter: 'blur(20px) saturate(1.4)',
+          WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+          border: '1px solid var(--border)',
+          borderRadius: 26,
+          boxShadow: '0 10px 30px -12px rgba(0,0,0,.35)',
           display: 'flex',
           alignItems: 'center',
           padding: '0 8px',
@@ -266,8 +253,8 @@ function TabBar() {
         {item(screen === 'analytics', () => go('analytics'), <path d="M4 20V11M10 20V5M16 20v-6M4 20h16" />, 'Analytics')}
         {/* Add — the primary create action; accented but flat within the bar. */}
         <div onClick={() => open('chooser')} className="press92" role="button" aria-label="Add an entry" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 48 }}>
-          <div style={{ width: 46, height: 46, borderRadius: 15, background: 'linear-gradient(155deg,var(--blue),var(--indigo))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--glow)' }}>
-            <svg width="24" height="24" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }} aria-hidden><path d="M12 5v14M5 12h14" /></svg>
+          <div style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--bg)', strokeWidth: 2.3, strokeLinecap: 'round' }} aria-hidden><path d="M11 4v14M4 11h14" /></svg>
           </div>
         </div>
         {item(
@@ -344,8 +331,8 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
       off();
     };
   }, []);
-  // Always brand-indigo so it flows seamlessly out of the app's launch icon —
-  // no cheap color mismatch before the animation appears.
+  // The same near-black as the native launch screen and the welcome screen,
+  // so opening the app is one continuous dark moment rather than three colours.
   return (
     <div
       style={{
@@ -355,24 +342,23 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        color: '#fff',
-        background: 'radial-gradient(125% 85% at 50% 32%, #605ac9 0%, #4a45a6 46%, #3b3789 100%)',
+        color: '#f1f0ec',
+        background: '#0c0c0d',
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', animation: 'fadeUp .6s ease' }}>
         {/* Orbit mark: soft glow, a breathing pale planet, one dot circling the ring. */}
         <div style={{ position: 'relative', width: 120, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 30 }}>
-          <div style={{ position: 'absolute', width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,.35), transparent 66%)', animation: 'glowPulse 3.2s ease-in-out infinite' }} />
           <div style={{ position: 'absolute', width: 132, height: 132, animation: 'orbitSpin 3.6s linear infinite' }}>
             <svg width="132" height="132" style={{ overflow: 'visible' }}>
-              <ellipse cx="66" cy="66" rx="58" ry="23" transform="rotate(-26 66 66)" style={{ fill: 'none', stroke: 'rgba(255,255,255,.5)', strokeWidth: 2 }} />
-              <circle cx="115" cy="41" r="6.5" style={{ fill: '#fff', filter: 'drop-shadow(0 0 7px rgba(255,255,255,.9))' }} />
+              <ellipse cx="66" cy="66" rx="58" ry="23" transform="rotate(-26 66 66)" style={{ fill: 'none', stroke: 'rgba(241,240,236,.45)', strokeWidth: 2 }} />
+              <circle cx="115" cy="41" r="6" style={{ fill: '#f1f0ec' }} />
             </svg>
           </div>
-          <div style={{ width: 62, height: 62, borderRadius: '50%', background: 'linear-gradient(155deg,#ffffff,#dcd9f5)', boxShadow: '0 16px 40px -10px rgba(0,0,0,.4), inset 0 -6px 14px rgba(90,84,180,.35)', animation: 'breathe 3.2s ease-in-out infinite' }} />
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#f1f0ec', animation: 'breathe 3.2s ease-in-out infinite' }} />
         </div>
 
-        <div style={{ fontSize: 33, fontWeight: 700, letterSpacing: '-.04em' }}>Orbit</div>
+        <div className="display" style={{ fontSize: 44, lineHeight: 1 }}>Orbit</div>
 
         {error ? (
           <div style={{ textAlign: 'center', marginTop: 18 }}>
@@ -380,7 +366,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
               {!apiBase
                 ? 'This build has no backend address, so it can never reach the server. It needs to be rebuilt with the backend URL.'
                 : offline
-                  ? "You're offline. Orbit needs a connection the first time you open it on a device — after that it works without one."
+                  ? "You're offline. Orbit needs a connection the first time you open it on a device. After that it works without one."
                   : "Couldn't reach the server. It sleeps when unused, so the first open of the day can take up to a minute."}
             </div>
             {/* Which backend this build actually points at. Without it, a build
@@ -389,7 +375,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
             <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.6)', marginBottom: 16, maxWidth: 280, wordBreak: 'break-all', lineHeight: 1.45 }}>
               {apiBase || 'no backend URL configured'}
             </div>
-            <div onClick={onRetry} className="press" style={{ display: 'inline-flex', background: '#fff', color: '#4a45a6', height: 46, padding: '0 26px', borderRadius: 14, alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px -10px rgba(0,0,0,.4)' }}>Try again</div>
+            <div onClick={onRetry} className="press" style={{ display: 'inline-flex', background: '#f1f0ec', color: '#0c0c0d', height: 46, padding: '0 26px', borderRadius: 14, alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px -10px rgba(0,0,0,.4)' }}>Try again</div>
           </div>
         ) : (
           <>
@@ -399,8 +385,8 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
             {slow && (
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,.8)', marginTop: 16, maxWidth: 250, textAlign: 'center', lineHeight: 1.5, animation: 'fadeIn .4s ease' }}>
                 {offline
-                  ? "You're offline — waiting for a connection."
-                  : 'Waking up the server — this can take ~30 seconds after a quiet spell.'}
+                  ? "You're offline. Waiting for a connection."
+                  : 'Waking up the server. This can take about 30 seconds after a quiet spell.'}
               </div>
             )}
           </>
@@ -715,7 +701,7 @@ export function App() {
     fontWeight: 600,
     cursor: 'pointer',
     transition: 'all .2s',
-    fontFamily: "'Geist',sans-serif",
+    fontFamily: 'var(--font-ui)',
     border: 'none',
     ...(active ? { background: '#14151A', color: '#fff' } : { background: 'transparent', color: '#3a3b42' }),
   });
@@ -750,7 +736,7 @@ export function App() {
 
       {toast && (
         <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, background: 'var(--text)', color: 'var(--bg)', padding: '11px 20px', borderRadius: 999, fontSize: 14, fontWeight: 600, boxShadow: '0 12px 32px rgba(8,9,14,.28)', animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' }}>
-          <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--success)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+          <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <path d="M4 9.5l3.4 3.4L14 5" />
           </svg>
           {toast}
@@ -868,8 +854,8 @@ export function App() {
         </div>
       </div>
 
-      <div style={{ fontFamily: "'Geist Mono',monospace", fontSize: 11, color: '#7c808a', letterSpacing: '.04em' }}>
-        orbit — tap anything, it's live
+      <div style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, color: '#7c808a', letterSpacing: '.04em' }}>
+        orbit · tap anything, it's live
       </div>
     </div>
   );

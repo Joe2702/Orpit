@@ -30,7 +30,7 @@ export function ReminderOnboarding() {
       else if (status === 'denied') showToast('Allow notifications to get reminders');
       else showToast('Reminder time saved');
     } catch {
-      showToast('Could not save — try again');
+      showToast('Couldn’t save that. Try again.');
       setBusy(false);
       return;
     }
@@ -48,7 +48,7 @@ export function ReminderOnboarding() {
           When should we check in?
         </div>
         <div style={{ fontSize: 14, color: 'var(--text2)', textAlign: 'center', marginTop: 8, lineHeight: 1.55 }}>
-          Pick a time to log your day. Near the <b style={{ color: 'var(--text)' }}>end of the day</b> works best — it’s the perfect moment to reflect on everything that happened. It only takes about 2 minutes.
+          Pick a time to log your day. Near the <b style={{ color: 'var(--text)' }}>end of the day</b> works best: it’s a natural moment to look back on everything that happened. It only takes about 2 minutes.
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', margin: '22px 0' }}>
@@ -63,7 +63,7 @@ export function ReminderOnboarding() {
         <div
           onClick={busy ? undefined : turnOn}
           className="press"
-          style={{ background: 'var(--indigo)', color: '#fff', height: 52, borderRadius: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, boxShadow: 'var(--glow)' }}
+          style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 52, borderRadius: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, boxShadow: 'var(--glow)' }}
         >
           {busy ? 'Setting up…' : 'Turn on daily reminder'}
         </div>

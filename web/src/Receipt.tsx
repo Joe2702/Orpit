@@ -39,7 +39,7 @@ export async function compressFromSrc(url: string): Promise<string> {
       const out = canvas.toDataURL('image/jpeg', q);
       if (out.length <= MAX_BYTES) return out;
     }
-    throw new Error('That photo is too large — try a closer crop');
+    throw new Error('That photo is too large. Try a closer crop.');
   }
 }
 

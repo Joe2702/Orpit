@@ -1,5 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+// Fonts ship inside the app rather than coming from Google at launch: the app
+// opens offline, and text never re-flows when a web font arrives late.
+import '@fontsource-variable/geist';
+import '@fontsource/instrument-serif/latin-400.css';
 import './theme.css';
 import { App } from './App';
 import { StoreProvider } from './store';

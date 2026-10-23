@@ -120,7 +120,7 @@ export function HabitCalendarSheet() {
       </div>
 
       <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 16, textAlign: 'center', lineHeight: 1.5 }}>
-        Tap any day to check it off or clear it — backfill days you missed.
+        Tap a day to check it off or clear it, including days you forgot to log.
       </div>
     </div>
   );

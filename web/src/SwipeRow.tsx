@@ -110,7 +110,7 @@ export function SwipeRow({
       {dx !== 0 && (
       <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'flex-end' }}>
         {onEdit &&
-          btn('Edit', 'var(--blue)', (
+          btn('Edit', 'var(--indigo)', (
             <svg width="19" height="19" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M12.5 3.2l3.3 3.3M3 16h3.4l9-9-3.4-3.4-9 9z" />
             </svg>

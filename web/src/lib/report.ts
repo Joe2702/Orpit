@@ -147,7 +147,7 @@ export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset
     icon: 'sparkle' as GlyphName,
     headline: kind === 'week' ? 'Onto next week' : kind === 'year' ? 'Onto the next one' : 'Onto next month',
     value: '',
-    caption: 'Keep tracking — every entry paints the bigger picture.',
+    caption: 'See you next time.',
   });
 
   return slides;

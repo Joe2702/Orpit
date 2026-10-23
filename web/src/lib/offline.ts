@@ -228,14 +228,14 @@ export const isUnsynced = (id: string): boolean => id.startsWith('tmp_');
 /** What to tell someone who tried to act on an entry that hasn't synced yet. */
 export const unsyncedMessage = (): string =>
   connectivity() === 'offline'
-    ? "Waiting to sync — you can change this once you're back online"
-    : 'Still saving — try again in a moment';
+    ? "Waiting to sync. You can change this once you're back online."
+    : 'Still saving. Try again in a moment.';
 
 /** What to say when a mutation was queued rather than sent. */
 export const queuedMessage = (): string =>
   connectivity() === 'offline'
-    ? 'Saved on this device — it will sync when you’re back online'
-    : 'Saved on this device — syncing in a moment';
+    ? 'Saved on this phone. It will sync when you’re back online.'
+    : 'Saved on this phone. Syncing in a moment.';
 
 /**
  * Server failures, in words a person would use.
@@ -247,14 +247,14 @@ export const queuedMessage = (): string =>
  * people — "That password is incorrect" is the right thing to show.
  */
 export function serverMessage(status: number): string {
-  if (status === 502 || status === 503 || status === 504) return 'Orbit is waking up — try again in a few seconds';
-  return 'Something went wrong on our side — please try again';
+  if (status === 502 || status === 503 || status === 504) return 'Orbit is waking up. Try again in a few seconds.';
+  return 'Something went wrong on our side. Please try again.';
 }
 
 export const networkMessage = (): string =>
   connectivity() === 'offline'
-    ? 'No connection — try again when you’re back online'
-    : 'Couldn’t reach Orbit — please try again in a moment';
+    ? 'No connection. Try again when you’re back online.'
+    : 'Couldn’t reach Orbit. Please try again in a moment.';
 
 /** Status codes that mean "not serving yet", not "your request was wrong". */
 export const isUnavailable = (status: number): boolean => status === 502 || status === 503 || status === 504;

@@ -36,8 +36,8 @@ const countLogs = [];
 
 const habits = [
   { id: 'h1', name: 'Daily Check-In', color: 'indigo', target: 'Every day', locked: true, days: '1111111', paused: false, archived: false, why: null, reminderTime: null },
-  { id: 'h2', name: 'Read 20 pages', color: 'teal', target: 'Every day', locked: false, days: '1111111', paused: false, archived: false, why: 'Finish 24 books this year', reminderTime: '22:00' },
-  { id: 'h3', name: 'Morning stretch', color: 'coral', target: 'Weekdays', locked: false, days: '0111110', paused: false, archived: false, why: null, reminderTime: null },
+  { id: 'h2', name: 'Read 20 pages', color: 'teal', target: 'Every day', locked: false, days: '1111111', paused: false, archived: false, why: 'Finish 24 books this year', reminderTime: '22:00', cue: 'In bed, before I pick up my phone' },
+  { id: 'h3', name: 'Morning stretch', color: 'coral', target: 'Weekdays', locked: false, days: '0111110', paused: false, archived: false, why: null, reminderTime: null, cue: 'After my morning coffee' },
   { id: 'h4', name: 'No phone after midnight', color: 'purple', target: '5× a week', locked: false, days: '1111100', paused: false, archived: false, why: null, reminderTime: null },
 ];
 

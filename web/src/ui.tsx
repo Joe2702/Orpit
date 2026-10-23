@@ -83,27 +83,13 @@ export function SectionLabel({
   /** Optional trailing link, e.g. "See all". */
   action?: { label: string; onClick: () => void };
 }) {
+  // Sentence case, in the text colour. Small spaced-out capitals over every
+  // group is the most recognisable mark of a component-library screen.
   return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '4px 2px 10px', ...style }}>
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          fontSize: 12,
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '.08em',
-          color: 'var(--text3)',
-        }}
-      >
-        {children}
-      </div>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '6px 2px 10px', ...style }}>
+      <div style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 650, letterSpacing: '-.01em', color: 'var(--text)' }}>{children}</div>
       {action && (
-        <span
-          onClick={action.onClick}
-          role="button"
-          style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer', flex: 'none' }}
-        >
+        <span onClick={action.onClick} role="button" style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer', flex: 'none' }}>
           {action.label}
         </span>
       )}
@@ -111,42 +97,15 @@ export function SectionLabel({
   );
 }
 
-export function DetailHeader({
-  title,
-  iconColor,
-  icon,
-  subtitle,
-}: {
-  title: string;
-  iconColor?: string;
-  icon?: React.ReactNode;
-  subtitle?: string;
-}) {
+export function DetailHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   const { go } = useStore();
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+    <div style={{ marginBottom: 18 }}>
       <BackButton onClick={() => go('home')} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', lineHeight: 1.15 }}>{title}</div>
-        {subtitle && <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2 }}>{subtitle}</div>}
+      <div className="display" style={{ fontSize: 38, lineHeight: 1.05, color: 'var(--text)', marginTop: 14 }}>
+        {title}
       </div>
-      {icon && (
-        <span
-          aria-hidden
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: 12,
-            background: `color-mix(in srgb,var(--${iconColor}) 13%,transparent)`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flex: 'none',
-          }}
-        >
-          {icon}
-        </span>
-      )}
+      {subtitle && <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 4 }}>{subtitle}</div>}
     </div>
   );
 }
@@ -251,7 +210,7 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
  * a full-width slab of saturated colour was loud in a way nothing else on the
  * screen could compete with.
  */
-export function TrackerAction({ color, label, onClick }: { color: string; label: string; onClick: () => void }) {
+export function TrackerAction({ label, onClick }: { color?: string; label: string; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
@@ -268,9 +227,9 @@ export function TrackerAction({ color, label, onClick }: { color: string; label:
         cursor: 'pointer',
         fontSize: 15,
         fontWeight: 650,
-        color: `var(--${color})`,
-        background: `color-mix(in srgb, var(--${color}) 13%, var(--surface))`,
-        border: `1px solid color-mix(in srgb, var(--${color}) 22%, transparent)`,
+        color: 'var(--indigo)',
+        background: 'color-mix(in srgb, var(--indigo) 11%, var(--surface))',
+        border: '1px solid color-mix(in srgb, var(--indigo) 18%, transparent)',
       }}
     >
       <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 2.3, strokeLinecap: 'round' }}>
@@ -376,7 +335,7 @@ export function ChartCard({
   return (
     <Card style={{ padding: '16px 18px 14px', marginBottom: 12, ...style }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-        <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--text3)' }}>{title}</div>
+        <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: 'var(--text2)' }}>{title}</div>
         {action && (
           <span onClick={action.onClick} role="button" style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
             {action.label}
@@ -385,7 +344,7 @@ export function ChartCard({
       </div>
       {(value != null || note) && (
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-          {value != null && <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)' }}>{value}</div>}
+          {value != null && <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.035em', color: 'var(--text)' }}>{value}</div>}
           {note && <div style={{ fontSize: 12.5, color: 'var(--text2)' }}>{note}</div>}
         </div>
       )}
@@ -418,12 +377,13 @@ export function Avatar({
         width: size,
         height: size,
         borderRadius: '50%',
-        background: 'var(--indigo)',
+        background: 'var(--surface2)',
+        border: '1px solid var(--border)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: '#fff',
-        fontWeight: 700,
+        color: 'var(--text)',
+        fontWeight: 650,
         fontSize: size * 0.38,
         flex: 'none',
         overflow: 'hidden',

@@ -89,6 +89,8 @@ export interface Habit {
   paused: boolean; // temporarily off (travel/illness) without losing history
   archived: boolean; // hidden from the app but its check-ins are kept
   why: string | null; // the user's own motivation, shown when slipping
+  /** When and where it happens: "after my morning coffee". Optional. */
+  cue?: string | null;
   reminderTime: string | null; // optional per-habit reminder (HH:MM)
 }
 

@@ -148,7 +148,7 @@ export function Partner() {
       showToast('Partnership ended');
       load();
     } catch {
-      showToast('That didn’t go through — try again');
+      showToast('That didn’t go through. Try again.');
     }
     setBusy(false);
   };
@@ -197,7 +197,7 @@ export function Partner() {
           className="pressRow"
           style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
         >
-          <span style={{ width: 36, height: 36, borderRadius: 10, flex: 'none', background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ width: 36, height: 36, borderRadius: 10, flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M3 5.5h14v9H7l-4 3v-12Z" />
             </svg>
@@ -224,7 +224,7 @@ export function Partner() {
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Free chat</div>
             <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
               {p.chat.open
-                ? 'Open — you can both message freely'
+                ? 'Open. You can both message freely.'
                 : p.chat.mine
                   ? `Waiting for ${p.name.split(' ')[0]} to turn it on too`
                   : 'Both of you need to turn this on'}
@@ -273,7 +273,7 @@ function Shell({ go, children }: { go: (s: any) => void; children: React.ReactNo
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '2px 0 20px' }}>
         <BackButton onClick={() => go('settings')} />
-        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>
+        <div className="display" style={{ fontSize: 30, lineHeight: 1.1, color: 'var(--text)' }}>
           Accountability partner
         </div>
       </div>
@@ -297,12 +297,12 @@ function weekLetters(): string[] {
 
 function TrackerCard({ c, notes, onComment }: { c: PartnerCard; notes: number; onComment: () => void }) {
   const meta = MODULE_META[c.module];
-  const col = `var(--${meta.color})`;
+  const col = 'var(--indigo)';
   return (
     <div style={{ ...card, padding: '15px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 13 }}>
-        <span style={{ width: 32, height: 32, borderRadius: 10, flex: 'none', background: `color-mix(in srgb,${col} 14%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Glyph name={meta.icon} size={17} color={col} />
+        <span style={{ width: 32, height: 32, borderRadius: 10, flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Glyph name={meta.icon} size={17} color="var(--text2)" />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{meta.label}</div>
@@ -368,7 +368,7 @@ function ShareRow({
   module, level, onChange, last,
 }: { module: string; level: ShareLevel; onChange: (l: ShareLevel) => void; last: boolean }) {
   const meta = MODULE_META[module];
-  const col = `var(--${meta.color})`;
+  const col = 'var(--indigo)';
   const [openRow, setOpenRow] = React.useState(false);
   const current = SHARE_LEVELS[level];
 
@@ -379,8 +379,8 @@ function ShareRow({
         className="pressRow"
         style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', cursor: 'pointer' }}
       >
-        <span style={{ width: 34, height: 34, borderRadius: 10, flex: 'none', background: `color-mix(in srgb,${col} 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Glyph name={meta.icon} size={17} color={col} />
+        <span style={{ width: 34, height: 34, borderRadius: 10, flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Glyph name={meta.icon} size={17} color="var(--text2)" />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{meta.label}</div>
@@ -613,7 +613,7 @@ function Matchmaker({
       </div>
       <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24, lineHeight: 1.5 }}>
         {want === 'any'
-          ? 'Fastest match — anyone who is also happy with anyone.'
+          ? 'Fastest match: anyone who is also open to anyone.'
           : 'A narrower choice can take longer to match.'}
       </div>
 

@@ -30,9 +30,9 @@ export function WCatsSheet() {
       <div
         onClick={() => open('wcat')}
         className="press99"
-        style={{ height: 52, borderRadius: 16, border: '1.5px dashed color-mix(in srgb,var(--coral) 40%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--coral)', cursor: 'pointer' }}
+        style={{ height: 52, borderRadius: 16, border: '1.5px dashed color-mix(in srgb,var(--indigo) 40%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}
       >
-        <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--coral)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M9 4v10M4 9h10" /></svg>
+        <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M9 4v10M4 9h10" /></svg>
         New category
       </div>
     </div>
@@ -108,7 +108,7 @@ export function WCatSheet() {
       </div>
       <div
         onClick={save}
-        style={{ background: canSave ? 'var(--coral)' : 'color-mix(in srgb,var(--coral) 40%,var(--surface))', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default', letterSpacing: '-.01em' }}
+        style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default', letterSpacing: '-.01em' }}
       >
         {editId ? 'Save changes' : 'Add category'}
       </div>

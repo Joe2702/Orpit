@@ -40,7 +40,7 @@ export async function buildState(userId: number) {
   }
 
   const habits = await query(
-    `SELECT id::text, name, color, target, locked, days, paused, archived, why,
+    `SELECT id::text, name, color, target, locked, days, paused, archived, why, cue,
             reminder_time AS "reminderTime"
      FROM habits WHERE user_id = $1 ORDER BY locked DESC, sort, id`,
     [userId]

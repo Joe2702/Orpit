@@ -111,6 +111,7 @@ export interface HabitBody {
   target: string;
   days: string;
   why?: string | null;
+  cue?: string | null;
   reminderTime?: string | null;
   paused?: boolean;
   archived?: boolean;

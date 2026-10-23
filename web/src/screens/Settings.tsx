@@ -1,6 +1,8 @@
 import React from 'react';
 import { useStore } from '../store';
 import { api, setToken } from '../api';
+import { CURRENCIES } from '../lib/format';
+import { computeBadges } from '../lib/badges';
 import { Avatar, SectionLabel, toggleTrack, toggleKnob, chip } from '../ui';
 import { IconChevron } from '../icons';
 import { deviceTimezone } from '../lib/push';
@@ -38,7 +40,12 @@ function ago(t: number): string {
 }
 
 export function Settings() {
-  const { state, go, open, mutate, mutateOpt, signOut, showToast, haptic, confirm, askPassword, applyState } = useStore();
+  const { state, go, open, mutate, mutateOpt, signOut, showToast, haptic, confirm, askPassword, applyState, claimedBadges } = useStore();
+  const badgeInfo = React.useMemo(() => {
+    const all = computeBadges(state!);
+    const earned = all.filter((b) => b.unlocked);
+    return { total: all.length, earned: earned.length, toReveal: earned.filter((b) => !claimedBadges.includes(b.id)).length };
+  }, [state, claimedBadges]);
   const profile = state!.profile;
 
   // Long-press (1.2s) on the version string opens the feedback inbox.
@@ -257,7 +264,7 @@ export function Settings() {
 
   const sendTest = async () => {
     const r = await sendTestNotification();
-    if (r === 'sent') showToast('Test sent — check your notifications');
+    if (r === 'sent') showToast('Test sent. Check your notifications.');
     else if (r === 'denied') showToast('Allow notifications in your phone settings');
     else if (r === 'none') showToast('Turn on reminders first');
     else showToast('Could not send test');
@@ -359,7 +366,7 @@ export function Settings() {
       setToken(r.token);
       showToast('Other devices signed out');
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'That didn’t go through — try again');
+      showToast(e instanceof Error ? e.message : 'That didn’t go through. Try again.');
     }
   };
 
@@ -402,7 +409,7 @@ export function Settings() {
       className="pressRow"
       style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: last ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}
     >
-      <span style={{ width: 36, height: 36, borderRadius: 10, background: `color-mix(in srgb,var(--${iconKey}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+      <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
         {icon}
       </span>
       <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
@@ -412,7 +419,7 @@ export function Settings() {
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)', marginBottom: 18 }}>Profile</div>
+      <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--text)', marginBottom: 18 }}>Profile</div>
 
       <div
         onClick={() => open('profile')}
@@ -449,7 +456,7 @@ export function Settings() {
           way; this only makes password recovery possible. */}
       {!profile.emailVerified && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 13, background: 'color-mix(in srgb,var(--warning) 10%,var(--surface))', border: '1px solid color-mix(in srgb,var(--warning) 32%,var(--border))', borderRadius: 18, padding: '15px 16px', marginBottom: 24 }}>
-          <span style={{ width: 36, height: 36, flex: 'none', borderRadius: 11, background: 'color-mix(in srgb,var(--warning) 18%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--warning)', strokeWidth: 1.9, strokeLinejoin: 'round' }} aria-hidden>
               <rect x="1.5" y="3.5" width="16" height="12" rx="2.5" />
               <path d="M2 5l7.5 5.5L17 5" />
@@ -466,7 +473,7 @@ export function Settings() {
               haptic();
               try {
                 const r = await api.sendVerifyEmail();
-                showToast(r.already ? 'Already confirmed' : 'Link sent — check your inbox');
+                showToast(r.already ? 'Already confirmed' : 'Link sent. Check your inbox.');
               } catch (e) {
                 showToast(e instanceof Error ? e.message : 'Could not send the link');
               }
@@ -514,8 +521,8 @@ export function Settings() {
           const on = !profile.modules || profile.modules.includes(m.key);
           return (
             <div key={m.key} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: i === MODULE_OPTS.length - 1 ? 'none' : '1px solid var(--border)' }}>
-              <span style={{ width: 34, height: 34, borderRadius: 10, background: `color-mix(in srgb,var(--${m.color}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-                <Glyph name={m.icon} size={19} color={`var(--${m.color})`} />
+              <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                <Glyph name={m.icon} size={19} color="var(--text2)" />
               </span>
               <div style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{m.label}</div>
               <div
@@ -540,19 +547,19 @@ export function Settings() {
         })}
       </div>
       <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24, paddingLeft: 4, lineHeight: 1.5 }}>
-        Hides what you don't use — nothing is deleted.
+        Hides what you don't use. Nothing is deleted.
       </div>
 
       <SectionLabel>Accent colour</SectionLabel>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, paddingLeft: 2 }}>
-        {['indigo', 'blue', 'teal', 'emerald', 'coral', 'purple', 'pink', 'amber', 'cyan', 'rose'].map((c) => {
+        {['indigo', 'text', 'blue', 'teal', 'emerald', 'rose'].map((c) => {
           const active = (profile.accent || 'indigo') === c;
           return (
             <div
               key={c}
               onClick={() => mutateOpt((s) => ({ ...s, profile: { ...s.profile, accent: c } }), () => api.updateMe({ accent: c }))}
               role="button"
-              aria-label={`Accent ${c}`}
+              aria-label={`Accent ${c === 'text' ? 'graphite' : c}`}
               style={{ width: 38, height: 38, borderRadius: '50%', cursor: 'pointer', flex: 'none', background: `var(--${c})`, transition: 'all .15s', boxShadow: active ? `0 0 0 3px var(--surface),0 0 0 5px var(--${c})` : '0 0 0 0 transparent' }}
             />
           );
@@ -576,16 +583,36 @@ export function Settings() {
         })}
       </div>
 
+      {/* Currency is a setting, so it lives with the settings; it used to sit
+          at the bottom of the Finances screen, under the transactions. */}
+      <SectionLabel>Currency</SectionLabel>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+        {CURRENCIES.map((c) => {
+          const active = (profile.currency || 'EGP') === c.code;
+          return (
+            <div
+              key={c.code}
+              onClick={() => mutateOpt((st) => ({ ...st, profile: { ...st.profile, currency: c.code } }), () => api.updateMe({ currency: c.code }))}
+              role="button"
+              aria-pressed={active}
+              style={{ ...chip(active, 'var(--indigo)'), padding: '9px 14px' }}
+            >
+              {c.symbol.trim()} {c.code}
+            </div>
+          );
+        })}
+      </div>
+
       <SectionLabel>Preferences</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         <PrefRow
           iconKey="indigo"
           title="Daily reminders"
-          sub="A gentle nudge to log your day"
+          sub="One reminder a day to log"
           on={profile.reminders}
           onToggle={toggleReminders}
           icon={
-            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M9.5 3a4 4 0 0 0-4 4v3l-1.5 2.5h11L13.5 10V7a4 4 0 0 0-4-4ZM7.5 15a2 2 0 0 0 4 0" />
             </svg>
           }
@@ -593,8 +620,8 @@ export function Settings() {
         />
         {profile.reminders && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-              <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+            <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+              <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
                 <circle cx="9.5" cy="10" r="7" />
                 <path d="M9.5 6v4l2.5 1.5" />
               </svg>
@@ -683,7 +710,7 @@ export function Settings() {
                 role="button"
                 style={{ marginTop: 10, height: 44, borderRadius: 12, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}
               >
-                Allow exact alarms — reminders arrive on time
+                Allow exact alarms so reminders arrive on time
               </div>
             )}
             {diag.permission === 'granted' && diag.enabled !== false && diag.scheduled === 0 && (
@@ -702,7 +729,7 @@ export function Settings() {
           </div>
         )}
         <PrefRow
-          iconKey="blue"
+          iconKey="indigo"
           title="Wind-down nudge"
           sub="30 min before your usual bedtime"
           on={profile.windDown}
@@ -713,20 +740,20 @@ export function Settings() {
             )
           }
           icon={
-            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <path d="M16 10.5A6.5 6.5 0 1 1 7.5 2a5 5 0 0 0 8.5 8.5Z" />
             </svg>
           }
           border
         />
         <PrefRow
-          iconKey="coral"
+          iconKey="indigo"
           title="Haptic feedback"
           sub="Vibrate on actions"
           on={profile.haptics}
           onToggle={() => toggle('haptics')}
           icon={
-            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--coral)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M10 2v4M10 14v4M4 10h4M12 10h4" />
             </svg>
           }
@@ -738,13 +765,13 @@ export function Settings() {
           <SectionLabel>Bank messages</SectionLabel>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
             <PrefRow
-              iconKey="emerald"
+              iconKey="indigo"
               title="Import from SMS"
               sub="Turn bank alerts into transactions"
               on={smsOn}
               onToggle={toggleSms}
               icon={
-                <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--emerald)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+                <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
                   <path d="M3 5.5h14v9H7l-4 3v-12Z" />
                   <path d="M7 9.5h6M7 12h4" />
                 </svg>
@@ -770,7 +797,7 @@ export function Settings() {
                             setSmsAcc(a.id || null);
                           }}
                           className="press99"
-                          style={chip(on, 'var(--emerald)')}
+                          style={chip(on, 'var(--indigo)')}
                         >
                           {a.name}
                         </div>
@@ -785,7 +812,7 @@ export function Settings() {
                   style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                 >
                   <span style={{ width: 36, flex: 'none' }} />
-                  <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--emerald)' }}>
+                  <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--indigo)' }}>
                     {scanning ? 'Checking…' : 'Check for new messages now'}
                   </div>
                 </div>
@@ -796,7 +823,7 @@ export function Settings() {
                   style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                 >
                   <span style={{ width: 36, flex: 'none' }} />
-                  <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--emerald)' }}>Import the past year</div>
+                  <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--indigo)' }}>Import the past year</div>
                 </div>
 
                 {/* What the last scan actually saw. This is the difference between
@@ -822,7 +849,7 @@ export function Settings() {
                     </div>
                   )}
                   {smsInfo && !smsInfo.error && smsInfo.recent.length > 0 && (
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--emerald)', marginTop: 6 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--indigo)', marginTop: 6 }}>
                       {diagOpenSms ? 'Hide' : 'Show'} recent bank messages
                     </div>
                   )}
@@ -833,7 +860,7 @@ export function Settings() {
                       <div key={i} style={{ padding: '9px 0', borderTop: i ? '1px solid var(--border)' : 'none' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
                           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.sender}</span>
-                          <span style={{ fontSize: 11.5, fontWeight: 600, color: r.ok ? 'var(--emerald)' : 'var(--text2)', flex: 'none' }}>{r.outcome}</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 600, color: r.ok ? 'var(--indigo)' : 'var(--text2)', flex: 'none' }}>{r.outcome}</span>
                         </div>
                         <div dir="auto" style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3, lineHeight: 1.45, overflowWrap: 'anywhere' }}>
                           {r.snippet}
@@ -849,9 +876,9 @@ export function Settings() {
                 this is the permission people are most right to be wary of. */}
             <div style={{ padding: '13px 16px', fontSize: 12, lineHeight: 1.55, color: 'var(--text2)' }}>
               Orbit reads only messages from banks and wallets, and only on this phone. The text of your
-              messages is never sent anywhere — Orbit works out the amount, the shop and the date on the
+              messages is never sent anywhere. Orbit works out the amount, the shop and the date on the
               device, and stores just those. Imported payments are marked{' '}
-              <span style={{ fontWeight: 700, color: 'var(--emerald)' }}>SMS</span> so you can check them,
+              <span style={{ fontWeight: 700, color: 'var(--indigo)' }}>SMS</span> so you can check them,
               and you can edit or delete any of them like anything else.
             </div>
           </div>
@@ -861,15 +888,34 @@ export function Settings() {
       {/* Its own section rather than a row under Manage: it is the only part
           of the app that involves another person, and burying it among the
           tracker settings would understate what turning it on does. */}
-      <SectionLabel>Accountability</SectionLabel>
+      {/* Achievements live here now rather than as a trophy with a red dot in
+          the Home header, where it asked for attention on every launch. */}
+      <SectionLabel>Progress</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+        <div
+          onClick={() => go('achievements')}
+          className="pressRow"
+          role="button"
+          style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer', borderBottom: '1px solid var(--hairline)' }}
+        >
+          <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <Glyph name="trophy" size={19} color="var(--text2)" />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Achievements</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
+              {badgeInfo.earned} of {badgeInfo.total} earned{badgeInfo.toReveal ? ` · ${badgeInfo.toReveal} to reveal` : ''}
+            </div>
+          </div>
+          <IconChevron />
+        </div>
         <div
           onClick={() => go('partner')}
           className="pressRow"
           style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}
         >
-          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-            <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+          <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <circle cx="7.2" cy="7" r="2.8" />
               <path d="M2.4 16a4.8 4.8 0 0 1 9.6 0" />
               <circle cx="14.5" cy="8.4" r="2.2" />
@@ -896,7 +942,7 @@ export function Settings() {
         {manageRow(
           'Counters',
           'indigo',
-          <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+          <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path d="M6 3l-.8 13M11 3l-.8 13M3 7h10M2.5 11h10" />
           </svg>,
           () => go('counters')
@@ -904,7 +950,7 @@ export function Settings() {
         {manageRow(
           'Habits',
           'teal',
-          <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--teal)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+          <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <circle cx="9.5" cy="9.5" r="7.5" />
             <path d="M6.5 9.5l2 2 4-4" />
           </svg>,
@@ -913,7 +959,7 @@ export function Settings() {
         {manageRow(
           'Workout categories',
           'coral',
-          <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--coral)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+          <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path d="M5 8v6M8 6v10M14 6v10M17 8v6M8 11h6" />
           </svg>,
           () => open('wcats')
@@ -921,7 +967,7 @@ export function Settings() {
         {manageRow(
           'Finances',
           'emerald',
-          <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--emerald)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+          <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path d="M3 6.5h13M3 10h13M6 14h7" />
           </svg>,
           () => go('finances'),
@@ -932,8 +978,8 @@ export function Settings() {
       <SectionLabel>Data</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 14 }}>
         <div onClick={exportData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
-          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--blue) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+          <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M10 3v9M6.5 8.5L10 12l3.5-3.5M4 14v2h12v-2" />
             </svg>
           </span>
@@ -944,8 +990,8 @@ export function Settings() {
           <IconChevron />
         </div>
         <div onClick={importData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderTop: '1px solid var(--border)', cursor: 'pointer' }}>
-          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--teal) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--teal)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+          <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <path d="M10 12V3M6.5 6.5L10 3l3.5 3.5M4 14v2h12v-2" />
             </svg>
           </span>
@@ -956,7 +1002,7 @@ export function Settings() {
           <IconChevron />
         </div>
         <div onClick={resetData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderTop: '1px solid var(--border)', cursor: 'pointer' }}>
-          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--danger) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+          <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--danger)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M4 6h12M8 6V4.5h4V6M6.5 6l.7 10h5.6l.7-10" />
             </svg>
@@ -971,8 +1017,8 @@ export function Settings() {
       <SectionLabel>Security</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         <div onClick={changePassword} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+          <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <rect x="4" y="8.5" width="12" height="8" rx="2" />
               <path d="M7 8.5V6a3 3 0 0 1 6 0v2.5" />
             </svg>
@@ -984,8 +1030,8 @@ export function Settings() {
           <IconChevron />
         </div>
         <div onClick={signOutOthers} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
-          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--coral) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--coral)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+          <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <rect x="3" y="4" width="9" height="12" rx="2" />
               <path d="M14 7l3 3-3 3M17 10h-5" />
             </svg>
@@ -1001,8 +1047,8 @@ export function Settings() {
       <SectionLabel>Support</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         <div onClick={() => go('privacy')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--blue) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--blue)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+          <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <path d="M10 2.5l6 2.5v5c0 3.4-2.5 6.4-6 7.5-3.5-1.1-6-4.1-6-7.5V5l6-2.5Z" />
             </svg>
           </span>
@@ -1013,8 +1059,8 @@ export function Settings() {
           <IconChevron />
         </div>
         <div onClick={() => open('feedback')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
-          <span style={{ width: 36, height: 36, borderRadius: 10, background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+          <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M4 4h12v9H8l-4 3.5V4Z" />
             </svg>
           </span>
@@ -1050,7 +1096,7 @@ export function Settings() {
         onPointerDown={startHold}
         onPointerUp={cancelHold}
         onPointerLeave={cancelHold}
-        style={{ textAlign: 'center', fontSize: 12, color: 'var(--text2)', marginTop: 18, fontFamily: "'Geist Mono',monospace", userSelect: 'none', cursor: 'default' }}
+        style={{ textAlign: 'center', fontSize: 12, color: 'var(--text2)', marginTop: 18, fontFamily: 'var(--font-mono)', userSelect: 'none', cursor: 'default' }}
       >
         Orbit · build {__BUILD_ID__} · {__BUILT_AT__}
       </div>
@@ -1077,7 +1123,7 @@ function PrefRow({
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: border ? '1px solid var(--border)' : 'none' }}>
-      <span style={{ width: 36, height: 36, borderRadius: 10, background: `color-mix(in srgb,var(--${iconKey}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+      <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
         {icon}
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>

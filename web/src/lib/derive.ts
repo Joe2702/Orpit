@@ -58,6 +58,8 @@ export interface HabitDerived {
   streak: number;
   paused: boolean;
   why: string | null;
+  /** When and where it happens, if the user wrote it down. */
+  cue: string | null;
   /** This habit's own reminder time (HH:MM), or null for the daily one. */
   reminderTime: string | null;
   // One 0/1 per *scheduled* weekday in the current week (Sun→Sat order);
@@ -135,6 +137,7 @@ export function deriveHabits(state: AppState, range: Range, offset = 0, now: num
       done,
       paused: h.paused,
       why: h.why,
+      cue: h.cue ?? null,
       reminderTime: h.reminderTime,
       total: set.size, // total days ever completed
       streak,
@@ -335,9 +338,12 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
   Wr.forEach((w) => {
     if (w.catId) cc[w.catId] = (cc[w.catId] || 0) + 1;
   });
+  // Shades of the accent, largest first, like the spending split: a donut in
+  // four unrelated hues is a legend you have to decode.
   const wTypeSegs = wCats
     .filter((c) => cc[c.id])
-    .map((c) => ({ label: c.name, value: cc[c.id], color: `var(--${c.color})` }));
+    .sort((a, b) => cc[b.id] - cc[a.id])
+    .map((c, i) => ({ label: c.name, value: cc[c.id], color: i === 0 ? 'var(--indigo)' : `color-mix(in srgb,var(--indigo) ${shades[Math.min(i, shades.length - 1)]}%,var(--surface))` }));
   const wMinBuckets = aggSeries(Wr, buckets, (w) => w.dur || 0, 'sum');
   const wMinSeries = nums(wMinBuckets);
   const wAvg = wCount ? Math.round(wTotalMin / wCount) : 0;
@@ -391,7 +397,7 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
   const fCatSegs = catArr.slice(0, 4).map((c, i) => ({
     label: c.cat,
     value: c.val,
-    color: i === 0 ? 'var(--emerald)' : `color-mix(in srgb,var(--emerald) ${shades[i]}%,var(--surface))`,
+    color: i === 0 ? 'var(--indigo)' : `color-mix(in srgb,var(--indigo) ${shades[i]}%,var(--surface))`,
   }));
   // Running cash flow at the end of each bucket that has started — one point
   // per bar, not one per transaction. Per transaction, every payday drew a

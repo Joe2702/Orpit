@@ -40,10 +40,13 @@ export function StoryReport({ kind, offset = 0, onClose }: { kind: 'week' | 'mon
         position: 'fixed',
         inset: 0,
         zIndex: 120,
-        background: `linear-gradient(165deg, color-mix(in srgb,var(--${slide.color}) 90%, #000 10%), color-mix(in srgb,var(--${slide.color}) 55%, #05060a 45%))`,
+        // One dark, quiet backdrop for every slide. A different saturated
+        // gradient per slide made a year in review look like a slot machine;
+        // the numbers are the show, set large in the display serif.
+        background: '#0c0c0d',
         display: 'flex',
         flexDirection: 'column',
-        color: '#fff',
+        color: '#f1f0ec',
         paddingTop: 'env(safe-area-inset-top)',
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
@@ -58,8 +61,8 @@ export function StoryReport({ kind, offset = 0, onClose }: { kind: 'week' | 'mon
       <div style={{ position: 'relative', zIndex: 3 }}>
         <div style={{ display: 'flex', gap: 5, padding: '14px 16px 0' }}>
           {slides.map((_, idx) => (
-            <div key={idx} style={{ flex: 1, height: 3.5, borderRadius: 999, background: 'rgba(255,255,255,.3)', overflow: 'hidden' }}>
-              <div style={{ height: '100%', borderRadius: 999, background: '#fff', width: idx <= i ? '100%' : '0%', transition: 'width .3s' }} />
+            <div key={idx} style={{ flex: 1, height: 3.5, borderRadius: 999, background: 'rgba(255,255,255,.18)', overflow: 'hidden' }}>
+              <div style={{ height: '100%', borderRadius: 999, background: '#f1f0ec', width: idx <= i ? '100%' : '0%', transition: 'width .3s' }} />
             </div>
           ))}
         </div>
@@ -77,12 +80,14 @@ export function StoryReport({ kind, offset = 0, onClose }: { kind: 'week' | 'mon
 
       {/* Slide content (behind the tap zones — the whole area is tappable). */}
       <div key={i} style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 34px 40px', animation: 'fadeUp .4s ease' }}>
-        <div style={{ marginBottom: 18, width: 84, height: 84, borderRadius: '50%', background: 'rgba(255,255,255,.16)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Glyph name={slide.icon} size={44} color="#fff" sw={1.7} />
-        </div>
-        <div style={{ fontSize: 14, fontWeight: 700, opacity: 0.85, letterSpacing: '.08em', textTransform: 'uppercase' }}>{slide.headline}</div>
-        {slide.value && <div style={{ fontSize: 60, fontWeight: 800, letterSpacing: '-.03em', margin: '12px 0 8px', lineHeight: 1 }}>{slide.value}</div>}
-        <div style={{ fontSize: 16, fontWeight: 500, opacity: 0.92, lineHeight: 1.5, marginTop: slide.value ? 0 : 14, maxWidth: 300 }}>{slide.caption}</div>
+        <Glyph name={slide.icon} size={26} color="rgba(241,240,236,.55)" sw={1.6} />
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'rgba(241,240,236,.7)', marginTop: 14 }}>{slide.headline}</div>
+        {slide.value && (
+          <div className="display" style={{ fontSize: slide.value.length > 9 ? 56 : 84, lineHeight: 1, margin: '14px 0 12px', overflowWrap: 'anywhere' }}>
+            {slide.value}
+          </div>
+        )}
+        <div style={{ fontSize: 16, color: 'rgba(241,240,236,.82)', lineHeight: 1.5, marginTop: slide.value ? 0 : 14, maxWidth: 300 }}>{slide.caption}</div>
       </div>
     </div>
   );

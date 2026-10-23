@@ -50,7 +50,7 @@ export function FeedbackInbox() {
           e instanceof ApiError && e.status === 403
             ? 'Wrong password.'
             : e instanceof ApiError && e.status === 503
-            ? 'Not configured — set ADMIN_PASSWORD on the server.'
+            ? 'Not configured. Set ADMIN_PASSWORD on the server.'
             : 'Could not load feedback.'
         )
       )
@@ -61,7 +61,7 @@ export function FeedbackInbox() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
         <BackButton onClick={() => go('settings')} />
-        <div style={{ flex: 1, fontSize: 24, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>Feedback</div>
+        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>Feedback</div>
         {unlocked && items && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{items.length}</div>}
       </div>
 
@@ -87,7 +87,7 @@ export function FeedbackInbox() {
           <div
             onClick={submit}
             className="press"
-            style={{ background: password ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: '#fff', height: 52, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, cursor: password ? 'pointer' : 'default' }}
+            style={{ background: password ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 52, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, cursor: password ? 'pointer' : 'default' }}
           >
             {checking ? 'Checking…' : 'Unlock'}
           </div>
@@ -124,7 +124,7 @@ export function FeedbackInbox() {
                     </div>
                     <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.5, wordBreak: 'break-word' }}>{e.message}</div>
                     {e.stack && (
-                      <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 8, fontFamily: "'Geist Mono',monospace", whiteSpace: 'pre-wrap', maxHeight: 120, overflow: 'auto', background: 'var(--bg)', borderRadius: 10, padding: 10 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 8, fontFamily: 'var(--font-mono)', whiteSpace: 'pre-wrap', maxHeight: 120, overflow: 'auto', background: 'var(--bg)', borderRadius: 10, padding: 10 }}>
                         {e.stack}
                       </div>
                     )}

@@ -96,15 +96,15 @@ export function SetsEditor({ sets, onChange }: { sets: WorkoutSet[]; onChange: (
             </div>
           ))}
 
-          <div onClick={() => addSet(g)} className="pressRow" role="button" style={{ marginTop: 4, height: 38, borderRadius: 11, border: '1px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13.5, fontWeight: 600, color: 'var(--coral)', cursor: 'pointer' }}>
-            <svg width="15" height="15" style={{ fill: 'none', stroke: 'var(--coral)', strokeWidth: 2.3, strokeLinecap: 'round' }}><path d="M7.5 3v9M3 7.5h9" /></svg>
+          <div onClick={() => addSet(g)} className="pressRow" role="button" style={{ marginTop: 4, height: 38, borderRadius: 11, border: '1px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
+            <svg width="15" height="15" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.3, strokeLinecap: 'round' }}><path d="M7.5 3v9M3 7.5h9" /></svg>
             Add set
           </div>
         </div>
       ))}
 
-      <div onClick={addExercise} className="press99" role="button" style={{ height: 46, borderRadius: 14, border: '1.5px dashed color-mix(in srgb,var(--coral) 40%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 14.5, fontWeight: 600, color: 'var(--coral)', cursor: 'pointer', background: 'color-mix(in srgb,var(--coral) 6%,transparent)' }}>
-        <svg width="17" height="17" style={{ fill: 'none', stroke: 'var(--coral)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M8.5 3.5v10M3.5 8.5h10" /></svg>
+      <div onClick={addExercise} className="press99" role="button" style={{ height: 46, borderRadius: 14, border: '1.5px dashed color-mix(in srgb,var(--indigo) 40%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 14.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer', background: 'color-mix(in srgb,var(--indigo) 6%,transparent)' }}>
+        <svg width="17" height="17" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M8.5 3.5v10M3.5 8.5h10" /></svg>
         {sets.length ? 'Add exercise' : 'Add exercises, sets & reps'}
       </div>
     </div>

@@ -7,7 +7,7 @@ import { BackButton } from '../ui';
 const SECTIONS: { title: string; body: string }[] = [
   {
     title: 'What Orbit stores',
-    body: 'Your email and name, a hashed password (never the original), and the entries you create: habits, check-ins, workouts, sleep, transactions, budgets, goals and counters — plus your settings, like theme, currency and reminder time.',
+    body: 'Your email and name, a hashed password (never the original), and the entries you create: habits, check-ins, workouts, sleep, transactions, budgets, goals and counters, plus your settings, like theme, currency and reminder time.',
   },
   {
     title: 'Why',
@@ -19,15 +19,15 @@ const SECTIONS: { title: string; body: string }[] = [
   },
   {
     title: 'Crash reports',
-    body: "If the app hits an unexpected error, it sends the error text, the build number and your device's browser/OS string so the bug can be fixed. That's it — it isn't used to track you.",
+    body: "If the app hits an unexpected error, it sends the error text, the build number and your device's browser/OS string so the bug can be fixed. That's it. It isn't used to track you.",
   },
   {
     title: 'Who processes it',
-    body: 'Ordinary infrastructure providers acting on our behalf: Render (hosting), Neon (database), Brevo (password-reset and feedback email), and Google — only if you choose Sign in with Google.',
+    body: 'Ordinary infrastructure providers acting on our behalf: Render (hosting), Neon (database), Brevo (password-reset and feedback email), and Google, only if you choose Sign in with Google.',
   },
   {
     title: 'Your control',
-    body: 'Export everything as JSON, erase all your entries, or permanently delete your account — all from the Profile screen. Deleting your account removes your data from the live database immediately.',
+    body: 'Export everything as JSON, erase all your entries, or permanently delete your account, all from the Profile screen. Deleting your account removes your data from the live database immediately.',
   },
   {
     title: 'Security',
@@ -45,7 +45,7 @@ export function Privacy() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
         <BackButton onClick={() => go('settings')} />
-        <div style={{ flex: 1, fontSize: 24, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>Privacy</div>
+        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>Privacy</div>
       </div>
 
       <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 18, lineHeight: 1.5 }}>

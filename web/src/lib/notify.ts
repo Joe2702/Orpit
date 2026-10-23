@@ -71,7 +71,7 @@ export async function snoozeDaily(): Promise<void> {
         {
           id: SNOOZE_ID,
           title: 'Orbit',
-          body: 'Picking this back up — how did today go?',
+          body: 'How did today go?',
           schedule: { at: new Date(Date.now() + 60 * 60 * 1000), allowWhileIdle: true },
           channelId: CHANNEL_ID,
         },
@@ -142,9 +142,9 @@ function parseTime(time: string): { hour: number; minute: number } {
  */
 function reminderBody(remaining: number): string {
   if (remaining < 0) return 'How did today go? Take a moment to log it.';
-  if (remaining === 0) return "Everything's checked off today — log the rest of your day?";
-  if (remaining === 1) return 'Just one habit left today — finish strong.';
-  if (remaining <= 3) return `${remaining} habits left today — a couple of taps.`;
+  if (remaining === 0) return "Everything's checked off. Anything else to log today?";
+  if (remaining === 1) return 'One habit left today.';
+  if (remaining <= 3) return `${remaining} habits left today.`;
   return `${remaining} habits waiting. Two minutes now, a clearer picture later.`;
 }
 
@@ -182,7 +182,7 @@ async function scheduleWeekly(): Promise<void> {
       {
         id: WEEKLY_ID,
         title: 'Your week on Orbit',
-        body: 'Your weekly report is ready — see how the week went.',
+        body: 'Your week in review is ready.',
         // weekday 1 = Sunday in the plugin's schedule format.
         schedule: { on: { weekday: 1, hour: 19, minute: 0 }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
@@ -230,7 +230,7 @@ export async function scheduleExtras(
       notifications.push({
         id: stableId(HABIT_BASE, h.id),
         title: h.name,
-        body: 'Time for this one — tap to check it off.',
+        body: 'Tap to check it off.',
         schedule: { on: { hour, minute }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
         actionTypeId: HABIT_ACTIONS,
@@ -261,7 +261,7 @@ export async function scheduleExtras(
       notifications.push({
         id: WINDDOWN_ID,
         title: 'Time to wind down',
-        body: 'Bed in about 30 minutes — start slowing things down.',
+        body: 'Bed in about 30 minutes. Time to start winding down.',
         schedule: { on: { hour: Math.floor(t), minute: Math.round((t % 1) * 60) }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
       });
@@ -437,7 +437,7 @@ export async function sendTestNotification(): Promise<'sent' | 'denied' | 'error
           {
             id: TEST_ID,
             title: 'Orbit',
-            body: 'Test notification — your reminders are working.',
+            body: 'Test notification. Your reminders are working.',
             schedule: { at: new Date(Date.now() + 1500) },
             channelId: CHANNEL_ID,
           },

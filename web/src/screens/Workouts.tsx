@@ -4,7 +4,6 @@ import { useData } from '../hooks';
 import { BarChart, Donut } from '../lib/charts';
 import { minutes, relLabel } from '../lib/format';
 import { Card, ChartCard, DetailHeader, RangeSeg, SectionLabel, Stat, StatRow, TrackerAction } from '../ui';
-import { IconWorkout } from '../icons';
 import { SwipeRow } from '../SwipeRow';
 import { volume } from '../SetsEditor';
 import { useEntryActions } from '../lib/entryActions';
@@ -27,23 +26,20 @@ export function Workouts() {
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <DetailHeader title="Workouts" iconColor="coral" icon={<IconWorkout size={21} />} />
-      <TrackerAction color="coral" label="Log workout" onClick={() => open('workout')} />
+      <DetailHeader title="Workouts" />
+      <TrackerAction label="Log workout" onClick={() => open('workout')} />
       <RangeSeg period={P} />
 
+      {/* One row of figures. The total lives in the chart below, so it isn't
+          repeated here; a streak shows only while there is one to protect. */}
       <StatRow>
         <Stat value={d.wCount} label={d.wCount === 1 ? 'Session' : 'Sessions'} />
-        <Stat value={d.wTotalMin ? minutes(d.wTotalMin) : '—'} label="Training time" />
-        <Stat value={d.wActiveDays} label="Active days" />
-      </StatRow>
-      <StatRow>
-        <Stat value={d.wAvg ? minutes(d.wAvg) : '—'} label="Avg session" size="sm" />
-        <Stat value={d.wLongest ? minutes(d.wLongest) : '—'} label="Longest" size="sm" />
-        <Stat value={d.wStreak ? `${d.wStreak} ${d.wStreak === 1 ? 'day' : 'days'}` : '—'} label="Current streak" size="sm" color={d.wStreak ? 'var(--coral)' : 'var(--text)'} />
+        <Stat value={d.wAvg ? minutes(d.wAvg) : '—'} label="Avg session" />
+        {d.wStreak >= 2 ? <Stat value={`${d.wStreak} days`} label="In a row" /> : <Stat value={d.wLongest ? minutes(d.wLongest) : '—'} label="Longest" />}
       </StatRow>
 
       <ChartCard title="Training time" value={d.wTotalMin ? minutes(d.wTotalMin) : '0 min'} note={P.caption}>
-        <BarChart buckets={d.buckets} values={d.wMinBuckets} color="coral" format={(v) => minutes(v)} />
+        <BarChart buckets={d.buckets} values={d.wMinBuckets} color="indigo" format={(v) => minutes(v)} />
       </ChartCard>
 
       {d.wTypeSegs.length > 0 && (
@@ -105,7 +101,7 @@ export function Workouts() {
                 className="pressRow"
                 style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}
               >
-                <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: `color-mix(in srgb,var(--${cc}) 14%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ width: 13, height: 13, borderRadius: 4, background: `var(--${cc})` }} />
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>

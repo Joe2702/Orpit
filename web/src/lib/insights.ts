@@ -323,7 +323,7 @@ export function buildInsights(s: AppState): Insight[] {
           color: 'indigo',
           kind: 'link',
           title: `"${b.name}" is your keystone habit.`,
-          detail: `On days you do it you get ${(b.on / b.off).toFixed(1)}× more done elsewhere — across ${b.days} days.`,
+          detail: `On days you do it you get ${(b.on / b.off).toFixed(1)}× more done elsewhere, across ${b.days} days.`,
         });
       }
     }

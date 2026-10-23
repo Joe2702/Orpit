@@ -37,7 +37,7 @@ export function CatchUpSheet() {
     <div style={{ padding: '4px 20px 32px' }}>
       <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 6px' }}>Catch up</div>
       <div style={{ fontSize: 13.5, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.5 }}>
-        The last 7 days. Tap any square to check it off — handy after a trip or a busy week.
+        The last 7 days. Tap a square to check it off, useful after a trip or a busy week.
       </div>
 
       {/* One habit per card: the name gets its own line, and the seven days sit

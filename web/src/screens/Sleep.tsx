@@ -24,35 +24,31 @@ export function Sleep() {
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <DetailHeader title="Sleep" iconColor="blue" icon={<IconSleep size={21} />} />
-      <TrackerAction color="blue" label="Log sleep" onClick={() => open('sleep')} />
+      <DetailHeader title="Sleep" />
+      <TrackerAction label="Log sleep" onClick={() => open('sleep')} />
       <RangeSeg period={P} />
 
       <StatRow>
-        <Stat value={none ? '—' : hm(d.slAvg)} label="Average night" size="lg" />
-        <Stat value={none ? '—' : <>{d.slAvgQ.toFixed(1)}<span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text3)' }}> /10</span></>} label="Avg quality" size="lg" />
-      </StatRow>
-      <StatRow>
-        <Stat value={fmtClock(d.avgBed)} label="Usual bedtime" size="sm" />
-        <Stat value={fmtClock(d.avgWake)} label="Usual wake-up" size="sm" />
-        <Stat value={d.slNights} label={d.slNights === 1 ? 'Night logged' : 'Nights logged'} size="sm" />
+        <Stat value={none ? '—' : hm(d.slAvg)} label="Average night" />
+        <Stat value={fmtClock(d.avgBed)} label="Usual bedtime" />
+        <Stat value={fmtClock(d.avgWake)} label="Usual wake-up" />
       </StatRow>
 
       {d.sleepByDay ? (
-        <ChartCard title="When you slept" note={P.caption}>
+        <ChartCard title="When you slept" note={none ? P.caption : `${P.caption} · quality ${d.slAvgQ.toFixed(1)}/10`}>
           <SleepClock buckets={d.buckets} slots={d.sleepSlots} />
-          <Legend items={[{ color: sleepColor(6), label: 'Under 7h' }, { color: sleepColor(8), label: '7–9h' }, { color: sleepColor(10), label: 'Over 9h' }]} />
+          <Legend items={[{ color: sleepColor(8), label: '7 to 9 hours' }, { color: sleepColor(6), label: 'Shorter or longer' }]} />
         </ChartCard>
       ) : (
         <ChartCard title="Average night" value={none ? '—' : hm(d.slAvg)} note={P.caption}>
-          <BarChart buckets={d.buckets} values={d.slSeries} color="blue" max={10} band={[7, 9]} format={(v) => hm(v)} />
-          <Legend items={[{ color: 'color-mix(in srgb, var(--blue) 30%, transparent)', label: '7–9h, the healthy range' }]} />
+          <BarChart buckets={d.buckets} values={d.slSeries} color="indigo" max={10} band={[7, 9]} format={(v) => hm(v)} />
+          <Legend items={[{ color: 'color-mix(in srgb, var(--indigo) 30%, transparent)', label: '7 to 9 hours, the healthy range' }]} />
         </ChartCard>
       )}
 
       <Card style={{ padding: '15px 16px', marginBottom: 22, display: 'flex', alignItems: 'center', gap: 13 }}>
-        <span style={{ width: 38, height: 38, borderRadius: 12, background: `color-mix(in srgb,var(--${d.slConsistGood ? 'success' : d.bedDevMin == null ? 'blue' : 'warning'}) 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-          <svg width="20" height="20" viewBox="0 0 22 22" aria-hidden style={{ fill: 'none', stroke: `var(--${d.slConsistGood ? 'success' : d.bedDevMin == null ? 'blue' : 'warning'})`, strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+        <span style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+          <svg width="20" height="20" viewBox="0 0 22 22" aria-hidden style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path d={d.slConsistGood ? 'M5 12l4 4 8-9' : d.bedDevMin == null ? 'M11 6v5l3 2' : 'M11 5v7M11 16v.5'} />
           </svg>
         </span>
@@ -82,8 +78,8 @@ export function Sleep() {
               className="pressRow"
               style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}
             >
-              <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: 'color-mix(in srgb,var(--blue) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <IconSleep c="var(--blue)" size={20} />
+              <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <IconSleep c="var(--indigo)" size={20} />
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>

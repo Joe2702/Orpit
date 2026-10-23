@@ -22,7 +22,7 @@ export function FeedbackSheet() {
     haptic();
     try {
       await api.sendFeedback(kind, message.trim());
-      showToast('Thanks — feedback sent');
+      showToast('Thanks, it’s sent');
       closeSheet();
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Could not send');
@@ -34,7 +34,7 @@ export function FeedbackSheet() {
     <div style={{ padding: '4px 20px 32px' }}>
       <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 6px' }}>Send feedback</div>
       <div style={{ fontSize: 13.5, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.5 }}>
-        Ideas, bugs, or anything on your mind — it goes straight to the team.
+        Ideas, bugs, or anything on your mind. It goes straight to the person who builds Orbit.
       </div>
 
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Type</div>
@@ -74,7 +74,7 @@ export function FeedbackSheet() {
       <div
         onClick={send}
         className="press"
-        style={{ background: canSend ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSend ? 'pointer' : 'default' }}
+        style={{ background: canSend ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSend ? 'pointer' : 'default' }}
       >
         {busy ? 'Sending…' : 'Send feedback'}
       </div>

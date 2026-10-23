@@ -16,8 +16,8 @@ export function Counters() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
         <BackButton onClick={() => go('home')} />
-        <div style={{ flex: 1, fontSize: 24, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>Counters</div>
-        <span style={{ width: 40, height: 40, borderRadius: 13, background: 'color-mix(in srgb,var(--indigo) 14%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>Counters</div>
+        <span style={{ width: 40, height: 40, borderRadius: 13, background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
           <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path d="M6 4l-1.2 12M11.4 4l-1.2 12M3.6 8h13M2.9 12h13" />
           </svg>
@@ -34,7 +34,7 @@ export function Counters() {
           <div>
             <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)' }}>Count anything</div>
             <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 6, lineHeight: 1.55, maxWidth: 266 }}>
-              Pull-ups, pages read, focus hours — create a counter and watch your monthly and yearly totals add up.
+              Pull-ups, pages read, hours of focus. Make a counter and your monthly and yearly totals add up here.
             </div>
           </div>
           <div onClick={() => open('counter')} className="press" style={ctaBtn}>
@@ -62,7 +62,6 @@ export function Counters() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
             {counters.map((c) => {
-              const col = `var(--${c.color})`;
               const t = counterTotals(logs, c.id);
               return (
                 <div
@@ -72,8 +71,8 @@ export function Counters() {
                   style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 16, cursor: 'pointer' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 15 }}>
-                    <span style={{ width: 44, height: 44, borderRadius: 13, flex: 'none', background: `color-mix(in srgb,${col} 14%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <CIcon icon={c.icon} color={col} size={24} />
+                    <span style={{ width: 26, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <CIcon icon={c.icon} color="var(--text2)" size={22} />
                     </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{c.name}</div>
@@ -87,17 +86,15 @@ export function Counters() {
                         open('countlog', { counterId: c.id, amount: c.step });
                       }}
                       className="press92"
-                      style={{ width: 40, height: 40, borderRadius: 12, flex: 'none', background: col, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 6px 12px -6px rgba(40,36,28,.22)' }}
+                      style={{ width: 40, height: 40, borderRadius: 12, flex: 'none', background: 'color-mix(in srgb,var(--indigo) 12%,var(--surface))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 6px 12px -6px rgba(40,36,28,.22)' }}
                     >
-                      <svg width="20" height="20" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M10 5v10M5 10h10" /></svg>
+                      <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.4, strokeLinecap: 'round' }} aria-hidden><path d="M10 5v10M5 10h10" /></svg>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'stretch', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: '12px 8px' }}>
-                    <TotCell value={cNum(t.all)} label="All time" color={col} />
-                    <div style={{ width: 1, background: 'var(--border)' }} />
-                    <TotCell value={cNum(t.year)} label="This year" />
-                    <div style={{ width: 1, background: 'var(--border)' }} />
                     <TotCell value={cNum(t.month)} label="This month" />
+                    <div style={{ width: 1, background: 'var(--border)' }} />
+                    <TotCell value={cNum(t.all)} label="All time" />
                   </div>
                 </div>
               );
@@ -114,10 +111,10 @@ export function Counters() {
   );
 }
 
-function TotCell({ value, label, color }: { value: string; label: string; color?: string }) {
+function TotCell({ value, label }: { value: string; label: string }) {
   return (
     <div style={{ flex: 1, textAlign: 'center' }}>
-      <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.02em', color: color || 'var(--text)', lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', lineHeight: 1 }}>{value}</div>
       <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>{label}</div>
     </div>
   );
