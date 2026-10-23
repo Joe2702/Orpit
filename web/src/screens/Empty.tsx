@@ -44,7 +44,7 @@ export function HomeEmpty() {
             key={it.label}
             onClick={() => open(it.sheet)}
             className="press96"
-            style={{ flex: 1, background: `color-mix(in srgb,var(--${it.key}) 11%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${it.key}) 16%,var(--border))`, borderRadius: 18, padding: '14px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, cursor: 'pointer' }}
+            style={{ flex: 1, background: `color-mix(in srgb,var(--${it.key}) 11%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${it.key}) 16%,var(--border))`, borderRadius: 'calc(18px * var(--sq))', padding: '14px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, cursor: 'pointer' }}
           >
             {it.icon}
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{it.label}</span>
@@ -90,7 +90,7 @@ function DetailEmpty({
         <div
           onClick={() => open(sheet)}
           className="press"
-          style={{ background: `var(--${colorKey})`, color: 'var(--on-accent)', height: 52, padding: '0 26px', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}
+          style={{ background: `var(--${colorKey})`, color: 'var(--on-accent)', height: 52, padding: '0 26px', borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}
         >
           <IconPlus />
           {cta}

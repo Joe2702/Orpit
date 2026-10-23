@@ -50,14 +50,14 @@ export function Insights() {
                 // tinted cards, each a different hue, read as a wall of alerts.
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
-                borderRadius: 20,
+                borderRadius: 'calc(20px * var(--sq))',
                 boxShadow: 'var(--shadow)',
                 padding: '16px 18px',
                 display: 'flex',
                 gap: 14,
               }}
             >
-              <span style={{ flex: 'none', width: 38, height: 38, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface2)' }}>
+              <span style={{ flex: 'none', width: 38, height: 38, borderRadius: 'calc(11px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface2)' }}>
                 <Glyph name={it.icon} size={21} color="var(--text2)" />
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>

@@ -68,7 +68,7 @@ export function VerifyEmail() {
           : error || 'The link may have expired. Open Orbit and send yourself a fresh one.'}
       </div>
       {status !== 'working' && (
-        <div onClick={done} className="press" role="button" style={{ display: 'inline-flex', alignItems: 'center', height: 52, padding: '0 30px', borderRadius: 16, background: 'var(--indigo)', color: 'var(--on-accent)', fontSize: 15.5, fontWeight: 700, cursor: 'pointer' }}>
+        <div onClick={done} className="press" role="button" style={{ display: 'inline-flex', alignItems: 'center', height: 52, padding: '0 30px', borderRadius: 'calc(16px * var(--sq))', background: 'var(--indigo)', color: 'var(--on-accent)', fontSize: 15.5, fontWeight: 700, cursor: 'pointer' }}>
           Open Orbit
         </div>
       )}

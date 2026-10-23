@@ -136,13 +136,13 @@ export function FAddTx() {
 
   // Same 44px floor as the range tabs: three targets now share this row, so
   // each is narrower than before and an under-height one is easier to miss.
-  const tab = (active: boolean, color: string): React.CSSProperties => ({ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, borderRadius: 11, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(active ? { background: 'var(--surface)', color, boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) });
+  const tab = (active: boolean, color: string): React.CSSProperties => ({ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, borderRadius: 'calc(11px * var(--sq))', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(active ? { background: 'var(--surface)', color, boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) });
   const catList = fcats.filter((c) => c.kind === kind);
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <Header title={edit ? (isTransfer ? 'Edit transfer' : 'Edit transaction') : 'Add transaction'} />
-      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: 3, marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 20 }}>
         <div onClick={() => setKind('expense')} style={tab(kind === 'expense', 'var(--text)')}>Expense</div>
         <div onClick={() => setKind('income')} style={tab(income, 'var(--indigo)')}>Income</div>
         <div onClick={() => setKind('transfer')} style={tab(isTransfer, 'var(--indigo)')}>Transfer</div>
@@ -153,7 +153,7 @@ export function FAddTx() {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 22 }}>
         {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'].map((k) => (
-          <div key={k} onClick={() => press(k)} style={{ height: 50, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', background: 'var(--bg)' }}>
+          <div key={k} onClick={() => press(k)} style={{ height: 50, borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', background: 'var(--bg)' }}>
             {k === 'del' ? <svg width="24" height="24" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M9 5h10v14H9l-6-7 6-7ZM13 9.5l4 5M17 9.5l-4 5" /></svg> : k}
           </div>
         ))}
@@ -166,7 +166,7 @@ export function FAddTx() {
         {catList.map((c) => {
           const active = cat === c.name;
           return (
-            <div key={c.id} onClick={() => (income ? setIncCat(c.name) : setExCat(c.name))} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '12px 4px', borderRadius: 16, cursor: 'pointer', transition: 'all .15s', border: `1px solid ${active ? `var(--${c.color})` : 'var(--border)'}`, background: active ? `var(--${c.color})` : 'var(--surface)' }}>
+            <div key={c.id} onClick={() => (income ? setIncCat(c.name) : setExCat(c.name))} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '12px 4px', borderRadius: 'calc(16px * var(--sq))', cursor: 'pointer', transition: 'all .15s', border: `1px solid ${active ? `var(--${c.color})` : 'var(--border)'}`, background: active ? `var(--${c.color})` : 'var(--surface)' }}>
               <FinIcon icon={c.icon} color={active ? '#fff' : `var(--${c.color})`} size={22} />
               <span style={{ fontSize: 12, fontWeight: 600, color: active ? '#fff' : 'var(--text)' }}>{c.name}</span>
             </div>
@@ -198,9 +198,9 @@ export function FAddTx() {
         </>
       )}
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Date</div>
-      <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 14px', fontSize: 15, fontWeight: 600, color: 'var(--text)', outline: 'none', marginBottom: 22 }} />
+      <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 14px', fontSize: 15, fontWeight: 600, color: 'var(--text)', outline: 'none', marginBottom: 22 }} />
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Note</div>
-      <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note" style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 22 }} />
+      <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note" style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 22 }} />
       {!isTransfer && (
         <>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Receipt</div>
@@ -217,7 +217,7 @@ export function FAddTx() {
         bottom={92}
       />
       {edit && (
-        <div onClick={del} className="press99" style={{ height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
+        <div onClick={del} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
           <IconTrash />Delete transaction
         </div>
       )}
@@ -258,7 +258,7 @@ export function FTxns() {
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <Header title="Transactions" action={<AddBtn onClick={() => go('faddtx')} />} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '0 14px', height: 48, marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: '0 14px', height: 48, marginBottom: 14 }}>
         <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', flex: 'none' }}><circle cx="8.5" cy="8.5" r="5.5" /><path d="M13 13l3 3" /></svg>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search transactions" style={{ flex: 1, border: 'none', background: 'none', fontSize: 15, color: 'var(--text)', outline: 'none' }} />
       </div>
@@ -276,7 +276,7 @@ export function FTxns() {
         {groups.map((g, gi) => (
           <div key={gi}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 9, paddingLeft: 2 }}>{g.label}</div>
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
               {g.items.map((t) => {
                 const fc = fcatByName(fcats, t.cat);
                 // A transfer shows both ends and a neutral colour: it is not a
@@ -289,7 +289,7 @@ export function FTxns() {
                 return (
                   <SwipeRow key={t.id} onEdit={() => go('faddtx', { edit: t })} onDelete={() => remove('txn', t)}>
                     <div onClick={() => go('faddtx', { edit: t })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}>
-                      <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ width: 38, height: 38, borderRadius: 'calc(11px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {xfer ? (
                           <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Transfer">
                             <path d="M3 7h12M12 4l3 3-3 3M17 13H5M8 10l-3 3 3 3" />
@@ -344,7 +344,7 @@ export function FTxns() {
         ))}
       </div>
       {matched.length > shown && (
-        <div onClick={() => setShown(shown + 80)} className="press99" role="button" style={{ marginTop: 16, height: 48, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
+        <div onClick={() => setShown(shown + 80)} className="press99" role="button" style={{ marginTop: 16, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
           Show older · {matched.length - shown} more
         </div>
       )}
@@ -366,7 +366,7 @@ export function FBudgets() {
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <Header title="Budgets" action={<AddBtn onClick={() => open('budget', { cat: state!.fcats.find((c) => c.kind === 'expense')?.name || 'Food' })} />} />
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 18, marginBottom: 16 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: 18, marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
           <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)' }}>This month</span>
           <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{money(d.budgetSpent)} of {money(d.budgetTotal)}</span>
@@ -379,9 +379,9 @@ export function FBudgets() {
         {d.budgets.map((b) => {
           const fc = fcatByName(state!.fcats, b.cat);
           return (
-            <div key={b.id} onClick={() => open('budget', { id: b.id, cat: b.cat, limit: b.limit, rollover: b.rollover })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: 'pointer' }}>
+            <div key={b.id} onClick={() => open('budget', { id: b.id, cat: b.cat, limit: b.limit, rollover: b.rollover })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: 'pointer' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 12 }}>
-                <span style={{ width: 34, height: 34, borderRadius: 10, flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FinIcon icon={fc.icon} color="var(--text2)" size={18} /></span>
+                <span style={{ width: 34, height: 34, borderRadius: 'calc(10px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FinIcon icon={fc.icon} color="var(--text2)" size={18} /></span>
                 <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{b.cat}</span>
                 <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{money(b.spent)} / {money(b.effLimit)}</span>
               </div>
@@ -421,7 +421,7 @@ export function FGoals() {
       <Header title="Savings goals" action={<AddBtn onClick={() => open('goal')} />} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {d.goals.map((g) => (
-          <div key={g.id} onClick={() => open('goal', { id: g.id, name: g.name, target: g.target, current: g.current, color: g.color, dueTs: g.dueTs })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '17px 18px', cursor: 'pointer' }}>
+          <div key={g.id} onClick={() => open('goal', { id: g.id, name: g.name, target: g.target, current: g.current, color: g.color, dueTs: g.dueTs })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '17px 18px', cursor: 'pointer' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
               <div style={{ position: 'relative', width: 52, height: 52, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Ring pct={g.pct} colorKey={g.color} size={52} stroke={6} />
@@ -453,17 +453,17 @@ export function FAccounts() {
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <Header title="Accounts" action={<AddBtn onClick={() => open('account')} />} />
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '18px 18px', marginBottom: 16 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '18px 18px', marginBottom: 16 }}>
         <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)' }}>Net worth</div>
         <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.035em', color: 'var(--text)', marginTop: 6 }}>{money(Math.round(d.netWorth))}</div>
         <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 3 }}>
           Across {d.accounts.length} {d.accounts.length === 1 ? 'account' : 'accounts'}
         </div>
       </div>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         {d.accounts.map((a) => (
           <div key={a.id} onClick={() => open('account', { id: a.id, name: a.name, type: a.type, color: a.color, opening: a.opening })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-            <span style={{ width: 44, height: 44, borderRadius: 13, flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ width: 44, height: 44, borderRadius: 'calc(13px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="22" height="22" viewBox="0 0 20 20" style={{ fill: 'none', stroke: `var(--${a.color})`, strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M3 6h14v9H3zM3 9.5h14M6 12.5h3" /></svg>
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -485,7 +485,7 @@ export function FRecurring() {
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <Header title="Recurring" action={<AddBtn onClick={() => open('recurring')} />} />
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '16px 18px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '16px 18px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text2)' }}>Bills a month</span>
         <span style={{ textAlign: 'right' }}>
           <span style={{ display: 'block', fontSize: 20, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{money(Math.round(d.recurringMonthly))}</span>
@@ -494,12 +494,12 @@ export function FRecurring() {
           )}
         </span>
       </div>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         {d.recurring.map((r) => {
           const fc = fcatByName(state!.fcats, r.cat);
           return (
             <div key={r.id} onClick={() => open('recurring', { id: r.id, name: r.name, cat: r.cat, amount: r.amount, freq: r.freq, accId: r.accId })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-              <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FinIcon icon={fc.icon} color="var(--text2)" size={18} /></span>
+              <span style={{ width: 38, height: 38, borderRadius: 'calc(11px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FinIcon icon={fc.icon} color="var(--text2)" size={18} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{r.name}</div>
                 <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{r.freq} · {money(r.amount)} · {r.nextTs ? 'Next ' + fmtDate(r.nextTs) : ''}</div>
@@ -519,10 +519,10 @@ export function FCats() {
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <Header title="Categories" action={<AddBtn onClick={() => open('fcat')} />} />
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         {state!.fcats.map((c) => (
           <div key={c.id} onClick={() => open('fcat', { id: c.id, name: c.name, icon: c.icon, color: c.color, kind: c.kind })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-            <span style={{ width: 40, height: 40, borderRadius: 12, flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FinIcon icon={c.icon} color="var(--text2)" size={20} /></span>
+            <span style={{ width: 40, height: 40, borderRadius: 'calc(12px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FinIcon icon={c.icon} color="var(--text2)" size={20} /></span>
             <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{c.name}</span>
             <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>{c.kind === 'income' ? 'Income' : 'Expense'}</span>
             <svg width="16" height="16" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', opacity: 0.7 }}><path d="M11 3l2.5 2.5L6 13l-3 .8.8-3L11 3Z" /></svg>
@@ -553,25 +553,25 @@ export function FInsights() {
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <Header title="Insights" />
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 18, marginBottom: 16 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: 18, marginBottom: 16 }}>
         <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', marginBottom: 16 }}>Spending vs last month</div>
         <div style={{ display: 'flex', gap: 14, alignItems: 'flex-end', height: 120 }}>
           {([['Last', d.spentPrevMonth, 'var(--border)'], ['This', d.spentThisMonth, 'var(--indigo)']] as const).map(([lab, val, col]) => (
             <div key={lab} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, height: '100%', justifyContent: 'flex-end' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{money(val)}</div>
-              <div style={{ width: '100%', maxWidth: 64, height: (val / mx) * 84, minHeight: 4, borderRadius: '10px 10px 0 0', background: col }} />
+              <div style={{ width: '100%', maxWidth: 64, height: (val / mx) * 84, minHeight: 4, borderRadius: 'calc(10px * var(--sq)) calc(10px * var(--sq)) 0 0', background: col }} />
               <div style={{ fontSize: 12, color: 'var(--text2)' }}>{lab} month</div>
             </div>
           ))}
         </div>
       </div>
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-        <div style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '15px 16px' }}>
+        <div style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: '15px 16px' }}>
           <div style={{ fontSize: 12, color: 'var(--text2)' }}>Income this month</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--indigo)', marginTop: 3 }}>{money(d.incThisMonth)}</div>
           <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 2 }}>was {money(d.incPrevMonth)}</div>
         </div>
-        <div style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '15px 16px' }}>
+        <div style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: '15px 16px' }}>
           <div style={{ fontSize: 12, color: 'var(--text2)' }}>Spent this month</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginTop: 3 }}>{money(d.spentThisMonth)}</div>
           <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 2 }}>was {money(d.spentPrevMonth)}</div>
@@ -579,7 +579,7 @@ export function FInsights() {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
         {cards.map((c, i) => (
-          <div key={i} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, boxShadow: 'var(--shadow)', padding: '15px 16px', display: 'flex', gap: 11 }}>
+          <div key={i} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', boxShadow: 'var(--shadow)', padding: '15px 16px', display: 'flex', gap: 11 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', flex: 'none', marginTop: 7, background: c.good === true ? 'var(--indigo)' : c.good === false ? 'var(--danger)' : 'var(--text2)' }} />
             <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: 'var(--text)', lineHeight: 1.5 }}>{c.text}</span>
           </div>

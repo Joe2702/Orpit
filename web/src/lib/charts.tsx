@@ -255,7 +255,7 @@ function Bubble({ idx, n, title, value, top }: { idx: number; n: number; title: 
         pointerEvents: 'none',
         background: 'var(--text)',
         color: 'var(--bg)',
-        borderRadius: 10,
+        borderRadius: 'calc(10px * var(--sq))',
         padding: '6px 10px',
         whiteSpace: 'nowrap',
         boxShadow: 'var(--shadow-lg)',

@@ -201,7 +201,7 @@ export function Analytics() {
 const cardB: React.CSSProperties = {
   background: 'var(--surface)',
   border: '1px solid var(--border)',
-  borderRadius: 20,
+  borderRadius: 'calc(20px * var(--sq))',
   boxShadow: 'var(--shadow)',
   padding: '16px 18px',
 };

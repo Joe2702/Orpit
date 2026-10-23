@@ -49,7 +49,7 @@ export function CatchUpSheet() {
           return (
             <div
               key={h.id}
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, padding: '13px 14px' }}
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', padding: '13px 14px' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 11 }}>
                 <span style={{ width: 9, height: 9, borderRadius: '50%', flex: 'none', background: `var(--${h.color})` }} />
@@ -74,7 +74,7 @@ export function CatchUpSheet() {
                         style={{
                           width: '100%',
                           aspectRatio: '1',
-                          borderRadius: 10,
+                          borderRadius: 'calc(10px * var(--sq))',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',

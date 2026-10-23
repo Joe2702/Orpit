@@ -7,7 +7,7 @@ export const S = (s: CSSProperties) => s; // identity helper for readability
 export function chip(active: boolean, col: string): CSSProperties {
   return {
     padding: '10px 16px',
-    borderRadius: 12,
+    borderRadius: 'calc(12px * var(--sq))',
     fontSize: 14,
     fontWeight: 600,
     cursor: 'pointer',
@@ -140,7 +140,7 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: 10,
+        borderRadius: 'calc(10px * var(--sq))',
         color: enabled ? 'var(--text)' : 'var(--text3)',
         opacity: enabled ? 1 : 0.35,
         cursor: enabled ? 'pointer' : 'default',
@@ -158,7 +158,7 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
           display: 'flex',
           gap: 2,
           background: 'color-mix(in srgb, var(--text) 5%, transparent)',
-          borderRadius: 13,
+          borderRadius: 'calc(13px * var(--sq))',
           padding: 3,
         }}
       >
@@ -176,7 +176,7 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
               // 44px is the smallest reliable touch target. This is the control
               // people reach for on every stats screen.
               minHeight: 40,
-              borderRadius: 10,
+              borderRadius: 'calc(10px * var(--sq))',
               fontSize: 13.5,
               fontWeight: 600,
               cursor: 'pointer',
@@ -222,7 +222,7 @@ export function TrackerAction({ label, onClick }: { color?: string; label: strin
         justifyContent: 'center',
         gap: 8,
         height: 50,
-        borderRadius: 15,
+        borderRadius: 'calc(15px * var(--sq))',
         marginBottom: 16,
         cursor: 'pointer',
         fontSize: 15,
@@ -305,7 +305,7 @@ export function Card({ children, style }: { children: React.ReactNode; style?: C
       style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
-        borderRadius: 20,
+        borderRadius: 'calc(20px * var(--sq))',
         boxShadow: 'var(--shadow)',
         ...style,
       }}

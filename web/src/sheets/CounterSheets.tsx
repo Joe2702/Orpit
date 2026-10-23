@@ -69,7 +69,7 @@ export function CounterSheet() {
     closeSheet();
   };
 
-  const input: React.CSSProperties = { width: '100%', height: 52, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none' };
+  const input: React.CSSProperties = { width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none' };
   const label = (t: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t}</div>;
 
   return (
@@ -123,16 +123,16 @@ export function CounterSheet() {
       {label('Icon')}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 9, marginBottom: 24 }}>
         {CTR_ICONS.map((ic) => (
-          <div key={ic} onClick={() => setIcon(ic)} style={{ height: 52, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: `1.5px solid ${icon === ic ? 'var(--indigo)' : 'var(--border)'}`, background: icon === ic ? `color-mix(in srgb,var(--${color}) 12%,transparent)` : 'var(--bg)' }}>
+          <div key={ic} onClick={() => setIcon(ic)} style={{ height: 52, borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: `1.5px solid ${icon === ic ? 'var(--indigo)' : 'var(--border)'}`, background: icon === ic ? `color-mix(in srgb,var(--${color}) 12%,transparent)` : 'var(--bg)' }}>
             <CIcon icon={ic} color={icon === ic ? 'var(--indigo)' : 'var(--text2)'} size={22} />
           </div>
         ))}
       </div>
-      <div onClick={save} style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', marginTop: 8, transition: 'all .2s' }}>
+      <div onClick={save} style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', marginTop: 8, transition: 'all .2s' }}>
         {editId ? 'Save changes' : 'Create counter'}
       </div>
       {editId && (
-        <div onClick={del} className="press99" style={{ height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
+        <div onClick={del} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
           <IconTrash />Delete counter
         </div>
       )}
@@ -147,7 +147,7 @@ export function CountPickSheet() {
   return (
     <div style={{ padding: '8px 20px 34px' }}>
       <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 4px 16px' }}>Log a counter</div>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', marginBottom: 14 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', marginBottom: 14 }}>
         {state!.counters.map((c, i) => {
           const t = counterTotals(logs, c.id);
           return (
@@ -164,7 +164,7 @@ export function CountPickSheet() {
           );
         })}
       </div>
-      <div onClick={() => open('counter')} className="press99" style={{ height: 52, borderRadius: 16, border: '1.5px dashed color-mix(in srgb,var(--indigo) 40%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer', background: 'color-mix(in srgb,var(--indigo) 6%,transparent)' }}>
+      <div onClick={() => open('counter')} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1.5px dashed color-mix(in srgb,var(--indigo) 40%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer', background: 'color-mix(in srgb,var(--indigo) 6%,transparent)' }}>
         <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M9 4v10M4 9h10" /></svg>New counter
       </div>
     </div>
@@ -227,7 +227,7 @@ export function CountLogSheet() {
       </div>
       <div style={{ display: 'flex', gap: 9, marginBottom: 8 }}>
         {chips.map((n) => (
-          <div key={n} onClick={() => setClamped(amount + n)} className="pressRow" role="button" style={{ flex: 1, textAlign: 'center', padding: '11px 0', borderRadius: 12, fontSize: 14, fontWeight: 600, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', cursor: 'pointer' }}>+{cNum(n)}</div>
+          <div key={n} onClick={() => setClamped(amount + n)} className="pressRow" role="button" style={{ flex: 1, textAlign: 'center', padding: '11px 0', borderRadius: 'calc(12px * var(--sq))', fontSize: 14, fontWeight: 600, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', cursor: 'pointer' }}>+{cNum(n)}</div>
         ))}
       </div>
       {amount < 0 && (
@@ -238,7 +238,7 @@ export function CountLogSheet() {
       <div style={{ textAlign: 'center', marginBottom: 18 }}>
         <span onClick={() => setAmount(0)} style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', padding: 6 }}>Reset</span>
       </div>
-      <div onClick={save} style={{ background: amount === 0 ? 'color-mix(in srgb,var(--indigo) 40%,var(--surface))' : amount < 0 ? 'var(--danger)' : 'var(--indigo)', color: amount < 0 ? '#fff' : 'var(--on-accent)', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: amount === 0 ? 'default' : 'pointer', marginTop: 6, transition: 'all .2s' }}>{amount < 0 ? 'Remove' : 'Save log'}</div>
+      <div onClick={save} style={{ background: amount === 0 ? 'color-mix(in srgb,var(--indigo) 40%,var(--surface))' : amount < 0 ? 'var(--danger)' : 'var(--indigo)', color: amount < 0 ? '#fff' : 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: amount === 0 ? 'default' : 'pointer', marginTop: 6, transition: 'all .2s' }}>{amount < 0 ? 'Remove' : 'Save log'}</div>
     </div>
   );
 }

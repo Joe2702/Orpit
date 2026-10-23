@@ -54,7 +54,7 @@ export function Privacy() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {SECTIONS.map((s) => (
-          <div key={s.title} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: 16 }}>
+          <div key={s.title} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16 }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>{s.title}</div>
             <div style={{ fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.6 }}>{s.body}</div>
           </div>

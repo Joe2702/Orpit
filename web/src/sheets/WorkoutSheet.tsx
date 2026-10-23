@@ -97,9 +97,9 @@ export function WorkoutSheet() {
           onClick={repeatLast}
           className="press99"
           role="button"
-          style={{ display: 'flex', alignItems: 'center', gap: 11, background: 'color-mix(in srgb,var(--indigo) 10%,var(--surface))', border: '1px solid color-mix(in srgb,var(--indigo) 30%,var(--border))', borderRadius: 16, padding: '13px 15px', marginBottom: 20, cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 11, background: 'color-mix(in srgb,var(--indigo) 10%,var(--surface))', border: '1px solid color-mix(in srgb,var(--indigo) 30%,var(--border))', borderRadius: 'calc(16px * var(--sq))', padding: '13px 15px', marginBottom: 20, cursor: 'pointer' }}
         >
-          <span style={{ width: 34, height: 34, borderRadius: 11, flex: 'none', background: 'color-mix(in srgb,var(--indigo) 16%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ width: 34, height: 34, borderRadius: 'calc(11px * var(--sq))', flex: 'none', background: 'color-mix(in srgb,var(--indigo) 16%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <path d="M4 8a5 5 0 0 1 9-2M13 4v3h-3M14 10a5 5 0 0 1-9 2M4 15v-3h3" />
             </svg>
@@ -126,7 +126,7 @@ export function WorkoutSheet() {
       </div>
 
       {label('Duration')}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 16, padding: 16, marginBottom: 22 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: 16, marginBottom: 22 }}>
         <div onClick={() => setDur(Math.max(5, dur - 5))} className="press92" style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
           <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M5 10h10" /></svg>
         </div>
@@ -181,7 +181,7 @@ export function WorkoutSheet() {
         onChange={(e) => setNote(e.target.value)}
         placeholder="e.g. knee felt better today"
         maxLength={200}
-        style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 22 }}
+        style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 22 }}
       />
 
       <div onClick={saveTemplate} className="pressRow" role="button" style={{ textAlign: 'center', fontSize: 13, fontWeight: 600, color: 'var(--text2)', padding: 10, marginBottom: 8, cursor: 'pointer' }}>

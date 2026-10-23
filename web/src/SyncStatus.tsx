@@ -64,7 +64,7 @@ export function SyncStatus() {
           alignItems: 'center',
           gap: 11,
           padding: '10px 14px',
-          borderRadius: 14,
+          borderRadius: 'calc(14px * var(--sq))',
           background: 'var(--surface)',
           border: '1px solid var(--border)',
           boxShadow: 'var(--shadow-sm, 0 1px 2px rgba(0,0,0,.04))',

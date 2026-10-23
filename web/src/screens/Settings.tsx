@@ -424,7 +424,7 @@ export function Settings() {
       <div
         onClick={() => open('profile')}
         className="press99"
-        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 16, display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14, cursor: 'pointer' }}
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16, display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14, cursor: 'pointer' }}
       >
         <Avatar name={profile.name} src={profile.avatar} size={54} />
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -436,7 +436,7 @@ export function Settings() {
         </svg>
       </div>
 
-      <div style={{ display: 'flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '16px 8px', marginBottom: 24 }}>
+      <div style={{ display: 'flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '16px 8px', marginBottom: 24 }}>
         {[
           [String(daysTracked), 'Days tracked'],
           [String(entries), 'Entries'],
@@ -455,7 +455,7 @@ export function Settings() {
       {/* Unverified email. A nudge, never a wall — the account works either
           way; this only makes password recovery possible. */}
       {!profile.emailVerified && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 13, background: 'color-mix(in srgb,var(--warning) 10%,var(--surface))', border: '1px solid color-mix(in srgb,var(--warning) 32%,var(--border))', borderRadius: 18, padding: '15px 16px', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 13, background: 'color-mix(in srgb,var(--warning) 10%,var(--surface))', border: '1px solid color-mix(in srgb,var(--warning) 32%,var(--border))', borderRadius: 'calc(18px * var(--sq))', padding: '15px 16px', marginBottom: 24 }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--warning)', strokeWidth: 1.9, strokeLinejoin: 'round' }} aria-hidden>
               <rect x="1.5" y="3.5" width="16" height="12" rx="2.5" />
@@ -488,7 +488,7 @@ export function Settings() {
       )}
 
       <SectionLabel>Appearance</SectionLabel>
-      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: 3, marginBottom: 24 }}>
+      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 24 }}>
         {themeSeg.map(([label, val]) => {
           const active = (profile.theme || 'light') === val;
           return (
@@ -499,7 +499,7 @@ export function Settings() {
                 flex: 1,
                 textAlign: 'center',
                 padding: '9px 0',
-                borderRadius: 11,
+                borderRadius: 'calc(11px * var(--sq))',
                 fontSize: 13.5,
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -516,7 +516,7 @@ export function Settings() {
       </div>
 
       <SectionLabel>What you track</SectionLabel>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 8 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 8 }}>
         {MODULE_OPTS.map((m, i) => {
           const on = !profile.modules || profile.modules.includes(m.key);
           return (
@@ -567,7 +567,7 @@ export function Settings() {
       </div>
 
       <SectionLabel>Text size</SectionLabel>
-      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: 3, marginBottom: 24 }}>
+      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 24 }}>
         {([['Small', 0.9], ['Default', 1], ['Large', 1.1], ['Largest', 1.2]] as const).map(([lbl, v]) => {
           const active = Math.abs((profile.textScale || 1) - v) < 0.01;
           return (
@@ -575,7 +575,7 @@ export function Settings() {
               key={lbl}
               onClick={() => mutateOpt((st) => ({ ...st, profile: { ...st.profile, textScale: v } }), () => api.updateMe({ textScale: v }))}
               role="button"
-              style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 11, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(active ? { background: 'var(--surface)', color: 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
+              style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 'calc(11px * var(--sq))', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(active ? { background: 'var(--surface)', color: 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
             >
               {lbl}
             </div>
@@ -604,7 +604,7 @@ export function Settings() {
       </div>
 
       <SectionLabel>Preferences</SectionLabel>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         <PrefRow
           iconKey="indigo"
           title="Daily reminders"
@@ -634,7 +634,7 @@ export function Settings() {
               type="time"
               value={profile.reminderTime || '21:00'}
               onChange={(e) => setReminderTime(e.target.value)}
-              style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '8px 12px', outline: 'none', fontVariantNumeric: 'tabular-nums' }}
+              style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(12px * var(--sq))', padding: '8px 12px', outline: 'none', fontVariantNumeric: 'tabular-nums' }}
             />
           </div>
         )}
@@ -708,7 +708,7 @@ export function Settings() {
                 }}
                 className="press99"
                 role="button"
-                style={{ marginTop: 10, height: 44, borderRadius: 12, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}
+                style={{ marginTop: 10, height: 44, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}
               >
                 Allow exact alarms so reminders arrive on time
               </div>
@@ -763,7 +763,7 @@ export function Settings() {
       {smsSupported() && (
         <>
           <SectionLabel>Bank messages</SectionLabel>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
             <PrefRow
               iconKey="indigo"
               title="Import from SMS"
@@ -891,7 +891,7 @@ export function Settings() {
       {/* Achievements live here now rather than as a trophy with a red dot in
           the Home header, where it asked for attention on every launch. */}
       <SectionLabel>Progress</SectionLabel>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         <div
           onClick={() => go('achievements')}
           className="pressRow"
@@ -929,7 +929,7 @@ export function Settings() {
             </div>
           </div>
           {partnerUnread > 0 && (
-            <span style={{ minWidth: 22, height: 22, padding: '0 6px', borderRadius: 11, background: 'var(--danger)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', marginRight: 4 }}>
+            <span style={{ minWidth: 22, height: 22, padding: '0 6px', borderRadius: 'calc(11px * var(--sq))', background: 'var(--danger)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', marginRight: 4 }}>
               {partnerUnread}
             </span>
           )}
@@ -938,7 +938,7 @@ export function Settings() {
       </div>
 
       <SectionLabel>Manage</SectionLabel>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         {manageRow(
           'Counters',
           'indigo',
@@ -976,7 +976,7 @@ export function Settings() {
       </div>
 
       <SectionLabel>Data</SectionLabel>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 14 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 14 }}>
         <div onClick={exportData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
@@ -1015,7 +1015,7 @@ export function Settings() {
       </div>
 
       <SectionLabel>Security</SectionLabel>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         <div onClick={changePassword} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
@@ -1045,7 +1045,7 @@ export function Settings() {
       </div>
 
       <SectionLabel>Support</SectionLabel>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         <div onClick={() => go('privacy')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
@@ -1076,7 +1076,7 @@ export function Settings() {
         onClick={deleteAccount}
         className="press99"
         role="button"
-        style={{ height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginBottom: 10 }}
+        style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginBottom: 10 }}
       >
         Delete my account
       </div>
@@ -1084,7 +1084,7 @@ export function Settings() {
       <div
         onClick={signOut}
         className="press99"
-        style={{ height: 52, borderRadius: 16, border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 15, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}
+        style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 15, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}
       >
         <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
           <path d="M8 4H4v11h4M12 13l3-3.5L12 6M15 9.5H7" />

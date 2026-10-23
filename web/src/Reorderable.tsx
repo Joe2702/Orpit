@@ -174,7 +174,7 @@ export function Reorderable({ items, onReorder }: { items: Item[]; onReorder: (i
               transition: isDragged ? 'none' : 'transform .2s cubic-bezier(.2,.8,.3,1)',
               zIndex: isDragged ? 6 : 1,
               boxShadow: isDragged ? '0 16px 36px -10px rgba(8,9,14,.4)' : undefined,
-              borderRadius: 20,
+              borderRadius: 'calc(20px * var(--sq))',
               opacity: isDragged ? 0.98 : 1,
             }}
           >

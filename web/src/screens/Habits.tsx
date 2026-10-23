@@ -32,14 +32,14 @@ export function Habits() {
       <div
         onClick={() => !hb.locked && open('habit', { id: hb.id, name: hb.name, color: hb.color, target: hb.target, days: hb.days, why: hb.why, cue: hb.cue, paused: hb.paused, reminderTime: hb.reminderTime })}
         className={hb.locked ? undefined : 'press99'}
-        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: hb.locked ? 'default' : 'pointer', opacity: hb.paused ? 0.6 : 1 }}
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: hb.locked ? 'default' : 'pointer', opacity: hb.paused ? 0.6 : 1 }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 13 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', flex: 'none', background: `var(--${hb.color})` }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
               {hb.name}
-              {hb.paused && <span style={{ fontSize: 11, color: 'var(--warning)', fontWeight: 650, marginLeft: 8, padding: '2px 7px', borderRadius: 6, background: 'color-mix(in srgb,var(--warning) 14%,transparent)' }}>Paused</span>}
+              {hb.paused && <span style={{ fontSize: 11, color: 'var(--warning)', fontWeight: 650, marginLeft: 8, padding: '2px 7px', borderRadius: 'calc(6px * var(--sq))', background: 'color-mix(in srgb,var(--warning) 14%,transparent)' }}>Paused</span>}
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: 5, marginTop: 1, minWidth: 0 }}>
               <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{hb.cue || daysLabel(hb.days)}</span>
@@ -169,7 +169,7 @@ export function Habits() {
         onClick={() => open('catchup')}
         className="press99"
         role="button"
-        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', height: 46, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--surface)', fontSize: 14, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', marginBottom: 22 }}
+        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', height: 46, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: 14, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', marginBottom: 22 }}
       >
         <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', flex: 'none' }} aria-hidden>
           <rect x="2.5" y="3.5" width="13" height="12" rx="2" />
@@ -190,7 +190,7 @@ export function Habits() {
         onClick={() => open('habit')}
         className="press99"
         role="button"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 16, border: '1.5px dashed color-mix(in srgb,var(--indigo) 40%,var(--border))', color: 'var(--indigo)', fontSize: 15, fontWeight: 600, cursor: 'pointer', background: 'color-mix(in srgb,var(--indigo) 6%,transparent)', marginBottom: 6 }}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 'calc(16px * var(--sq))', border: '1.5px dashed color-mix(in srgb,var(--indigo) 40%,var(--border))', color: 'var(--indigo)', fontSize: 15, fontWeight: 600, cursor: 'pointer', background: 'color-mix(in srgb,var(--indigo) 6%,transparent)', marginBottom: 6 }}
       >
         <svg width="18" height="18" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round' }} aria-hidden>
           <path d="M10 4v12M4 10h12" />

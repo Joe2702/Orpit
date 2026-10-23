@@ -86,7 +86,7 @@ export function PartnerThread({ module }: { module: string | null }) {
       </div>
 
       {notes.length === 0 ? (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, padding: '24px 18px', textAlign: 'center', color: 'var(--text2)', fontSize: 13.5, lineHeight: 1.6 }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', padding: '24px 18px', textAlign: 'center', color: 'var(--text2)', fontSize: 13.5, lineHeight: 1.6 }}>
           Nothing here yet. A short, specific note lands better than a general
           one &mdash; &ldquo;you&rsquo;ve missed two days of workouts&rdquo; beats &ldquo;keep going&rdquo;.
         </div>
@@ -102,7 +102,7 @@ export function PartnerThread({ module }: { module: string | null }) {
       {/* Composer */}
       <div style={{ position: 'sticky', bottom: 0, paddingTop: 14, marginTop: 14 }}>
         {addressable.length === 0 ? (
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '14px 16px', fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.55 }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '14px 16px', fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.55 }}>
             You can&rsquo;t send anything yet. {p ? p.name.split(' ')[0] : 'Your partner'} needs to open a tracker for
             comments, or you both need to turn on free chat.
           </div>
@@ -138,7 +138,7 @@ export function PartnerThread({ module }: { module: string | null }) {
                 placeholder={to === null ? 'Message…' : `Note about ${(MODULE_LABEL[to] || to).toLowerCase()}…`}
                 rows={1}
                 style={{
-                  flex: 1, minWidth: 0, minHeight: 48, maxHeight: 120, borderRadius: 16, border: '1px solid var(--border)',
+                  flex: 1, minWidth: 0, minHeight: 48, maxHeight: 120, borderRadius: 'calc(16px * var(--sq))', border: '1px solid var(--border)',
                   background: 'var(--surface)', padding: '13px 15px', fontSize: 15, color: 'var(--text)', outline: 'none',
                   resize: 'none', fontFamily: 'inherit', lineHeight: 1.4,
                 }}
@@ -149,7 +149,7 @@ export function PartnerThread({ module }: { module: string | null }) {
                 role="button"
                 aria-label="Send"
                 style={{
-                  width: 48, height: 48, borderRadius: 16, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 48, height: 48, borderRadius: 'calc(16px * var(--sq))', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: text.trim() ? 'pointer' : 'default',
                   background: text.trim() ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 35%,var(--surface))',
                 }}
@@ -175,7 +175,7 @@ function Bubble({ n, mine }: { n: PartnerNote; mine: boolean }) {
           background: mine ? 'var(--indigo)' : 'var(--surface)',
           border: mine ? 'none' : '1px solid var(--border)',
           color: mine ? '#fff' : 'var(--text)',
-          borderRadius: 18,
+          borderRadius: 'calc(18px * var(--sq))',
           borderBottomRightRadius: mine ? 6 : 18,
           borderBottomLeftRadius: mine ? 18 : 6,
           padding: '10px 14px',

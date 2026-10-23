@@ -120,10 +120,10 @@ export function Finances() {
       </Card>
 
       <SectionLabel action={{ label: 'See all', onClick: () => go('ftxns') }}>Recent transactions</SectionLabel>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         {[...state!.txns].sort((a, b) => b.ts - a.ts).slice(0, 6).map((t) => (
           <div key={t.id} onClick={() => go('faddtx', { edit: t })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-            <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: t.income ? 'color-mix(in srgb,var(--indigo) 13%,transparent)' : 'var(--bg)' }}>
+            <span style={{ width: 38, height: 38, borderRadius: 'calc(11px * var(--sq))', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: t.income ? 'color-mix(in srgb,var(--indigo) 13%,transparent)' : 'var(--bg)' }}>
               {t.adjust ? (
                 <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Balance correction"><path d="M4 13.5a6 6 0 0 1 10-4.4M16 6.5a6 6 0 0 1-10 4.4" /><path d="M14 5v4h-4M6 15v-4h4" /></svg>
               ) : t.toAccId ? (

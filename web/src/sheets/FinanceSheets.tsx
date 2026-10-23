@@ -9,10 +9,10 @@ import { IconTrash } from '../icons';
 import { FinIcon } from '../lib/iconPaths';
 
 const label = (t: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t}</div>;
-const input: React.CSSProperties = { width: '100%', height: 52, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none' };
+const input: React.CSSProperties = { width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none' };
 const swatch = (c: string, active: boolean): React.CSSProperties => ({ width: 38, height: 38, borderRadius: '50%', cursor: 'pointer', flex: 'none', background: `var(--${c})`, transition: 'all .15s', boxShadow: active ? `0 0 0 3px var(--surface),0 0 0 5px var(--${c})` : '0 0 0 0 transparent' });
-const cta = (enabled: boolean): React.CSSProperties => ({ background: enabled ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: enabled ? 'pointer' : 'default', letterSpacing: '-.01em' });
-const delBtn: React.CSSProperties = { height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 };
+const cta = (enabled: boolean): React.CSSProperties => ({ background: enabled ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: enabled ? 'pointer' : 'default', letterSpacing: '-.01em' });
+const delBtn: React.CSSProperties = { height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 };
 /** A number for a text input: no currency symbol, no trailing zeros. */
 const trim = (n: number): string => String(round2(n));
 
@@ -153,7 +153,7 @@ export function FcatSheet() {
       {label('Icon')}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 9, marginBottom: 24 }}>
         {ICONS.map((ic) => (
-          <div key={ic} onClick={() => setIcon(ic)} style={{ width: '100%', aspectRatio: '1', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .15s', border: `1px solid ${icon === ic ? `var(--${color})` : 'var(--border)'}`, background: icon === ic ? `color-mix(in srgb,var(--${color}) 12%,var(--surface))` : 'var(--surface)' }}>
+          <div key={ic} onClick={() => setIcon(ic)} style={{ width: '100%', aspectRatio: '1', borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .15s', border: `1px solid ${icon === ic ? `var(--${color})` : 'var(--border)'}`, background: icon === ic ? `color-mix(in srgb,var(--${color}) 12%,var(--surface))` : 'var(--surface)' }}>
             <FinIcon icon={ic} color={icon === ic ? `var(--${color})` : 'var(--text2)'} size={22} />
           </div>
         ))}
@@ -199,7 +199,7 @@ export function BudgetSheet() {
         className="press99"
         role="switch"
         aria-checked={rollover}
-        style={{ display: 'flex', alignItems: 'center', gap: 13, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: '14px 16px', marginBottom: 24, cursor: 'pointer' }}
+        style={{ display: 'flex', alignItems: 'center', gap: 13, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: '14px 16px', marginBottom: 24, cursor: 'pointer' }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Roll over what's left</div>
@@ -284,12 +284,12 @@ export function RecurringSheet() {
   return (
     <div style={{ padding: '4px 20px 32px' }}>
       <Title>{editId ? 'Edit recurring' : 'New recurring'}</Title>
-      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: 3, marginBottom: 18 }}>
+      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 18 }}>
         {([[false, 'Expense'], [true, 'Income']] as const).map(([v, lbl]) => (
           <div
             key={lbl}
             onClick={() => setIncome(v)}
-            style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 11, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(income === v ? { background: 'var(--surface)', color: v ? 'var(--indigo)' : 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
+            style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 'calc(11px * var(--sq))', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(income === v ? { background: 'var(--surface)', color: v ? 'var(--indigo)' : 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
           >
             {lbl}
           </div>

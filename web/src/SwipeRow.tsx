@@ -103,7 +103,7 @@ export function SwipeRow({
   );
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 18 }}>
+    <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 'calc(18px * var(--sq))' }}>
       {/* Action strip, revealed as the row slides off it. Rendered only while
           the row is actually moving: --surface is translucent, so a strip
           sitting underneath a resting row shows through it. */}

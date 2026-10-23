@@ -242,7 +242,7 @@ function TabBar() {
           backdropFilter: 'blur(20px) saturate(1.4)',
           WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
           border: '1px solid var(--border)',
-          borderRadius: 26,
+          borderRadius: 'calc(26px * var(--sq))',
           boxShadow: '0 10px 30px -12px rgba(0,0,0,.35)',
           display: 'flex',
           alignItems: 'center',
@@ -283,7 +283,7 @@ function PasswordPrompt() {
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
       <div onClick={() => closePassword(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.5)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(2px)' }} />
-      <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 24, padding: '26px 22px 20px', width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(8,9,14,.35)', animation: 'fadeUp .25s ease' }}>
+      <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(8,9,14,.35)', animation: 'fadeUp .25s ease' }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em', textAlign: 'center' }}>{passwordState.title}</div>
         {passwordState.message && (
           <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5, textAlign: 'center' }}>{passwordState.message}</div>
@@ -295,16 +295,16 @@ function PasswordPrompt() {
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && value && closePassword(value)}
           placeholder="Your password"
-          style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginTop: 18 }}
+          style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginTop: 18 }}
         />
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-          <div onClick={() => closePassword(null)} className="press" style={{ flex: 1, height: 48, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+          <div onClick={() => closePassword(null)} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
             Cancel
           </div>
           <div
             onClick={() => value && closePassword(value)}
             className="press"
-            style={{ flex: 1, height: 48, borderRadius: 14, background: value ? 'var(--danger)' : 'color-mix(in srgb,var(--danger) 40%,var(--surface))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: value ? 'pointer' : 'default' }}
+            style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', background: value ? 'var(--danger)' : 'color-mix(in srgb,var(--danger) 40%,var(--surface))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: value ? 'pointer' : 'default' }}
           >
             {passwordState.confirmLabel || 'Confirm'}
           </div>
@@ -342,8 +342,8 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        color: '#f1f0ec',
-        background: '#0c0c0d',
+        color: '#f0f0f3',
+        background: '#0c0c0f',
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', animation: 'fadeUp .6s ease' }}>
@@ -351,11 +351,11 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
         <div style={{ position: 'relative', width: 120, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 30 }}>
           <div style={{ position: 'absolute', width: 132, height: 132, animation: 'orbitSpin 3.6s linear infinite' }}>
             <svg width="132" height="132" style={{ overflow: 'visible' }}>
-              <ellipse cx="66" cy="66" rx="58" ry="23" transform="rotate(-26 66 66)" style={{ fill: 'none', stroke: 'rgba(241,240,236,.45)', strokeWidth: 2 }} />
-              <circle cx="115" cy="41" r="6" style={{ fill: '#f1f0ec' }} />
+              <ellipse cx="66" cy="66" rx="58" ry="23" transform="rotate(-26 66 66)" style={{ fill: 'none', stroke: 'rgba(240,240,243,.45)', strokeWidth: 2 }} />
+              <circle cx="115" cy="41" r="6" style={{ fill: '#f0f0f3' }} />
             </svg>
           </div>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#f1f0ec', animation: 'breathe 3.2s ease-in-out infinite' }} />
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#f0f0f3', animation: 'breathe 3.2s ease-in-out infinite' }} />
         </div>
 
         <div className="display" style={{ fontSize: 44, lineHeight: 1 }}>Orbit</div>
@@ -375,7 +375,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
             <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.6)', marginBottom: 16, maxWidth: 280, wordBreak: 'break-all', lineHeight: 1.45 }}>
               {apiBase || 'no backend URL configured'}
             </div>
-            <div onClick={onRetry} className="press" style={{ display: 'inline-flex', background: '#f1f0ec', color: '#0c0c0d', height: 46, padding: '0 26px', borderRadius: 14, alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px -10px rgba(0,0,0,.4)' }}>Try again</div>
+            <div onClick={onRetry} className="press" style={{ display: 'inline-flex', background: '#f0f0f3', color: '#0c0c0f', height: 46, padding: '0 26px', borderRadius: 'calc(14px * var(--sq))', alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px -10px rgba(0,0,0,.4)' }}>Try again</div>
           </div>
         ) : (
           <>
@@ -709,7 +709,7 @@ export function App() {
   const appInner = (
     <>
       {!mobile && (
-        <div style={{ position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)', width: 118, height: 34, background: '#000', borderRadius: 20, zIndex: 80 }} />
+        <div style={{ position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)', width: 118, height: 34, background: '#000', borderRadius: 'calc(20px * var(--sq))', zIndex: 80 }} />
       )}
 
       {!mobile && <StatusBar />}
@@ -758,7 +758,7 @@ export function App() {
       {sheet && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 90, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
           <div onClick={closeSheet} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.5)', animation: 'fadeIn .25s ease', backdropFilter: 'blur(2px)' }} />
-          <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: '30px 30px 0 0', animation: 'sheetUp .34s cubic-bezier(.22,1,.36,1)', maxHeight: '92%', display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 40px rgba(8,9,14,.3)' }}>
+          <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 'calc(30px * var(--sq)) calc(30px * var(--sq)) 0 0', animation: 'sheetUp .34s cubic-bezier(.22,1,.36,1)', maxHeight: '92%', display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 40px rgba(8,9,14,.3)' }}>
             <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 2px', flex: 'none' }}>
               <div style={{ width: 38, height: 4, borderRadius: 999, background: 'var(--border)' }} />
             </div>
@@ -772,14 +772,14 @@ export function App() {
       {exitPrompt && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 98, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
           <div onClick={cancelExit} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.5)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(2px)' }} />
-          <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 24, padding: '26px 22px 20px', width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(8,9,14,.35)', animation: 'fadeUp .25s ease', textAlign: 'center' }}>
+          <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(8,9,14,.35)', animation: 'fadeUp .25s ease', textAlign: 'center' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>Exit Orbit?</div>
             <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>Are you sure you want to close the app?</div>
             <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
-              <div onClick={cancelExit} className="press" style={{ flex: 1, height: 48, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+              <div onClick={cancelExit} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
                 Stay
               </div>
-              <div onClick={confirmExit} className="press" style={{ flex: 1, height: 48, borderRadius: 14, background: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
+              <div onClick={confirmExit} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', background: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
                 Exit
               </div>
             </div>
@@ -790,16 +790,16 @@ export function App() {
       {confirmState && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
           <div onClick={() => closeConfirm(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.5)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(2px)' }} />
-          <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 24, padding: '26px 22px 20px', width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(8,9,14,.35)', animation: 'fadeUp .25s ease', textAlign: 'center' }}>
+          <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(8,9,14,.35)', animation: 'fadeUp .25s ease', textAlign: 'center' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>{confirmState.title}</div>
             {confirmState.message && (
               <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>{confirmState.message}</div>
             )}
             <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
-              <div onClick={() => closeConfirm(false)} className="press" style={{ flex: 1, height: 48, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+              <div onClick={() => closeConfirm(false)} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
                 Cancel
               </div>
-              <div onClick={() => closeConfirm(true)} className="press" style={{ flex: 1, height: 48, borderRadius: 14, background: confirmState.danger === false ? 'var(--indigo)' : 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
+              <div onClick={() => closeConfirm(true)} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', background: confirmState.danger === false ? 'var(--indigo)' : 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
                 {confirmState.confirmLabel || 'Delete'}
               </div>
             </div>

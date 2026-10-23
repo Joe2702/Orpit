@@ -69,7 +69,7 @@ export function ProfileSheet() {
   const input: React.CSSProperties = {
     width: '100%',
     height: 52,
-    borderRadius: 14,
+    borderRadius: 'calc(14px * var(--sq))',
     border: '1px solid var(--border)',
     background: 'var(--bg)',
     padding: '0 16px',
@@ -113,7 +113,7 @@ export function ProfileSheet() {
       <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" style={{ ...input, marginBottom: 24 }} />
       <div
         onClick={save}
-        style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default', letterSpacing: '-.01em' }}
+        style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default', letterSpacing: '-.01em' }}
       >
         Save profile
       </div>

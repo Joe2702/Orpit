@@ -48,7 +48,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
         </div>
         <div
           onClick={() => window.location.reload()}
-          style={{ background: '#fff', color: '#4a45a6', height: 50, padding: '0 30px', borderRadius: 15, display: 'flex', alignItems: 'center', fontSize: 15.5, fontWeight: 700, cursor: 'pointer' }}
+          style={{ background: '#fff', color: '#4a45a6', height: 50, padding: '0 30px', borderRadius: 'calc(15px * var(--sq))', display: 'flex', alignItems: 'center', fontSize: 15.5, fontWeight: 700, cursor: 'pointer' }}
         >
           Reload Orbit
         </div>

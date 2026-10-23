@@ -36,7 +36,7 @@ export function Chooser() {
       <div className="display" style={{ fontSize: 30, lineHeight: 1.1, color: 'var(--text)', margin: '6px 2px 16px' }}>Log something</div>
       {/* A list rather than a grid of tinted tiles: five rows are quicker to
           scan, and the choice is the label, not the colour. */}
-      <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 20, overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', overflow: 'hidden' }}>
         {items.map((it, i) => (
           <div
             key={it.label}
