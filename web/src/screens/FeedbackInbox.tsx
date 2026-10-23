@@ -50,7 +50,7 @@ export function FeedbackInbox() {
           e instanceof ApiError && e.status === 403
             ? 'Wrong password.'
             : e instanceof ApiError && e.status === 503
-            ? 'Not configured — set ADMIN_PASSWORD on the server.'
+            ? 'Not configured. Set ADMIN_PASSWORD on the server.'
             : 'Could not load feedback.'
         )
       )
@@ -61,7 +61,7 @@ export function FeedbackInbox() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
         <BackButton onClick={() => go('settings')} />
-        <div style={{ flex: 1, fontSize: 24, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>Feedback</div>
+        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>Feedback</div>
         {unlocked && items && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{items.length}</div>}
       </div>
 
@@ -81,27 +81,27 @@ export function FeedbackInbox() {
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && submit()}
             placeholder="Password"
-            style={{ width: '100%', height: 52, borderRadius: 14, border: `1px solid ${error ? 'var(--danger)' : 'var(--border)'}`, background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginBottom: 12 }}
+            style={{ width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: `1px solid ${error ? 'var(--danger)' : 'var(--border)'}`, background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginBottom: 12 }}
           />
           {error && <div style={{ fontSize: 13, color: 'var(--danger)', marginBottom: 12, textAlign: 'center' }}>{error}</div>}
           <div
             onClick={submit}
             className="press"
-            style={{ background: password ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: '#fff', height: 52, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, cursor: password ? 'pointer' : 'default' }}
+            style={{ background: password ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 52, borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, cursor: password ? 'pointer' : 'default' }}
           >
             {checking ? 'Checking…' : 'Unlock'}
           </div>
         </div>
       ) : (
         <>
-          <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: 3, marginBottom: 18 }}>
+          <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 18 }}>
             {([['feedback', `Feedback (${items?.length ?? 0})`], ['crashes', `Crashes (${errors.length})`]] as const).map(([k, label]) => (
               <div
                 key={k}
                 onClick={() => setTab(k)}
                 role="tab"
                 aria-selected={tab === k}
-                style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 11, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', ...(tab === k ? { background: 'var(--surface)', color: 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
+                style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 'calc(11px * var(--sq))', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', ...(tab === k ? { background: 'var(--surface)', color: 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
               >
                 {label}
               </div>
@@ -116,7 +116,7 @@ export function FeedbackInbox() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {errors.map((e) => (
-                  <div key={e.id} style={{ background: 'var(--surface)', border: '1px solid color-mix(in srgb,var(--danger) 25%,var(--border))', borderRadius: 18, boxShadow: 'var(--shadow)', padding: 16 }}>
+                  <div key={e.id} style={{ background: 'var(--surface)', border: '1px solid color-mix(in srgb,var(--danger) 25%,var(--border))', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                       <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--danger)', background: 'color-mix(in srgb,var(--danger) 13%,transparent)', padding: '3px 9px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '.04em' }}>Crash</span>
                       <span style={{ flex: 1 }} />
@@ -124,7 +124,7 @@ export function FeedbackInbox() {
                     </div>
                     <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.5, wordBreak: 'break-word' }}>{e.message}</div>
                     {e.stack && (
-                      <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 8, fontFamily: "'Geist Mono',monospace", whiteSpace: 'pre-wrap', maxHeight: 120, overflow: 'auto', background: 'var(--bg)', borderRadius: 10, padding: 10 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 8, fontFamily: 'var(--font-mono)', whiteSpace: 'pre-wrap', maxHeight: 120, overflow: 'auto', background: 'var(--bg)', borderRadius: 'calc(10px * var(--sq))', padding: 10 }}>
                         {e.stack}
                       </div>
                     )}
@@ -146,7 +146,7 @@ export function FeedbackInbox() {
             return (
               <div
                 key={f.id}
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: 16 }}
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                   <span

@@ -252,3 +252,126 @@ describe('formats seen in the wild', () => {
     });
   }
 });
+
+// ---------------------------------------------------------------------------
+// Arabic
+//
+// Egyptian banks and wallets send a large share of their alerts in Arabic. The
+// first version of the reader skipped every one of them — it read English only,
+// and relied on `\b`, which JavaScript only applies to Latin letters. These are
+// representative of the shapes in use: Arabic-Indic digits, the Arabic
+// thousands separator, "جنية" spelt both ways, and bidi marks round numbers.
+
+import { analyseSms, basicNormalize } from '../lib/smsParse';
+
+const ar = (body: string, sender = 'NBE') => parseSms({ id: '1', sender, body, ts: TS });
+
+describe('Arabic: the amount', () => {
+  it('reads a debit and ignores the balance after it', () => {
+    const p = ar('تم خصم مبلغ 250.00 جنيه من حسابك رقم ***1234 لدى CARREFOUR MAADI بتاريخ 10/08/2026. الرصيد المتاح 12,345.67 جنيه');
+    expect(p).toMatchObject({ amount: 250, currency: 'EGP', income: false });
+  });
+
+  it('reads Arabic-Indic digits and the Arabic thousands separator', () => {
+    const p = ar('عزيزي العميل، تم سحب مبلغ ١٬٠٠٠ ج.م من بطاقتكم المنتهية بـ ٤٣٢١ من ماكينة الصراف الآلي. رصيدكم ٥٬٠٠٠ ج.م', 'BanqueMisr');
+    expect(p).toMatchObject({ amount: 1000, currency: 'EGP', income: false, card: '4321' });
+  });
+
+  it('reads the Arabic decimal separator', () => {
+    expect(ar('عملية شراء بمبلغ ١٨٩٫٧٥ جم بالبطاقة المنتهية 4321 لدى TSEPPAS')?.amount).toBe(189.75);
+  });
+
+  it('survives the invisible direction marks banks put round numbers', () => {
+    const p = ar('تم خصم مبلغ ‎250.00‎ جنيه من حسابك');
+    expect(p?.amount).toBe(250);
+  });
+
+  it('accepts both spellings of the pound', () => {
+    expect(ar('تم خصم 75 جنية من حسابك')?.amount).toBe(75);
+    expect(ar('تم خصم 75 جنيه من حسابك')?.amount).toBe(75);
+  });
+
+  it('accepts "an amount of" with no currency, in the home currency', () => {
+    expect(ar('تم خصم مبلغ 320.50 من حسابك رقم ***1234')).toMatchObject({ amount: 320.5, currency: 'EGP' });
+  });
+});
+
+describe('Arabic: what is not a transaction', () => {
+  it('refuses a security code', () => {
+    expect(ar('رمز التحقق الخاص بك هو 458213. لا تشاركه مع أحد')).toBeNull();
+  });
+
+  it('refuses a discount advert, even though "خصم" also means deduction', () => {
+    expect(ar('استمتع بخصم 20% على مشترياتك من نون عند الدفع ببطاقتك')).toBeNull();
+  });
+
+  it('refuses a declined payment', () => {
+    expect(ar('عملية مرفوضة: رصيد غير كاف لإتمام عملية شراء بمبلغ 500 جنيه')).toBeNull();
+  });
+
+  it('refuses a charge that has not happened yet', () => {
+    expect(ar('سيتم خصم 1,200 جنيه من حسابك لسداد القسط')).toBeNull();
+  });
+
+  it('says why it skipped a message, for the on-device diagnostic', () => {
+    const a = analyseSms({ id: '1', sender: 'NBE', body: 'رمز التحقق 123456', ts: TS });
+    expect(a).toEqual({ ok: false, reason: 'otp' });
+  });
+});
+
+describe('Arabic: which way the money went', () => {
+  it('reads an outgoing InstaPay transfer as spending', () => {
+    const p = ar('تم تحويل 500 جنيه بنجاح إلى محمد علي. رقم المرجع 12345', 'InstaPay');
+    expect(p).toMatchObject({ amount: 500, income: false, merchant: 'محمد علي' });
+  });
+
+  it('reads an incoming transfer as income, though it contains the word for transfer', () => {
+    const p = ar('تم استلام تحويل بمبلغ 750 جنيه من أحمد حسن عبر انستاباي', 'InstaPay');
+    expect(p).toMatchObject({ amount: 750, income: true, merchant: 'أحمد حسن' });
+  });
+
+  it('reads "incoming transfer" as income even when "transfer" comes first', () => {
+    expect(ar('تحويل وارد بمبلغ 900 جنيه')?.income).toBe(true);
+  });
+
+  it('reads money received on a wallet as income', () => {
+    const p = ar('تم استقبال 300 جنيه من رقم 01001234567. رصيدك الحالي 1,750 جنيه', 'VF-Cash');
+    expect(p).toMatchObject({ amount: 300, income: true });
+    // A phone number is not a name; fall back to the sender.
+    expect(p?.merchant).toBe('VF-Cash');
+  });
+
+  it('reads money sent from a wallet as spending', () => {
+    expect(ar('تم تحويل 200 جنيه لرقم 01012345678. رصيدك الحالي 1,450 جنيه', 'VF-Cash')).toMatchObject({ amount: 200, income: false });
+  });
+
+  it('reads a salary deposit as income', () => {
+    expect(ar('تم إيداع مبلغ 18,000.00 ج.م في حسابك - مرتب شهر أغسطس')).toMatchObject({ amount: 18000, income: true });
+  });
+
+  it('lets "to your account" settle it, whatever verb came first', () => {
+    // English too: "transferred" leads, but the money arrived.
+    expect(parseSms(sms('EGP 500 transferred to your account from AHMED'))?.income).toBe(true);
+    expect(ar('تم تحويل 500 جنيه الى حسابك')?.income).toBe(true);
+  });
+
+  it('lets "from your account" settle it the other way', () => {
+    expect(ar('تم تحويل 500 جنيه من حسابك الى حساب رقم 9876')?.income).toBe(false);
+  });
+});
+
+describe('Arabic: who was paid', () => {
+  it('takes the shop after "لدى" and stops at the date', () => {
+    expect(ar('تم خصم مبلغ 250 جنيه من حسابك لدى كارفور المعادي بتاريخ 10/08/2026')?.merchant).toBe('كارفور المعادي');
+  });
+
+  it('keeps a Latin shop name inside an Arabic message', () => {
+    expect(ar('عملية شراء بمبلغ 189.75 جم لدى TSEPPAS في 10/08')?.merchant).toBe('Tseppas');
+  });
+});
+
+describe('normalisation', () => {
+  it('converts digits and separators without disturbing the words', () => {
+    expect(basicNormalize('مبلغ ١٬٢٥٠٫٥٠ جنيه')).toBe('مبلغ 1,250.50 جنيه');
+  });
+});

@@ -75,7 +75,7 @@ export function StickySave({
           background: enabled ? `var(--${color})` : `color-mix(in srgb,var(--${color}) 40%,var(--surface))`,
           color: '#fff',
           height: 54,
-          borderRadius: 16,
+          borderRadius: 'calc(16px * var(--sq))',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

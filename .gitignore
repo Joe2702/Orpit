@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# The web demo build (VITE_DEMO=1), published as a preview link, never committed.
+dist-demo/
 build/
 .env
 .env.local

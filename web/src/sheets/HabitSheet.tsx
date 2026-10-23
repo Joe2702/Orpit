@@ -19,6 +19,7 @@ export function HabitSheet() {
     /^[01]{7}$/.test(sheetData?.days) ? sheetData.days : '1111111'
   );
   const [why, setWhy] = useState<string>(sheetData?.why ?? '');
+  const [cue, setCue] = useState<string>(sheetData?.cue ?? '');
   const [hReminder, setHReminder] = useState<string>(sheetData?.reminderTime ?? '');
   const [paused, setPaused] = useState<boolean>(!!sheetData?.paused);
 
@@ -39,7 +40,7 @@ export function HabitSheet() {
   const save = () => {
     if (!canSave) return;
     if (pending) {
-      showToast('Still saving — try again in a moment');
+      showToast('Still saving. Try again in a moment.');
       return;
     }
     haptic();
@@ -49,6 +50,7 @@ export function HabitSheet() {
       target: daysLabel(days),
       days,
       why: why.trim() || null,
+      cue: cue.trim() || null,
       reminderTime: hReminder || null,
       paused,
       archived: false,
@@ -66,7 +68,7 @@ export function HabitSheet() {
           ...s,
           habits: [
             ...s.habits,
-            { id: tempId, ...body, locked: false, paused: false, archived: false, why: body.why ?? null, reminderTime: body.reminderTime ?? null },
+            { id: tempId, ...body, locked: false, paused: false, archived: false, why: body.why ?? null, cue: body.cue ?? null, reminderTime: body.reminderTime ?? null },
           ],
         }),
         () => api.addHabit(body),
@@ -88,7 +90,7 @@ export function HabitSheet() {
     haptic();
     mutateOpt(
       (s) => ({ ...s, habits: s.habits.map((hb) => (hb.id === editId ? { ...hb, archived: true } : hb)) }),
-      () => api.editHabit(editId, { name: name.trim(), color, target: daysLabel(days), days, why: why.trim() || null, reminderTime: hReminder || null, paused, archived: true }),
+      () => api.editHabit(editId, { name: name.trim(), color, target: daysLabel(days), days, why: why.trim() || null, cue: cue.trim() || null, reminderTime: hReminder || null, paused, archived: true }),
       'Habit archived'
     ).catch(() => {});
     closeSheet();
@@ -97,7 +99,7 @@ export function HabitSheet() {
   const del = async () => {
     if (!editId) return;
     if (pending) {
-      showToast('Still saving — try again in a moment');
+      showToast('Still saving. Try again in a moment.');
       return;
     }
     if (!(await confirm({ title: 'Delete this habit?', message: 'It and all its check-ins will be removed.' }))) return;
@@ -125,7 +127,7 @@ export function HabitSheet() {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="e.g. Morning walk"
-        style={{ width: '100%', height: 52, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginBottom: editId ? 22 : 14 }}
+        style={{ width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginBottom: editId ? 22 : 14 }}
       />
 
       {!editId && (
@@ -172,7 +174,7 @@ export function HabitSheet() {
               style={{
                 flex: 1,
                 height: 42,
-                borderRadius: 12,
+                borderRadius: 'calc(12px * var(--sq))',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -180,8 +182,8 @@ export function HabitSheet() {
                 fontWeight: 700,
                 cursor: 'pointer',
                 transition: 'all .15s',
-                border: `1.5px solid ${on ? 'var(--teal)' : 'var(--border)'}`,
-                background: on ? 'var(--teal)' : 'var(--surface)',
+                border: `1.5px solid ${on ? 'var(--indigo)' : 'var(--border)'}`,
+                background: on ? 'var(--indigo)' : 'var(--surface)',
                 color: on ? '#fff' : 'var(--text2)',
               }}
             >
@@ -194,17 +196,29 @@ export function HabitSheet() {
         This habit only appears on the days you pick.
       </div>
 
+      {/* The plan, before the reason: saying when and where you'll do it is
+          what most reliably turns an intention into the act. */}
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>When and where (optional)</div>
+      <input
+        value={cue}
+        onChange={(e) => setCue(e.target.value)}
+        placeholder="e.g. After my morning coffee, at my desk"
+        maxLength={120}
+        style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 6 }}
+      />
+      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 20 }}>People who plan the moment are far more likely to follow through.</div>
+
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Why this matters (optional)</div>
       <input
         value={why}
         onChange={(e) => setWhy(e.target.value)}
         placeholder="e.g. so I have energy for my kids"
         maxLength={200}
-        style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 6 }}
+        style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 6 }}
       />
       <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 20 }}>Shown when you're slipping, as a nudge.</div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: '12px 14px', marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: '12px 14px', marginBottom: 14 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>Its own reminder</div>
           <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>Leave empty to use the daily one</div>
@@ -213,7 +227,7 @@ export function HabitSheet() {
           type="time"
           value={hReminder}
           onChange={(e) => setHReminder(e.target.value)}
-          style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '8px 10px', outline: 'none' }}
+          style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(12px * var(--sq))', padding: '8px 10px', outline: 'none' }}
         />
       </div>
 
@@ -222,7 +236,7 @@ export function HabitSheet() {
           onClick={() => setPaused(!paused)}
           className="pressRow"
           role="button"
-          style={{ display: 'flex', alignItems: 'center', gap: 12, background: paused ? 'color-mix(in srgb,var(--warning) 12%,var(--surface))' : 'var(--bg)', border: `1px solid ${paused ? 'color-mix(in srgb,var(--warning) 35%,var(--border))' : 'var(--border)'}`, borderRadius: 14, padding: '12px 14px', marginBottom: 20, cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, background: paused ? 'color-mix(in srgb,var(--warning) 12%,var(--surface))' : 'var(--bg)', border: `1px solid ${paused ? 'color-mix(in srgb,var(--warning) 35%,var(--border))' : 'var(--border)'}`, borderRadius: 'calc(14px * var(--sq))', padding: '12px 14px', marginBottom: 20, cursor: 'pointer' }}
         >
           <Glyph name={paused ? 'pause' : 'play'} size={19} color={paused ? 'var(--warning)' : 'var(--text2)'} />
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -239,7 +253,7 @@ export function HabitSheet() {
 
       <div
         onClick={save}
-        style={{ background: canSave ? 'var(--teal)' : 'color-mix(in srgb,var(--teal) 40%,var(--surface))', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', marginTop: 8, transition: 'all .2s' }}
+        style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', marginTop: 8, transition: 'all .2s' }}
       >
         {editId ? 'Save changes' : 'Create habit'}
       </div>
@@ -249,14 +263,14 @@ export function HabitSheet() {
           onClick={archive}
           className="press99"
           role="button"
-          style={{ height: 52, borderRadius: 16, border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', marginTop: 10 }}
+          style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', marginTop: 10 }}
         >
           Archive (keeps your history)
         </div>
       )}
 
       {editId && (
-        <div onClick={del} className="press99" style={{ height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
+        <div onClick={del} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
           <IconTrash />
           Delete habit
         </div>

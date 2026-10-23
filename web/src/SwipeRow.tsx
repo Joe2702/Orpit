@@ -103,14 +103,14 @@ export function SwipeRow({
   );
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 18 }}>
+    <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 'calc(18px * var(--sq))' }}>
       {/* Action strip, revealed as the row slides off it. Rendered only while
           the row is actually moving: --surface is translucent, so a strip
           sitting underneath a resting row shows through it. */}
       {dx !== 0 && (
       <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'flex-end' }}>
         {onEdit &&
-          btn('Edit', 'var(--blue)', (
+          btn('Edit', 'var(--indigo)', (
             <svg width="19" height="19" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M12.5 3.2l3.3 3.3M3 16h3.4l9-9-3.4-3.4-9 9z" />
             </svg>

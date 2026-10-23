@@ -1,5 +1,5 @@
 import { derive, deriveHabits } from './derive';
-import { money, dayKey } from './format';
+import { money, dayKey, minutes } from './format';
 import type { AppState } from '../types';
 
 // What the home-screen analytics widgets show.
@@ -75,8 +75,8 @@ function todayHabits(s: AppState, now: number): { done: number; due: number } {
  * down is not the moment to do the same work five times.
  */
 export function buildPanels(s: AppState, now: number = Date.now()): Record<string, WidgetPanel> {
-  const d = derive(s, 'Week');
-  const h = deriveHabits(s, 'Week');
+  const d = derive(s, 'Week', 0, now);
+  const h = deriveHabits(s, 'Week', 0, now);
   const t = todayHabits(s, now);
 
   const habits: WidgetPanel = {
@@ -94,8 +94,8 @@ export function buildPanels(s: AppState, now: number = Date.now()): Record<strin
     value: String(d.homeWorkoutCount),
     caption: d.homeWorkoutCount === 1 ? 'session this week' : 'sessions this week',
     rows: [
-      ['Total time', d.wTotalMin ? `${d.wTotalMin} min` : '—'],
-      ['Avg session', d.wAvg ? `${Math.round(d.wAvg)} min` : '—'],
+      ['Total time', d.wTotalMin ? minutes(d.wTotalMin) : '—'],
+      ['Avg session', d.wAvg ? minutes(d.wAvg) : '—'],
     ],
   };
 
@@ -104,7 +104,9 @@ export function buildPanels(s: AppState, now: number = Date.now()): Record<strin
     value: hm(d.slAvg),
     caption: 'average this week',
     rows: [
-      ['Quality', d.slAvgQ ? `${d.slAvgQ.toFixed(1)}/5` : '—'],
+      // Quality is scored out of 10 everywhere else; "/5" here made a good
+      // night look perfect and an average one look great.
+      ['Quality', d.slAvgQ ? `${d.slAvgQ.toFixed(1)}/10` : '—'],
       ['Usual bedtime', clock(d.avgBed)],
     ],
   };

@@ -264,6 +264,10 @@ ALTER TABLE habits ADD COLUMN IF NOT EXISTS paused BOOLEAN NOT NULL DEFAULT FALS
 ALTER TABLE habits ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE habits ADD COLUMN IF NOT EXISTS why TEXT;
 ALTER TABLE habits ADD COLUMN IF NOT EXISTS reminder_time TEXT;
+-- When and where the habit happens ("after my morning coffee, at the desk").
+-- Writing that plan down is one of the best-evidenced ways to follow through:
+-- Gollwitzer & Sheeran's meta-analysis of 94 tests found d = 0.65.
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS cue TEXT;
 
 -- Free-text notes turn entries into a diary ("knee hurt", "kid woke me twice").
 ALTER TABLE workouts ADD COLUMN IF NOT EXISTS note TEXT;

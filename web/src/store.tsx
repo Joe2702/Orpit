@@ -1,6 +1,19 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
-import { api, flushQueue, getToken, setToken, clearToken, ApiError } from './api';
-import { OfflineQueuedError, cacheState, readCachedState, clearCache, pending as pendingOps, subscribe as subscribeOffline, isOnline, watchConnectivity } from './lib/offline';
+import { api, flushQueue, getToken, setToken, clearToken, ApiError, probeServer } from './api';
+import {
+  OfflineQueuedError,
+  cacheState,
+  readCachedState,
+  clearCache,
+  pending as pendingOps,
+  subscribe as subscribeOffline,
+  isOnline,
+  connectivity,
+  noteBrowserOnline,
+  queuedMessage,
+  watchConnectivity,
+  type Connectivity,
+} from './lib/offline';
 import { setCurrency } from './lib/format';
 import { reportError } from './lib/crash';
 import type { AppState, Range } from './types';
@@ -74,6 +87,9 @@ interface StoreCtx {
   sheet: SheetKind;
   sheetData: any;
   range: Range;
+  /** How many periods back from the current one: 0 = this week/month/year. */
+  rangeOffset: number;
+  setRangeOffset: (n: number) => void;
   emptyMode: boolean;
   toast: string;
   authMode: 'signup' | 'signin';
@@ -113,6 +129,8 @@ interface StoreCtx {
   // Offline logging: how many writes are waiting, and whether we have a link.
   pendingCount: number;
   online: boolean;
+  /** Why we're not online: the phone has no connection, or Orbit isn't answering. */
+  connection: Connectivity;
   isSyncing: boolean;
   sync: () => Promise<void>;
   // Reusable confirmation dialog. Resolves true if the user confirms.
@@ -178,6 +196,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [sheetData, setSheetData] = useState<any>(null);
   const [range, setRangeState] = useState<Range>('Week');
+  const [rangeOffset, setRangeOffsetState] = useState(0);
   const [emptyMode, setEmptyMode] = useState(false);
   const [toast, setToast] = useState('');
   const [toastUndo, setToastUndo] = useState<(() => void) | undefined>(undefined);
@@ -434,18 +453,31 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setScreen('welcome');
     setEmptyMode(false);
     setRangeState('Week');
+    setRangeOffsetState(0);
   }, []);
 
   // ---- Offline sync ----
   // `pendingCount` drives the status pill; `syncing` stops overlapping flushes.
   const [pendingCount, setPendingCount] = useState<number>(() => pendingOps());
-  const [online, setOnline] = useState<boolean>(() => isOnline());
+  const [connection, setConnection] = useState<Connectivity>(() => connectivity());
+  const online = connection === 'online';
   const syncing = useRef(false);
   // Reactive counterpart to the `syncing` ref, so the status pill can say
   // "syncing" only while a flush is genuinely in flight.
   const [isSyncing, setIsSyncing] = useState(false);
 
-  useEffect(() => subscribeOffline(() => setPendingCount(pendingOps())), []);
+  // Both the queue and the connection state live in the offline module; mirror
+  // them here on every change. Mirroring only the count was half of the old
+  // "stuck on Offline" bug — a successful request flipped the module back to
+  // online and nothing on screen heard about it.
+  useEffect(
+    () =>
+      subscribeOffline(() => {
+        setPendingCount(pendingOps());
+        setConnection(connectivity());
+      }),
+    []
+  );
 
   const sync = useCallback(async () => {
     if (syncing.current || !getToken() || pendingOps() === 0) return;
@@ -498,15 +530,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // on a full queue for half a minute.
   useEffect(() => {
     const up = () => {
-      setOnline(true);
+      noteBrowserOnline(true);
       sync();
     };
-    const down = () => setOnline(false);
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') {
-        setOnline(isOnline());
+    const down = () => noteBrowserOnline(false);
+    const resumed = () => {
+      // Re-ask rather than trust a verdict from before the phone slept.
+      if (isOnline()) {
         sync();
+        return;
       }
+      probeServer().then((ok) => {
+        if (ok) sync();
+      });
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') resumed();
     };
     window.addEventListener('online', up);
     window.addEventListener('offline', down);
@@ -518,10 +557,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     import('@capacitor/app')
       .then(({ App }) =>
         App.addListener('appStateChange', ({ isActive }) => {
-          if (isActive) {
-            setOnline(isOnline());
-            sync();
-          }
+          if (isActive) resumed();
         })
       )
       .then((h) => {
@@ -531,7 +567,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         /* not running natively — the web listeners are enough */
       });
 
-    const iv = setInterval(() => isOnline() && sync(), 30_000);
+    // Anything still queued gets another go every half minute. Not gated on
+    // being online: that gate was the other half of the "stuck on Offline"
+    // bug, since the only way back online was a request it then never made.
+    const iv = setInterval(() => connectivity() !== 'offline' && sync(), 30_000);
     sync();
     return () => {
       window.removeEventListener('online', up);
@@ -541,6 +580,33 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       clearInterval(iv);
     };
   }, [sync]);
+
+  // While the phone is connected but Orbit isn't answering, keep asking — on a
+  // short fuse at first, since the usual cause is a cold start measured in
+  // seconds, then backing off. The probe hits an endpoint that never touches
+  // the database. The moment it answers, the queue drains.
+  useEffect(() => {
+    if (connection !== 'unreachable' || !authed) return;
+    let wait = 4000;
+    let timer: ReturnType<typeof setTimeout>;
+    let stopped = false;
+    const tick = async () => {
+      if (stopped) return;
+      if (document.visibilityState !== 'hidden' && (await probeServer())) return; // flips `connection`
+      wait = Math.min(wait * 1.6, 30_000);
+      timer = setTimeout(tick, wait);
+    };
+    timer = setTimeout(tick, wait);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
+  }, [connection, authed]);
+
+  // Back online after any kind of outage: send what's waiting straight away.
+  useEffect(() => {
+    if (online) sync();
+  }, [online, sync]);
 
   const mutate = useCallback(
     async (fn: () => Promise<AppState>, toastMsg?: string) => {
@@ -558,7 +624,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         // A queued op isn't a failure — it's a deferred success. There's no
         // optimistic state here, so say plainly that it will appear on sync.
         if (e instanceof OfflineQueuedError) {
-          showToast('Saved offline — syncing when you reconnect');
+          showToast(queuedMessage());
           throw e;
         }
         showToast(e instanceof Error ? e.message : 'Something went wrong');
@@ -593,7 +659,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             if (cur) cacheState(cur);
             return cur;
           });
-          showToast(toastMsg ? `${toastMsg} · offline` : 'Saved offline');
+          // The pill under the header carries the detail; the toast should
+          // still read as the success it is.
+          showToast(toastMsg ? `${toastMsg} · syncing ${connectivity() === 'offline' ? 'when online' : 'shortly'}` : queuedMessage());
           throw e;
         }
         // Roll back to the pre-mutation state, unless something newer supersedes.
@@ -624,7 +692,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setSheet(s);
   }, []);
   const closeSheet = useCallback(() => setSheet(null), []);
-  const setRange = useCallback((r: Range) => setRangeState(r), []);
+  // Switching between week, month and year starts from the current one again;
+  // "three weeks back" means nothing once you're looking at years.
+  const setRange = useCallback((r: Range) => {
+    setRangeState(r);
+    setRangeOffsetState(0);
+  }, []);
+  const setRangeOffset = useCallback((n: number) => setRangeOffsetState(Math.max(0, Math.floor(n))), []);
 
   const value: StoreCtx = {
     ready,
@@ -646,6 +720,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     open,
     closeSheet,
     setRange,
+    rangeOffset,
+    setRangeOffset,
     setEmptyMode,
     showToast,
     toastUndo,
@@ -663,6 +739,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     confirm,
     pendingCount,
     online,
+    connection,
     isSyncing,
     sync,
     confirmState,
@@ -678,6 +755,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // Keep the money formatter in sync with the user's chosen currency.
   setCurrency(state?.profile.currency);
+
+  // Screenshot tours (tools/tour.mjs) drive navigation through this handle.
+  // VITE_TOUR is only set for those builds, so a release bundle compiles the
+  // whole block away.
+  if (import.meta.env.VITE_TOUR) (window as any).__orbit = { go, open, openReport, closeReport, setRange, closeSheet };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

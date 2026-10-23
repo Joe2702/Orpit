@@ -57,7 +57,7 @@ export function ExpenseSheet() {
     flex: 1,
     textAlign: 'center',
     padding: '9px 0',
-    borderRadius: 11,
+    borderRadius: 'calc(11px * var(--sq))',
     fontSize: 14,
     fontWeight: 600,
     cursor: 'pointer',
@@ -87,21 +87,21 @@ export function ExpenseSheet() {
         </label>
       </div>
 
-      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 14, padding: 3, marginBottom: 18 }}>
+      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 18 }}>
         <div onClick={() => setKind('expense')} style={tab(!income, 'var(--text)')}>Expense</div>
-        <div onClick={() => setKind('income')} style={tab(income, 'var(--emerald)')}>Income</div>
+        <div onClick={() => setKind('income')} style={tab(income, 'var(--indigo)')}>Income</div>
       </div>
 
       <div style={{ textAlign: 'center', marginBottom: 18 }}>
         <span style={{ fontSize: 30, fontWeight: 600, color: 'var(--text2)', verticalAlign: 'top', lineHeight: 1.6 }}>{moneySymbol().trim()}</span>
-        <span style={{ fontSize: 52, fontWeight: 700, letterSpacing: '-.03em', color: income ? 'var(--emerald)' : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+        <span style={{ fontSize: 52, fontWeight: 700, letterSpacing: '-.03em', color: income ? 'var(--indigo)' : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
           {amount === '' ? '0' : amount}
         </span>
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, justifyContent: 'center', marginBottom: 18 }}>
         {(income ? INCOME_CATS : EXPENSE_CATS).map((c) => (
-          <div key={c} onClick={() => (income ? setIncCat(c) : setExCat(c))} style={chip(cat === c, 'var(--emerald)')}>
+          <div key={c} onClick={() => (income ? setIncCat(c) : setExCat(c))} style={chip(cat === c, 'var(--indigo)')}>
             {c}
           </div>
         ))}
@@ -109,7 +109,7 @@ export function ExpenseSheet() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 18 }}>
         {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'].map((k) => (
-          <div key={k} onClick={() => press(k)} style={{ height: 52, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', background: 'var(--bg)' }}>
+          <div key={k} onClick={() => press(k)} style={{ height: 52, borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', background: 'var(--bg)' }}>
             {k === 'del' ? (
               <svg width="24" height="24" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
                 <path d="M9 5h10v14H9l-6-7 6-7ZM13 9.5l4 5M17 9.5l-4 5" />
@@ -121,7 +121,7 @@ export function ExpenseSheet() {
         ))}
       </div>
 
-      <div onClick={save} className="press" style={{ background: 'var(--emerald)', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>
+      <div onClick={save} className="press" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>
         Save
       </div>
     </div>

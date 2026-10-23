@@ -13,7 +13,7 @@ export function WCatsSheet() {
     <div style={{ padding: '4px 20px 32px' }}>
       <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 6px' }}>Categories</div>
       <div style={{ fontSize: 13.5, color: 'var(--text2)', marginBottom: 18, lineHeight: 1.5 }}>Tap a category to rename, recolor, or remove it.</div>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', marginBottom: 16 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', marginBottom: 16 }}>
         {cats.map((c, i) => (
           <div
             key={c.id}
@@ -30,9 +30,9 @@ export function WCatsSheet() {
       <div
         onClick={() => open('wcat')}
         className="press99"
-        style={{ height: 52, borderRadius: 16, border: '1.5px dashed color-mix(in srgb,var(--coral) 40%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--coral)', cursor: 'pointer' }}
+        style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1.5px dashed color-mix(in srgb,var(--indigo) 40%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}
       >
-        <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--coral)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M9 4v10M4 9h10" /></svg>
+        <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M9 4v10M4 9h10" /></svg>
         New category
       </div>
     </div>
@@ -94,7 +94,7 @@ export function WCatSheet() {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="e.g. Swim"
-        style={{ width: '100%', height: 52, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 22 }}
+        style={{ width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 22 }}
       />
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>Color</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, paddingLeft: 2 }}>
@@ -108,12 +108,12 @@ export function WCatSheet() {
       </div>
       <div
         onClick={save}
-        style={{ background: canSave ? 'var(--coral)' : 'color-mix(in srgb,var(--coral) 40%,var(--surface))', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default', letterSpacing: '-.01em' }}
+        style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default', letterSpacing: '-.01em' }}
       >
         {editId ? 'Save changes' : 'Add category'}
       </div>
       {editId && (
-        <div onClick={del} className="press99" style={{ height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
+        <div onClick={del} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
           <IconTrash />
           Delete category
         </div>

@@ -10,7 +10,7 @@ const label = (t: string) => (
   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t}</div>
 );
 const input: React.CSSProperties = {
-  width: '100%', height: 52, borderRadius: 14, border: '1px solid var(--border)',
+  width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)',
   background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none',
 };
 const swatch = (c: string, active: boolean): React.CSSProperties => ({
@@ -107,7 +107,7 @@ export function MilestoneSheet() {
         onChange={(e) => e.target.value && setSince(e.target.value)}
         style={{ ...input, fontWeight: 600 }}
       />
-      <div style={{ fontSize: 13, color: preview ? `var(--${color})` : 'var(--text2)', fontWeight: 600, margin: '10px 2px 20px', minHeight: 18 }}>
+      <div style={{ fontSize: 13, color: preview ? 'var(--text)' : 'var(--text2)', fontWeight: 600, margin: '10px 2px 20px', minHeight: 18 }}>
         {preview}
       </div>
 
@@ -125,13 +125,13 @@ export function MilestoneSheet() {
             key={ic}
             onClick={() => setIcon(ic)}
             style={{
-              width: '100%', aspectRatio: '1', borderRadius: 14, display: 'flex', alignItems: 'center',
+              width: '100%', aspectRatio: '1', borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center',
               justifyContent: 'center', cursor: 'pointer', transition: 'all .15s',
-              border: `1px solid ${icon === ic ? `var(--${color})` : 'var(--border)'}`,
-              background: icon === ic ? `color-mix(in srgb,var(--${color}) 12%,var(--surface))` : 'var(--surface)',
+              border: `1px solid ${icon === ic ? 'var(--indigo)' : 'var(--border)'}`,
+              background: icon === ic ? 'color-mix(in srgb,var(--indigo) 10%,var(--surface))' : 'var(--surface)',
             }}
           >
-            <CIcon icon={ic} color={icon === ic ? `var(--${color})` : 'var(--text2)'} size={20} />
+            <CIcon icon={ic} color={icon === ic ? 'var(--indigo)' : 'var(--text2)'} size={20} />
           </div>
         ))}
       </div>
@@ -140,8 +140,8 @@ export function MilestoneSheet() {
         onClick={save}
         className={canSave ? 'press99' : undefined}
         style={{
-          background: canSave ? `var(--${color})` : `color-mix(in srgb,var(--${color}) 40%,var(--surface))`,
-          color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center',
+          background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))',
+          color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center',
           justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default',
         }}
       >
@@ -152,7 +152,7 @@ export function MilestoneSheet() {
           onClick={del}
           className="press99"
           style={{
-            height: 52, borderRadius: 16, border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))',
+            height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15,
             fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10,
           }}

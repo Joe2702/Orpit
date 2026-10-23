@@ -31,7 +31,7 @@ export type ShareLevel = 0 | 1 | 2 | 3;
 
 export const SHARE_LEVELS: { level: ShareLevel; label: string; blurb: string }[] = [
   { level: 0, label: 'Private', blurb: 'Not shared at all' },
-  { level: 1, label: 'Streak only', blurb: 'They see whether you tracked it — no numbers' },
+  { level: 1, label: 'Streak only', blurb: 'They see whether you tracked it, but no numbers' },
   { level: 2, label: 'Full stats', blurb: 'They see your numbers for this tracker' },
   { level: 3, label: 'Stats + comments', blurb: 'They can also leave you notes on it' },
 ];

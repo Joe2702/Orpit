@@ -8,7 +8,7 @@
 
 html,
 body {
-  font-family: 'Geist', system-ui, -apple-system, sans-serif;
+  font-family: 'Geist Variable', 'Geist', system-ui, -apple-system, sans-serif;
   /* No browser pull-to-refresh / rubber-band bounce — behave like a native app. */
   overscroll-behavior: none;
   /* Native-app feel: no blue tap flash, no long-press callout menus,
@@ -56,69 +56,120 @@ body {
   justify-content: center;
   gap: 18px;
   padding: 40px 20px;
-  font-family: 'Geist', sans-serif;
-  background: radial-gradient(120% 90% at 50% -10%, #1a2740 0%, #0e1729 55%, #080d18 100%);
+  font-family: 'Geist Variable', 'Geist', sans-serif;
+  background: #0c0c0f;
 }
 
-/* ---- Light: cool, techy, glass ---- */
+/* ---- Design tokens ----
+   Ink, paper and one accent. Every chart, control and highlight uses the
+   accent (--indigo, which the user can change in Settings); red is kept for
+   things that are actually wrong — over budget, money going backwards — and
+   amber for "getting close". The other hues exist only for the small colour
+   dot a person can give their own habits and counters.
+
+   Neutrals lean very slightly toward the accent rather than navy: a blue
+   "dark mode" and an indigo glow on everything is the look of a generated
+   template, and it competes with the data for attention. Surfaces are solid; glass is kept for
+   the floating tab bar alone. */
+
+/* ---- Light ---- */
 .orbit {
-  --indigo: #4d5cff;
-  --coral: #e0715f;
-  --teal: #2bb6a3;
-  --blue: #3f7bff;
-  --emerald: #22b07a;
-  --purple: #8b5cf6;
-  --pink: #db4c96;
-  --amber: #e0932c;
-  --cyan: #1aa5c4;
-  --rose: #e0556b;
-  --success: #22b07a;
-  --warning: #d9a13c;
-  --danger: #e2564e;
-  --bg: #e9edf6;
-  --surface: rgba(255, 255, 255, 0.64);
-  --surface2: rgba(255, 255, 255, 0.42);
-  --text: #141a26;
-  --text2: #5c6779;
-  --border: rgba(70, 90, 130, 0.16);
-  --app-bg: radial-gradient(125% 85% at 50% -8%, #f4f7fd 0%, #e8edf7 55%, #dce4f1 100%);
-  --shadow: 0 4px 20px -6px rgba(40, 55, 100, 0.16), 0 1px 2px rgba(40, 55, 100, 0.06);
-  --glow: 0 8px 26px -8px rgba(77, 92, 255, 0.5);
-  font-family: 'Geist', sans-serif;
+  --indigo: #3d4ed8;
+  --coral: #d9654e;
+  --teal: #1f9d8c;
+  --blue: #3b72e0;
+  --emerald: #23926a;
+  --purple: #7c55d6;
+  --pink: #c9488a;
+  --amber: #c98420;
+  --cyan: #1a8fab;
+  --rose: #cf4a5f;
+  --success: #23926a;
+  --warning: #b97a14;
+  --danger: #cc3f37;
+  --bg: #f3f3f5;
+  --surface: #ffffff;
+  --surface2: #f6f6f8;
+  --text: #131317;
+  --text2: #5c5c66;
+  --text3: #8b8b95;
+  --border: rgba(19, 19, 32, 0.09);
+  --hairline: rgba(19, 19, 32, 0.065);
+  --app-bg: #f3f3f5;
+  --shadow: 0 1px 2px rgba(20, 20, 15, 0.04);
+  --shadow-sm: none;
+  --shadow-lg: 0 20px 50px -16px rgba(20, 20, 15, 0.28);
+  --glow: none;
+  --scrim: rgba(12, 12, 10, 0.42);
+  /* Text and icons sitting on an accent fill. */
+  --on-accent: #ffffff;
+  --font-ui: 'Geist Variable', 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-family: var(--font-ui);
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.005em;
 }
 
-/* ---- Dark: midnight, high-contrast, glass ---- */
+/* ---- Dark ---- */
 .orbit[data-theme='dark'] {
-  --indigo: #6178ff;
-  --coral: #f0836f;
-  --teal: #3fd2bd;
-  --blue: #5a92ff;
-  --emerald: #34c78d;
-  --purple: #a78bfa;
-  --pink: #f06fb0;
-  --amber: #f0a840;
-  --cyan: #3cc0dd;
-  --rose: #ff6f83;
-  --success: #34c78d;
-  --warning: #e5b657;
-  --danger: #ff6b62;
-  --bg: #0e1626;
-  --surface: rgba(30, 42, 70, 0.55);
-  --surface2: rgba(42, 56, 90, 0.5);
-  --text: #eaf0fb;
-  --text2: #93a1bd;
-  --border: rgba(150, 172, 214, 0.15);
-  --app-bg: radial-gradient(125% 85% at 50% -8%, #182543 0%, #0c1424 56%, #080f1c 100%);
-  --shadow: 0 12px 34px -12px rgba(0, 0, 0, 0.62), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-  --glow: 0 10px 30px -8px rgba(97, 120, 255, 0.55);
+  --indigo: #8a94ff;
+  --coral: #ea8a76;
+  --teal: #4cc2b2;
+  --blue: #6f9dff;
+  --emerald: #4dbb8f;
+  --purple: #ab92f5;
+  --pink: #e57fb4;
+  --amber: #e5a94e;
+  --cyan: #56bfd8;
+  --rose: #f07b8c;
+  --success: #4dbb8f;
+  --warning: #e0ac55;
+  --danger: #f2685e;
+  --bg: #0c0c0f;
+  --surface: #161619;
+  --surface2: #1d1d21;
+  --text: #f0f0f3;
+  --text2: #a2a2ac;
+  --text3: #6e6e78;
+  --border: rgba(255, 255, 255, 0.075);
+  --hairline: rgba(255, 255, 255, 0.055);
+  --app-bg: #0c0c0f;
+  --shadow: none;
+  --shadow-sm: none;
+  --shadow-lg: 0 24px 60px -18px rgba(0, 0, 0, 0.85);
+  --glow: none;
+  --scrim: rgba(0, 0, 0, 0.62);
+  --on-accent: #0c0c0f;
 }
 
-/* Frosted-glass card style — applies to every surface-backed element without
-   touching each one: soft blur of whatever sits behind the translucent card. */
-.orbit [style*='var(--surface)'] {
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
-  backdrop-filter: blur(14px) saturate(1.15);
+/* Squircles. Every card, button, field and tile has continuous corners: the
+   curve eases in along the whole side instead of a quarter-circle stuck onto
+   a straight edge, which is what makes a rounded rectangle look machined.
+   Each radius is written calc(Npx * var(--sq)); where the browser can draw a
+   squircle, --sq grows the radius so the softer curve keeps the same visual
+   roundness. Circles and pills don't use --sq, so they stay round. Browsers
+   without corner-shape keep today's rounded corners at their original size. */
+.orbit {
+  --sq: 1;
+}
+@supports (corner-shape: squircle) {
+  .orbit {
+    --sq: 1.7;
+  }
+  .orbit [style*='--sq'] {
+    corner-shape: squircle;
+  }
+}
+
+/* Display type: screen titles, the greeting, hero figures. A serif here is
+   what separates a crafted app from a component-library one at a glance;
+   everything you read and tap stays in the UI sans. */
+.display {
+  font-family: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  font-variant-numeric: lining-nums proportional-nums;
 }
 
 .orbit *::-webkit-scrollbar {
@@ -126,8 +177,13 @@ body {
   height: 0;
   display: none;
 }
-.orbit input {
-  font-family: 'Geist', sans-serif;
+.orbit input,
+.orbit textarea {
+  font-family: var(--font-ui);
+}
+/* The tap opens the system time picker anyway; the indicator only costs width. */
+.orbit input[type='time']::-webkit-calendar-picker-indicator {
+  display: none;
 }
 .orbit input::placeholder {
   color: var(--text2);
@@ -190,6 +246,16 @@ body {
 @keyframes orbitSpin {
   to {
     transform: rotate(360deg);
+  }
+}
+/* A status dot that's working on it, quietly. */
+@keyframes orbitPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
   }
 }
 @keyframes breathe {

@@ -6,7 +6,7 @@ import { BackButton } from '../ui';
 const inputStyle: React.CSSProperties = {
   width: '100%',
   height: 52,
-  borderRadius: 14,
+  borderRadius: 'calc(14px * var(--sq))',
   border: '1px solid var(--border)',
   background: 'var(--surface)',
   padding: '0 16px',
@@ -15,10 +15,8 @@ const inputStyle: React.CSSProperties = {
   outline: 'none',
 };
 const labelStyle: React.CSSProperties = {
-  fontSize: 12,
+  fontSize: 13.5,
   fontWeight: 600,
-  textTransform: 'uppercase',
-  letterSpacing: '.06em',
   color: 'var(--text2)',
   marginBottom: 8,
 };
@@ -26,7 +24,7 @@ const cta = (busy: boolean): React.CSSProperties => ({
   background: 'var(--indigo)',
   color: '#fff',
   height: 54,
-  borderRadius: 16,
+  borderRadius: 'calc(16px * var(--sq))',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',

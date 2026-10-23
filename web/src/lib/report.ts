@@ -1,6 +1,7 @@
 import type { GlyphName } from './appIcons';
 import type { AppState } from '../types';
-import { money, dayKey } from './format';
+import { money0, minutes, dayKey } from './format';
+import { addDays, period } from './period';
 
 export interface ReportSlide {
   key: string;
@@ -11,49 +12,22 @@ export interface ReportSlide {
   caption: string;
 }
 
-const D = 86400000;
-
 // Build a set of "story" slides summarising the user's last week or month.
 // Monthly goes deeper (top category, best habit, savings rate, …).
 export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset = 0): ReportSlide[] {
-  // Calendar periods, not rolling windows: "your week" means Mon–Sun and
-  // "your month" means the actual month. offset=0 is the current period,
-  // 1 is the previous one, and so on.
-  const now = new Date();
-  let start: Date;
-  let end: Date; // exclusive
-  if (kind === 'week') {
-    const d = new Date(now);
-    d.setHours(0, 0, 0, 0);
-    const dow = (d.getDay() + 6) % 7; // Monday = 0
-    d.setDate(d.getDate() - dow - offset * 7);
-    start = d;
-    end = new Date(d);
-    end.setDate(end.getDate() + 7);
-  } else if (kind === 'year') {
-    start = new Date(now.getFullYear() - offset, 0, 1);
-    end = new Date(now.getFullYear() - offset + 1, 0, 1);
-  } else {
-    start = new Date(now.getFullYear(), now.getMonth() - offset, 1);
-    end = new Date(now.getFullYear(), now.getMonth() - offset + 1, 1);
-  }
-  const startMs = start.getTime();
-  const endMs = Math.min(end.getTime(), Date.now() + 1);
+  // The same calendar periods as every chart in the app (lib/period.ts):
+  // Sunday-to-Saturday weeks, real months, January-to-December years. This
+  // report used to start its weeks on Monday while the habit screen started
+  // them on Sunday, so the two disagreed about what "this week" held.
+  const P = period(kind === 'week' ? 'Week' : kind === 'month' ? 'Month' : 'Year', offset);
+  const start = new Date(P.start);
+  const startMs = P.start;
+  const endMs = Math.min(P.end, Date.now() + 1);
   const inWin = (ts: number) => ts >= startMs && ts < endMs;
 
   const winDays = new Set<string>();
-  for (let t = startMs; t < endMs; t += D) winDays.add(dayKey(t));
-  const days = Math.max(1, Math.round((endMs - startMs) / D));
-  const periodLabel =
-    kind === 'week'
-      ? offset === 0
-        ? 'this week'
-        : offset === 1
-        ? 'last week'
-        : `${offset} weeks ago`
-      : kind === 'year'
-      ? String(start.getFullYear())
-      : start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  for (let t = startMs; t < endMs; t = addDays(t, 1)) winDays.add(dayKey(t));
+  const periodLabel = P.phrase;
   // A year gets the full deep-dive treatment, like a month.
   const deep = kind !== 'week';
 
@@ -113,15 +87,12 @@ export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset
   const label = periodLabel;
   const slides: ReportSlide[] = [];
 
-  const range =
-    kind === 'week'
-      ? `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(endMs - D).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-      : periodLabel;
+  const range = P.caption;
   slides.push({
     key: 'intro',
     color: 'indigo',
     icon: (kind === 'week' ? 'calendar' : kind === 'year' ? 'sparkle' : 'moon') as GlyphName,
-    headline: kind === 'week' ? 'Your week' : kind === 'year' ? `${start.getFullYear()} in review` : 'Your month',
+    headline: kind === 'week' ? (P.isCurrent ? 'Your week so far' : 'Your week') : kind === 'year' ? `${start.getFullYear()} in review` : P.isCurrent ? 'Your month so far' : 'Your month',
     value: '',
     caption: range,
   });
@@ -132,7 +103,7 @@ export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset
     icon: 'dumbbell' as GlyphName,
     headline: 'Workouts',
     value: String(workouts.length),
-    caption: workouts.length ? `${wMin} minutes moved · ${wActiveDays} active days` : `No workouts logged ${label}`,
+    caption: workouts.length ? `${minutes(wMin)} of training · ${wActiveDays} active ${wActiveDays === 1 ? 'day' : 'days'}` : `No workouts logged ${label}`,
   });
   if (deep && topWCat) {
     slides.push({ key: 'wcat', color: 'coral', icon: 'trophy' as GlyphName, headline: 'Top workout', value: topWCat, caption: `your most-logged category (${topWCatN}×)` });
@@ -144,10 +115,10 @@ export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset
     icon: 'bed' as GlyphName,
     headline: 'Sleep',
     value: nights.length ? fmtDur(slAvg) : '—',
-    caption: nights.length ? `nightly average across ${nights.length} nights` : `No nights logged ${label}`,
+    caption: nights.length ? `a night, on average, across ${nights.length} ${nights.length === 1 ? 'night' : 'nights'}` : `No nights logged ${label}`,
   });
   if (deep && nights.length) {
-    slides.push({ key: 'sleepbest', color: 'blue', icon: 'star' as GlyphName, headline: 'Best night', value: fmtDur(slBest), caption: kind === 'year' ? 'your longest sleep this year' : 'your longest sleep this month' });
+    slides.push({ key: 'sleepbest', color: 'blue', icon: 'star' as GlyphName, headline: 'Best night', value: fmtDur(slBest), caption: `your longest sleep ${label}` });
   }
 
   slides.push({
@@ -163,10 +134,10 @@ export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset
   }
 
   if (txns.length) {
-    slides.push({ key: 'spent', color: 'emerald', icon: 'cash' as GlyphName, headline: 'Spent', value: money(spent), caption: `across ${txns.filter((t) => t.amount < 0).length} expenses ${label}` });
+    slides.push({ key: 'spent', color: 'emerald', icon: 'cash' as GlyphName, headline: 'Spent', value: money0(spent), caption: `across ${txns.filter((t) => t.amount < 0).length} expenses ${label}` });
     if (deep) {
-      if (topCat) slides.push({ key: 'topcat', color: 'emerald', icon: 'receipt' as GlyphName, headline: 'Top category', value: topCat, caption: `${money(topCatV)} spent here` });
-      slides.push({ key: 'saved', color: 'emerald', icon: 'trendUp' as GlyphName, headline: 'Net saved', value: money(net), caption: income > 0 ? `${savingsRate}% savings rate` : 'income vs. spending' });
+      if (topCat) slides.push({ key: 'topcat', color: 'emerald', icon: 'receipt' as GlyphName, headline: 'Top category', value: topCat, caption: `${money0(topCatV)} spent here` });
+      slides.push({ key: 'saved', color: 'emerald', icon: 'trendUp' as GlyphName, headline: 'Net saved', value: (net < 0 ? '−' : '') + money0(net), caption: income > 0 ? `${savingsRate}% of income kept` : 'income minus spending' });
     }
   }
 
@@ -176,7 +147,7 @@ export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset
     icon: 'sparkle' as GlyphName,
     headline: kind === 'week' ? 'Onto next week' : kind === 'year' ? 'Onto the next one' : 'Onto next month',
     value: '',
-    caption: 'Keep tracking — every entry paints the bigger picture.',
+    caption: 'See you next time.',
   });
 
   return slides;

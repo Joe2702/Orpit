@@ -13,43 +13,46 @@ export function Chooser() {
     go('faddtx');
   };
   const allItems = [
-    { label: 'Workout', desc: 'Run, lift, walk…', key: 'coral', icon: <IconWorkout size={24} />, sheet: 'workout' as const },
-    { label: 'Sleep', desc: 'Bedtime & wake-up', key: 'blue', icon: <IconSleep size={24} />, sheet: 'sleep' as const },
-    { label: 'Expense', desc: 'Income or spend', key: 'emerald', icon: <IconExpense size={24} />, sheet: null, action: addTxn },
-    { label: 'Habit', desc: 'Build a routine', key: 'teal', icon: <IconHabit size={24} />, sheet: 'habit' as const },
+    { label: 'Workout', desc: 'A run, a lift, a match', icon: <IconWorkout c="var(--text)" size={22} />, sheet: 'workout' as const },
+    { label: 'Sleep', desc: 'When you went to bed and woke up', icon: <IconSleep c="var(--text)" size={22} />, sheet: 'sleep' as const },
+    { label: 'Money', desc: 'Something you spent or earned', icon: <IconExpense c="var(--text)" size={22} />, sheet: null, action: addTxn },
+    { label: 'Habit', desc: 'Something to do regularly', icon: <IconHabit c="var(--text)" size={22} />, sheet: 'habit' as const },
     {
       label: 'Counter',
-      desc: 'Reps, pages, hours…',
-      key: 'indigo',
+      desc: 'Reps, pages, glasses of water',
       sheet: 'countpick' as const,
       icon: (
-        <svg width="24" height="24" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
           <path d="M8 4l-1.2 16M15.2 4L14 20M5 9h14M4 15h14" />
         </svg>
       ),
     },
   ];
   // Only offer what the user chose to track.
-  const modKey: Record<string, string> = { Workout: 'workouts', Sleep: 'sleep', Expense: 'finances', Habit: 'habits', Counter: 'counters' };
+  const modKey: Record<string, string> = { Workout: 'workouts', Sleep: 'sleep', Money: 'finances', Habit: 'habits', Counter: 'counters' };
   const items = allItems.filter((it) => enabled(state!, modKey[it.label]));
   return (
     <div style={{ padding: '8px 20px 34px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 4px 16px' }}>Log something</div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        {items.map((it) => (
+      <div className="display" style={{ fontSize: 30, lineHeight: 1.1, color: 'var(--text)', margin: '6px 2px 16px' }}>Log something</div>
+      {/* A list rather than a grid of tinted tiles: five rows are quicker to
+          scan, and the choice is the label, not the colour. */}
+      <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', overflow: 'hidden' }}>
+        {items.map((it, i) => (
           <div
             key={it.label}
             onClick={() => (it.action ? it.action() : it.sheet && open(it.sheet))}
-            className="press"
-            style={{ background: `color-mix(in srgb,var(--${it.key}) 10%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${it.key}) 18%,var(--border))`, borderRadius: 20, padding: 18, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 12 }}
+            className="pressRow"
+            role="button"
+            style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px', borderBottom: i === items.length - 1 ? 'none' : '1px solid var(--hairline)', cursor: 'pointer' }}
           >
-            <span style={{ width: 42, height: 42, borderRadius: 13, background: `color-mix(in srgb,var(--${it.key}) 16%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {it.icon}
-            </span>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{it.label}</div>
-              <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2 }}>{it.desc}</div>
+            <span style={{ width: 26, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{it.icon}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{it.label}</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{it.desc}</div>
             </div>
+            <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+              <path d="M7 4l5 5-5 5" />
+            </svg>
           </div>
         ))}
       </div>

@@ -577,10 +577,11 @@ app.post(
       [uid]
     );
     const why = req.body.why ? String(req.body.why).slice(0, 300) : null;
+    const cue = req.body.cue ? String(req.body.cue).trim().slice(0, 120) || null : null;
     const rt = /^\d{2}:\d{2}$/.test(req.body.reminderTime) ? req.body.reminderTime : null;
     await query(
-      'INSERT INTO habits (user_id, name, color, target, days, sort, why, reminder_time) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
-      [uid, name, color, target, days, max!.m, why, rt]
+      'INSERT INTO habits (user_id, name, color, target, days, sort, why, reminder_time, cue) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+      [uid, name, color, target, days, max!.m, why, rt, cue]
     );
     res.json(await buildState(uid));
   })
@@ -601,14 +602,15 @@ app.patch(
     if (owned.locked) return res.status(400).json({ error: 'This habit is permanent and can’t be edited' });
     const days = /^[01]{7}$/.test(req.body.days) ? req.body.days : '1111111';
     const why = req.body.why ? String(req.body.why).slice(0, 300) : null;
+    const cue = req.body.cue ? String(req.body.cue).trim().slice(0, 120) || null : null;
     const rt = /^\d{2}:\d{2}$/.test(req.body.reminderTime) ? req.body.reminderTime : null;
     const paused = !!req.body.paused;
     const archived = !!req.body.archived;
     await query(
       `UPDATE habits SET name = $1, color = $2, target = $3, days = $4, why = $5,
-              reminder_time = $6, paused = $7, archived = $8
-       WHERE id = $9 AND user_id = $10`,
-      [name, String(req.body.color || 'teal'), String(req.body.target || 'Daily'), days, why, rt, paused, archived, req.params.id, uid]
+              reminder_time = $6, paused = $7, archived = $8, cue = $9
+       WHERE id = $10 AND user_id = $11`,
+      [name, String(req.body.color || 'teal'), String(req.body.target || 'Daily'), days, why, rt, paused, archived, cue, req.params.id, uid]
     );
     res.json(await buildState(uid));
   })

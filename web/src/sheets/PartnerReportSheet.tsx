@@ -61,7 +61,7 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
                 border: `1.5px solid ${on ? 'var(--danger)' : 'var(--border)'}`,
                 background: on ? 'color-mix(in srgb,var(--danger) 9%,transparent)' : 'var(--bg)',
                 color: on ? 'var(--danger)' : 'var(--text)',
-                borderRadius: 13, padding: '13px 14px', fontSize: 14.5, fontWeight: 600, cursor: 'pointer',
+                borderRadius: 'calc(13px * var(--sq))', padding: '13px 14px', fontSize: 14.5, fontWeight: 600, cursor: 'pointer',
               }}
             >
               {r.label}
@@ -79,7 +79,7 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
         placeholder="What you'd like us to know"
         rows={4}
         style={{
-          width: '100%', borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)',
+          width: '100%', borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)',
           padding: '13px 15px', fontSize: 15, color: 'var(--text)', outline: 'none', resize: 'none',
           fontFamily: 'inherit', lineHeight: 1.45, marginBottom: 22,
         }}
@@ -91,7 +91,7 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
         role="button"
         aria-disabled={!reason}
         style={{
-          height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 16, fontWeight: 700, color: '#fff', cursor: reason ? 'pointer' : 'default',
           background: reason ? 'var(--danger)' : 'color-mix(in srgb,var(--danger) 40%,var(--surface))',
         }}

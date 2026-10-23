@@ -28,10 +28,10 @@ import com.getcapacitor.annotation.PermissionCallback;
  * layer, which reads it (web/src/lib/smsParse.ts) and keeps only the amount,
  * the merchant and the date. The message bodies never leave the device.
  *
- * Scope: only messages newer than the watermark the caller passes, and — when
- * the caller supplies senders — only from those. A finance app has no business
- * reading a user's personal messages, and the cheapest way to honour that is
- * not to fetch them.
+ * Scope: only messages newer than the watermark the caller passes, and only
+ * from alphanumeric sender ids — banks, wallets, services — never from a phone
+ * number. A finance app has no business reading a user's personal messages, and
+ * the cheapest way to honour that is never to copy them out of the cursor.
  */
 @CapacitorPlugin(
     name = "OrbitSms",
@@ -82,11 +82,24 @@ public class OrbitSms extends Plugin {
     }
 
     /**
-     * Messages newer than `since`, oldest first.
+     * Messages from banks and wallets newer than `since`, oldest first.
      *
-     * Oldest first matters: the caller advances its watermark as it goes, so if
-     * the batch is cut short by MAX_ROWS the next call resumes exactly where
-     * this one stopped instead of leaving a hole in the middle.
+     * Which senders count is decided by one rule rather than a list: a sender id
+     * that contains a letter. Banks and wallets send from alphanumeric ids
+     * ("NBE", "CIB", "VF-Cash", "InstaPay"); people send from phone numbers. The
+     * first version matched a hand-written list of bank names, and every id it
+     * missed — "VF-Cash", "BDC", "CA-Egypt", "IPN" — was a bank whose messages
+     * were silently never read. A list is out of date the day a bank renames its
+     * sender; the rule is not. Callers may still pass extra `senders` to accept
+     * a bank that uses a numeric short code.
+     *
+     * The filter runs here rather than in the query's WHERE clause because some
+     * manufacturers' SMS providers reject anything beyond simple comparisons.
+     * For rows that fail it only the address is read; the body of a personal
+     * message is never copied out of the cursor.
+     *
+     * Oldest first, so that if the batch is cut short the next call resumes
+     * exactly where this one stopped instead of leaving a hole in the middle.
      */
     @PluginMethod
     public void read(PluginCall call) {
@@ -100,57 +113,58 @@ public class OrbitSms extends Plugin {
         }
 
         long since = call.getLong("since", 0L);
-        JSArray senders = call.getArray("senders", new JSArray());
-
-        String selection = "date > ?";
-        String[] args;
-        try {
-            // Filtering in the query, not after it: an unfiltered read would
-            // pull every personal message into memory before discarding it.
-            if (senders.length() > 0) {
-                StringBuilder clause = new StringBuilder("date > ? AND (");
-                args = new String[1 + senders.length()];
-                args[0] = String.valueOf(since);
-                for (int i = 0; i < senders.length(); i++) {
-                    if (i > 0) clause.append(" OR ");
-                    clause.append("address LIKE ?");
-                    args[i + 1] = "%" + senders.getString(i) + "%";
-                }
-                clause.append(")");
-                selection = clause.toString();
-            } else {
-                args = new String[] { String.valueOf(since) };
+        JSArray extra = call.getArray("senders", new JSArray());
+        java.util.List<String> also = new java.util.ArrayList<>();
+        for (int i = 0; i < extra.length(); i++) {
+            try {
+                also.add(extra.getString(i).toLowerCase(java.util.Locale.ROOT));
+            } catch (org.json.JSONException ignored) {
+                // A malformed entry is skipped, not fatal.
             }
-        } catch (org.json.JSONException e) {
-            call.reject("Bad sender list");
-            return;
         }
 
         JSArray out = new JSArray();
+        int scanned = 0;
+        long scannedUntil = since;
+        boolean more = false;
         Cursor c = null;
         try {
+            // No LIMIT in the sort order. Newer Android versions validate the
+            // sort clause of content-provider queries and throw on "LIMIT",
+            // which made every read fail outright — and since a failed read was
+            // handled quietly, the feature simply did nothing. The cap is
+            // applied while iterating instead, which works on every version.
             c = getContext().getContentResolver().query(
                 INBOX,
                 new String[] { "_id", "address", "body", "date" },
-                selection,
-                args,
-                "date ASC LIMIT " + MAX_ROWS
+                "date > ?",
+                new String[] { String.valueOf(since) },
+                "date ASC"
             );
             if (c != null) {
                 while (c.moveToNext()) {
+                    String address = c.getString(1);
+                    long date = c.getLong(3);
+                    if (out.length() >= MAX_ROWS) {
+                        more = true;
+                        break;
+                    }
+                    scanned++;
+                    scannedUntil = Math.max(scannedUntil, date);
+                    if (!isInstitution(address, also)) continue;
                     JSObject m = new JSObject();
                     m.put("id", c.getString(0));
-                    m.put("sender", c.getString(1) == null ? "" : c.getString(1));
+                    m.put("sender", address == null ? "" : address);
                     m.put("body", c.getString(2) == null ? "" : c.getString(2));
-                    m.put("ts", c.getLong(3));
+                    m.put("ts", date);
                     out.put(m);
                 }
             }
         } catch (Exception e) {
             // A manufacturer that has locked the SMS provider down, or a
-            // permission revoked between the check above and this query. Either
-            // way it is a state of the world, not a crash.
-            call.reject("Could not read messages: " + e.getMessage());
+            // permission revoked between the check above and this query. The
+            // message is passed up so the app can show it rather than guess.
+            call.reject("Could not read messages: " + e.getClass().getSimpleName() + ": " + e.getMessage());
             return;
         } finally {
             if (c != null) c.close();
@@ -158,10 +172,26 @@ public class OrbitSms extends Plugin {
 
         JSObject res = new JSObject();
         res.put("messages", out);
-        // Telling the caller the batch was full is what lets it loop instead of
-        // silently stopping halfway through a first import.
-        res.put("more", out.length() >= MAX_ROWS);
+        // How many inbox rows were looked at, and how far through the inbox the
+        // scan got. The second lets the caller move its watermark past runs of
+        // personal messages, so they are not re-scanned on every launch.
+        res.put("scanned", scanned);
+        res.put("scannedUntil", scannedUntil);
+        res.put("more", more);
         call.resolve(res);
+    }
+
+    /** A sender id with a letter in it, or one the caller listed explicitly. */
+    private static boolean isInstitution(String address, java.util.List<String> also) {
+        if (address == null || address.isEmpty()) return false;
+        for (int i = 0; i < address.length(); i++) {
+            if (Character.isLetter(address.charAt(i))) return true;
+        }
+        String a = address.toLowerCase(java.util.Locale.ROOT);
+        for (String s : also) {
+            if (!s.isEmpty() && a.contains(s)) return true;
+        }
+        return false;
     }
 
     private boolean hasTelephony() {

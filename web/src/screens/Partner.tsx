@@ -36,7 +36,7 @@ const MODULE_META: Record<string, { label: string; icon: any; color: string }> =
 const card: React.CSSProperties = {
   background: 'var(--surface)',
   border: '1px solid var(--border)',
-  borderRadius: 20,
+  borderRadius: 'calc(20px * var(--sq))',
   boxShadow: 'var(--shadow)',
   overflow: 'hidden',
 };
@@ -148,7 +148,7 @@ export function Partner() {
       showToast('Partnership ended');
       load();
     } catch {
-      showToast('Could not do that');
+      showToast('That didn’t go through. Try again.');
     }
     setBusy(false);
   };
@@ -197,7 +197,7 @@ export function Partner() {
           className="pressRow"
           style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
         >
-          <span style={{ width: 36, height: 36, borderRadius: 10, flex: 'none', background: 'color-mix(in srgb,var(--indigo) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ width: 36, height: 36, borderRadius: 'calc(10px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M3 5.5h14v9H7l-4 3v-12Z" />
             </svg>
@@ -209,7 +209,7 @@ export function Partner() {
             </div>
           </div>
           {p.unread > 0 && (
-            <span style={{ minWidth: 22, height: 22, padding: '0 6px', borderRadius: 11, background: 'var(--danger)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <span style={{ minWidth: 22, height: 22, padding: '0 6px', borderRadius: 'calc(11px * var(--sq))', background: 'var(--danger)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
               {p.unread}
             </span>
           )}
@@ -224,7 +224,7 @@ export function Partner() {
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Free chat</div>
             <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
               {p.chat.open
-                ? 'Open — you can both message freely'
+                ? 'Open. You can both message freely.'
                 : p.chat.mine
                   ? `Waiting for ${p.name.split(' ')[0]} to turn it on too`
                   : 'Both of you need to turn this on'}
@@ -273,7 +273,7 @@ function Shell({ go, children }: { go: (s: any) => void; children: React.ReactNo
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '2px 0 20px' }}>
         <BackButton onClick={() => go('settings')} />
-        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>
+        <div className="display" style={{ fontSize: 30, lineHeight: 1.1, color: 'var(--text)' }}>
           Accountability partner
         </div>
       </div>
@@ -297,12 +297,12 @@ function weekLetters(): string[] {
 
 function TrackerCard({ c, notes, onComment }: { c: PartnerCard; notes: number; onComment: () => void }) {
   const meta = MODULE_META[c.module];
-  const col = `var(--${meta.color})`;
+  const col = 'var(--indigo)';
   return (
     <div style={{ ...card, padding: '15px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 13 }}>
-        <span style={{ width: 32, height: 32, borderRadius: 10, flex: 'none', background: `color-mix(in srgb,${col} 14%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Glyph name={meta.icon} size={17} color={col} />
+        <span style={{ width: 32, height: 32, borderRadius: 'calc(10px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Glyph name={meta.icon} size={17} color="var(--text2)" />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{meta.label}</div>
@@ -311,7 +311,7 @@ function TrackerCard({ c, notes, onComment }: { c: PartnerCard; notes: number; o
           </div>
         </div>
         {c.today && (
-          <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.04em', color: col, background: `color-mix(in srgb,${col} 14%,transparent)`, borderRadius: 6, padding: '3px 7px', flex: 'none' }}>
+          <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.04em', color: col, background: `color-mix(in srgb,${col} 14%,transparent)`, borderRadius: 'calc(6px * var(--sq))', padding: '3px 7px', flex: 'none' }}>
             TODAY
           </span>
         )}
@@ -356,7 +356,7 @@ function TrackerCard({ c, notes, onComment }: { c: PartnerCard; notes: number; o
       )}
 
       {c.level >= 3 && (
-        <div onClick={onComment} className="press99" role="button" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, height: 40, borderRadius: 12, border: '1px solid var(--border)', fontSize: 13.5, fontWeight: 600, color: col, cursor: 'pointer' }}>
+        <div onClick={onComment} className="press99" role="button" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, height: 40, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', fontSize: 13.5, fontWeight: 600, color: col, cursor: 'pointer' }}>
           {notes > 0 ? `${notes} note${notes === 1 ? '' : 's'}` : 'Leave a note'}
         </div>
       )}
@@ -368,7 +368,7 @@ function ShareRow({
   module, level, onChange, last,
 }: { module: string; level: ShareLevel; onChange: (l: ShareLevel) => void; last: boolean }) {
   const meta = MODULE_META[module];
-  const col = `var(--${meta.color})`;
+  const col = 'var(--indigo)';
   const [openRow, setOpenRow] = React.useState(false);
   const current = SHARE_LEVELS[level];
 
@@ -379,8 +379,8 @@ function ShareRow({
         className="pressRow"
         style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', cursor: 'pointer' }}
       >
-        <span style={{ width: 34, height: 34, borderRadius: 10, flex: 'none', background: `color-mix(in srgb,${col} 13%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Glyph name={meta.icon} size={17} color={col} />
+        <span style={{ width: 34, height: 34, borderRadius: 'calc(10px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Glyph name={meta.icon} size={17} color="var(--text2)" />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{meta.label}</div>
@@ -406,7 +406,7 @@ function ShareRow({
                 style={{
                   border: `1.5px solid ${on ? col : 'var(--border)'}`,
                   background: on ? `color-mix(in srgb,${col} 10%,transparent)` : 'transparent',
-                  borderRadius: 12,
+                  borderRadius: 'calc(12px * var(--sq))',
                   padding: '10px 12px',
                   cursor: 'pointer',
                 }}
@@ -485,7 +485,7 @@ function AgeGate({
         value={dob}
         onChange={(e) => setDob(e.target.value)}
         className="timeField"
-        style={{ width: '100%', height: 52, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, fontWeight: 600, color: 'var(--text)', outline: 'none', marginBottom: 10 }}
+        style={{ width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, fontWeight: 600, color: 'var(--text)', outline: 'none', marginBottom: 10 }}
       />
       <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 16 }}>
         You can only set this once, so please check it. {dob && !ok && <span style={{ color: 'var(--danger)' }}>That date doesn&rsquo;t look right.</span>}
@@ -497,7 +497,7 @@ function AgeGate({
         role="button"
         aria-disabled={!ok}
         style={{
-          height: 52, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          height: 52, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 15.5, fontWeight: 700, cursor: ok ? 'pointer' : 'default', color: '#fff',
           background: ok ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))',
         }}
@@ -563,7 +563,7 @@ function Matchmaker({
           You&rsquo;ll be matched as soon as somebody compatible is also looking. You can close the app &mdash; this
           keeps going without it.
         </div>
-        <div onClick={busy ? undefined : cancel} className="press99" role="button" style={{ height: 48, borderRadius: 14, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14.5, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
+        <div onClick={busy ? undefined : cancel} className="press99" role="button" style={{ height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14.5, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
           Stop looking
         </div>
       </div>
@@ -613,7 +613,7 @@ function Matchmaker({
       </div>
       <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24, lineHeight: 1.5 }}>
         {want === 'any'
-          ? 'Fastest match — anyone who is also happy with anyone.'
+          ? 'Fastest match: anyone who is also open to anyone.'
           : 'A narrower choice can take longer to match.'}
       </div>
 
@@ -623,7 +623,7 @@ function Matchmaker({
         role="button"
         aria-disabled={!gender}
         style={{
-          height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 16, fontWeight: 700, color: '#fff', cursor: gender ? 'pointer' : 'default', marginBottom: 14,
           background: gender ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))',
         }}

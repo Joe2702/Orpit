@@ -39,7 +39,7 @@ export async function compressFromSrc(url: string): Promise<string> {
       const out = canvas.toDataURL('image/jpeg', q);
       if (out.length <= MAX_BYTES) return out;
     }
-    throw new Error('That photo is too large — try a closer crop');
+    throw new Error('That photo is too large. Try a closer crop.');
   }
 }
 
@@ -83,7 +83,7 @@ export async function pickReceipt(): Promise<string | null> {
 
 const pickerBox: React.CSSProperties = {
   height: 52,
-  borderRadius: 14,
+  borderRadius: 'calc(14px * var(--sq))',
   border: '1px solid var(--border)',
   background: 'var(--bg)',
   display: 'flex',
@@ -149,7 +149,7 @@ export function ReceiptPicker({ value, onChange }: { value: string | null; onCha
       <input ref={fileRef} type="file" accept="image/*" onChange={pick} style={{ display: 'none' }} />
       {value ? (
         <div>
-          <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)', marginBottom: 10, background: 'var(--bg)' }}>
+          <div style={{ borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', border: '1px solid var(--border)', marginBottom: 10, background: 'var(--bg)' }}>
             <img src={value} alt="Receipt" style={{ display: 'block', width: '100%', maxHeight: 200, objectFit: 'cover' }} />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -256,7 +256,7 @@ export function ReceiptField({ txn }: { txn: Txn }) {
 
   const box: React.CSSProperties = {
     height: 52,
-    borderRadius: 14,
+    borderRadius: 'calc(14px * var(--sq))',
     border: '1px solid var(--border)',
     background: 'var(--bg)',
     display: 'flex',
@@ -275,7 +275,7 @@ export function ReceiptField({ txn }: { txn: Txn }) {
 
       {photo ? (
         <div>
-          <div onClick={() => setFull(true)} className="press99" role="button" style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)', cursor: 'pointer', marginBottom: 10, background: 'var(--bg)' }}>
+          <div onClick={() => setFull(true)} className="press99" role="button" style={{ borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', border: '1px solid var(--border)', cursor: 'pointer', marginBottom: 10, background: 'var(--bg)' }}>
             <img src={photo} alt="Receipt" style={{ display: 'block', width: '100%', maxHeight: 220, objectFit: 'cover' }} />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -303,7 +303,7 @@ export function ReceiptField({ txn }: { txn: Txn }) {
           onClick={() => setFull(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(8,9,14,.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, animation: 'fadeIn .2s ease' }}
         >
-          <img src={photo} alt="Receipt" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 12 }} />
+          <img src={photo} alt="Receipt" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 'calc(12px * var(--sq))' }} />
         </div>
       )}
     </>
