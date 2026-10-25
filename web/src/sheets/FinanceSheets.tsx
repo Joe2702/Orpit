@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
 import { api } from '../api';
-import { money } from '../lib/format';
+import { ago, money } from '../lib/format';
 import { round2 } from '../lib/accounts';
 import { chip } from '../ui';
 import { IconTrash } from '../icons';
@@ -20,9 +20,11 @@ const Title = ({ children }: { children: React.ReactNode }) => <div style={{ fon
 
 // ================= Account =================
 export function AccountSheet() {
-  const { state, sheetData, closeSheet, mutate, haptic, showToast } = useStore();
+  const { state, sheetData, closeSheet, mutate, haptic, showToast, confirm } = useStore();
   const { d } = useData();
   const editId: string | null = sheetData?.id ?? null;
+  const current = editId ? d.accounts.find((a) => a.id === editId) : undefined;
+  const links = current?.smsLinks || [];
   const [name, setName] = useState(sheetData?.name ?? '');
   const [type, setType] = useState(sheetData?.type ?? 'Bank');
   const [color, setColor] = useState(sheetData?.color ?? 'blue');
@@ -73,6 +75,24 @@ export function AccountSheet() {
     }
     closeSheet();
   };
+  const others = editId ? state!.accounts.filter((a) => a.id !== editId) : [];
+  const merge = async (into: string, intoName: string) => {
+    if (!editId) return;
+    const ok = await confirm({
+      title: `Merge into ${intoName}?`,
+      message: `Everything in ${name || 'this account'} moves to ${intoName}: its entries, its balance and the bank messages that fill it. Transfers between the two disappear, since they'd be one account.`,
+      confirmLabel: 'Merge',
+    });
+    if (!ok) return;
+    haptic();
+    mutate(() => api.mergeAccount(editId, into), `Merged into ${intoName}`).catch(() => {});
+    closeSheet();
+  };
+  const unlink = (l: { sender: string; card: string | null }) => {
+    if (!editId) return;
+    haptic();
+    mutate(() => api.unlinkAccount(editId, l), `${l.sender}${l.card ? ` ••${l.card}` : ''} unlinked`).catch(() => {});
+  };
   const del = async () => {
     if (!editId) return;
     if (state!.accounts.length <= 1) { showToast('Keep at least one account'); return; }
@@ -87,8 +107,8 @@ export function AccountSheet() {
       {label('Name')}
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Main Bank" style={{ ...input, marginBottom: 20 }} />
       {label('Type')}
-      <div style={{ display: 'flex', gap: 9, marginBottom: 20 }}>
-        {['Cash', 'Bank', 'Savings'].map((t) => (<div key={t} onClick={() => setType(t)} style={{ ...chip(type === t, 'var(--indigo)'), flex: 1, textAlign: 'center' }}>{t}</div>))}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 20 }}>
+        {['Cash', 'Bank', 'Savings', 'Wallet', 'Credit card'].map((t) => (<div key={t} onClick={() => setType(t)} style={{ ...chip(type === t, 'var(--indigo)'), textAlign: 'center' }}>{t}</div>))}
       </div>
       {label(editId ? 'Current balance' : 'Starting balance')}
       <input value={balance} onChange={(e) => setBalance(e.target.value.replace(/[^0-9.-]/g, ''))} inputMode="decimal" placeholder="0" style={input} />
@@ -100,7 +120,43 @@ export function AccountSheet() {
           : diff === 0
             ? "What's in this account right now. Change it to match your bank and Orbit records the difference."
             : `Adds a ${diff > 0 ? '+' : '−'}${money(Math.abs(diff))} correction dated today, so you can see what changed. It won't count as spending or income.`}
+        {editId && current?.smsBalanceTs != null && diff === 0 && (
+          <> Your bank last reported {money(current.smsBalance || 0)}, {ago(current.smsBalanceTs)}.</>
+        )}
       </div>
+
+      {links.length > 0 && (
+        <>
+          {label('Filled in from your bank messages')}
+          <div style={{ border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', overflow: 'hidden', marginBottom: 20 }}>
+            {links.map((l, i) => (
+              <div key={`${l.sender}-${l.card}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderTop: i ? '1px solid var(--border)' : 'none' }}>
+                <span style={{ flex: 1, fontSize: 14, color: 'var(--text)' }}>
+                  {l.sender}
+                  {l.card ? <span style={{ color: 'var(--text2)' }}> · ••{l.card}</span> : null}
+                </span>
+                <span onClick={() => unlink(l)} role="button" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', padding: '4px 0' }}>Unlink</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* The importer opens an account per bank, card or wallet it meets. When
+          two of those are really one (a debit card and the account behind it,
+          or a bank account made by hand before tracking), merging is the fix. */}
+      {editId && others.length > 0 && (
+        <>
+          {label('Same money as another account?')}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+            {others.map((o) => (
+              <div key={o.id} onClick={() => merge(o.id, o.name)} className="press99" style={chip(false, 'var(--indigo)')}>
+                Merge into {o.name}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
       {label('Color')}
       <div style={{ display: 'flex', gap: 14, marginBottom: 24, paddingLeft: 2 }}>
         {['emerald', 'blue', 'indigo', 'coral', 'teal'].map((c) => (<div key={c} onClick={() => setColor(c)} style={swatch(c, color === c)} />))}

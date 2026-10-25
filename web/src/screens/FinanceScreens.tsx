@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
 import { api } from '../api';
-import { money, signMoney, fmtDate, relLabel, moneySymbol } from '../lib/format';
+import { ago, money, fmtDate, relLabel, moneySymbol } from '../lib/format';
 import { guessFinIcon, FinIcon } from '../lib/iconPaths';
 import { Ring } from '../lib/charts';
 import { BackButton, chip } from '../ui';
@@ -12,6 +12,9 @@ import { StickySave } from '../StickySave';
 import { ReceiptField, ReceiptPicker } from '../Receipt';
 import { useEntryActions } from '../lib/entryActions';
 import type { Txn } from '../types';
+import { isRefund } from '../lib/money';
+import { merchantKey } from '../lib/merchants';
+import { smsText } from '../lib/smsSync';
 import { UnsyncedDot } from '../UnsyncedDot';
 
 function Header({ title, action }: { title: string; action?: React.ReactNode }) {
@@ -39,16 +42,20 @@ function AddBtn({ onClick }: { onClick: () => void }) {
 
 // ================= Add / edit transaction (full screen) =================
 export function FAddTx() {
-  const { state, screenData, go, mutateOpt, haptic } = useStore();
+  const { state, screenData, go, mutateOpt, haptic, confirm } = useStore();
   const edit: Txn | undefined = screenData?.edit;
   const fcats = state!.fcats;
   const accounts = state!.accounts;
   const [kind, setKind] = useState<'expense' | 'income' | 'transfer'>(
-    edit ? (edit.toAccId ? 'transfer' : edit.amount >= 0 ? 'income' : 'expense') : 'expense'
+    edit ? (edit.toAccId ? 'transfer' : edit.income ? 'income' : 'expense') : 'expense'
   );
+  // Money back for a purchase: kept with spending, and taken off it.
+  const [refund, setRefund] = useState<boolean>(!!edit && isRefund(edit));
+  const source = edit?.sms ? smsText(edit.smsKey) : null;
+  const [showSource, setShowSource] = useState(false);
   const [amount, setAmount] = useState<string>(edit ? String(Math.abs(edit.amount)) : '');
-  const [exCat, setExCat] = useState<string>(edit && edit.amount < 0 ? edit.cat : fcats.find((c) => c.kind === 'expense')?.name || 'Food');
-  const [incCat, setIncCat] = useState<string>(edit && edit.amount >= 0 ? edit.cat : fcats.find((c) => c.kind === 'income')?.name || 'Salary');
+  const [exCat, setExCat] = useState<string>(edit && !edit.income ? edit.cat : fcats.find((c) => c.kind === 'expense')?.name || 'Food');
+  const [incCat, setIncCat] = useState<string>(edit && edit.income ? edit.cat : fcats.find((c) => c.kind === 'income')?.name || 'Salary');
   const [accId, setAccId] = useState<string>(edit?.accId || accounts[0]?.id || '');
   // Where a transfer lands. Defaults to the first account that isn't the source,
   // so the form is never sitting on the one combination it must refuse.
@@ -94,10 +101,21 @@ export function FAddTx() {
     const amt = parseFloat(amount || '0');
     if (!amt || amt <= 0 || !transferOk) return;
     haptic();
-    const ts = new Date(date + 'T12:00:00').getTime();
-    const name = isTransfer ? `${fromAcc?.name || 'Account'} → ${toAcc?.name || 'Account'}` : cat;
+    // An edit keeps the time of day it had: a bank message's 9:41 is worth
+    // keeping, and noon would reorder the day's list.
+    const ts =
+      edit && new Date(edit.ts).toISOString().slice(0, 10) === date ? edit.ts : new Date(date + 'T12:00:00').getTime();
+    // An edit keeps its name (a shop, read from the bank) unless it was only
+    // ever its category's name.
+    const name = isTransfer
+      ? `${fromAcc?.name || 'Account'} → ${toAcc?.name || 'Account'}`
+      : edit && !edit.toAccId && edit.name !== edit.cat
+        ? edit.name
+        : cat;
+    const isRef = !isTransfer && !income && refund;
     const body = {
       name, cat, amount: amt,
+      refund: isRef,
       // A transfer is never income: it leaves the source account, and the money
       // arriving at the other end is derived from toAccId when balances are
       // computed. Storing it as income would double-count it.
@@ -106,7 +124,7 @@ export function FAddTx() {
       toAccId: isTransfer ? toAccId : null,
       note: note.trim() || null, ts,
     };
-    const signed = isTransfer || !income ? -amt : amt;
+    const signed = isTransfer || (!income && !isRef) ? -amt : amt;
     // Update the list immediately and leave the screen; the server call settles
     // in the background. Waiting on a sleepy free-tier host made saving feel
     // broken even though it always worked.
@@ -115,13 +133,38 @@ export function FAddTx() {
       (s) => ({
         ...s,
         txns: edit
-          ? s.txns.map((t) => (t.id === edit.id ? { ...t, ...body, amount: signed, ts } : t))
+          ? s.txns.map((t) => (t.id === edit.id ? { ...t, ...body, amount: signed, ts, review: false, auto: false } : t))
           : [...s.txns, { id: tempId, name, cat, amount: signed, income: body.income, accId, toAccId: body.toAccId, adjust: false, note: note.trim() || null, photo: !!newPhoto, ts }],
       }),
       () => (edit ? api.editTxn(edit.id, body) : api.addTxn({ ...body, ...(newPhoto ? { photo: newPhoto } : {}) })),
       edit ? 'Transaction updated' : 'Transaction saved'
     ).catch(() => {});
     go('ftxns');
+
+    // A new category for a shop is usually a new category for the shop, not
+    // for one payment. Offer to move the others; never move ones the user
+    // already filed somewhere themselves without asking.
+    if (edit && !isTransfer && cat !== edit.cat) {
+      const k = merchantKey(name);
+      const others = k
+        ? state!.txns.filter((t) => t.id !== edit.id && !t.toAccId && !t.adjust && t.income === income && t.cat !== cat && merchantKey(t.name) === k)
+        : [];
+      if (others.length) {
+        const ok = await confirm({
+          title: `Move all ${name} payments?`,
+          message: `${others.length} other ${others.length === 1 ? 'payment' : 'payments'} from ${name} ${others.length === 1 ? 'is' : 'are'} filed elsewhere. Put ${others.length === 1 ? 'it' : 'them'} under ${cat} too? New ones will follow.`,
+          confirmLabel: 'Move all',
+        });
+        if (ok) {
+          const ids = others.map((t) => t.id);
+          mutateOpt(
+            (s) => ({ ...s, txns: s.txns.map((t) => (ids.includes(t.id) ? { ...t, cat, review: false, auto: false } : t)) }),
+            () => api.recategorise(ids, cat),
+            `${others.length + 1} ${name} payments under ${cat}`
+          ).catch(() => {});
+        }
+      }
+    }
   };
   const del = () => {
     if (!edit) return;
@@ -173,7 +216,46 @@ export function FAddTx() {
           );
         })}
       </div>
+      {kind === 'expense' && (edit ? isRefund(edit) || edit.sms : false) && (
+        <div onClick={() => setRefund((v) => !v)} role="switch" aria-checked={refund} className="press99" style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: -8, marginBottom: 22, cursor: 'pointer' }}>
+          <span style={{ flex: 1, fontSize: 14, color: 'var(--text)' }}>
+            Money back (a refund)
+            <span style={{ display: 'block', fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>Takes it off your spending instead of counting as income</span>
+          </span>
+          <span style={{ width: 44, height: 26, borderRadius: 999, flex: 'none', background: refund ? 'var(--indigo)' : 'var(--surface2)', border: '1px solid var(--border)', position: 'relative', transition: 'background .2s' }}>
+            <span style={{ position: 'absolute', top: 2, left: refund ? 20 : 2, width: 20, height: 20, borderRadius: '50%', background: 'var(--surface)', boxShadow: '0 1px 2px rgba(0,0,0,.2)', transition: 'left .2s' }} />
+          </span>
+        </div>
+      )}
       </>}
+      {edit?.sms && (
+        // What the entry was read from, so a strange name or amount can be
+        // checked against the bank's own words. The text lives on this phone
+        // only; another device, or one that was reset, won't have it.
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '12px 14px', marginBottom: 22 }}>
+          <div onClick={() => source && setShowSource((v) => !v)} role={source ? 'button' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: source ? 'pointer' : 'default' }}>
+            <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>
+              {source ? `From ${source.sender} · ${fmtDate(source.ts)}` : 'Read from a bank message'}
+            </span>
+            {source && <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)' }}>{showSource ? 'Hide' : 'Show message'}</span>}
+          </div>
+          {!source && (
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.5, marginTop: 4 }}>
+              The message itself stays on the phone that read it, and isn&rsquo;t on this one.
+            </div>
+          )}
+          {source && showSource && (
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[source, ...(source.more || [])].map((m, i) => (
+                <div key={i} dir="auto" style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5, background: 'var(--surface2)', borderRadius: 'calc(12px * var(--sq))', padding: '9px 11px', overflowWrap: 'anywhere' }}>
+                  {i > 0 && <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text2)', marginBottom: 3 }}>Also from {m.sender}</div>}
+                  {m.body}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{isTransfer ? 'From' : 'Account'}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 22 }}>
         {accounts.map((a) => (
@@ -221,6 +303,79 @@ export function FAddTx() {
           <IconTrash />Delete transaction
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * One line of the ledger, the same everywhere it appears.
+ *
+ * A transfer shows both ends and a neutral colour: it is not a loss, and
+ * painting it like an expense is the whole confusion transfers exist to remove.
+ * A correction is real money but not an event you did, shown plainly with its
+ * direction. A refund says so, so a plus sign on a shop's name isn't a puzzle.
+ */
+export function TxnRow({ t, onClick, last }: { t: Txn; onClick: () => void; last?: boolean }) {
+  const { state } = useStore();
+  const accById = Object.fromEntries(state!.accounts.map((a) => [a.id, a]));
+  const fc = fcatByName(state!.fcats, t.cat);
+  const xfer = !!t.toAccId;
+  const adj = t.adjust;
+  const refund = isRefund(t);
+  const acc = accById[t.accId || '']?.name;
+  const sub = xfer
+    ? `${accById[t.accId || '']?.name || 'Account'} → ${accById[t.toAccId || '']?.name || 'Account'}`
+    : adj
+      ? `Balance correction${acc ? ` · ${acc}` : ''}`
+      : [refund ? 'Refund' : null, t.cat, acc].filter(Boolean).join(' · ');
+  return (
+    <div onClick={onClick} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: last ? 'none' : '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}>
+      <span style={{ position: 'relative', width: 38, height: 38, borderRadius: 'calc(11px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {xfer ? (
+          <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Transfer">
+            <path d="M3 7h12M12 4l3 3-3 3M17 13H5M8 10l-3 3 3 3" />
+          </svg>
+        ) : adj ? (
+          <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Balance correction">
+            <path d="M4 13.5a6 6 0 0 1 10-4.4M16 6.5a6 6 0 0 1-10 4.4" />
+            <path d="M14 5v4h-4M6 15v-4h4" />
+          </svg>
+        ) : (
+          <FinIcon icon={fc.icon} color="var(--text2)" size={20} />
+        )}
+        {/* Waiting for a look: the category was a guess. A dot, not a badge,
+            so a list with a few of them still reads as a list. */}
+        {t.review && (
+          <span aria-label="Needs a look" style={{ position: 'absolute', top: -2, right: -2, width: 10, height: 10, borderRadius: '50%', background: 'var(--indigo)', boxShadow: '0 0 0 2px var(--surface)' }} />
+        )}
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
+          <UnsyncedDot id={t.id} />
+          {t.sms && (
+            // Read out of a bank message rather than entered. Worth a tag: a
+            // machine picked the name and the category, and the user should be
+            // able to see at a glance which figures came from that.
+            <span
+              style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: '.04em', color: 'var(--indigo)', background: 'color-mix(in srgb,var(--indigo) 14%,transparent)', borderRadius: 5, padding: '2px 5px', flex: 'none' }}
+              aria-label="Imported from a bank message"
+            >
+              SMS
+            </span>
+          )}
+          {t.photo && (
+            <svg width="13" height="13" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.8, strokeLinejoin: 'round', flex: 'none' }} aria-label="Has a receipt">
+              <path d="M1.5 4h2.2l1-1.4h3.6L9.3 4h2.2v7h-10z" />
+              <circle cx="6.5" cy="7.4" r="2.1" />
+            </svg>
+          )}
+        </div>
+        <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div>
+      </div>
+      <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: xfer || adj ? 'var(--text2)' : 'var(--text)' }}>
+        {(xfer ? '' : t.amount >= 0 ? '+' : '−') + money(t.amount)}
+      </div>
     </div>
   );
 }
@@ -278,64 +433,9 @@ export function FTxns() {
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 9, paddingLeft: 2 }}>{g.label}</div>
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
               {g.items.map((t) => {
-                const fc = fcatByName(fcats, t.cat);
-                // A transfer shows both ends and a neutral colour: it is not a
-                // loss, and painting it like an expense is the whole confusion
-                // this feature exists to remove.
-                const xfer = !!t.toAccId;
-                // A correction is real money but not an event you did — shown
-                // plainly, with its direction, and never in expense red.
-                const adj = t.adjust;
                 return (
                   <SwipeRow key={t.id} onEdit={() => go('faddtx', { edit: t })} onDelete={() => remove('txn', t)}>
-                    <div onClick={() => go('faddtx', { edit: t })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}>
-                      <span style={{ width: 38, height: 38, borderRadius: 'calc(11px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {xfer ? (
-                          <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Transfer">
-                            <path d="M3 7h12M12 4l3 3-3 3M17 13H5M8 10l-3 3 3 3" />
-                          </svg>
-                        ) : adj ? (
-                          <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Balance correction">
-                            <path d="M4 13.5a6 6 0 0 1 10-4.4M16 6.5a6 6 0 0 1-10 4.4" />
-                            <path d="M14 5v4h-4M6 15v-4h4" />
-                          </svg>
-                        ) : (
-                          <FinIcon icon={fc.icon} color="var(--text2)" size={20} />
-                        )}
-                      </span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          {t.name}
-                          <UnsyncedDot id={t.id} />
-                          {t.sms && (
-                            // Read out of a bank message rather than entered.
-                            // Worth a tag: a machine picked the name and the
-                            // category, and the user should be able to see at a
-                            // glance which figures came from that.
-                            <span
-                              style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: '.04em', color: 'var(--indigo)', background: 'color-mix(in srgb,var(--indigo) 14%,transparent)', borderRadius: 5, padding: '2px 5px', flex: 'none' }}
-                              aria-label="Imported from a bank message"
-                            >
-                              SMS
-                            </span>
-                          )}
-                          {t.photo && (
-                            <svg width="13" height="13" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.8, strokeLinejoin: 'round', flex: 'none' }} aria-label="Has a receipt">
-                              <path d="M1.5 4h2.2l1-1.4h3.6L9.3 4h2.2v7h-10z" />
-                              <circle cx="6.5" cy="7.4" r="2.1" />
-                            </svg>
-                          )}
-                        </div>
-                        <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
-                          {xfer
-                            ? `Transfer · ${accById[t.accId || '']?.name || '—'} → ${accById[t.toAccId || '']?.name || '—'}`
-                            : adj
-                              ? `Balance correction · ${accById[t.accId || '']?.name || '—'}`
-                              : `${t.cat} · ${accById[t.accId || '']?.name || '—'}`}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: xfer || adj ? 'var(--text2)' : t.amount >= 0 ? 'var(--text)' : 'var(--text)' }}>{(xfer ? '' : t.amount >= 0 ? '+' : '−') + money(t.amount)}</div>
-                    </div>
+                    <TxnRow t={t} onClick={() => go('faddtx', { edit: t })} />
                   </SwipeRow>
                 );
               })}
@@ -352,6 +452,106 @@ export function FTxns() {
         <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>
           No transactions match your search.
         </div>
+      )}
+    </div>
+  );
+}
+
+// ================= To review =================
+// Imported entries Orbit wasn't sure about: a shop it didn't know, money in
+// from someone, a foreign charge converted at a rough rate. Each shows the
+// message it came from, so the answer is usually one tap.
+export function FReview() {
+  const { state, mutateOpt, haptic } = useStore();
+  const fcats = state!.fcats;
+  const items = [...state!.txns].filter((t) => t.review).sort((a, b) => b.ts - a.ts);
+
+  // One shop's payments travel together: filing one Talabat order under
+  // Eating out files the rest that the import guessed at, but never one the
+  // user already chose a category for.
+  const sameShop = (t: Txn) => {
+    const k = merchantKey(t.name);
+    return state!.txns.filter((x) => x.id === t.id || (k && !x.toAccId && !x.adjust && x.income === t.income && (x.auto || x.review) && merchantKey(x.name) === k));
+  };
+
+  const setCat = (t: Txn, cat: string) => {
+    haptic();
+    const ids = sameShop(t).map((x) => x.id);
+    const others = ids.length - 1;
+    mutateOpt(
+      (s) => ({ ...s, txns: s.txns.map((x) => (ids.includes(x.id) ? { ...x, cat, review: false, auto: false } : x)) }),
+      () => api.recategorise(ids, cat),
+      others > 0 ? `${t.name} → ${cat}, and ${others} more like it` : `Filed under ${cat}`
+    ).catch(() => {});
+  };
+  const looksRight = (ids: string[]) => {
+    haptic();
+    mutateOpt(
+      (s) => ({ ...s, txns: s.txns.map((x) => (ids.includes(x.id) ? { ...x, review: false } : x)) }),
+      () => api.markReviewed(ids),
+      ids.length > 1 ? 'All marked as checked' : undefined
+    ).catch(() => {});
+  };
+
+  return (
+    <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
+      <Header title="To review" />
+      {items.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '50px 24px' }}>
+          <div style={{ fontSize: 16, fontWeight: 650, color: 'var(--text)', marginBottom: 6 }}>All checked</div>
+          <div style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.55 }}>
+            When Orbit isn&rsquo;t sure what a payment from your bank was, it will wait here for you.
+          </div>
+        </div>
+      ) : (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+            <div style={{ flex: 1, fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.5 }}>
+              Read from your bank messages. Pick what each one was, and Orbit remembers the shop.
+            </div>
+            {items.length > 1 && (
+              <div onClick={() => looksRight(items.map((t) => t.id))} role="button" className="press99" style={{ flex: 'none', fontSize: 13.5, fontWeight: 650, color: 'var(--indigo)', cursor: 'pointer', padding: '8px 2px' }}>
+                All fine
+              </div>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {items.map((t) => {
+              const text = smsText(t.smsKey);
+              // The current guess first, so it's visible without scrolling.
+              const cats = fcats
+                .filter((c) => c.kind === (t.income ? 'income' : 'expense'))
+                .sort((a, b) => Number(b.name === t.cat) - Number(a.name === t.cat));
+              const acc = state!.accounts.find((a) => a.id === t.accId)?.name;
+              return (
+                <div key={t.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '15px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                    <div style={{ flex: 1, minWidth: 0, fontSize: 16, fontWeight: 650, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text)' }}>{(t.amount >= 0 ? '+' : '−') + money(t.amount)}</div>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2 }}>
+                    {[relLabel(t.ts), acc, t.note].filter(Boolean).join(' · ')}
+                  </div>
+                  {text && (
+                    <div dir="auto" style={{ fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.5, background: 'var(--surface2)', borderRadius: 'calc(12px * var(--sq))', padding: '9px 11px', marginTop: 10, overflowWrap: 'anywhere', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {text.body}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 7, overflowX: 'auto', margin: '12px -16px 0', padding: '0 16px 2px' }}>
+                    {cats.map((c) => (
+                      <div key={c.id} onClick={() => setCat(t, c.name)} className="press99" style={{ ...chip(t.cat === c.name, 'var(--indigo)'), flex: 'none' }}>
+                        {c.name}
+                      </div>
+                    ))}
+                  </div>
+                  <div onClick={() => looksRight([t.id])} role="button" className="press99" style={{ marginTop: 12, height: 42, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+                    {t.cat} is right
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
@@ -455,7 +655,7 @@ export function FAccounts() {
       <Header title="Accounts" action={<AddBtn onClick={() => open('account')} />} />
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '18px 18px', marginBottom: 16 }}>
         <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)' }}>Net worth</div>
-        <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.035em', color: 'var(--text)', marginTop: 6 }}>{money(Math.round(d.netWorth))}</div>
+        <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.035em', color: 'var(--text)', marginTop: 6 }}>{(d.netWorth < 0 ? '−' : '') + money(Math.round(d.netWorth))}</div>
         <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 3 }}>
           Across {d.accounts.length} {d.accounts.length === 1 ? 'account' : 'accounts'}
         </div>
@@ -468,9 +668,16 @@ export function FAccounts() {
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{a.name}</div>
-              <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{a.type}</div>
+              <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
+                {a.smsBalanceTs != null
+                  ? `${a.type} · bank said ${ago(a.smsBalanceTs)}`
+                  : (a.smsLinks || []).length
+                    ? `${a.type} · from bank messages`
+                    : a.type}
+              </div>
             </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{money(a.balance)}</div>
+            {/* A credit card's balance is what's owed: negative, and said so. */}
+            <div style={{ fontSize: 16, fontWeight: 700, color: a.balance < 0 ? 'var(--danger)' : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{(a.balance < 0 ? '−' : '') + money(a.balance)}</div>
           </div>
         ))}
       </div>

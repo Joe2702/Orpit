@@ -1,3 +1,4 @@
+import { isSpend } from './money';
 import type { GlyphName } from './appIcons';
 import type { AppState } from '../types';
 import { dayKey, money, hm } from './format';
@@ -80,7 +81,7 @@ export function buildInsights(s: AppState): Insight[] {
     const afterNormal: number[] = [];
     s.nights.forEach((n) => {
       const nextDay = dayKey(n.ts);
-      const spend = (txnsByDay.get(nextDay) || []).filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
+      const spend = (txnsByDay.get(nextDay) || []).filter((t) => isSpend(t)).reduce((a, t) => a - t.amount, 0);
       (n.hours < 6 ? afterShort : afterNormal).push(spend);
     });
     if (afterShort.length >= 3 && afterNormal.length >= 3) {
@@ -175,7 +176,7 @@ export function buildInsights(s: AppState): Insight[] {
     const cat = new Map<string, number>();
     const prior = new Map<string, number[]>();
     spendTxns
-      .filter((t) => t.amount < 0)
+      .filter((t) => isSpend(t))
       .forEach((t) => {
         if (t.ts >= weekStart) cat.set(t.cat, (cat.get(t.cat) || 0) + -t.amount);
         else if (t.ts >= now - 35 * D) {
@@ -381,8 +382,8 @@ export function buildInsights(s: AppState): Insight[] {
     if (sPrev > 0 && inRange(s.nights, m1, m0).length >= 5)
       moves.push({ label: 'Sleep', delta: pct(sNow, sPrev), better: sNow >= sPrev, detail: `${hm(sNow)} a night vs ${hm(sPrev)}.` });
 
-    const spNow = inRange(spendTxns, m0, now).filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
-    const spPrev = inRange(spendTxns, m1, m0).filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
+    const spNow = inRange(spendTxns, m0, now).filter((t) => isSpend(t)).reduce((a, t) => a - t.amount, 0);
+    const spPrev = inRange(spendTxns, m1, m0).filter((t) => isSpend(t)).reduce((a, t) => a - t.amount, 0);
     if (spPrev > 0) moves.push({ label: 'Spending', delta: pct(spNow, spPrev), better: spNow <= spPrev, detail: `${money(spNow)} vs ${money(spPrev)}.` });
 
     const biggest = moves.filter((m) => Math.abs(m.delta) >= 15).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))[0];

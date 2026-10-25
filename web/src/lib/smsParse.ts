@@ -43,6 +43,25 @@ export interface ParsedSms {
   ts: number;
   /** The original text, kept so the user can check what was read. */
   body: string;
+  /**
+   * What the message says is left in the account afterwards, when it says so
+   * in the payment's own currency. The single most useful number in a bank
+   * message after the amount: it is what keeps the app's balance equal to the
+   * bank's, whatever was missed or typed by hand in between.
+   */
+  balance: number | null;
+  /** Fees charged on top of the amount ("fees EGP 5"). */
+  fee: number;
+  /** Cash out of a machine: money moving into the user's pocket, not spent. */
+  atm: boolean;
+  /** Money coming back for an earlier purchase, rather than income. */
+  refund: boolean;
+  /** Salary or payroll. */
+  salary: boolean;
+  /** Money moving between accounts or people: InstaPay, a transfer, a wallet send. */
+  transfer: boolean;
+  /** What the money moved through, when the message says. */
+  instrument: 'credit' | 'wallet' | 'card' | 'account' | null;
 }
 
 /** Why a message was not imported — shown in the on-device diagnostic. */
@@ -164,6 +183,30 @@ const ASIDE_CLAUSE = new RegExp(
     `[^\\d]{0,15}(?:${CUR})?\\s*(?:${NUM})\\s*(?:${CUR})?`,
   'gu'
 );
+
+/** The balance clause again, this time keeping the figure. */
+const BALANCE_VALUE = new RegExp(
+  `(?:\\b(?:AVAIL(?:ABLE)?|CURRENT|NEW|REMAINING|LEDGER|CLOSING|RUNNING|TOTAL)?\\.?\\s*BAL(?:ANCE)?\\b|الرصيد|رصيد)` +
+    `[^\\d]{0,25}?(?:(${CUR})\\s*)?(${NUM})(?:\\s*(${CUR}))?`,
+  'gu'
+);
+
+/** Fees only: a limit or a tax rate quoted beside a payment is not money that moved. */
+const FEE_VALUE = new RegExp(
+  `(?:\\b(?:FEES?|CHARGES|COMMISSION)\\b|رسوم|عموله|مصاريف)[^\\d]{0,15}(?:(${CUR})\\s*)?(${NUM})`,
+  'gu'
+);
+
+const ATM = /\bATM\b|CASH WITHDRAW|سحب نقدي|ماكينه|الصراف/;
+const REFUND = /\bREFUND(?:ED)?\b|\bREVERS(?:AL|ED)\b|\bCHARGEBACK\b|استرداد|مسترد|عكس/;
+const SALARY = /\bSALARY\b|\bPAYROLL\b|راتب|مرتب/;
+const TRANSFER = /INSTA ?PAY|انستا ?باي|\bTRANSFER(?:RED)?\b|\bIPN\b|\bSENT\b|\bRECEIVED FROM\b|تحويل|حواله|ارسال|استلام|استقبال/;
+const INSTRUMENT: [RegExp, NonNullable<ParsedSms['instrument']>][] = [
+  [/CREDIT ?CARD|ائتمان/, 'credit'],
+  [/WALLET|محفظه|VODAFONE CASH|ORANGE CASH|ETISALAT CASH|فودافون كاش|اورنج كاش/, 'wallet'],
+  [/\bCARD\b|بطاقه|بطاقتك/, 'card'],
+  [/ACCOUNT|\bA\/C\b|\bACCT\b|حساب/, 'account'],
+];
 
 // ---------------------------------------------------------------------------
 // What is not a transaction
@@ -359,6 +402,8 @@ function findMerchant(norm: string, disp: string, income: boolean): string {
 
 const CARD_TAIL = /(?:ENDING(?:\s+(?:IN|WITH))?|CARD(?:\s+(?:NO|NUMBER))?\.?|ACCOUNT|ACCT?\.?|A\/C)\s*[:#]?\s*[*x•#]{0,8}\s*(\d{4})\b/i;
 const MASKED_TAIL = /[*x•#]{3,}\s*(\d{4})(?!\d)/i;
+const OTHER_SIDE_TO = /\bTO\s+(?:(?:THE|BENEFICIARY)\s+)?(?:ACCOUNT|ACCT\.?|A\/C|CARD|WALLET|MOBILE|IBAN)\b[^.,;]{0,30}/gi;
+const OTHER_SIDE_FROM = /\bFROM\s+(?:(?:THE|SENDER)\s+)?(?:ACCOUNT|ACCT\.?|A\/C|CARD|WALLET|MOBILE|IBAN)\b[^.,;]{0,30}/gi;
 const CARD_TAIL_AR = /(?:بطاقه|بطاقتك|بطاقتكم|البطاقه|حساب|حسابك|حسابكم)[^\d*x•#]{0,20}?[*x•#]{0,8}\s*(\d{4})(?!\d)/u;
 
 // ---------------------------------------------------------------------------
@@ -408,7 +453,26 @@ export function analyseSms(m: SmsMessage, home = 'EGP'): Analysis {
   // always says what happened. Better to skip it than to invent a purchase.
   if (income === null) return { ok: false, reason: 'no-verb' };
 
-  const cardMatch = disp.match(CARD_TAIL) || disp.match(MASKED_TAIL) || norm.match(CARD_TAIL_AR);
+  // "Sent to account ending 9876" names the other side's account, not the
+  // user's: left in, it would file the payment under an account that isn't theirs.
+  const own = disp.replace(income ? OTHER_SIDE_FROM : OTHER_SIDE_TO, ' ');
+  const cardMatch = own.match(CARD_TAIL) || own.match(MASKED_TAIL) || norm.match(CARD_TAIL_AR);
+
+  // The balance afterwards, in the payment's own currency only: an account
+  // kept in dollars says nothing about one kept in pounds.
+  let balance: number | null = null;
+  for (const b of norm.matchAll(BALANCE_VALUE)) {
+    const cur = b[1] || b[3] ? normCurrency(b[1] || b[3]) : currency;
+    const n = Number(b[2].replace(/,/g, ''));
+    if (cur === currency && isFinite(n)) balance = n;
+  }
+  let fee = 0;
+  for (const f of norm.matchAll(FEE_VALUE)) {
+    const cur = f[1] ? normCurrency(f[1]) : currency;
+    const n = Number(f[2].replace(/,/g, ''));
+    if (cur === currency && isFinite(n) && n < amount) fee += n;
+  }
+  const instrument = INSTRUMENT.find(([re]) => re.test(norm))?.[1] ?? null;
 
   return {
     ok: true,
@@ -421,6 +485,13 @@ export function analyseSms(m: SmsMessage, home = 'EGP'): Analysis {
       card: cardMatch ? cardMatch[1] : null,
       ts: m.ts,
       body: disp,
+      balance,
+      fee: Math.round(fee * 100) / 100,
+      atm: !income && ATM.test(norm),
+      refund: income && REFUND.test(norm),
+      salary: income && SALARY.test(norm),
+      transfer: TRANSFER.test(norm),
+      instrument,
     },
   };
 }

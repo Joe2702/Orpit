@@ -38,16 +38,20 @@ function shapeTxn(b: any) {
   const toAccId = b.toAccId || null;
   const adjust = !toAccId && !!b.adjust;
   const income = !toAccId && !adjust && !!b.income;
+  const refund = !toAccId && !adjust && !income && !!b.refund;
   return {
     name: String(b.name || b.cat || 'Payment'),
     cat: toAccId ? 'Transfer' : adjust ? 'Adjustment' : String(b.cat || 'Other'),
-    amount: adjust ? Number(b.amount) || 0 : income ? amt : -amt,
+    amount: adjust ? Number(b.amount) || 0 : income || refund ? amt : -amt,
     income,
     accId: b.accId || null,
     toAccId,
     adjust,
     note: b.note ?? null,
     photo: false,
+    // Edited by hand: no longer a guess.
+    review: false,
+    auto: false,
   };
 }
 
@@ -84,6 +88,46 @@ function handle(method: string, path: string, body: any): { status: number; json
     return ok();
   }
 
+  // The bank-message side of Finances.
+  if (path === '/fx') return ok({ base: 'EGP', rates: { USD: 48.5, EUR: 52.4, GBP: 61.6, SAR: 12.9, AED: 13.2 }, at: Date.now() });
+  if (path === '/txns/reviewed') {
+    const ids: string[] = body.ids || [];
+    db = { ...db, txns: db.txns.map((t) => (ids.includes(t.id) ? { ...t, review: false } : t)) };
+    return ok();
+  }
+  if (path === '/txns/recat') {
+    const ids: string[] = body.ids || [];
+    db = { ...db, txns: db.txns.map((t) => (ids.includes(t.id) ? { ...t, cat: String(body.cat), review: false, auto: false } : t)) };
+    return ok();
+  }
+  if (parts[0] === 'accounts' && parts[2] === 'merge') {
+    const from = parts[1];
+    const into = String(body.into);
+    const src = db.accounts.find((a) => a.id === from);
+    db = {
+      ...db,
+      txns: db.txns
+        .filter((t) => !((t.accId === from && t.toAccId === into) || (t.accId === into && t.toAccId === from)))
+        .map((t) => ({ ...t, accId: t.accId === from ? into : t.accId, toAccId: t.toAccId === from ? into : t.toAccId })),
+      accounts: db.accounts
+        .filter((a) => a.id !== from)
+        .map((a) => (a.id === into ? { ...a, opening: a.opening + (src?.opening || 0), smsLinks: [...(a.smsLinks || []), ...(src?.smsLinks || [])] } : a)),
+    };
+    return ok();
+  }
+  if (parts[0] === 'accounts' && parts[2] === 'unlink') {
+    db = {
+      ...db,
+      accounts: db.accounts.map((a) =>
+        a.id === parts[1] ? { ...a, smsLinks: (a.smsLinks || []).filter((l) => !(l.sender === body.sender && (l.card || null) === (body.card || null))) } : a
+      ),
+    };
+    return ok();
+  }
+  if (parts[0] === 'accounts' && method === 'PATCH' && body.balanceNow != null) {
+    db = { ...db, accounts: db.accounts.map((a) => (a.id === parts[1] ? { ...a, smsBalance: Number(body.balanceNow), smsBalanceTs: Date.now() } : a)) };
+  }
+
   const key = LISTS[parts[0]];
   if (key) {
     const list = (db[key] as unknown as { id: string }[]) || [];
@@ -115,6 +159,26 @@ export function installDemo(): void {
     localStorage.setItem('orbit_reminder_onboarded', '1');
     localStorage.removeItem('orbit_state_cache');
     localStorage.removeItem('orbit_offline_queue');
+    // The bank messages the demo's imported entries were "read" from. On a
+    // phone these are the real texts, kept on the device.
+    const H = 3600_000;
+    const now = Date.now();
+    localStorage.setItem(
+      'orbit_sms_texts',
+      JSON.stringify({
+        sx1: { sender: 'CIB', ts: now - 5 * H, body: 'Your CIB debit card ending with 1234 was charged for EGP 300.00 at XYZ TRADING CO. Available balance EGP 47,085.50' },
+        sx2: { sender: 'VF-Cash', ts: now - 26 * H, body: 'تم استلام مبلغ 500.00 جنيه من 01012345678. رصيدك الحالي 800.00 جنيه' },
+        sx3: { sender: 'CIB', ts: now - 30 * H, body: 'Your CIB credit card ending 4444 was charged USD 9.99 at NETFLIX.COM. Available limit EGP 39,515.48' },
+        sx4: { sender: 'CIB', ts: now - 50 * H, body: 'Refund of EGP 200.00 from AMAZON EG credited to your card 1234.' },
+        sx5: {
+          sender: 'CIB',
+          ts: now - 72 * H,
+          body: 'You have sent EGP 2,000.00 via InstaPay to 010****5678. Available balance EGP 44,120.00',
+          more: [{ sender: 'VF-Cash', ts: now - 72 * H + 60_000, body: 'تم استلام مبلغ 2000.00 جنيه عن طريق انستاباي. رصيدك الحالي 2300.00 جنيه' }],
+        },
+        sx6: { sender: 'CIB', ts: now - 3 * H, body: 'Your CIB debit card ending with 1234 was charged for EGP 265.00 at EL NOUR PHARMACY NASR CITY. Available balance EGP 46,820.50' },
+      })
+    );
   } catch {
     /* storage blocked: the app still boots, it just asks to sign in */
   }

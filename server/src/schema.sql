@@ -267,6 +267,37 @@ ALTER TABLE habits ADD COLUMN IF NOT EXISTS reminder_time TEXT;
 -- Gollwitzer & Sheeran's meta-analysis of 94 tests found d = 0.65.
 ALTER TABLE habits ADD COLUMN IF NOT EXISTS cue TEXT;
 
+-- Automatic tracking from bank messages.
+-- Which sender (and card) an account's messages come from, so each payment is
+-- filed against the account it actually came out of. Several rows can point at
+-- one account: a debit card and the account behind it are one pot of money,
+-- and merging two accounts keeps both links. card is '' when the message
+-- named no card, so the unique index can treat "no card" as a value.
+CREATE TABLE IF NOT EXISTS account_links (
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  acc_id  BIGINT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  sender  TEXT NOT NULL,
+  card    TEXT NOT NULL DEFAULT ''
+);
+CREATE UNIQUE INDEX IF NOT EXISTS account_links_key ON account_links(user_id, lower(sender), card);
+-- The last balance a message reported, and when. It keeps the app's balance
+-- equal to the bank's however many payments were missed or typed in between.
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS sms_balance DOUBLE PRECISION;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS sms_balance_ts TIMESTAMPTZ;
+-- An imported entry whose category or amount was a best guess, until looked at.
+ALTER TABLE txns ADD COLUMN IF NOT EXISTS review BOOLEAN NOT NULL DEFAULT FALSE;
+-- Still exactly as the import wrote it. A later, better reading of the same
+-- message may replace it; once the user has edited it, it is theirs.
+-- Entries imported before the column existed were all written by the old
+-- reader, so they start out marked, once, when the column is added.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'txns' AND column_name = 'auto') THEN
+    ALTER TABLE txns ADD COLUMN auto BOOLEAN NOT NULL DEFAULT FALSE;
+    UPDATE txns SET auto = TRUE WHERE sms_key IS NOT NULL;
+  END IF;
+END $$;
+
 -- Free-text notes turn entries into a diary ("knee hurt", "kid woke me twice").
 ALTER TABLE workouts ADD COLUMN IF NOT EXISTS note TEXT;
 ALTER TABLE nights   ADD COLUMN IF NOT EXISTS note TEXT;

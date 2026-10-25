@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../store';
 import { api, setToken } from '../api';
-import { CURRENCIES } from '../lib/format';
+import { CURRENCIES, ago } from '../lib/format';
 import { computeBadges } from '../lib/badges';
 import { Avatar, SectionLabel, toggleTrack, toggleKnob, chip } from '../ui';
 import { IconChevron } from '../icons';
@@ -16,8 +16,6 @@ import {
   disableSms,
   rewindSms,
   syncSms,
-  smsAccount,
-  setSmsAccount,
   smsDiag,
   type SmsDiag,
 } from '../lib/smsSync';
@@ -29,15 +27,6 @@ export const MODULE_OPTS = [
   { key: 'finances', label: 'Finances', icon: 'wallet' as const, color: 'emerald' },
   { key: 'counters', label: 'Counters', icon: 'tally' as const, color: 'indigo' },
 ];
-
-/** "just now", "4 min ago", "3 h ago", "2 d ago". */
-function ago(t: number): string {
-  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
-  if (s < 60) return 'just now';
-  if (s < 3600) return `${Math.round(s / 60)} min ago`;
-  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
-  return `${Math.round(s / 86400)} d ago`;
-}
 
 export function Settings() {
   const { state, go, open, mutate, mutateOpt, signOut, showToast, haptic, confirm, askPassword, applyState, claimedBadges } = useStore();
@@ -91,12 +80,10 @@ export function Settings() {
   };
 
   // ---- Bank messages ----
-  // Two pieces of state the server knows nothing about: whether the phone has
-  // been given permission to read its inbox, and which account the payments it
-  // finds belong to. Both are per-device by nature — a second phone has its own
-  // messages and its own permission.
+  // Whether the phone has been given permission to read its inbox is per-device
+  // by nature: a second phone has its own messages and its own permission.
   const [smsOn, setSmsOn] = React.useState(smsEnabled());
-  const [smsAcc, setSmsAcc] = React.useState(smsAccount());
+  const linkedCount = (state?.accounts || []).filter((a) => (a.smsLinks || []).length).length;
   const [scanning, setScanning] = React.useState(false);
 
   const [smsInfo, setSmsInfo] = React.useState<SmsDiag | null>(smsDiag());
@@ -105,7 +92,7 @@ export function Settings() {
   const scanMessages = async (announceNothing: boolean) => {
     if (!state) return;
     setScanning(true);
-    const r = await syncSms(state, (items) => api.importSms(items));
+    const r = await syncSms(state, (items) => api.importSms(items), (base) => api.fx(base));
     setScanning(false);
     setSmsInfo(smsDiag());
     if (r.state) applyState(r.state);
@@ -767,7 +754,7 @@ export function Settings() {
             <PrefRow
               iconKey="indigo"
               title="Import from SMS"
-              sub="Turn bank alerts into transactions"
+              sub="Bank alerts become transactions as they arrive"
               on={smsOn}
               onToggle={toggleSms}
               icon={
@@ -781,28 +768,15 @@ export function Settings() {
 
             {smsOn && (
               <>
+                {/* No account picker any more: each bank's messages go to that
+                    bank's account, made the first time it is seen, so the
+                    accounts in Finances are the user's real ones. */}
                 <div style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>Add them to</div>
-                  <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 10 }}>
-                    The account your card and wallet payments come out of.
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>
+                    {linkedCount ? `Tracking ${linkedCount} account${linkedCount === 1 ? '' : 's'}` : 'Accounts are set up for you'}
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-                    {[{ id: '', name: 'No account' }, ...state!.accounts].map((a) => {
-                      const on = (smsAcc || '') === a.id;
-                      return (
-                        <div
-                          key={a.id || 'none'}
-                          onClick={() => {
-                            setSmsAccount(a.id || null);
-                            setSmsAcc(a.id || null);
-                          }}
-                          className="press99"
-                          style={chip(on, 'var(--indigo)')}
-                        >
-                          {a.name}
-                        </div>
-                      );
-                    })}
+                  <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.5 }}>
+                    Each bank, card and wallet gets its own account, with the balance your bank last reported. Transfers between them are counted once, not as spending.
                   </div>
                 </div>
 
@@ -876,8 +850,9 @@ export function Settings() {
                 this is the permission people are most right to be wary of. */}
             <div style={{ padding: '13px 16px', fontSize: 12, lineHeight: 1.55, color: 'var(--text2)' }}>
               Orbit reads only messages from banks and wallets, and only on this phone. The text of your
-              messages is never sent anywhere. Orbit works out the amount, the shop and the date on the
-              device, and stores just those. Imported payments are marked{' '}
+              messages is never sent anywhere: it stays on this phone so you can see what each entry was
+              read from. Orbit works out the amount, the shop, the date and which bank on the device, and
+              stores just those. Imported payments are marked{' '}
               <span style={{ fontWeight: 700, color: 'var(--indigo)' }}>SMS</span> so you can check them,
               and you can edit or delete any of them like anything else.
             </div>

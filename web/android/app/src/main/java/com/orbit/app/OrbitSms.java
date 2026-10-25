@@ -1,5 +1,6 @@
 package com.orbit.app;
 
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -17,12 +18,11 @@ import com.getcapacitor.annotation.PermissionCallback;
 /**
  * Reading the phone's SMS inbox, so bank messages can become transactions.
  *
- * Deliberately a *reader*, not a listener. A broadcast receiver would catch
- * messages the moment they arrive, but it cannot do anything useful with one
- * while the app is closed — there is no background service here, and adding one
- * to save a few seconds is a poor trade. Re-reading the inbox from a watermark
- * when the app next opens catches everything a receiver would have caught,
- * including the messages that arrived while the phone was off.
+ * The inbox is the source of truth: re-reading it from a watermark catches
+ * every message, including the ones that arrived while the phone was off. What
+ * it can't do is notice a payment the moment it happens; SmsReceiver does that,
+ * and hands over to this class (an event the web layer answers with a scan)
+ * rather than reading anything itself.
  *
  * Nothing is stored or forwarded here. This class hands the text to the web
  * layer, which reads it (web/src/lib/smsParse.ts) and keeps only the amount,
@@ -36,12 +36,28 @@ import com.getcapacitor.annotation.PermissionCallback;
 @CapacitorPlugin(
     name = "OrbitSms",
     permissions = {
-        @Permission(alias = OrbitSms.SMS, strings = { "android.permission.READ_SMS" })
+        @Permission(alias = OrbitSms.SMS, strings = { "android.permission.READ_SMS" }),
+        // Separate, so an install that granted reading before instant capture
+        // existed still reads as on.
+        @Permission(alias = OrbitSms.LIVE, strings = { "android.permission.RECEIVE_SMS" })
     }
 )
 public class OrbitSms extends Plugin {
 
     static final String SMS = "sms";
+    static final String LIVE = "live";
+
+    @Override
+    public void load() {
+        SmsReceiver.plugin = this;
+    }
+
+    /** A bank message just arrived while the app is open: time to scan. */
+    void announce(String sender) {
+        JSObject data = new JSObject();
+        data.put("sender", sender == null ? "" : sender);
+        notifyListeners("message", data);
+    }
 
     private static final Uri INBOX = Uri.parse("content://sms/inbox");
 
@@ -60,7 +76,19 @@ public class OrbitSms extends Plugin {
         JSObject out = new JSObject();
         out.put("available", hasTelephony());
         out.put("granted", getPermissionState(SMS) == PermissionState.GRANTED);
+        out.put("live", getPermissionState(LIVE) == PermissionState.GRANTED);
         call.resolve(out);
+    }
+
+    /**
+     * Mirror the Settings switch where SmsReceiver can see it. The receiver runs
+     * without the web layer, so it can't ask; it reads this.
+     */
+    @PluginMethod
+    public void setLive(PluginCall call) {
+        boolean on = Boolean.TRUE.equals(call.getBoolean("on", false));
+        getContext().getSharedPreferences(SmsReceiver.PREFS, Context.MODE_PRIVATE).edit().putBoolean(SmsReceiver.KEY_LIVE, on).apply();
+        check(call);
     }
 
     @PluginMethod
@@ -69,11 +97,14 @@ public class OrbitSms extends Plugin {
             check(call);
             return;
         }
-        if (getPermissionState(SMS) == PermissionState.GRANTED) {
+        if (getPermissionState(SMS) == PermissionState.GRANTED && getPermissionState(LIVE) == PermissionState.GRANTED) {
             check(call);
             return;
         }
-        requestPermissionForAlias(SMS, call, "afterPermission");
+        // Both together. They are one permission group, so Android asks once;
+        // and on an install that already reads messages, adding the second is
+        // granted without asking at all.
+        requestPermissionForAliases(new String[] { SMS, LIVE }, call, "afterPermission");
     }
 
     @PermissionCallback
@@ -182,7 +213,7 @@ public class OrbitSms extends Plugin {
     }
 
     /** A sender id with a letter in it, or one the caller listed explicitly. */
-    private static boolean isInstitution(String address, java.util.List<String> also) {
+    static boolean isInstitution(String address, java.util.List<String> also) {
         if (address == null || address.isEmpty()) return false;
         for (int i = 0; i < address.length(); i++) {
             if (Character.isLetter(address.charAt(i))) return true;

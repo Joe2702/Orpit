@@ -66,8 +66,13 @@ export async function buildState(userId: number) {
   );
 
   const accounts = await query(
-    `SELECT id::text, name, type, color, opening FROM accounts
-     WHERE user_id = $1 ORDER BY sort, id`,
+    `SELECT a.id::text, a.name, a.type, a.color, a.opening,
+            a.sms_balance AS "smsBalance",
+            (EXTRACT(EPOCH FROM a.sms_balance_ts) * 1000)::float8 AS "smsBalanceTs",
+            COALESCE((SELECT json_agg(json_build_object('sender', l.sender, 'card', NULLIF(l.card, '')) ORDER BY l.sender, l.card)
+                      FROM account_links l WHERE l.acc_id = a.id), '[]'::json) AS "smsLinks"
+     FROM accounts a
+     WHERE a.user_id = $1 ORDER BY a.sort, a.id`,
     [userId]
   );
 
@@ -129,7 +134,7 @@ export async function buildState(userId: number) {
     // bundle only carries whether one exists, so it stays small.
     `SELECT t.id::text, t.name, t.cat, t.amount, t.income, t.acc_id::text AS "accId",
             t.to_acc_id::text AS "toAccId", t.adjust, t.note,
-            (t.sms_key IS NOT NULL) AS sms,
+            (t.sms_key IS NOT NULL) AS sms, t.sms_key AS "smsKey", t.review, t.auto,
             (p.txn_id IS NOT NULL) AS photo, ${TS('t.ts')}
      FROM txns t LEFT JOIN txn_photos p ON p.txn_id = t.id
      WHERE t.user_id = $1 AND t.ts > now() - interval '400 days' ORDER BY t.ts DESC`,

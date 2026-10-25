@@ -102,6 +102,20 @@ for (let i = SPAN; i >= 0; i--) {
   if (rnd() < 0.8) countLogs.push({ id: `cl${i}c`, counterId: 'c3', amount: 1 + Math.round(rnd() * 2), ts: at(i, 15) });
 }
 
+// A few entries straight from bank messages, the kind the importer flags or
+// files specially: an unknown shop, money from a person, a foreign charge on
+// the credit card, a refund, and a transfer it paired from two messages.
+{
+  const sms = (id, name, cat, amount, accId, hoursAgo, extra = {}) =>
+    txns.push({ id, name, cat, amount, income: false, accId, toAccId: null, adjust: false, note: null, photo: false, ts: NOW - hoursAgo * 3600_000, sms: true, auto: true, smsKey: id, ...extra });
+  sms('sx1', 'XYZ Trading', 'Other', -300, 'a1', 5, { review: true });
+  sms('sx2', 'Money received', 'Other', 500, 'a5', 26, { income: true, review: true });
+  sms('sx3', 'Netflix', 'Subscriptions', -484.52, 'a4', 30, { note: 'USD 9.99 at 48.50' });
+  sms('sx4', 'Amazon', 'Shopping', 200, 'a1', 50);
+  sms('sx5', 'Transfer', 'Transfer', -2000, 'a1', 72, { toAccId: 'a5' });
+  sms('sx6', 'El Nour Pharmacy', 'Health', -265, 'a1', 3, { review: true });
+}
+
 export const state = {
   profile: {
     name: 'Youssif Mohammed', email: 'y@example.com', theme: 'dark', reminders: true, haptics: true,
@@ -112,11 +126,29 @@ export const state = {
   },
   habits, checkins, wCats, workouts, nights, txns,
   accounts: [
-    { id: 'a1', name: 'CIB Current', type: 'Bank', color: 'blue', opening: 18000 },
-    { id: 'a2', name: 'Savings', type: 'Savings', color: 'emerald', opening: 40000 },
-    { id: 'a3', name: 'Cash', type: 'Cash', color: 'amber', opening: 1500 },
+    // Filled from CIB's messages: the balance is the one the bank last
+    // reported, not opening + everything logged.
+    { id: 'a1', name: 'CIB', type: 'Bank', color: 'blue', opening: 18000, smsBalance: 46820.5, smsBalanceTs: NOW - 2 * 3600_000, smsLinks: [{ sender: 'CIB', card: null }, { sender: 'CIB', card: '1234' }] },
+    { id: 'a2', name: 'Savings', type: 'Savings', color: 'emerald', opening: 40000, smsLinks: [] },
+    { id: 'a3', name: 'Cash', type: 'Cash', color: 'amber', opening: 1500, smsLinks: [] },
+    { id: 'a4', name: 'CIB card ••4444', type: 'Credit card', color: 'indigo', opening: 0, smsLinks: [{ sender: 'CIB', card: '4444' }] },
+    { id: 'a5', name: 'Vodafone Cash', type: 'Wallet', color: 'rose', opening: 0, smsBalance: 800, smsBalanceTs: NOW - 26 * 3600_000, smsLinks: [{ sender: 'Vodafone Cash', card: null }] },
   ],
-  fcats: [],
+  fcats: [
+    ['Groceries', 'cart', 'expense'],
+    ['Eating out', 'food', 'expense'],
+    ['Coffee', 'coffee', 'expense'],
+    ['Transport', 'car', 'expense'],
+    ['Housing', 'home', 'expense'],
+    ['Bills', 'bolt', 'expense'],
+    ['Subscriptions', 'repeat', 'expense'],
+    ['Health', 'heart', 'expense'],
+    ['Shopping', 'bag', 'expense'],
+    ['Fees', 'other', 'expense'],
+    ['Salary', 'cash', 'income'],
+    ['Freelance', 'laptop', 'income'],
+    ['Other', 'other', 'income'],
+  ].map(([name, icon, kind], i) => ({ id: `fc${i}`, name, icon, color: 'indigo', kind })),
   budgets: [
     { id: 'b1', cat: 'Groceries', limit: 7000, rollover: false },
     { id: 'b2', cat: 'Eating out', limit: 3000, rollover: true },

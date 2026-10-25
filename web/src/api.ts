@@ -1,5 +1,5 @@
 import type { AppState, WorkoutSet, PartnerState } from './types';
-import type { SmsRow } from './lib/smsSync';
+import type { SmsRow } from './lib/ledger';
 import {
   enqueue,
   flush,
@@ -291,6 +291,8 @@ export const api = {
     toAccId?: string | null;
     /** A balance correction: real money, but neither income nor spending. */
     adjust?: boolean;
+    /** Money back for a purchase: positive, but not income. */
+    refund?: boolean;
     note?: string | null;
     // A data URL attaches a receipt; null clears one; omit to leave it alone.
     photo?: string | null;
@@ -298,7 +300,19 @@ export const api = {
   }) => request<AppState>('/txns', { method: 'POST', body: JSON.stringify(b) }),
   editTxn: (
     id: string,
-    b: { name?: string; cat: string; amount: number; income: boolean; accId?: string | null; toAccId?: string | null; note?: string | null; photo?: string | null; ts?: number }
+    b: {
+      name?: string;
+      cat: string;
+      amount: number;
+      income: boolean;
+      /** Money back for a purchase: positive, but not income. */
+      refund?: boolean;
+      accId?: string | null;
+      toAccId?: string | null;
+      note?: string | null;
+      photo?: string | null;
+      ts?: number;
+    }
   ) => request<AppState>(`/txns/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteTxn: (id: string) => request<AppState>(`/txns/${id}`, { method: 'DELETE' }),
   /**
@@ -310,6 +324,13 @@ export const api = {
    */
   importSms: (items: SmsRow[]) =>
     request<AppState>('/txns/sms', { method: 'POST', body: JSON.stringify({ items }) }),
+  /** Imported entries the user has looked at and is happy with. */
+  markReviewed: (ids: string[]) => request<AppState>('/txns/reviewed', { method: 'POST', body: JSON.stringify({ ids }) }),
+  /** One category for many entries: "everything from this shop". */
+  recategorise: (ids: string[], cat: string) =>
+    request<AppState>('/txns/recat', { method: 'POST', body: JSON.stringify({ ids, cat }) }),
+  /** What one unit of each currency is worth in `base`. */
+  fx: (base: string) => request<{ base: string; rates: Record<string, number>; at: number }>(`/fx?base=${encodeURIComponent(base)}`),
   /** Fetch a receipt on demand — images are never part of the state bundle. */
   txnPhoto: (id: string) => request<{ photo: string }>(`/txns/${id}/photo`),
   setTxnPhoto: (id: string, photo: string | null) =>
@@ -348,8 +369,12 @@ export const api = {
 
   addAccount: (b: { name: string; type: string; color: string; opening: number }) =>
     request<AppState>('/accounts', { method: 'POST', body: JSON.stringify(b) }),
-  editAccount: (id: string, b: { name: string; type: string; color: string; opening: number }) =>
+  editAccount: (id: string, b: { name: string; type: string; color: string; opening: number; balanceNow?: number }) =>
     request<AppState>(`/accounts/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+  mergeAccount: (id: string, into: string) =>
+    request<AppState>(`/accounts/${id}/merge`, { method: 'POST', body: JSON.stringify({ into }) }),
+  unlinkAccount: (id: string, link: { sender: string; card: string | null }) =>
+    request<AppState>(`/accounts/${id}/unlink`, { method: 'POST', body: JSON.stringify(link) }),
   deleteAccount: (id: string) => request<AppState>(`/accounts/${id}`, { method: 'DELETE' }),
 
   addFcat: (b: { name: string; icon: string; color: string; kind: string }) =>

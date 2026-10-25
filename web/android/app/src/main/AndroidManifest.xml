@@ -10,6 +10,10 @@
          must fill in the Permissions Declaration Form. On a directly-installed
          APK it just works. -->
     <uses-permission android:name="android.permission.READ_SMS" />
+    <!-- Noticing a bank message the moment it arrives (SmsReceiver), instead
+         of the next time the app is opened. Same permission group as the one
+         above, so Android asks once for both. -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
 
 
     <application
@@ -119,6 +123,17 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_stats_info" />
+        </receiver>
+
+        <!-- Bank messages as they arrive. Exported because the system sends
+             the broadcast; guarded by BROADCAST_SMS so only the system can. -->
+        <receiver
+            android:name=".SmsReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
         </receiver>
 
         <provider

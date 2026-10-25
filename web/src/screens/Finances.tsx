@@ -2,8 +2,9 @@ import React from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
 import { BarChart, Donut, Spark } from '../lib/charts';
-import { money, money0, moneyShort, relLabel } from '../lib/format';
+import { ago, money0, moneyShort } from '../lib/format';
 import { Card, ChartCard, DetailHeader, RangeSeg, SectionLabel, Stat, StatRow, TrackerAction } from '../ui';
+import { TxnRow } from './FinanceScreens';
 
 const HUB: { label: string; icon: string; screen: any; desc: (d: any, s: any) => string }[] = [
   { label: 'Transactions', icon: 'M4 6h12M4 10h12M4 14h8', screen: 'ftxns', desc: (d) => `${d.txnCount} ${d.period.phrase}` },
@@ -16,7 +17,7 @@ const HUB: { label: string; icon: string; screen: any; desc: (d: any, s: any) =>
 ];
 
 export function Finances() {
-  const { state, go } = useStore();
+  const { state, go, open } = useStore();
   const { d } = useData();
   const P = d.period;
   // Change across the whole net-worth window (6 months ago → now).
@@ -40,7 +41,7 @@ export function Finances() {
             {d.accounts.length} {d.accounts.length === 1 ? 'account' : 'accounts'}
           </span>
         </div>
-        <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.035em', color: 'var(--text)', marginTop: 6, lineHeight: 1.1 }}>{money0(d.netWorth)}</div>
+        <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.035em', color: 'var(--text)', marginTop: 6, lineHeight: 1.1 }}>{(d.netWorth < 0 ? '−' : '') + money0(d.netWorth)}</div>
         <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4 }}>
           {nwChange === 0 ? (
             'No change over 6 months'
@@ -63,6 +64,49 @@ export function Finances() {
           ))}
         </div>
       </Card>
+
+      {/* Every account at a glance, each with where its figure comes from. A
+          balance a bank reported an hour ago and one typed in last spring
+          deserve different amounts of trust, and the card says which it is. */}
+      {d.accounts.length > 0 && (
+        <div style={{ display: 'flex', gap: 10, overflowX: 'auto', margin: '-4px -20px 18px', padding: '4px 20px 6px', scrollSnapType: 'x proximity', scrollPaddingInline: 20 }}>
+          {d.accounts.map((a) => {
+            const fromBank = a.smsBalanceTs != null;
+            const tracked = (a.smsLinks || []).length > 0;
+            return (
+              <div
+                key={a.id}
+                onClick={() => open('account', { id: a.id, name: a.name, type: a.type, color: a.color, opening: a.opening })}
+                className="press99"
+                role="button"
+                style={{ flex: 'none', minWidth: 148, maxWidth: 200, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: '13px 14px', cursor: 'pointer', scrollSnapAlign: 'start' }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</div>
+                <div style={{ fontSize: 19, fontWeight: 700, letterSpacing: '-.02em', color: a.balance < 0 ? 'var(--danger)' : 'var(--text)', marginTop: 4, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                  {(a.balance < 0 ? '−' : '') + money0(a.balance)}
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
+                  {tracked && <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--indigo)', flex: 'none' }} />}
+                  {fromBank ? `Bank said · ${ago(a.smsBalanceTs!)}` : tracked ? 'Tracked from SMS' : a.type}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {d.reviewCount > 0 && (
+        <div onClick={() => go('freview')} className="press99" role="button" style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', boxShadow: 'var(--shadow)', padding: '12px 14px', marginBottom: 18, cursor: 'pointer' }}>
+          <span style={{ width: 26, height: 26, borderRadius: '50%', flex: 'none', background: 'var(--indigo)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontVariantNumeric: 'tabular-nums' }}>{d.reviewCount > 99 ? '99' : d.reviewCount}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>{d.reviewCount === 1 ? 'One payment to check' : `${d.reviewCount} payments to check`}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Orbit wasn&rsquo;t sure what {d.reviewCount === 1 ? 'it was' : 'these were'}</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+            <path d="M7 4l5 5-5 5" />
+          </svg>
+        </div>
+      )}
 
       <RangeSeg period={P} />
 
@@ -101,6 +145,28 @@ export function Finances() {
         </ChartCard>
       )}
 
+      {d.topPlaces.length > 1 && (
+        <ChartCard title="Top places">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {d.topPlaces.map((p, i) => {
+              const pct = Math.max(4, Math.round((p.total / d.topPlaces[0].total) * 100));
+              return (
+                <div key={p.name}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 550, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
+                    <span style={{ fontSize: 12, color: 'var(--text3)', flex: 'none' }}>{p.count}×</span>
+                    <span style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--text)', flex: 'none', fontVariantNumeric: 'tabular-nums' }}>{moneyShort(p.total)}</span>
+                  </div>
+                  <div style={{ height: 5, borderRadius: 999, background: 'var(--surface2)', marginTop: 6, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, borderRadius: 999, background: i === 0 ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 45%,var(--surface))' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </ChartCard>
+      )}
+
       {/* A plain list, not a grid of coloured tiles: these are places to go,
           and a list reads faster than seven equal squares. */}
       <SectionLabel style={{ marginTop: 14 }}>Manage</SectionLabel>
@@ -121,28 +187,12 @@ export function Finances() {
 
       <SectionLabel action={{ label: 'See all', onClick: () => go('ftxns') }}>Recent transactions</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
-        {[...state!.txns].sort((a, b) => b.ts - a.ts).slice(0, 6).map((t) => (
-          <div key={t.id} onClick={() => go('faddtx', { edit: t })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-            <span style={{ width: 38, height: 38, borderRadius: 'calc(11px * var(--sq))', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: t.income ? 'color-mix(in srgb,var(--indigo) 13%,transparent)' : 'var(--bg)' }}>
-              {t.adjust ? (
-                <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Balance correction"><path d="M4 13.5a6 6 0 0 1 10-4.4M16 6.5a6 6 0 0 1-10 4.4" /><path d="M14 5v4h-4M6 15v-4h4" /></svg>
-              ) : t.toAccId ? (
-                <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Transfer"><path d="M3 7h12M12 4l3 3-3 3M17 13H5M8 10l-3 3 3 3" /></svg>
-              ) : t.income ? (
-                <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M7 7l6 6M13 7v6H7" /></svg>
-              ) : (
-                <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M13 13L7 7M7 13V7h6" /></svg>
-              )}
-            </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
-              <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t.cat} · {relLabel(t.ts)}</div>
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: t.toAccId || t.adjust ? 'var(--text2)' : t.income ? 'var(--text)' : 'var(--text)' }}>
-              {(t.toAccId ? '' : t.adjust ? (t.amount >= 0 ? '+' : '−') : t.income ? '+' : '−') + money(t.amount)}
-            </div>
-          </div>
-        ))}
+        {[...state!.txns]
+          .sort((a, b) => b.ts - a.ts)
+          .slice(0, 6)
+          .map((t, i, all) => (
+            <TxnRow key={t.id} t={t} onClick={() => go('faddtx', { edit: t })} last={i === all.length - 1} />
+          ))}
       </div>
 
     </div>

@@ -1,3 +1,6 @@
+import { isSpend, isIncome } from './money';
+import { accountBalance } from './ledger';
+import { merchantKey } from './merchants';
 import type { AppState, Range } from '../types';
 import { dayKey } from './format';
 import { addDays, bucketOf, daysBetween, period, startOfDay, startOfMonth, startOfWeek, type Bucket, type Period } from './period';
@@ -291,14 +294,11 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
 
   const W = state.workouts,
     N = state.nights,
-    // Three views of the ledger. Each answers a different question, and using
+    // Two views of the ledger. Each answers a different question, and using
     // the wrong one is how a finance app quietly starts lying.
     //
-    // ALL — every row. What does this account hold? Only balances use it.
-    //
-    // NW — everything except transfers. How much do I have in total? A transfer
-    //   between your own accounts changes no total, so it is excluded; a
-    //   balance correction does change it, so it stays.
+    // ALL — every row. What does this account hold? Balances, and net worth as
+    //   their sum, use it.
     //
     // T  — money that actually came in or went out. Everything else uses this:
     //   budgets, categories, savings rate, insights, the story report. Neither
@@ -308,7 +308,6 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
     //   once here is what keeps the thirty totals downstream honest, rather
     //   than remembering to exclude them in thirty separate places.
     ALL = state.txns,
-    NW = state.txns.filter((t) => !t.toAccId),
     T = state.txns.filter((t) => !t.toAccId && !t.adjust);
 
   const allTs = ([] as number[]).concat(W.map((x) => x.ts), N.map((x) => x.ts), ALL.map((x) => x.ts));
@@ -386,13 +385,16 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
 
   // ---- Finances ----
   const Tr = T.filter((t) => inWin(t.ts));
-  const income = Tr.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-  const spent = Tr.filter((t) => t.amount < 0).reduce((s, t) => s - t.amount, 0);
+  const income = Tr.filter((t) => isIncome(t)).reduce((s, t) => s + t.amount, 0);
+  const spent = Tr.filter((t) => isSpend(t)).reduce((s, t) => s - t.amount, 0);
   const net = income - spent;
   const catSums: Record<string, number> = {};
-  Tr.filter((t) => t.amount < 0).forEach((t) => (catSums[t.cat] = (catSums[t.cat] || 0) + -t.amount));
+  Tr.filter((t) => isSpend(t)).forEach((t) => (catSums[t.cat] = (catSums[t.cat] || 0) + -t.amount));
+  // A refund larger than the window's spending in its category would leave a
+  // negative slice; a category with nothing spent has no place in the chart.
   const catArr = Object.keys(catSums)
     .map((k) => ({ cat: k, val: catSums[k] }))
+    .filter((c) => c.val > 0)
     .sort((a, b) => b.val - a.val);
   const fCatSegs = catArr.slice(0, 4).map((c, i) => ({
     label: c.cat,
@@ -408,15 +410,34 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
   if (fTrend.length < 2) fTrend.unshift(0);
   const fYMin = Math.min.apply(null, fTrend),
     fYMax = Math.max.apply(null, fTrend);
-  const spendBuckets = aggSeries(Tr.filter((t) => t.amount < 0), buckets, (t) => -t.amount, 'sum');
-  const incomeBuckets = aggSeries(Tr.filter((t) => t.amount > 0), buckets, (t) => t.amount, 'sum');
+  const spendBuckets = aggSeries(Tr.filter((t) => isSpend(t)), buckets, (t) => -t.amount, 'sum');
+  const incomeBuckets = aggSeries(Tr.filter((t) => isIncome(t)), buckets, (t) => t.amount, 'sum');
   const spendSeries = nums(spendBuckets);
   const savingsRate = income > 0 ? Math.round((net / income) * 100) : 0;
   // Per day over the days that have actually happened. Dividing a month's
   // spending by all 31 days on the 10th understated it threefold.
   const avgDay = spent / P.days;
+  // Where the money goes, by shop rather than by category: "Talabat, 14 times"
+  // says more than "Eating out". Names are grouped the way the importer groups
+  // them, so "CARREFOUR MAADI" and "Carrefour" are one place.
+  const placeMap = new Map<string, { name: string; total: number; count: number; cat: string }>();
+  for (const t of Tr) {
+    if (!isSpend(t)) continue;
+    const k = merchantKey(t.name);
+    if (!k) continue;
+    const p = placeMap.get(k) || { name: t.name, total: 0, count: 0, cat: t.cat };
+    p.total -= t.amount;
+    if (t.amount < 0) p.count += 1;
+    placeMap.set(k, p);
+  }
+  const topPlaces = [...placeMap.values()]
+    .filter((p) => p.total > 0 && p.name !== p.cat)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+  /** Imported entries Orbit wasn't sure about, waiting for a look. */
+  const reviewCount = state.txns.filter((t) => t.review).length;
   const incSums: Record<string, number> = {};
-  Tr.filter((t) => t.amount > 0).forEach((t) => (incSums[t.cat] = (incSums[t.cat] || 0) + t.amount));
+  Tr.filter((t) => isIncome(t)).forEach((t) => (incSums[t.cat] = (incSums[t.cat] || 0) + t.amount));
   const incArr = Object.keys(incSums)
     .map((k) => ({ cat: k, val: incSums[k] }))
     .sort((a, b) => b.val - a.val);
@@ -424,13 +445,13 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
   // ---- Full finance module (month-based, independent of the range control) ----
   const mNow = monthStart(0, now),
     mPrev = monthStart(1, now);
-  const spentThisMonth = T.filter((t) => t.amount < 0 && t.ts >= mNow).reduce((s, t) => s - t.amount, 0);
-  const spentPrevMonth = T.filter((t) => t.amount < 0 && t.ts >= mPrev && t.ts < mNow).reduce((s, t) => s - t.amount, 0);
-  const incThisMonth = T.filter((t) => t.amount > 0 && t.ts >= mNow).reduce((s, t) => s + t.amount, 0);
-  const incPrevMonth = T.filter((t) => t.amount > 0 && t.ts >= mPrev && t.ts < mNow).reduce((s, t) => s + t.amount, 0);
+  const spentThisMonth = T.filter((t) => isSpend(t) && t.ts >= mNow).reduce((s, t) => s - t.amount, 0);
+  const spentPrevMonth = T.filter((t) => isSpend(t) && t.ts >= mPrev && t.ts < mNow).reduce((s, t) => s - t.amount, 0);
+  const incThisMonth = T.filter((t) => isIncome(t) && t.ts >= mNow).reduce((s, t) => s + t.amount, 0);
+  const incPrevMonth = T.filter((t) => isIncome(t) && t.ts >= mPrev && t.ts < mNow).reduce((s, t) => s + t.amount, 0);
 
   const catMonthSpent: Record<string, number> = {};
-  T.filter((t) => t.amount < 0 && t.ts >= mNow).forEach(
+  T.filter((t) => isSpend(t) && t.ts >= mNow).forEach(
     (t) => (catMonthSpent[t.cat] = (catMonthSpent[t.cat] || 0) + -t.amount)
   );
   const budgets = state.budgets.map((b) => {
@@ -438,7 +459,7 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
     // Rollover: whatever went unspent last month is added to this month's limit.
     const prevStart = monthStart(1, now);
     const prevEnd = monthStart(0, now);
-    const prevSpent = T.filter((t) => t.amount < 0 && t.cat === b.cat && t.ts >= prevStart && t.ts < prevEnd)
+    const prevSpent = T.filter((t) => isSpend(t) && t.cat === b.cat && t.ts >= prevStart && t.ts < prevEnd)
       .reduce((a, t) => a - t.amount, 0);
     const carried = b.rollover ? Math.max(0, b.limit - prevSpent) : 0;
     const effLimit = b.limit + carried;
@@ -458,36 +479,26 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
   const budgetTotal = budgets.reduce((s, b) => s + b.limit, 0),
     budgetSpent = budgets.reduce((s, b) => s + b.spent, 0);
 
-  // Net worth over time: opening balances plus every transaction up to each
-  // point. Transactions older than the state window aren't shipped as rows, so
-  // their net effect comes from the archive totals — without that, a long-lived
-  // account would appear to reset every time old rows aged out.
-  const openingTotal =
-    state.accounts.reduce((a, x) => a + (x.opening || 0), 0) + (state.archive?.txnSum || 0);
-  const sortedT = [...NW].sort((a, b) => a.ts - b.ts);
+  // Each account's balance, from the last balance its bank reported where there
+  // is one, and from its opening balance and everything logged where not.
+  // Transactions older than the state window aren't shipped as rows, so their
+  // net effect comes from the archive totals; without that, a long-lived account
+  // would appear to reset every time old rows aged out.
+  const accSums = state.archive?.accSums || {};
+  const accounts = state.accounts.map((a) => ({ ...a, balance: accountBalance(a, ALL, accSums[a.id] || 0) }));
+
+  // Net worth at the end of each of the last six months, worked out the same
+  // way, so the line ends exactly on today's total.
   const netWorthSeries: number[] = [];
   const netWorthLabels: string[] = [];
   {
     const months = 6;
     for (let i = months - 1; i >= 0; i--) {
       const cutoff = i === 0 ? now + 1 : monthStart(i - 1, now); // end of that month, or now
-      const bal = openingTotal + sortedT.filter((t) => t.ts < cutoff).reduce((a, t) => a + t.amount, 0);
-      netWorthSeries.push(bal);
+      netWorthSeries.push(state.accounts.reduce((sum, a) => sum + accountBalance(a, ALL, accSums[a.id] || 0, cutoff), 0));
       netWorthLabels.push(MONTH_SHORT[new Date(monthStart(i, now)).getMonth()]);
     }
   }
-
-  const accSums = state.archive?.accSums || {};
-  const accounts = state.accounts.map((a) => {
-    const bal =
-      (a.opening || 0) +
-      (accSums[a.id] || 0) + // pre-window movement on this account
-      // Money out of this account (a transfer's amount is already negative),
-      // plus money into it from transfers pointing here.
-      ALL.filter((t) => t.accId === a.id).reduce((s, t) => s + t.amount, 0) +
-      ALL.filter((t) => t.toAccId === a.id).reduce((s, t) => s + Math.abs(t.amount), 0);
-    return { ...a, balance: bal };
-  });
   const netWorth = accounts.reduce((s, a) => s + a.balance, 0);
 
   const goals = state.goals.map((g) => ({
@@ -547,10 +558,10 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
   const homeSleepData = homeNights.map((n) => n.hours);
   const homeSleepBuckets = aggSeries(homeNights, wkB, (n) => n.hours, 'avg');
   const homeSlAvg = homeNights.length ? homeNights.reduce((s, n) => s + n.hours, 0) / homeNights.length : 0;
-  const homeSpendBuckets = aggSeries(T.filter((t) => t.amount < 0 && t.ts >= hStart), wkB, (t) => -t.amount, 'sum');
+  const homeSpendBuckets = aggSeries(T.filter((t) => isSpend(t) && t.ts >= hStart), wkB, (t) => -t.amount, 'sum');
   const homeSpendSeries = nums(homeSpendBuckets);
   // "Spent" this week (total expenses, positive number)
-  const homeWeekSpend = T.filter((t) => t.amount < 0 && t.ts >= hStart).reduce((s, t) => s - t.amount, 0);
+  const homeWeekSpend = T.filter((t) => isSpend(t) && t.ts >= hStart).reduce((s, t) => s - t.amount, 0);
 
   // ---- Week-over-week deltas ----
   // This week so far against the same stretch of last week — Sunday to the
@@ -565,7 +576,7 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
   const prevWin = (ts: number) => ts >= pStart && ts < lastWeekNow;
   const prevW = W.filter((w) => prevWin(w.ts));
   const prevN = N.filter((n) => prevWin(n.ts));
-  const prevSpend = T.filter((t) => t.amount < 0 && prevWin(t.ts)).reduce((s, t) => s - t.amount, 0);
+  const prevSpend = T.filter((t) => isSpend(t) && prevWin(t.ts)).reduce((s, t) => s - t.amount, 0);
   const dayStart = (day: string) => new Date(day + 'T00:00:00').getTime();
   const prevChecks = state.checkins.filter((c) => {
     const t = dayStart(c.day);
@@ -632,6 +643,8 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
     spent,
     net,
     fCatSegs,
+    topPlaces,
+    reviewCount,
     fTrend,
     fYMin,
     fYMax,

@@ -8,10 +8,12 @@ import { existsSync } from 'node:fs';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import webpush from 'web-push';
 
+import type { PoolClient } from 'pg';
 import { pool, query, one, tx } from './db.js';
 import { signToken, requireAuth, type AuthedRequest } from './auth.js';
 import { seedUser } from './seed.js';
 import { buildState } from './state.js';
+import { fetchRates } from './fx.js';
 import { SCHEMA_SQL } from './schema.js';
 import { legalRouter } from './legal.js';
 import { partnerRouter, listReports } from './partner.js';
@@ -981,6 +983,8 @@ app.post(
     // way, and which way is the whole content of the entry.
     const adjust = !toAccId && !!req.body.adjust;
     const income = !toAccId && !adjust && !!req.body.income;
+    // Money back for a purchase: positive, but not income.
+    const refund = !toAccId && !adjust && !income && !!req.body.refund;
     const cat = toAccId ? 'Transfer' : adjust ? 'Adjustment' : String(req.body.cat || 'Other');
     const ts = req.body.ts ? new Date(Number(req.body.ts)) : new Date();
     const row = await one<{ id: string }>(
@@ -990,7 +994,7 @@ app.post(
         uid,
         String(req.body.name || cat),
         cat,
-        adjust ? amt : income ? Math.abs(amt) : -Math.abs(amt),
+        adjust ? amt : income || refund ? Math.abs(amt) : -Math.abs(amt),
         income,
         req.body.accId || null,
         toAccId,
@@ -1011,50 +1015,429 @@ app.post(
 // to half-fail.
 //
 // The message text is not sent and is not stored. What arrives is what the
-// device read out of it — an amount, a name, a date — and a hash of the
-// message, which is the only thing that makes a repeat recognisable.
+// device read out of it (an amount, a name, a date, which bank and card) and a
+// hash of the message, which is the only thing that makes a repeat
+// recognisable.
 //
-// Every entry is inserted ON CONFLICT DO NOTHING against the unique index on
-// (user_id, sms_key). That is the whole duplicate story, and it belongs here
-// rather than on the device: a phone only knows the messages it has read
-// itself, so two phones on one account would each import the same payment.
+// The device has already done the reading: categories, currency, which
+// messages are the same payment, which pairs are a transfer between the user's
+// own accounts. This end does what needs the database: finds or creates the
+// account each message belongs to, keeps each account's last reported balance,
+// and writes the entries.
+//
+// Every entry is keyed on (user_id, sms_key). That is the duplicate story, and
+// it belongs here rather than on the device: a phone only knows the messages it
+// has read itself, so two phones on one account would each import the same
+// payment. A key that already exists is rewritten only while the entry is still
+// as the import left it (txns.auto), which is how a better reader can fix
+// entries an older one got wrong without undoing anything the user changed.
+
+// Categories an import may create when the user has nothing that fits. Mirrors
+// CREATABLE in web/src/lib/merchants.ts.
+const SMS_CATEGORIES: Record<string, { icon: string; color: string; kind: 'expense' | 'income' }> = {
+  Groceries: { icon: 'cart', color: 'emerald', kind: 'expense' },
+  'Eating out': { icon: 'food', color: 'coral', kind: 'expense' },
+  Coffee: { icon: 'coffee', color: 'amber', kind: 'expense' },
+  Fuel: { icon: 'car', color: 'blue', kind: 'expense' },
+  Bills: { icon: 'bolt', color: 'amber', kind: 'expense' },
+  Subscriptions: { icon: 'repeat', color: 'purple', kind: 'expense' },
+  Fitness: { icon: 'heart', color: 'rose', kind: 'expense' },
+  Travel: { icon: 'star', color: 'teal', kind: 'expense' },
+  Education: { icon: 'laptop', color: 'cyan', kind: 'expense' },
+  Cash: { icon: 'cash', color: 'emerald', kind: 'expense' },
+  Transfers: { icon: 'repeat', color: 'blue', kind: 'expense' },
+  Fees: { icon: 'other', color: 'text2', kind: 'expense' },
+  Income: { icon: 'cash', color: 'emerald', kind: 'income' },
+};
+
+const ACCOUNT_TYPES = ['Bank', 'Credit card', 'Wallet', 'Cash'];
+const ACCOUNT_COLOR: Record<string, string> = { Bank: 'blue', 'Credit card': 'indigo', Wallet: 'rose', Cash: 'emerald' };
+
+interface SmsLinkIn {
+  sender: string;
+  card: string;
+  label: string;
+  type: string;
+}
+
+function readLink(v: unknown): SmsLinkIn | null {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as Record<string, unknown>;
+  const sender = String(o.sender || '').trim().slice(0, 40);
+  if (!sender) return null;
+  const card = o.card ? String(o.card).replace(/\D/g, '').slice(-4) : '';
+  const label = String(o.label || sender).trim().slice(0, 60) || sender;
+  const type = ACCOUNT_TYPES.includes(String(o.type)) ? String(o.type) : 'Bank';
+  return { sender, card, label, type };
+}
+
+/**
+ * The account a bank message belongs to, created the first time a sender is
+ * seen. The first two steps mirror accountForLink in web/src/lib/ledger.ts.
+ */
+async function accountForSms(c: PoolClient, uid: number, l: SmsLinkIn, seen: Map<string, string>): Promise<string> {
+  const k = `${l.sender.toLowerCase()}|${l.card}`;
+  const known = seen.get(k);
+  if (known) return known;
+
+  // 1. This sender and card has been seen before.
+  let id: string | undefined = (
+    await c.query<{ id: string }>(
+      'SELECT acc_id::text AS id FROM account_links WHERE user_id = $1 AND lower(sender) = lower($2) AND card = $3',
+      [uid, l.sender, l.card]
+    )
+  ).rows[0]?.id;
+
+  // 2. A new card or account number from a bank the user has one account
+  //    with. A debit card and the account behind it are the same money.
+  if (!id && l.type !== 'Credit card') {
+    const r = await c.query<{ id: string }>(
+      `SELECT DISTINCT a.id::text AS id FROM account_links k JOIN accounts a ON a.id = k.acc_id
+       WHERE k.user_id = $1 AND lower(k.sender) = lower($2) AND a.type <> 'Credit card'`,
+      [uid, l.sender]
+    );
+    if (r.rows.length === 1) id = r.rows[0].id;
+  }
+
+  // 3. An account the user made by hand for this bank before turning
+  //    tracking on: "CIB", "CIB current". Cash is never one of them; a
+  //    "Vodafone Cash" wallet is not the money in someone's pocket.
+  if (!id) {
+    const r = await c.query<{ id: string; name: string; type: string }>(
+      `SELECT a.id::text AS id, a.name, a.type FROM accounts a
+       WHERE a.user_id = $1 AND a.type <> 'Cash'
+         AND NOT EXISTS (SELECT 1 FROM account_links k WHERE k.acc_id = a.id)
+         AND position(lower($2) in lower(a.name)) > 0
+       ORDER BY a.sort, a.id`,
+      [uid, l.sender]
+    );
+    const fit = r.rows.filter((a) => (a.type === 'Credit card') === (l.type === 'Credit card'));
+    const best = (l.card && fit.find((a) => a.name.includes(l.card))) || fit[0];
+    if (best) id = best.id;
+  }
+
+  // 4. A bank the user hasn't told the app about: open an account for it.
+  //    It starts at zero and takes its balance from the first message that
+  //    reports one.
+  if (!id) {
+    const max = await c.query<{ m: number }>('SELECT COALESCE(MAX(sort), -1) + 1 AS m FROM accounts WHERE user_id = $1', [uid]);
+    id = (
+      await c.query<{ id: string }>(
+        'INSERT INTO accounts (user_id, name, type, color, opening, sort) VALUES ($1,$2,$3,$4,0,$5) RETURNING id::text AS id',
+        [uid, l.label, l.type, ACCOUNT_COLOR[l.type] || 'blue', max.rows[0].m]
+      )
+    ).rows[0].id;
+  }
+
+  await c.query('INSERT INTO account_links (user_id, acc_id, sender, card) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING', [
+    uid,
+    id,
+    l.sender,
+    l.card,
+  ]);
+  seen.set(k, id);
+  return id;
+}
+
+/** Keep an account's reported balance, unless a newer one is already held. */
+async function anchorBalance(c: PoolClient, uid: number, accId: string, balance: unknown, ts: Date) {
+  const b = Number(balance);
+  if (balance == null || !isFinite(b) || Math.abs(b) > 1e11) return;
+  await c.query(
+    `UPDATE accounts SET sms_balance = $1, sms_balance_ts = $2
+     WHERE id = $3 AND user_id = $4 AND (sms_balance_ts IS NULL OR sms_balance_ts <= $2)`,
+    [b, ts, accId, uid]
+  );
+}
+
+/**
+ * A message that must never become an entry of its own: another copy of a
+ * payment already recorded, or the other half of a transfer. If an earlier
+ * import wrote it as an entry, that entry goes, unless the user has made it
+ * their own.
+ */
+async function ignoreSms(c: PoolClient, uid: number, key: string) {
+  if (!key) return;
+  await c.query('INSERT INTO sms_ignored (user_id, sms_key) VALUES ($1,$2) ON CONFLICT DO NOTHING', [uid, key]);
+  await c.query('DELETE FROM txns WHERE user_id = $1 AND sms_key = $2 AND auto', [uid, key]);
+}
+
+interface SmsEntry {
+  name: string;
+  cat: string;
+  amount: number;
+  income: boolean;
+  accId: string | null;
+  toAccId: string | null;
+  note: string | null;
+  ts: Date;
+  key: string;
+  review: boolean;
+}
+
+async function writeSms(c: PoolClient, uid: number, e: SmsEntry) {
+  await c.query(
+    `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, to_acc_id, note, ts, sms_key, review, auto)
+     SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,TRUE
+     WHERE NOT EXISTS (SELECT 1 FROM sms_ignored WHERE user_id = $1 AND sms_key = $10)
+     ON CONFLICT (user_id, sms_key) WHERE sms_key IS NOT NULL DO UPDATE SET
+       name = EXCLUDED.name, cat = EXCLUDED.cat, amount = EXCLUDED.amount, income = EXCLUDED.income,
+       acc_id = EXCLUDED.acc_id, to_acc_id = EXCLUDED.to_acc_id, note = EXCLUDED.note, ts = EXCLUDED.ts,
+       review = EXCLUDED.review
+     WHERE txns.auto`,
+    [uid, e.name, e.cat, e.amount, e.income, e.accId, e.toAccId, e.note, e.ts, e.key, e.review]
+  );
+  // An entry the user already edited keeps their wording, but one an older
+  // import left without an account can still be given the right one.
+  if (e.accId) {
+    await c.query('UPDATE txns SET acc_id = $1 WHERE user_id = $2 AND sms_key = $3 AND acc_id IS NULL AND NOT auto', [e.accId, uid, e.key]);
+  }
+}
+
 app.post(
   '/api/txns/sms',
   requireAuth,
   idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    const items = Array.isArray(req.body.items) ? req.body.items.slice(0, 200) : [];
+    const items = Array.isArray(req.body.items) ? req.body.items.slice(0, 300) : [];
     // Not "now": a first import walks back through old messages, and dating
     // them today would pile a year of spending onto one afternoon.
     const soon = Date.now() + 86400000;
+    const str = (v: unknown, n: number) => (v == null ? '' : String(v).trim().slice(0, n));
+    const keyOf = (v: unknown) => str(v, 80);
 
-    for (const it of items) {
-      const key = String(it?.key || '').slice(0, 80);
-      if (!key) continue;
-      const amt = Math.abs(Number(it.amount));
-      if (!isFinite(amt) || amt <= 0 || amt > 1e9) continue;
-      const t = Number(it.ts);
-      if (!isFinite(t) || t <= 0 || t > soon) continue;
-      const income = !!it.income;
-      const name = String(it.name || 'Bank').trim().slice(0, 120) || 'Bank';
-      const cat = String(it.cat || (income ? 'Income' : 'Other')).slice(0, 60);
-      const note = it.note ? String(it.note).slice(0, 200) : null;
+    await tx(async (c) => {
+      const seen = new Map<string, string>();
 
-      await query(
-        `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts, sms_key)
-         SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9
-         WHERE NOT EXISTS (SELECT 1 FROM sms_ignored WHERE user_id = $1 AND sms_key = $9)
-         ON CONFLICT (user_id, sms_key) WHERE sms_key IS NOT NULL DO NOTHING`,
-        [uid, name, cat, income ? amt : -amt, income, it.accId || null, note, new Date(t), key]
+      // Categories first, so every entry below lands in one that exists.
+      const have = new Set(
+        (await c.query<{ n: string }>('SELECT lower(name) AS n FROM fcats WHERE user_id = $1', [uid])).rows.map((r) => r.n)
       );
-    }
+      const ensureCat = async (cat: string) => {
+        const spec = SMS_CATEGORIES[cat];
+        if (!spec || have.has(cat.toLowerCase())) return;
+        await c.query(
+          `INSERT INTO fcats (user_id, name, icon, color, kind, sort)
+           SELECT $1,$2,$3,$4,$5, COALESCE(MAX(sort), -1) + 1 FROM fcats WHERE user_id = $1`,
+          [uid, cat, spec.icon, spec.color, spec.kind]
+        );
+        have.add(cat.toLowerCase());
+      };
+      for (const it of items) {
+        await ensureCat(str(it?.cat, 60));
+        if (Number(it?.fee) > 0) await ensureCat(str(it?.feeCat, 60) || 'Fees');
+      }
+
+      for (const it of items) {
+        const key = keyOf(it?.key);
+        if (!key) continue;
+        const amt = Math.abs(Number(it.amount));
+        if (!isFinite(amt) || amt <= 0 || amt > 1e9) continue;
+        const t = Number(it.ts);
+        if (!isFinite(t) || t <= 0 || t > soon) continue;
+        const ts = new Date(t);
+        const link = readLink(it.link);
+        const accId = link ? await accountForSms(c, uid, link, seen) : null;
+        if (accId) await anchorBalance(c, uid, accId, it.balance, ts);
+
+        const also: string[] = Array.isArray(it.alsoKeys) ? it.alsoKeys.slice(0, 10).map(keyOf).filter(Boolean) : [];
+        // A copy the user already edited stands for the payment; this one is the repeat.
+        const kept = also.length
+          ? await c.query('SELECT 1 FROM txns WHERE user_id = $1 AND sms_key = ANY($2::text[]) AND NOT auto LIMIT 1', [uid, also])
+          : { rowCount: 0 };
+        if (kept.rowCount) {
+          await ignoreSms(c, uid, key);
+          for (const k of also) await c.query('INSERT INTO sms_ignored (user_id, sms_key) VALUES ($1,$2) ON CONFLICT DO NOTHING', [uid, k]);
+          continue;
+        }
+        for (const k of also) await ignoreSms(c, uid, k);
+
+        // Already recorded from another message.
+        if (it.dupOf) {
+          await ignoreSms(c, uid, key);
+          continue;
+        }
+
+        const name = str(it.name, 120) || 'Bank';
+        const note = str(it.note, 200) || null;
+        const review = !!it.review;
+        const fee = Math.abs(Number(it.fee)) || 0;
+        const feeCat = str(it.feeCat, 60) || 'Fees';
+
+        // Where the money went, when it stayed the user's own.
+        const from: string | null = accId;
+        let to: string | null = null;
+        let toBalance: unknown = null;
+        let pairedAt: Date | null = null;
+        const toLink = readLink(it.toLink);
+        if (toLink) {
+          to = await accountForSms(c, uid, toLink, seen);
+          toBalance = it.toBalance;
+        } else if (it.toAccId) {
+          const own = await c.query<{ id: string }>('SELECT id::text AS id FROM accounts WHERE id = $1 AND user_id = $2', [
+            String(it.toAccId),
+            uid,
+          ]);
+          to = own.rows[0]?.id || null;
+        } else if (it.pairOf) {
+          // The other half arrived in an earlier batch. If it is still as
+          // imported, the two become one transfer; otherwise the user has
+          // already said what it was, and this one is filed as read.
+          const other = await c.query<{ id: string; acc: string; key: string | null; amount: number; ts: Date }>(
+            `SELECT id::text AS id, acc_id::text AS acc, sms_key AS key, amount, ts FROM txns
+             WHERE id = $1 AND user_id = $2 AND auto AND to_acc_id IS NULL AND acc_id IS NOT NULL`,
+            [String(it.pairOf), uid]
+          );
+          const o = other.rows[0];
+          if (o && accId && o.acc !== accId) {
+            // Dated at the earlier half. Each side's reported balance already
+            // includes the move, and an entry dated at or before a reported
+            // balance is not added to it again.
+            const when = o.ts < ts ? o.ts : ts;
+            if (it.income) {
+              // The money-out half is already an entry: it becomes the
+              // transfer, keyed by its own message, and this one is the echo.
+              // Its amount included any fee; the fee is spending of its own.
+              const fee = Math.round((Math.abs(Number(o.amount)) - amt) * 100) / 100;
+              await c.query(
+                `UPDATE txns SET name = 'Transfer', cat = 'Transfer', amount = $1, income = FALSE, to_acc_id = $2,
+                        ts = $3, review = FALSE
+                 WHERE id = $4 AND user_id = $5`,
+                [-amt, accId, when, o.id, uid]
+              );
+              if (o.key && fee > 0 && fee < amt * 0.05) {
+                await ensureCat(feeCat);
+                await writeSms(c, uid, {
+                  name: 'Transfer fee',
+                  cat: feeCat,
+                  amount: -fee,
+                  income: false,
+                  accId: o.acc,
+                  toAccId: null,
+                  note: null,
+                  ts: when,
+                  key: `${o.key}:fee`.slice(0, 90),
+                  review: false,
+                });
+              }
+              await ignoreSms(c, uid, key);
+              continue;
+            }
+            // This is the money-out half: it becomes the transfer, and the
+            // money-in entry already recorded goes.
+            to = o.acc;
+            pairedAt = when;
+            await c.query('DELETE FROM txns WHERE id = $1 AND user_id = $2', [o.id, uid]);
+            if (o.key) await c.query('INSERT INTO sms_ignored (user_id, sms_key) VALUES ($1,$2) ON CONFLICT DO NOTHING', [uid, o.key]);
+          }
+        }
+        if (to && to === from) {
+          // Both ends are one account (a debit card paying into the account
+          // behind it): nothing moved.
+          await ignoreSms(c, uid, key);
+          continue;
+        }
+        if (toLink && to) {
+          // Each half's balance is anchored at its own message's time, and the
+          // transfer is dated at the earlier of the two, so both reported
+          // balances already include it and neither adds it again.
+          const tt = Number(it.toTs);
+          const inAt = isFinite(tt) && tt > 0 && tt <= soon ? new Date(tt) : ts;
+          if (toBalance != null) await anchorBalance(c, uid, to, toBalance, inAt);
+          pairedAt = inAt < ts ? inAt : ts;
+        }
+
+        if (to) {
+          await writeSms(c, uid, {
+            name: it.toAccId && !toLink ? name : 'Transfer',
+            cat: 'Transfer',
+            amount: -amt,
+            income: false,
+            accId: from,
+            toAccId: to,
+            note,
+            ts: pairedAt || ts,
+            key,
+            review: false,
+          });
+          if (fee > 0) {
+            await writeSms(c, uid, {
+              name: it.toAccId && !toLink ? 'ATM fee' : 'Transfer fee',
+              cat: feeCat,
+              amount: -fee,
+              income: false,
+              accId: from,
+              toAccId: null,
+              note: null,
+              ts: pairedAt || ts,
+              key: `${key}:fee`.slice(0, 90),
+              review: false,
+            });
+          }
+          continue;
+        }
+
+        // A refund is money back for spending: positive, but not income, so it
+        // lowers the month's spending instead of inflating its earnings.
+        const income = !!it.income && !it.refund;
+        await writeSms(c, uid, {
+          name,
+          cat: str(it.cat, 60) || (income ? 'Income' : 'Other'),
+          amount: income || it.refund ? amt : -amt,
+          income,
+          accId,
+          toAccId: null,
+          note,
+          ts,
+          key,
+          review,
+        });
+      }
+    });
 
     // A plain state, like every other write. The count of what was actually
     // new is worked out on the device by diffing ids: this response also
     // travels through the offline queue, which replays a failed op later and
     // applies whatever comes back as the app state, so it cannot be a
     // different shape from every other one.
+    res.json(await buildState(uid));
+  })
+);
+
+// Mark imported entries as looked at.
+app.post(
+  '/api/txns/reviewed',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const ids = Array.isArray(req.body.ids) ? req.body.ids.slice(0, 1000).map(String) : [];
+    if (ids.length) {
+      await query('UPDATE txns SET review = FALSE WHERE user_id = $1 AND id = ANY($2::bigint[])', [uid, ids]);
+    }
+    res.json(await buildState(uid));
+  })
+);
+
+// One category for several entries at once: "everything from this shop is
+// Groceries". The device picks the entries; this only applies the change.
+app.post(
+  '/api/txns/recat',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const ids = Array.isArray(req.body.ids) ? req.body.ids.slice(0, 2000).map(String) : [];
+    const cat = String(req.body.cat || '').trim().slice(0, 60);
+    if (!cat) return res.status(400).json({ error: 'Category required' });
+    if (ids.length) {
+      await query(
+        `UPDATE txns SET cat = $1, review = FALSE, auto = FALSE
+         WHERE user_id = $2 AND id = ANY($3::bigint[]) AND to_acc_id IS NULL AND NOT adjust`,
+        [cat, uid, ids]
+      );
+    }
     res.json(await buildState(uid));
   })
 );
@@ -1074,15 +1457,20 @@ app.patch(
       return res.status(400).json({ error: (e as Error).message });
     }
     const income = !toAccId && !!req.body.income;
+    // Money back for a purchase stays positive without counting as income.
+    const refund = !toAccId && !income && !!req.body.refund;
     const cat = toAccId ? 'Transfer' : String(req.body.cat || 'Other');
     const ts = req.body.ts ? new Date(Number(req.body.ts)) : new Date();
     await query(
-      `UPDATE txns SET name=$1, cat=$2, amount=$3, income=$4, acc_id=$5, to_acc_id=$6, note=$7, ts=$8
+      // Edited by hand: no longer a guess to review, and no later import may
+      // overwrite it.
+      `UPDATE txns SET name=$1, cat=$2, amount=$3, income=$4, acc_id=$5, to_acc_id=$6, note=$7, ts=$8,
+              review=FALSE, auto=FALSE
        WHERE id=$9 AND user_id=$10`,
       [
         String(req.body.name || cat),
         cat,
-        income ? Math.abs(amt) : -Math.abs(amt),
+        income || refund ? Math.abs(amt) : -Math.abs(amt),
         income,
         req.body.accId || null,
         toAccId,
@@ -1149,6 +1537,79 @@ app.patch(
       'UPDATE accounts SET name=$1, type=$2, color=$3, opening=$4 WHERE id=$5 AND user_id=$6',
       [name, String(req.body.type || 'Bank'), String(req.body.color || 'blue'), Number(req.body.opening) || 0, req.params.id, uid]
     );
+    // "It's 12,400 right now": the same kind of fact a bank message reports,
+    // so it is kept the same way, and whatever is logged afterwards adds to it.
+    if (req.body.balanceNow != null && isFinite(Number(req.body.balanceNow))) {
+      await query('UPDATE accounts SET sms_balance = $1, sms_balance_ts = now() WHERE id = $2 AND user_id = $3', [
+        Number(req.body.balanceNow),
+        req.params.id,
+        uid,
+      ]);
+    }
+    res.json(await buildState(uid));
+  })
+);
+
+// Stop filing a sender's messages here. The next one from it finds or opens
+// another account.
+app.post(
+  '/api/accounts/:id/unlink',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    await query('DELETE FROM account_links WHERE user_id = $1 AND acc_id = $2 AND lower(sender) = lower($3) AND card = $4', [
+      uid,
+      req.params.id,
+      String(req.body.sender || ''),
+      req.body.card ? String(req.body.card) : '',
+    ]);
+    res.json(await buildState(uid));
+  })
+);
+
+// Two accounts that are really one: the debit card the app met before the
+// account behind it, or a bank account made by hand before tracking began.
+// Everything moves into the second, including where future messages go.
+app.post(
+  '/api/accounts/:id/merge',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const from = String(req.params.id);
+    const into = String(req.body.into || '');
+    if (!into || into === from) return res.status(400).json({ error: 'Pick another account' });
+    const both = await query<{ id: string; opening: number; b: number | null; bts: Date | null }>(
+      `SELECT id::text AS id, opening, sms_balance AS b, sms_balance_ts AS bts FROM accounts
+       WHERE user_id = $1 AND id = ANY($2::bigint[])`,
+      [uid, [from, into]]
+    );
+    if (both.length !== 2) return res.status(404).json({ error: 'Account not found' });
+    const src = both.find((a) => a.id === from)!;
+    const dst = both.find((a) => a.id === into)!;
+    // Both reported a balance: they were one bank account seen through two
+    // numbers, and the newer report is the truth. Only one: that one.
+    const anchor = !src.bts ? dst : !dst.bts ? src : src.bts > dst.bts ? src : dst;
+    await tx(async (c) => {
+      // A transfer between the two is a move from an account to itself.
+      await c.query(
+        'DELETE FROM txns WHERE user_id = $1 AND ((acc_id = $2 AND to_acc_id = $3) OR (acc_id = $3 AND to_acc_id = $2))',
+        [uid, from, into]
+      );
+      await c.query('UPDATE txns SET acc_id = $3 WHERE user_id = $1 AND acc_id = $2', [uid, from, into]);
+      await c.query('UPDATE txns SET to_acc_id = $3 WHERE user_id = $1 AND to_acc_id = $2', [uid, from, into]);
+      await c.query('UPDATE recurring SET acc_id = $3 WHERE user_id = $1 AND acc_id = $2', [uid, from, into]);
+      await c.query('UPDATE account_links SET acc_id = $3 WHERE user_id = $1 AND acc_id = $2', [uid, from, into]);
+      await c.query('UPDATE accounts SET opening = $1, sms_balance = $2, sms_balance_ts = $3 WHERE id = $4 AND user_id = $5', [
+        (Number(src.opening) || 0) + (Number(dst.opening) || 0),
+        anchor.b,
+        anchor.bts,
+        into,
+        uid,
+      ]);
+      await c.query('DELETE FROM accounts WHERE id = $1 AND user_id = $2', [from, uid]);
+    });
     res.json(await buildState(uid));
   })
 );
@@ -1173,6 +1634,36 @@ app.delete(
       await c.query('DELETE FROM accounts WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
     });
     res.json(await buildState(uid));
+  })
+);
+
+// ---------------- Exchange rates ----------------
+
+// What a foreign-currency payment is worth in the user's own currency. A card
+// used abroad or a dollar subscription arrives in dollars; a ledger kept in
+// pounds that adds 30 where 1,450 belongs is wrong by the whole exchange rate.
+// Fetched from a free daily feed (fx.ts) and held for half a day: entries
+// need the day's rate, not the minute's.
+const fxCache = new Map<string, { at: number; rates: Record<string, number> }>();
+const FX_TTL = 12 * 3600_000;
+
+app.get(
+  '/api/fx',
+  requireAuth,
+  wrap(async (req, res) => {
+    const base = String(req.query.base || 'EGP').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+    if (base.length !== 3) return res.status(400).json({ error: 'Currency required' });
+    const hit = fxCache.get(base);
+    if (hit && Date.now() - hit.at < FX_TTL) return res.json({ base, rates: hit.rates, at: hit.at });
+    const rates = await fetchRates(base);
+    if (rates) {
+      fxCache.set(base, { at: Date.now(), rates });
+      return res.json({ base, rates, at: Date.now() });
+    }
+    // A stale rate beats none; no rate at all, and the device falls back to
+    // its own rough table and flags the entries for a look.
+    if (hit) return res.json({ base, rates: hit.rates, at: hit.at });
+    res.status(503).json({ error: 'Rates unavailable' });
   })
 );
 

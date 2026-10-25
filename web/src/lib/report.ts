@@ -1,3 +1,4 @@
+import { isSpend, isIncome } from './money';
 import type { GlyphName } from './appIcons';
 import type { AppState } from '../types';
 import { money0, minutes, dayKey } from './format';
@@ -56,13 +57,13 @@ export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset
   // Transfers between your own accounts are not spending and not income; a
   // week's report that counts them describes a week that didn't happen.
   const txns = s.txns.filter((t) => inWin(t.ts) && !t.toAccId && !t.adjust);
-  const spent = txns.filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
-  const income = txns.filter((t) => t.amount > 0).reduce((a, t) => a + t.amount, 0);
+  const spent = txns.filter((t) => isSpend(t)).reduce((a, t) => a - t.amount, 0);
+  const income = txns.filter((t) => isIncome(t)).reduce((a, t) => a + t.amount, 0);
   const net = income - spent;
   const savingsRate = income > 0 ? Math.round((net / income) * 100) : 0;
   // Top spending category.
   const catSpend = new Map<string, number>();
-  txns.filter((t) => t.amount < 0).forEach((t) => catSpend.set(t.cat, (catSpend.get(t.cat) || 0) + -t.amount));
+  txns.filter((t) => isSpend(t)).forEach((t) => catSpend.set(t.cat, (catSpend.get(t.cat) || 0) + -t.amount));
   let topCat = '';
   let topCatV = 0;
   catSpend.forEach((v, c) => {
@@ -134,7 +135,7 @@ export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset
   }
 
   if (txns.length) {
-    slides.push({ key: 'spent', color: 'emerald', icon: 'cash' as GlyphName, headline: 'Spent', value: money0(spent), caption: `across ${txns.filter((t) => t.amount < 0).length} expenses ${label}` });
+    slides.push({ key: 'spent', color: 'emerald', icon: 'cash' as GlyphName, headline: 'Spent', value: money0(spent), caption: `across ${txns.filter((t) => isSpend(t)).length} expenses ${label}` });
     if (deep) {
       if (topCat) slides.push({ key: 'topcat', color: 'emerald', icon: 'receipt' as GlyphName, headline: 'Top category', value: topCat, caption: `${money0(topCatV)} spent here` });
       slides.push({ key: 'saved', color: 'emerald', icon: 'trendUp' as GlyphName, headline: 'Net saved', value: (net < 0 ? '−' : '') + money0(net), caption: income > 0 ? `${savingsRate}% of income kept` : 'income minus spending' });

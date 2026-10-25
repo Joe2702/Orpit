@@ -15,7 +15,7 @@ import { Settings } from './screens/Settings';
 import { HomeEmpty, WorkoutsEmpty, HabitsEmpty, SleepEmpty, FinancesEmpty } from './screens/Empty';
 import { Counters } from './screens/Counters';
 import { Achievements } from './screens/Achievements';
-import { FAddTx, FTxns, FBudgets, FGoals, FAccounts, FRecurring, FCats, FInsights } from './screens/FinanceScreens';
+import { FAddTx, FTxns, FBudgets, FGoals, FAccounts, FRecurring, FCats, FInsights, FReview } from './screens/FinanceScreens';
 import { FeedbackInbox } from './screens/FeedbackInbox';
 import { Privacy } from './screens/Privacy';
 import { Insights } from './screens/Insights';
@@ -48,7 +48,7 @@ import { connectivity, subscribe as subscribeConnectivity } from './lib/offline'
 import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
 import { updateWidget } from './lib/widget';
-import { syncSms, smsEnabled } from './lib/smsSync';
+import { syncSms, smsEnabled, ensureLiveSms, onSmsArrived } from './lib/smsSync';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
 
@@ -99,6 +99,8 @@ function CurrentScreen() {
       return <FRecurring />;
     case 'finsights':
       return <FInsights />;
+    case 'freview':
+      return <FReview />;
     case 'feedbackInbox':
       return <FeedbackInbox />;
     case 'privacy':
@@ -530,11 +532,11 @@ export function App() {
   }, [state]);
 
   // ---- Bank messages ----
-  // Read the phone's inbox on launch and on every return to the foreground.
-  // There is no background service and no listener: the inbox keeps the
-  // messages, so a scan taken whenever the user happens to open the app finds
-  // exactly what a listener would have caught, including whatever arrived while
-  // the phone was off. Does nothing at all unless the user turned it on.
+  // Read the phone's inbox on launch, on every return to the foreground, and
+  // when a bank message arrives while the app is open. The inbox keeps the
+  // messages, so a scan finds everything since the last one, including what
+  // arrived while the phone was off; the native receiver only says when to
+  // look. Does nothing at all unless the user turned it on.
   const smsState = React.useRef(state);
   smsState.current = state;
   useEffect(() => {
@@ -542,7 +544,7 @@ export function App() {
     const scan = () => {
       const cur = smsState.current;
       if (!cur) return;
-      syncSms(cur, (items) => api.importSms(items))
+      syncSms(cur, (items) => api.importSms(items), (base) => api.fx(base))
         .then((r) => {
           if (!r.state) return;
           applyState(r.state);
@@ -553,11 +555,23 @@ export function App() {
         .catch(() => {});
     };
     scan();
+    ensureLiveSms();
     const onVisible = () => {
       if (document.visibilityState === 'visible') scan();
     };
     document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+    // The messaging app writes the message to the inbox just after the
+    // broadcast that announced it, so give it a moment before reading.
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const stop = onSmsArrived(() => {
+      clearTimeout(t);
+      t = setTimeout(scan, 2500);
+    });
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      stop();
+      clearTimeout(t);
+    };
   }, [authed, applyState, showToast]);
 
   // ---- Reminder action buttons ----

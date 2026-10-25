@@ -40,6 +40,7 @@ export type Screen =
   | 'fgoals'
   | 'frecurring'
   | 'finsights'
+  | 'freview'
   | 'feedbackInbox'
   | 'privacy'
   | 'insights'

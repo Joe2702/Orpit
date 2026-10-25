@@ -168,7 +168,18 @@ export interface Txn {
    * rather than from their own hands.
    */
   sms?: boolean;
+  /** The message's hash, so the phone can show the text it came from. */
+  smsKey?: string | null;
+  /** Imported and not yet looked at: the category or amount was a best guess. */
+  review?: boolean;
+  /** Still as the import wrote it; a better reading of the message may replace it. */
+  auto?: boolean;
   ts: number;
+}
+
+export interface SmsLink {
+  sender: string;
+  card: string | null;
 }
 
 export interface Account {
@@ -177,6 +188,15 @@ export interface Account {
   type: string;
   color: string;
   opening: number;
+  /** Bank messages from these senders (and cards, when set) are filed here. */
+  smsLinks?: SmsLink[];
+  /**
+   * The latest balance a bank message reported, and when. When present, it is
+   * the account's balance: everything logged after it is added on top, and the
+   * opening balance no longer matters.
+   */
+  smsBalance?: number | null;
+  smsBalanceTs?: number | null;
 }
 
 export interface FCat {
