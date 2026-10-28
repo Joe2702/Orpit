@@ -52,6 +52,18 @@ export interface SmsRow {
   pairOf?: string | null;
   /** This payment is already in the ledger from another message. */
   dupOf?: string | null;
+  /**
+   * Possibly the same payment as one the user typed in by hand. Imported
+   * anyway, and asked about in "To review": a guess wrong in either direction
+   * would silently add or lose money.
+   */
+  maybeSameAs?: string | null;
+  /**
+   * The other message of what may be a transfer between the user's own
+   * accounts, when nothing in either message proved it. Both are imported as
+   * they are and the user is asked.
+   */
+  pairKey?: string | null;
 }
 
 interface Item {
@@ -66,6 +78,30 @@ const SAME_PAYMENT = 3 * MIN;
 const SAME_TRANSFER = 45 * MIN;
 
 const close = (a: number, b: number) => Math.abs(a - b) < 0.01;
+const DAY = 86_400_000;
+const sameDay = (a: number, b: number) => new Date(a).toDateString() === new Date(b).toDateString();
+
+/**
+ * Whether two messages are each other's halves of a move between the user's
+ * own accounts, and not two unrelated payments of the same amount: one sent to
+ * a friend, another received from someone else. An amount and a time are not
+ * proof. Any one of these is: a message names the other account's number, or
+ * the other bank or wallet; the money went to or came from the user by name;
+ * or the user has moved money between these two accounts before.
+ */
+function provesTransfer(
+  sides: { body: string; otherCards: (string | null)[]; otherSenders: string[] }[],
+  ownName: string[],
+  movedBefore: boolean
+): boolean {
+  if (movedBefore) return true;
+  return sides.some(({ body, otherCards, otherSenders }) => {
+    const text = body.toUpperCase();
+    if (otherCards.some((c) => c && c.length >= 3 && text.includes(c))) return true;
+    if (otherSenders.some((s) => s.length >= 3 && text.includes(s.toUpperCase()))) return true;
+    return ownName.some((n) => new RegExp(`(?:\\bTO\\b|\\bFROM\\b|الى|إلى|من)\\s+(?:MRS?\\.?\\s+)?${n}(?![\\p{L}\\p{N}])`, 'u').test(text));
+  });
+}
 
 /**
  * The account a link points at, if the user already has it. Mirrors the
@@ -123,7 +159,17 @@ export function buildRows(
   const incomeCats = state.fcats.filter((c) => c.kind === 'income').map((c) => c.name);
   const cashAccount = state.accounts.find((a) => /cash/i.test(a.type) && !(a.smsLinks || []).length) || null;
 
-  type Draft = SmsRow & { principal: number; transferish: boolean; rawFee: number };
+  type Draft = SmsRow & { principal: number; transferish: boolean; rawFee: number; body: string };
+  // The user's name as a bank would print it, for "sent to YOUSSIF M".
+  const ownName = (state.profile?.name || '')
+    .toUpperCase()
+    .split(/\s+/)
+    .filter((w) => w.length >= 3)
+    .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const movedBetween = (a: Account | null, b: Account | null) =>
+    !!a &&
+    !!b &&
+    state.txns.some((t) => t.toAccId && ((t.accId === a.id && t.toAccId === b.id) || (t.accId === b.id && t.toAccId === a.id)));
   const feeCat = categoryFor('Fees', expenseCats);
   const drafts: Draft[] = [];
 
@@ -196,6 +242,7 @@ export function buildRows(
       review,
       principal,
       rawFee,
+      body: p.body,
       transferish: p.transfer || link.type === 'Wallet',
     };
     if (p.atm && cashAccount) {
@@ -257,6 +304,31 @@ export function buildRows(
     if (existing) d.dupOf = existing.id;
   }
 
+  // 2b. Typed in by hand as well: a coffee logged at the till, then the bank's
+  //     message about it. Hand-typed entries carry the day, not the minute, and
+  //     often the default account, so the match is the amount and the day.
+  //     Asked about rather than dropped: two real coffees of the same price on
+  //     one day are not rare.
+  const claimed = new Set<string>();
+  for (const d of kept) {
+    if (d.dupOf || d.toAccId) continue;
+    const typed = state.txns.find(
+      (t) =>
+        !t.sms &&
+        !t.toAccId &&
+        !t.adjust &&
+        !claimed.has(t.id) &&
+        (t.amount > 0) === (d.income || d.refund) &&
+        (close(Math.abs(t.amount), d.amount) || close(Math.abs(t.amount), d.principal)) &&
+        (sameDay(t.ts, d.ts) || Math.abs(t.ts - d.ts) < DAY)
+    );
+    if (typed) {
+      claimed.add(typed.id);
+      d.maybeSameAs = typed.id;
+      d.review = true;
+    }
+  }
+
   // 3. A transfer between two of the user's own accounts arrives as two
   //    messages: money out of one, money into the other. Counted separately,
   //    it reads as spending and income that never happened. Pair them into one.
@@ -275,6 +347,27 @@ export function buildRows(
         (c.transferish || out.transferish)
     );
     if (!into) continue;
+    const outAcc = accountForLink(state.accounts, out.link);
+    const inAcc = accountForLink(state.accounts, into.link);
+    const proven = provesTransfer(
+      [
+        { body: out.body, otherCards: [into.link.card], otherSenders: into.link.sender !== out.link.sender ? [into.link.sender] : [] },
+        { body: into.body, otherCards: [out.link.card], otherSenders: into.link.sender !== out.link.sender ? [out.link.sender] : [] },
+      ],
+      ownName,
+      movedBetween(outAcc, inAcc)
+    );
+    if (!proven) {
+      // Both stay as they are, each pointing at the other, and the review
+      // inbox offers to make them one transfer.
+      out.pairKey = into.key;
+      into.pairKey = out.key;
+      out.review = true;
+      into.review = true;
+      used.add(out);
+      used.add(into);
+      continue;
+    }
     used.add(into);
     out.toLink = into.link;
     out.toBalance = into.balance;
@@ -284,11 +377,11 @@ export function buildRows(
     out.name = 'Transfer';
     out.review = false;
   }
-  let rows = kept.filter((d) => !used.has(d));
+  let rows = kept.filter((d) => !used.has(d) || d.pairKey);
 
   // 4. The other half was imported earlier: the server turns the two into one transfer.
   for (const d of rows) {
-    if (d.toLink || d.toAccId || d.dupOf || d.refund || !d.transferish) continue;
+    if (d.toLink || d.toAccId || d.dupOf || d.pairKey || d.refund || !d.transferish) continue;
     const acc = accountForLink(state.accounts, d.link);
     const mine = new Set([d.key, ...(d.alsoKeys || [])]);
     const other = state.txns.find(
@@ -303,12 +396,29 @@ export function buildRows(
         (t.amount > 0) !== d.income &&
         (close(Math.abs(t.amount), d.principal) || close(Math.abs(t.amount), d.amount))
     );
+    if (!other) continue;
+    const otherAcc = state.accounts.find((a) => a.id === other.accId) || null;
+    const proven = provesTransfer(
+      [
+        {
+          body: d.body,
+          otherCards: (otherAcc?.smsLinks || []).map((l) => l.card),
+          otherSenders: (otherAcc?.smsLinks || []).map((l) => l.sender).filter((x) => x.toLowerCase() !== d.link.sender.toLowerCase()),
+        },
+      ],
+      ownName,
+      movedBetween(acc, otherAcc)
+    );
     // Name and category stay as read: if the server finds the other entry has
     // since been edited by hand, it files this one as an ordinary payment.
-    if (other) d.pairOf = other.id;
+    if (proven) d.pairOf = other.id;
+    else if (other.smsKey) {
+      d.pairKey = other.smsKey;
+      d.review = true;
+    }
   }
 
-  return rows.map(({ principal, transferish, rawFee, ...r }) => {
+  return rows.map(({ principal, transferish, rawFee, body, ...r }) => {
     // A transfer moves the principal; its fee is spending of its own.
     if ((r.toLink || r.toAccId || r.pairOf) && rawFee > 0) {
       r.amount = principal;

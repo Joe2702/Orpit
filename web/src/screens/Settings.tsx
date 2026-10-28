@@ -6,7 +6,7 @@ import { computeBadges } from '../lib/badges';
 import { Avatar, SectionLabel, toggleTrack, toggleKnob, chip } from '../ui';
 import { IconChevron } from '../icons';
 import { deviceTimezone } from '../lib/push';
-import { enableReminders, disableReminders, updateReminderTime, sendTestNotification, diagnose, requestExactAlarms, isNative, type NotifyDiagnostics } from '../lib/notify';
+import { enableReminders, disableReminders, updateReminderTime, sendTestNotification, diagnose, requestExactAlarms, isNative, notificationsAllowed, ensureNotificationPermission, type NotifyDiagnostics } from '../lib/notify';
 import { Glyph } from '../lib/appIcons';
 import {
   smsSupported,
@@ -16,6 +16,7 @@ import {
   disableSms,
   rewindSms,
   syncSms,
+  SMS_DISCLOSURE,
   smsDiag,
   type SmsDiag,
 } from '../lib/smsSync';
@@ -84,6 +85,12 @@ export function Settings() {
   // by nature: a second phone has its own messages and its own permission.
   const [smsOn, setSmsOn] = React.useState(smsEnabled());
   const linkedCount = (state?.accounts || []).filter((a) => (a.smsLinks || []).length).length;
+  // Payment alerts need notification permission of their own; someone who
+  // turned reminders down would otherwise never see one, and never know why.
+  const [alertsOk, setAlertsOk] = React.useState(true);
+  React.useEffect(() => {
+    if (smsOn) notificationsAllowed().then(setAlertsOk);
+  }, [smsOn]);
   const [scanning, setScanning] = React.useState(false);
 
   const [smsInfo, setSmsInfo] = React.useState<SmsDiag | null>(smsDiag());
@@ -112,6 +119,7 @@ export function Settings() {
       showToast('Bank messages off');
       return;
     }
+    if (!(await confirm(SMS_DISCLOSURE))) return;
     const st = await enableSms();
     if (!st.available) {
       showToast('This device does not receive SMS');
@@ -768,6 +776,20 @@ export function Settings() {
 
             {smsOn && (
               <>
+                {!alertsOk && (
+                  <div
+                    onClick={() => ensureNotificationPermission().then(setAlertsOk)}
+                    className="pressRow"
+                    role="button"
+                    style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                  >
+                    <div style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--indigo)' }}>Allow payment alerts</div>
+                    <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2, lineHeight: 1.5 }}>
+                      Notifications are off, so a payment your bank tells you about while Orbit is closed won&rsquo;t show up until you open it.
+                    </div>
+                  </div>
+                )}
+
                 {/* No account picker any more: each bank's messages go to that
                     bank's account, made the first time it is seen, so the
                     accounts in Finances are the user's real ones. */}
@@ -855,6 +877,18 @@ export function Settings() {
               stores just those. Imported payments are marked{' '}
               <span style={{ fontWeight: 700, color: 'var(--indigo)' }}>SMS</span> so you can check them,
               and you can edit or delete any of them like anything else.
+              {/* The keyless rate feeds ask for credit where their rates are used. */}
+              <div style={{ marginTop: 8, color: 'var(--text3)' }}>
+                Foreign payments are converted with daily rates from{' '}
+                <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
+                  currency-api
+                </a>{' '}
+                and{' '}
+                <a href="https://www.exchangerate-api.com" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
+                  Rates By Exchange Rate API
+                </a>
+                .
+              </div>
             </div>
           </div>
         </>

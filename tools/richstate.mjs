@@ -109,7 +109,13 @@ for (let i = SPAN; i >= 0; i--) {
   const sms = (id, name, cat, amount, accId, hoursAgo, extra = {}) =>
     txns.push({ id, name, cat, amount, income: false, accId, toAccId: null, adjust: false, note: null, photo: false, ts: NOW - hoursAgo * 3600_000, sms: true, auto: true, smsKey: id, ...extra });
   sms('sx1', 'XYZ Trading', 'Other', -300, 'a1', 5, { review: true });
-  sms('sx2', 'Money received', 'Other', 500, 'a5', 26, { income: true, review: true });
+  sms('sx2', 'Money received', 'Other', 500, 'a5', 26, { income: true, review: true, pairKey: 'sx7' });
+  // Money out of CIB and the same amount into the wallet: maybe a top-up,
+  // maybe two different people. Asked about, not guessed.
+  sms('sx7', 'Money sent', 'Transfers', -500, 'a1', 26.33, { review: true, pairKey: 'sx2' });
+  // Typed in at the till, then the bank's message about the same payment.
+  txns.push({ id: 'tm1', name: 'Groceries', cat: 'Groceries', amount: -450, income: false, accId: 'a3', toAccId: null, adjust: false, note: 'weekly shop', photo: false, ts: NOW - 6 * 3600_000 });
+  sms('sx8', 'Carrefour', 'Groceries', -450, 'a1', 7, { review: true, dupOf: 'tm1' });
   sms('sx3', 'Netflix', 'Subscriptions', -484.52, 'a4', 30, { note: 'USD 9.99 at 48.50' });
   sms('sx4', 'Amazon', 'Shopping', 200, 'a1', 50);
   sms('sx5', 'Transfer', 'Transfer', -2000, 'a1', 72, { toAccId: 'a5' });

@@ -286,6 +286,15 @@ ALTER TABLE accounts ADD COLUMN IF NOT EXISTS sms_balance DOUBLE PRECISION;
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS sms_balance_ts TIMESTAMPTZ;
 -- An imported entry whose category or amount was a best guess, until looked at.
 ALTER TABLE txns ADD COLUMN IF NOT EXISTS review BOOLEAN NOT NULL DEFAULT FALSE;
+-- Which recurring item an entry paid: posted by the schedule, or a bank
+-- payment matched to it. One payment pays one occurrence, never two.
+ALTER TABLE txns ADD COLUMN IF NOT EXISTS recurring_id BIGINT;
+-- An imported payment that may be the same one the user typed in by hand.
+-- Set by the import, cleared when the user answers in "To review".
+ALTER TABLE txns ADD COLUMN IF NOT EXISTS dup_of BIGINT;
+-- The other message of what might be a transfer between the user's own
+-- accounts, when the import wasn't sure enough to pair them itself.
+ALTER TABLE txns ADD COLUMN IF NOT EXISTS pair_key TEXT;
 -- Still exactly as the import wrote it. A later, better reading of the same
 -- message may replace it; once the user has edited it, it is theirs.
 -- Entries imported before the column existed were all written by the old

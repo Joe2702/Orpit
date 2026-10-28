@@ -174,6 +174,12 @@ export interface Txn {
   review?: boolean;
   /** Still as the import wrote it; a better reading of the message may replace it. */
   auto?: boolean;
+  /** The recurring item this entry paid, posted by its schedule or matched from the bank. */
+  recurringId?: string | null;
+  /** Imported, and possibly the same payment as this hand-typed entry. */
+  dupOf?: string | null;
+  /** Imported, and possibly one half of a transfer whose other half has this message key. */
+  pairKey?: string | null;
   ts: number;
 }
 

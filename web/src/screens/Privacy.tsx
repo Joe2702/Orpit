@@ -10,6 +10,10 @@ const SECTIONS: { title: string; body: string }[] = [
     body: 'Your email and name, a hashed password (never the original), and the entries you create: habits, check-ins, workouts, sleep, transactions, budgets, goals and counters, plus your settings, like theme, currency and reminder time.',
   },
   {
+    title: 'Bank messages (optional)',
+    body: 'If you turn on Import from SMS, Orbit reads messages from banks and wallets on your phone, never from phone numbers, and ignores one-time passcodes. The text stays on your phone. Only what was read from it is saved to your account: the amount, shop, date, which bank, the last four digits of the card, and the balance the bank reported. Recent bank messages are kept on the phone so you can see where an entry came from. Turn it off any time in Profile.',
+  },
+  {
     title: 'Why',
     body: 'Only to run the app: to sign you in, save and sync your entries across devices, show your statistics and reports, and send the daily reminder if you turn it on.',
   },
@@ -62,7 +66,7 @@ export function Privacy() {
       </div>
 
       <div style={{ fontSize: 12, color: 'var(--text2)', textAlign: 'center', marginTop: 20, lineHeight: 1.5 }}>
-        Last updated 26 July 2026
+        Last updated 28 October 2026
       </div>
     </div>
   );

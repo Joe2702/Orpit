@@ -100,6 +100,46 @@ function handle(method: string, path: string, body: any): { status: number; json
     db = { ...db, txns: db.txns.map((t) => (ids.includes(t.id) ? { ...t, cat: String(body.cat), review: false, auto: false } : t)) };
     return ok();
   }
+  if (parts[0] === 'txns' && parts[2] === 'same') {
+    const row = db.txns.find((t) => t.id === parts[1]);
+    const typed = row?.dupOf ? db.txns.find((t) => t.id === row.dupOf) : undefined;
+    db = {
+      ...db,
+      txns: db.txns
+        .filter((t) => !(body.same && typed && t.id === typed.id))
+        .map((t) =>
+          t.id === parts[1]
+            ? {
+                ...t,
+                cat: body.same && typed && typed.cat !== 'Other' ? typed.cat : t.cat,
+                note: t.note ?? (body.same ? typed?.note ?? null : null),
+                dupOf: null,
+                review: false,
+                auto: false,
+              }
+            : t
+        ),
+    };
+    return ok();
+  }
+  if (parts[0] === 'txns' && parts[2] === 'pair') {
+    const pair = db.txns.filter((t) => t.id === parts[1] || t.id === String(body.with));
+    const out = pair.find((t) => t.amount < 0);
+    const into = pair.find((t) => t.amount > 0);
+    if (out && into) {
+      db = {
+        ...db,
+        txns: db.txns
+          .filter((t) => t.id !== into.id)
+          .map((t) =>
+            t.id === out.id
+              ? { ...t, name: 'Transfer', cat: 'Transfer', amount: -Math.abs(into.amount), toAccId: into.accId, review: false, auto: false, pairKey: null }
+              : t
+          ),
+      };
+    }
+    return ok();
+  }
   if (parts[0] === 'accounts' && parts[2] === 'merge') {
     const from = parts[1];
     const into = String(body.into);
@@ -177,6 +217,8 @@ export function installDemo(): void {
           more: [{ sender: 'VF-Cash', ts: now - 72 * H + 60_000, body: 'تم استلام مبلغ 2000.00 جنيه عن طريق انستاباي. رصيدك الحالي 2300.00 جنيه' }],
         },
         sx6: { sender: 'CIB', ts: now - 3 * H, body: 'Your CIB debit card ending with 1234 was charged for EGP 265.00 at EL NOUR PHARMACY NASR CITY. Available balance EGP 46,820.50' },
+        sx7: { sender: 'CIB', ts: now - 26 * H - 20 * 60_000, body: 'You have sent EGP 500.00 via InstaPay to 010****9999. Available balance EGP 46,600.00' },
+        sx8: { sender: 'CIB', ts: now - 7 * H, body: 'Your CIB debit card ending with 1234 was charged for EGP 450.00 at CARREFOUR MAADI. Available balance EGP 47,385.50' },
       })
     );
   } catch {

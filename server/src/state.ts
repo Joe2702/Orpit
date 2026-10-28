@@ -135,6 +135,7 @@ export async function buildState(userId: number) {
     `SELECT t.id::text, t.name, t.cat, t.amount, t.income, t.acc_id::text AS "accId",
             t.to_acc_id::text AS "toAccId", t.adjust, t.note,
             (t.sms_key IS NOT NULL) AS sms, t.sms_key AS "smsKey", t.review, t.auto,
+            t.recurring_id::text AS "recurringId", t.dup_of::text AS "dupOf", t.pair_key AS "pairKey",
             (p.txn_id IS NOT NULL) AS photo, ${TS('t.ts')}
      FROM txns t LEFT JOIN txn_photos p ON p.txn_id = t.id
      WHERE t.user_id = $1 AND t.ts > now() - interval '400 days' ORDER BY t.ts DESC`,

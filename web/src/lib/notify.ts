@@ -297,6 +297,35 @@ export async function syncReminders(enabled: boolean, time: string, remaining = 
 }
 
 /**
+ * Permission to show notifications at all, asked for on its own. Payment
+ * alerts from bank messages need it even for someone who never wanted habit
+ * reminders, and on Android 13+ a notification posted without it is dropped
+ * without a word. Returns whether notifications can be shown.
+ */
+export async function ensureNotificationPermission(): Promise<boolean> {
+  if (!isNative()) return false;
+  try {
+    const { ln } = await LN();
+    let perm = await ln.checkPermissions();
+    if (perm.display !== 'granted') perm = await ln.requestPermissions();
+    return perm.display === 'granted';
+  } catch {
+    return false;
+  }
+}
+
+/** Whether notifications can be shown now, without asking. */
+export async function notificationsAllowed(): Promise<boolean> {
+  if (!isNative()) return false;
+  try {
+    const { ln } = await LN();
+    return (await ln.checkPermissions()).display === 'granted';
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Turn reminders on: ask permission and (native) schedule the daily notification,
  * or (web) subscribe to push. Returns a status the UI can message on.
  */

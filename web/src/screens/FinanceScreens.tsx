@@ -100,6 +100,23 @@ export function FAddTx() {
   const save = async () => {
     const amt = parseFloat(amount || '0');
     if (!amt || amt <= 0 || !transferOk) return;
+    // Typing in a payment the bank's message already brought in counts it
+    // twice. Asked, not blocked: two of the same coffee in a day happens.
+    if (!edit && !isTransfer) {
+      const day = new Date(date + 'T12:00:00').toDateString();
+      const seen = state!.txns.find(
+        (t) =>
+          t.sms && !t.toAccId && (t.amount > 0) === (income || refund) && Math.abs(Math.abs(t.amount) - amt) < 0.01 && new Date(t.ts).toDateString() === day
+      );
+      if (seen) {
+        const ok = await confirm({
+          title: 'Already added from your bank?',
+          message: `${seen.name} · ${money(seen.amount)} · ${state!.accounts.find((a) => a.id === seen.accId)?.name || 'imported'} at ${new Date(seen.ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} came in from your bank messages today. Add this one as well?`,
+          confirmLabel: 'Add anyway',
+        });
+        if (!ok) return;
+      }
+    }
     haptic();
     // An edit keeps the time of day it had: a bank message's 9:41 is worth
     // keeping, and noon would reorder the day's list.
@@ -462,9 +479,28 @@ export function FTxns() {
 // from someone, a foreign charge converted at a rough rate. Each shows the
 // message it came from, so the answer is usually one tap.
 export function FReview() {
-  const { state, mutateOpt, haptic } = useStore();
+  const { state, mutateOpt, mutate, haptic } = useStore();
   const fcats = state!.fcats;
-  const items = [...state!.txns].filter((t) => t.review).sort((a, b) => b.ts - a.ts);
+  const byId = new Map(state!.txns.map((t) => [t.id, t]));
+  const byKey = new Map(state!.txns.filter((t) => t.smsKey).map((t) => [t.smsKey!, t]));
+  const accName = (id: string | null) => state!.accounts.find((a) => a.id === id)?.name || 'an account';
+  // A possible transfer is asked about once, on its money-out half.
+  const items = [...state!.txns]
+    .filter((t) => {
+      if (!t.review) return false;
+      const other = t.pairKey ? byKey.get(t.pairKey) : undefined;
+      return !(other && other.review && !other.toAccId && t.amount > 0 && other.amount < 0);
+    })
+    .sort((a, b) => b.ts - a.ts);
+
+  const answerSame = (t: Txn, same: boolean) => {
+    haptic();
+    mutate(() => api.answerSame(t.id, same), same ? 'Kept one, with your category' : 'Kept both').catch(() => {});
+  };
+  const pair = (t: Txn, other: Txn) => {
+    haptic();
+    mutate(() => api.pairTxns(t.id, other.id), 'Made it one transfer').catch(() => {});
+  };
 
   // One shop's payments travel together: filing one Talabat order under
   // Eating out files the rest that the import guessed at, but never one the
@@ -518,6 +554,9 @@ export function FReview() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {items.map((t) => {
               const text = smsText(t.smsKey);
+              const typed = t.dupOf ? byId.get(t.dupOf) : undefined;
+              const half = t.pairKey ? byKey.get(t.pairKey) : undefined;
+              const halfOpen = half && !half.toAccId;
               // The current guess first, so it's visible without scrolling.
               const cats = fcats
                 .filter((c) => c.kind === (t.income ? 'income' : 'expense'))
@@ -537,6 +576,48 @@ export function FReview() {
                       {text.body}
                     </div>
                   )}
+                  {typed && (
+                    // The bank's message and a hand-typed entry, same amount,
+                    // same day. Only the user knows if that was one coffee or two.
+                    <div style={{ marginTop: 12, border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: '11px 12px' }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--text)' }}>Did you also add this by hand?</div>
+                      <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 3, lineHeight: 1.45 }}>
+                        {[typed.name !== typed.cat ? typed.name : null, typed.cat, accName(typed.accId), (typed.amount >= 0 ? '+' : '−') + money(typed.amount), relLabel(typed.ts), typed.note]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                        <div onClick={() => answerSame(t, true)} role="button" className="press99" style={{ flex: 1, height: 40, borderRadius: 'calc(11px * var(--sq))', background: 'var(--indigo)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 650, cursor: 'pointer' }}>
+                          Same payment
+                        </div>
+                        <div onClick={() => answerSame(t, false)} role="button" className="press99" style={{ flex: 1, height: 40, borderRadius: 'calc(11px * var(--sq))', border: '1px solid var(--border)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>
+                          Two payments
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {half && halfOpen && (
+                    // Money out of one account and the same amount into
+                    // another, close together, with nothing in either message
+                    // to prove both accounts are the user's.
+                    <div style={{ marginTop: 12, border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: '11px 12px' }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--text)' }}>Moving your own money?</div>
+                      <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 3, lineHeight: 1.45 }}>
+                        {t.amount < 0 ? `${accName(t.accId)} → ${accName(half.accId)}` : `${accName(half.accId)} → ${accName(t.accId)}`}
+                        {' · '}
+                        {money(Math.abs(half.amount))} {t.amount < 0 ? 'arrived' : 'left'} {relLabel(half.ts).toLowerCase()}
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                        <div onClick={() => pair(t, half)} role="button" className="press99" style={{ flex: 1, height: 40, borderRadius: 'calc(11px * var(--sq))', background: 'var(--indigo)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 650, cursor: 'pointer' }}>
+                          Yes, a transfer
+                        </div>
+                        <div onClick={() => looksRight([t.id, half.id])} role="button" className="press99" style={{ flex: 1, height: 40, borderRadius: 'calc(11px * var(--sq))', border: '1px solid var(--border)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>
+                          No, separate
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {!(half && halfOpen) && (
                   <div style={{ display: 'flex', gap: 7, overflowX: 'auto', margin: '12px -16px 0', padding: '0 16px 2px' }}>
                     {cats.map((c) => (
                       <div key={c.id} onClick={() => setCat(t, c.name)} className="press99" style={{ ...chip(t.cat === c.name, 'var(--indigo)'), flex: 'none' }}>
@@ -544,9 +625,14 @@ export function FReview() {
                       </div>
                     ))}
                   </div>
-                  <div onClick={() => looksRight([t.id])} role="button" className="press99" style={{ marginTop: 12, height: 42, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
-                    {t.cat} is right
-                  </div>
+                  )}
+                  {/* A question above answers this card on its own; a third
+                      button beside it would only ask which one to press. */}
+                  {!typed && !(half && halfOpen) && (
+                    <div onClick={() => looksRight([t.id])} role="button" className="press99" style={{ marginTop: 12, height: 42, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+                      {t.cat} is right
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -704,12 +790,23 @@ export function FRecurring() {
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         {d.recurring.map((r) => {
           const fc = fcatByName(state!.fcats, r.cat);
+          // What paid it last: the bank's own message, or the schedule. And
+          // when it's due but nothing has come in yet, say so rather than
+          // writing an entry the bank's message would then repeat.
+          const last = state!.txns.filter((t) => t.recurringId === r.id).sort((a, b) => b.ts - a.ts)[0];
+          const waiting = r.nextTs != null && r.nextTs < Date.now();
+          const status = waiting
+            ? 'Due, waiting for your bank'
+            : last
+              ? `${last.sms ? 'Paid' : 'Added'} ${fmtDate(last.ts)}${last.sms ? ' · from your bank' : ''}`
+              : null;
           return (
             <div key={r.id} onClick={() => open('recurring', { id: r.id, name: r.name, cat: r.cat, amount: r.amount, freq: r.freq, accId: r.accId })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
               <span style={{ width: 38, height: 38, borderRadius: 'calc(11px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FinIcon icon={fc.icon} color="var(--text2)" size={18} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{r.name}</div>
-                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{r.freq} · {money(r.amount)} · {r.nextTs ? 'Next ' + fmtDate(r.nextTs) : ''}</div>
+                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{r.freq}{r.nextTs && !waiting ? ' · next ' + fmtDate(r.nextTs) : ''}</div>
+                {status && <div style={{ fontSize: 12, color: waiting ? 'var(--indigo)' : 'var(--text3)', marginTop: 2 }}>{status}</div>}
               </div>
               <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{money(r.amount)}</div>
             </div>

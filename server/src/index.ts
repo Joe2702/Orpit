@@ -1173,19 +1173,23 @@ interface SmsEntry {
   ts: Date;
   key: string;
   review: boolean;
+  /** A hand-typed entry this may be the same payment as. */
+  dupOf?: string | null;
+  /** The other message of a possible transfer between the user's accounts. */
+  pairKey?: string | null;
 }
 
 async function writeSms(c: PoolClient, uid: number, e: SmsEntry) {
   await c.query(
-    `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, to_acc_id, note, ts, sms_key, review, auto)
-     SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,TRUE
+    `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, to_acc_id, note, ts, sms_key, review, auto, dup_of, pair_key)
+     SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,TRUE,$12,$13
      WHERE NOT EXISTS (SELECT 1 FROM sms_ignored WHERE user_id = $1 AND sms_key = $10)
      ON CONFLICT (user_id, sms_key) WHERE sms_key IS NOT NULL DO UPDATE SET
        name = EXCLUDED.name, cat = EXCLUDED.cat, amount = EXCLUDED.amount, income = EXCLUDED.income,
        acc_id = EXCLUDED.acc_id, to_acc_id = EXCLUDED.to_acc_id, note = EXCLUDED.note, ts = EXCLUDED.ts,
-       review = EXCLUDED.review
+       review = EXCLUDED.review, dup_of = EXCLUDED.dup_of, pair_key = EXCLUDED.pair_key
      WHERE txns.auto`,
-    [uid, e.name, e.cat, e.amount, e.income, e.accId, e.toAccId, e.note, e.ts, e.key, e.review]
+    [uid, e.name, e.cat, e.amount, e.income, e.accId, e.toAccId, e.note, e.ts, e.key, e.review, e.dupOf ?? null, e.pairKey ?? null]
   );
   // An entry the user already edited keeps their wording, but one an older
   // import left without an account can still be given the right one.
@@ -1381,6 +1385,10 @@ app.post(
         // A refund is money back for spending: positive, but not income, so it
         // lowers the month's spending instead of inflating its earnings.
         const income = !!it.income && !it.refund;
+        // Only a hand-typed entry of this user's can be the one it may repeat.
+        const typed = /^\d+$/.test(String(it.maybeSameAs || ''))
+          ? await c.query('SELECT 1 FROM txns WHERE id = $1 AND user_id = $2 AND sms_key IS NULL', [String(it.maybeSameAs), uid])
+          : { rowCount: 0 };
         await writeSms(c, uid, {
           name,
           cat: str(it.cat, 60) || (income ? 'Income' : 'Other'),
@@ -1391,16 +1399,119 @@ app.post(
           note,
           ts,
           key,
-          review,
+          review: review || !!typed.rowCount,
+          dupOf: typed.rowCount ? String(it.maybeSameAs) : null,
+          pairKey: keyOf(it.pairKey) || null,
         });
       }
     });
+
+    // A bill or salary waiting for its bank message may have just got it.
+    await runRecurring(uid);
 
     // A plain state, like every other write. The count of what was actually
     // new is worked out on the device by diffing ids: this response also
     // travels through the offline queue, which replays a failed op later and
     // applies whatever comes back as the app state, so it cannot be a
     // different shape from every other one.
+    res.json(await buildState(uid));
+  })
+);
+
+// "Is this the payment you typed in?" Same: the bank's version stays (it has
+// the shop, the account and the minute) and takes what the user gave theirs, a
+// category, a note, a receipt; the typed one goes. Different: both stay, and
+// the question isn't asked again.
+app.post(
+  '/api/txns/:id/same',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const id = String(req.params.id);
+    const row = await one<{ dup: string | null; note: string | null }>(
+      'SELECT dup_of::text AS dup, note FROM txns WHERE id = $1 AND user_id = $2',
+      [id, uid]
+    );
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    await tx(async (c) => {
+      if (req.body.same && row.dup) {
+        const typed = (
+          await c.query<{ cat: string; note: string | null; recurring: string | null }>(
+            `SELECT cat, note, recurring_id::text AS recurring FROM txns
+             WHERE id = $1 AND user_id = $2 AND sms_key IS NULL`,
+            [row.dup, uid]
+          )
+        ).rows[0];
+        if (typed) {
+          await c.query(
+            `UPDATE txns SET cat = CASE WHEN $1 IN ('Other', '') THEN cat ELSE $1 END,
+                    note = COALESCE(note, $2), recurring_id = COALESCE(recurring_id, $3::bigint)
+             WHERE id = $4 AND user_id = $5`,
+            [typed.cat, typed.note, typed.recurring, id, uid]
+          );
+          // A receipt photo moves to the entry that stays, if it has none.
+          await c.query(
+            `UPDATE txn_photos SET txn_id = $1 WHERE txn_id = $2
+               AND NOT EXISTS (SELECT 1 FROM txn_photos WHERE txn_id = $1)`,
+            [id, row.dup]
+          );
+          await c.query('DELETE FROM txns WHERE id = $1 AND user_id = $2', [row.dup, uid]);
+        }
+      }
+      await c.query('UPDATE txns SET dup_of = NULL, review = FALSE, auto = FALSE WHERE id = $1 AND user_id = $2', [id, uid]);
+    });
+    res.json(await buildState(uid));
+  })
+);
+
+// "Yes, that was me moving my own money." Two imported entries, money out of
+// one account and the same amount into another, become one transfer: the
+// money-out entry turns into it, keyed by its own message, and the money-in
+// entry goes. A difference between the two amounts is the fee.
+app.post(
+  '/api/txns/:id/pair',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const ids = [String(req.params.id), String(req.body.with || '')];
+    const rows = await query<{ id: string; acc: string | null; amount: number; ts: Date; key: string | null }>(
+      `SELECT id::text, acc_id::text AS acc, amount, ts, sms_key AS key FROM txns
+       WHERE user_id = $1 AND id = ANY($2::bigint[]) AND to_acc_id IS NULL AND NOT adjust`,
+      [uid, ids.filter((x) => /^\d+$/.test(x))]
+    );
+    const out = rows.find((r) => r.amount < 0);
+    const into = rows.find((r) => r.amount > 0);
+    if (rows.length !== 2 || !out || !into || !out.acc || !into.acc || out.acc === into.acc) {
+      return res.status(400).json({ error: 'Those two can’t be one transfer' });
+    }
+    const amt = Math.abs(Number(into.amount));
+    const fee = Math.round((Math.abs(Number(out.amount)) - amt) * 100) / 100;
+    const when = out.ts < into.ts ? out.ts : into.ts;
+    await tx(async (c) => {
+      await c.query(
+        `UPDATE txns SET name = 'Transfer', cat = 'Transfer', amount = $1, income = FALSE, to_acc_id = $2, ts = $3,
+                review = FALSE, auto = FALSE, pair_key = NULL, dup_of = NULL
+         WHERE id = $4 AND user_id = $5`,
+        [-amt, into.acc, when, out.id, uid]
+      );
+      if (fee > 0 && fee < amt * 0.05) {
+        await c.query(
+          `INSERT INTO fcats (user_id, name, icon, color, kind, sort)
+           SELECT $1, 'Fees', 'other', 'text2', 'expense', COALESCE(MAX(sort), -1) + 1 FROM fcats WHERE user_id = $1
+           HAVING NOT EXISTS (SELECT 1 FROM fcats WHERE user_id = $1 AND lower(name) = 'fees')`,
+          [uid]
+        );
+        await c.query(
+          `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, ts, sms_key)
+           VALUES ($1, 'Transfer fee', 'Fees', $2, FALSE, $3, $4, $5) ON CONFLICT DO NOTHING`,
+          [uid, -fee, out.acc, when, out.key ? `${out.key}:fee`.slice(0, 90) : null]
+        );
+      }
+      await c.query('DELETE FROM txns WHERE id = $1 AND user_id = $2', [into.id, uid]);
+      if (into.key) await c.query('INSERT INTO sms_ignored (user_id, sms_key) VALUES ($1,$2) ON CONFLICT DO NOTHING', [uid, into.key]);
+    });
     res.json(await buildState(uid));
   })
 );
@@ -2572,8 +2683,49 @@ function advance(from: Date, freq: string): Date {
  * Turn due recurring entries into real transactions. Runs periodically; catches
  * up if the server was asleep (loops until the next date is in the future).
  */
-async function runRecurring() {
-  if (!dbReady) return;
+const DAY_MS = 86400000;
+/** How far either side of its due date a bank payment can pay a recurring item. */
+const RECURRING_WINDOW = 5 * DAY_MS;
+
+/**
+ * A payment already in the ledger that is this occurrence of a recurring item:
+ * same direction, an amount within 10%, within five days of the due date, and
+ * either the same name (as letters and digits) or the same category. Never one
+ * that already paid something else.
+ */
+async function recurringMatch(r: { id: string; user_id: number; name: string; cat: string; amount: number; income: boolean }, due: Date) {
+  const amt = Math.abs(Number(r.amount)) || 0;
+  return one<{ id: string }>(
+    `SELECT id::text FROM txns
+      WHERE user_id = $1 AND to_acc_id IS NULL AND NOT adjust AND recurring_id IS NULL
+        AND income = $2 AND abs(amount) BETWEEN $3 * 0.9 AND $3 * 1.1
+        AND ts BETWEEN $4 AND $5
+        AND (cat = $6
+             OR position(regexp_replace(lower($7), '[^[:alnum:]]', '', 'g') in regexp_replace(lower(name), '[^[:alnum:]]', '', 'g')) > 0
+             OR position(regexp_replace(lower(name), '[^[:alnum:]]', '', 'g') in regexp_replace(lower($7), '[^[:alnum:]]', '', 'g')) > 0)
+      ORDER BY abs(extract(epoch FROM ts - $8::timestamptz)) LIMIT 1`,
+    [r.user_id, !!r.income, amt, new Date(due.getTime() - RECURRING_WINDOW), new Date(due.getTime() + RECURRING_WINDOW), r.cat, r.name, due]
+  );
+}
+
+/**
+ * Recurring items are expected payments, not entries of their own.
+ *
+ * Before bank messages, the schedule was the only way a salary or the rent got
+ * into the ledger, so it wrote an entry on the due date. Now the bank's own
+ * message usually brings it in, and writing it as well counted it twice. So:
+ * when a payment that matches is already there (from the bank or typed in),
+ * the occurrence is marked paid by it. When none is, a user whose money is
+ * tracked from bank messages gets a few days' grace for the message to
+ * arrive; only then, or straight away for cash and untracked accounts, is the
+ * entry written from the schedule.
+ */
+let recurringBusy = false;
+async function runRecurring(onlyUser?: number) {
+  // Runs hourly, at boot, and after an import; never twice at once, or two
+  // runs could both write the same occurrence.
+  if (!dbReady || recurringBusy) return;
+  recurringBusy = true;
   try {
     const due = await query<{
       id: string;
@@ -2585,38 +2737,55 @@ async function runRecurring() {
       freq: string;
       income: boolean;
       next_ts: string;
+      tracked: boolean;
     }>(
-      `SELECT id::text, user_id, name, cat, acc_id::text, amount, freq, income, next_ts
-         FROM recurring
-        WHERE next_ts IS NOT NULL AND next_ts <= now()`
+      `SELECT r.id::text, r.user_id, r.name, r.cat, r.acc_id::text, r.amount, r.freq, r.income, r.next_ts,
+              (EXISTS (SELECT 1 FROM account_links k WHERE k.user_id = r.user_id)
+               AND COALESCE((SELECT a.type FROM accounts a WHERE a.id = r.acc_id), 'Bank') <> 'Cash') AS tracked
+         FROM recurring r
+        WHERE r.next_ts IS NOT NULL AND r.next_ts <= now() AND ($1::bigint IS NULL OR r.user_id = $1)`,
+      [onlyUser ?? null]
     );
     for (const r of due) {
       let next = new Date(r.next_ts);
       let guard = 0;
-      // Insert one transaction per missed period (bounded so a very old date
-      // can't spin forever).
+      // One occurrence at a time, oldest first (bounded so a very old date
+      // can't spin forever). Stops at the first one still waiting for its
+      // bank message, so the schedule never runs ahead of what's settled.
       while (next.getTime() <= Date.now() && guard++ < 60) {
-        // Amounts are stored positive; sign them by kind, matching POST /api/txns.
-        await query(
-          `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-          [
-            r.user_id,
-            r.name,
-            r.cat,
-            r.income ? Math.abs(r.amount) : -Math.abs(r.amount),
-            !!r.income,
-            r.acc_id,
-            'Recurring',
-            next,
-          ]
-        );
+        const paid = await recurringMatch(r, next);
+        if (paid) {
+          await query('UPDATE txns SET recurring_id = $1 WHERE id = $2', [r.id, paid.id]);
+        } else if (r.tracked && Date.now() < next.getTime() + RECURRING_WINDOW) {
+          break;
+        } else {
+          // Amounts are stored positive; sign them by kind, matching POST /api/txns.
+          await query(
+            `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts, recurring_id)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+            [
+              r.user_id,
+              r.name,
+              r.cat,
+              r.income ? Math.abs(r.amount) : -Math.abs(r.amount),
+              !!r.income,
+              r.acc_id,
+              'Recurring',
+              next,
+              r.id,
+            ]
+          );
+        }
         next = advance(next, r.freq);
       }
-      await query('UPDATE recurring SET next_ts = $1 WHERE id = $2', [next, r.id]);
+      if (next.getTime() !== new Date(r.next_ts).getTime()) {
+        await query('UPDATE recurring SET next_ts = $1 WHERE id = $2', [next, r.id]);
+      }
     }
   } catch (e) {
     console.error('[recurring]', e);
+  } finally {
+    recurringBusy = false;
   }
 }
 
@@ -2662,7 +2831,7 @@ function start() {
   setInterval(() => dbReady && pruneOps(), 6 * 60 * 60 * 1000);
   // Post due recurring transactions on boot, then hourly.
   runRecurring();
-  setInterval(runRecurring, 60 * 60 * 1000);
+  setInterval(() => runRecurring(), 60 * 60 * 1000);
 }
 
 start();

@@ -2,6 +2,7 @@ import { Capacitor, registerPlugin, type PluginListenerHandle } from '@capacitor
 import { analyseSms, SKIP_LABEL, type SmsMessage, type ParsedSms } from './smsParse';
 import { buildRows, type Fx, type SmsRow } from './ledger';
 import type { AppState } from '../types';
+import { ensureNotificationPermission } from './notify';
 
 // Getting bank messages off the phone and into the ledger.
 //
@@ -77,6 +78,21 @@ export async function smsStatus(): Promise<{ available: boolean; granted: boolea
 }
 
 /**
+ * What turning this on means, shown before Android's own permission prompt.
+ * Google Play requires it, and it is the honest order anyway: say what is read
+ * and what leaves the phone, then ask. Every place that turns the feature on
+ * shows this first.
+ */
+export const SMS_DISCLOSURE = {
+  title: 'Track payments from bank messages?',
+  message:
+    'Orbit will read text messages from banks and wallets on this phone (never messages from phone numbers) and turn payment alerts into transactions, including new ones as they arrive. ' +
+    'The message text stays on your phone. Only what Orbit reads from it is saved to your account: the amount, the shop, the date, which bank, the last four digits of the card and the balance. ' +
+    'You can turn this off any time.',
+  confirmLabel: 'Continue',
+};
+
+/**
  * Turn the feature on: ask for the permission, and only record it as on if the
  * permission was actually granted. A switch that stays on while the thing it
  * controls cannot run is how a feature ends up silently doing nothing.
@@ -94,6 +110,9 @@ export async function enableSms(): Promise<{ available: boolean; granted: boolea
     // Start from a fixed window back rather than from zero. See FIRST_IMPORT_DAYS.
     if (!get(MARK_KEY)) set(MARK_KEY, String(Date.now() - FIRST_IMPORT_DAYS * 86400000));
     await OrbitSms.setLive({ on: true }).catch(() => {});
+    // The alert for a payment that arrives while the app is closed is a
+    // notification; without this permission it silently never shows.
+    await ensureNotificationPermission();
   }
   return st;
 }

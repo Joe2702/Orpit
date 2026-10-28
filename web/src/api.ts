@@ -324,6 +324,12 @@ export const api = {
    */
   importSms: (items: SmsRow[]) =>
     request<AppState>('/txns/sms', { method: 'POST', body: JSON.stringify({ items }) }),
+  /** Answer "is this the payment you typed in?" for an imported entry. */
+  answerSame: (id: string, same: boolean) =>
+    request<AppState>(`/txns/${id}/same`, { method: 'POST', body: JSON.stringify({ same }) }),
+  /** Make two imported entries one transfer between the user's own accounts. */
+  pairTxns: (id: string, withId: string) =>
+    request<AppState>(`/txns/${id}/pair`, { method: 'POST', body: JSON.stringify({ with: withId }) }),
   /** Imported entries the user has looked at and is happy with. */
   markReviewed: (ids: string[]) => request<AppState>('/txns/reviewed', { method: 'POST', body: JSON.stringify({ ids }) }),
   /** One category for many entries: "everything from this shop". */

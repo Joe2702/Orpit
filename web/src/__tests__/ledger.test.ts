@@ -143,7 +143,7 @@ describe('building ledger rows', () => {
   it('turns money out of one account and into another into one transfer, fee apart', () => {
     const rows = buildRows(
       [
-        read('You have sent EGP 2,000.00 via InstaPay. Fees EGP 2.00. Available balance EGP 10,548.00', 'CIB'),
+        read('You have sent EGP 2,000.00 via InstaPay to account ending 9876. Fees EGP 2.00. Available balance EGP 10,548.00', 'CIB'),
         read('Your account 9876 has been credited with EGP 2,000.00 via InstaPay. Balance EGP 5,300.00', 'NBE', T0 + 2 * MIN),
       ],
       opts()
@@ -151,6 +151,50 @@ describe('building ledger rows', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ cat: 'Transfer', amount: 2000, fee: 2, feeCat: 'Fees', toBalance: 5300, toTs: T0 + 2 * MIN });
     expect(rows[0].toLink?.sender).toBe('NBE');
+  });
+
+  it('asks instead of pairing when nothing proves both accounts are yours', () => {
+    // Sent to a friend from CIB, and someone else sent the same amount to the
+    // wallet half an hour later: same amount, close in time, not a transfer.
+    const rows = buildRows(
+      [
+        read('You have sent EGP 500.00 via InstaPay to AHMED ALI. Available balance EGP 3,000.00', 'CIB'),
+        read('تم استلام مبلغ 500.00 جنيه من 01099999999. رصيدك الحالي 900.00 جنيه', 'VF-Cash', T0 + 30 * MIN),
+      ],
+      opts()
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.review && r.pairKey)).toBe(true);
+    expect(rows[0].pairKey).toBe(rows[1].key);
+    expect(rows.some((r) => r.toLink)).toBe(false);
+  });
+
+  it('pairs when the money went to the user by name', () => {
+    const s = { ...state(), profile: { name: 'Youssif Mohammed' } } as unknown as AppState;
+    const rows = buildRows(
+      [
+        read('You have sent EGP 500.00 via InstaPay to YOUSSIF MOHAMMED. Available balance EGP 3,000.00', 'CIB'),
+        read('تم استلام مبلغ 500.00 جنيه من 01099999999. رصيدك الحالي 900.00 جنيه', 'VF-Cash', T0 + 5 * MIN),
+      ],
+      opts(s)
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].toLink?.sender).toBe('Vodafone Cash');
+  });
+
+  it('pairs between two accounts the user has moved money between before', () => {
+    const cib = acc('1', 'CIB', [['CIB', null]]);
+    const wallet = acc('2', 'Vodafone Cash', [['Vodafone Cash', null]], 'Wallet');
+    const before = txn({ id: '9', accId: '1', toAccId: '2', amount: -100, ts: T0 - 30 * 86_400_000 });
+    const rows = buildRows(
+      [
+        read('You have sent EGP 500.00 via InstaPay. Available balance EGP 3,000.00', 'CIB'),
+        read('تم استلام مبلغ 500.00 جنيه. رصيدك الحالي 900.00 جنيه', 'VF-Cash', T0 + 5 * MIN),
+      ],
+      opts(state([cib, wallet], [before]))
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].toLink).toBeTruthy();
   });
 
   it("doesn't pair two unrelated card payments of the same amount", () => {
@@ -212,10 +256,42 @@ describe('building ledger rows', () => {
     const cib = acc('1', 'CIB', [['CIB', null]]);
     const out = txn({ id: '61', sms: true, smsKey: 'k', accId: '1', amount: -1500, ts: T0 });
     const row = buildRows(
-      [read('Your account 1111 has been credited with EGP 1,500.00 via InstaPay. Balance EGP 2,000.00', 'NBE', T0 + 10 * MIN)],
+      [read('Your account 1111 has been credited with EGP 1,500.00 via InstaPay from CIB. Balance EGP 2,000.00', 'NBE', T0 + 10 * MIN)],
       opts(state([cib], [out]))
     )[0];
     expect(row.pairOf).toBe('61');
+  });
+
+  it('asks about an earlier half when nothing proves it', () => {
+    const cib = acc('1', 'CIB', [['CIB', null]]);
+    const out = txn({ id: '61', sms: true, smsKey: 'k', accId: '1', amount: -1500, ts: T0 });
+    const row = buildRows(
+      [read('Your account 1111 has been credited with EGP 1,500.00 via InstaPay. Balance EGP 2,000.00', 'NBE', T0 + 10 * MIN)],
+      opts(state([cib], [out]))
+    )[0];
+    expect(row.pairOf).toBeUndefined();
+    expect(row).toMatchObject({ pairKey: 'k', review: true });
+  });
+
+  it('asks whether a bank payment is one the user already typed in', () => {
+    const typed = txn({ id: '70', name: 'Food', cat: 'Food', accId: 'cash', amount: -450, ts: T0 + 2 * 3_600_000 });
+    const row = buildRows(
+      [read('Your CIB debit card ending with 1234 was charged for EGP 450.00 at CARREFOUR MAADI.')],
+      opts(state([], [typed]))
+    )[0];
+    expect(row).toMatchObject({ maybeSameAs: '70', review: true, name: 'Carrefour' });
+  });
+
+  it('claims a typed entry for one bank payment only', () => {
+    const typed = txn({ id: '70', amount: -100, ts: T0 });
+    const rows = buildRows(
+      [
+        read('Your debit card ending 1234 was charged for EGP 100.00 at SHOP ONE'),
+        read('Your debit card ending 1234 was charged for EGP 100.00 at SHOP TWO', 'CIB', T0 + 60 * MIN),
+      ],
+      opts(state([], [typed]))
+    );
+    expect(rows.filter((r) => r.maybeSameAs)).toHaveLength(1);
   });
 
   it('gives a name to a payment that only said which account', () => {
