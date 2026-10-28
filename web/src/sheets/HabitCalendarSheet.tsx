@@ -56,22 +56,22 @@ export function HabitCalendarSheet() {
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
-        <div style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 16, padding: '13px 15px' }}>
+        <div style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '13px 15px' }}>
           <div style={{ fontSize: 24, fontWeight: 700, color: col }}>{count}</div>
           <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>this month</div>
         </div>
-        <div style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 16, padding: '13px 15px' }}>
+        <div style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '13px 15px' }}>
           <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)' }}>{doneDays.size}</div>
           <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>all time</div>
         </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div onClick={() => setOffset(offset + 1)} className="press92" style={{ width: 36, height: 36, borderRadius: 10, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} aria-label="Previous month" onClick={() => setOffset(offset + 1)} className="press92" style={{ width: 36, height: 36, borderRadius: 'calc(10px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M11 4l-5 5 5 5" /></svg>
         </div>
         <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{monthLabel}</div>
-        <div onClick={() => offset > 0 && setOffset(offset - 1)} className="press92" style={{ width: 36, height: 36, borderRadius: 10, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: offset > 0 ? 'pointer' : 'default', opacity: offset > 0 ? 1 : 0.4 }}>
+        <div role="button" tabIndex={0} aria-label="Next month" aria-disabled={offset === 0} onClick={() => offset > 0 && setOffset(offset - 1)} className="press92" style={{ width: 36, height: 36, borderRadius: 'calc(10px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: offset > 0 ? 'pointer' : 'default', opacity: offset > 0 ? 1 : 0.4 }}>
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M7 4l5 5-5 5" /></svg>
         </div>
       </div>
@@ -90,13 +90,13 @@ export function HabitCalendarSheet() {
           const scheduled = (habit?.days || '1111111')[new Date(year, mo, day).getDay()] === '1';
           const future = ds > todayStr;
           return (
-            <div
+            <div role="button" tabIndex={future ? -1 : 0} aria-label={`${monthLabel.split(' ')[0]} ${day}`} aria-pressed={done} aria-disabled={future}
               key={i}
               onClick={() => toggle(ds)}
               className={future ? undefined : 'press92'}
               style={{
                 aspectRatio: '1',
-                borderRadius: 10,
+                borderRadius: 'calc(10px * var(--sq))',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -120,7 +120,7 @@ export function HabitCalendarSheet() {
       </div>
 
       <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 16, textAlign: 'center', lineHeight: 1.5 }}>
-        Tap any day to check it off or clear it — backfill days you missed.
+        Tap a day to check it off or clear it, including days you forgot to log.
       </div>
     </div>
   );

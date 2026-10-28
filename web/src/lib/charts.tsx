@@ -1,5 +1,6 @@
 import React from 'react';
-import { cssVar } from './format';
+import { cssVar, fmtClock } from './format';
+import type { Bucket } from './period';
 
 let sparkId = 0;
 
@@ -20,56 +21,6 @@ function smooth(pts: number[][]): string {
     )} ${p2[1].toFixed(1)}`;
   }
   return d;
-}
-
-export function Bars({
-  values,
-  colorKey,
-  w = 132,
-  h = 42,
-  gap = 5,
-  max: maxProp,
-}: {
-  values: number[];
-  colorKey: string;
-  w?: number;
-  h?: number;
-  gap?: number;
-  // Fixed y-axis maximum. When omitted, bars scale to their own peak.
-  max?: number;
-}) {
-  const col = cssVar(colorKey);
-  const max = maxProp && maxProp > 0 ? maxProp : Math.max.apply(null, values.concat([1]));
-  const n = values.length;
-  // Cap the gap so many buckets (e.g. a 30-day month) don't shrink the bars to
-  // slivers — the gap never takes more than ~40% of each bar's slot.
-  const g = Math.min(gap, (w / Math.max(n, 1)) * 0.4);
-  const bw = (w - g * (n - 1)) / n;
-  return (
-    <svg
-      width="100%"
-      height={h}
-      viewBox={`0 0 ${w} ${h}`}
-      preserveAspectRatio="none"
-      style={{ display: 'block' }}
-    >
-      {values.map((v, i) => {
-        const bh = Math.max(v > 0 ? 3 : 0, (v / max) * (h - 3));
-        const x = i * (bw + g);
-        return (
-          <rect
-            key={i}
-            x={x}
-            y={h - bh}
-            width={bw}
-            height={bh}
-            rx={Math.min(3.5, bw / 2)}
-            style={{ fill: col, opacity: i === n - 1 ? 1 : 0.3 }}
-          />
-        );
-      })}
-    </svg>
-  );
 }
 
 export function Spark({
@@ -207,64 +158,14 @@ export function Ring({
   );
 }
 
+// Short, healthy and long sleep need three colours that read as three things.
+// Long was coral beside short's red — the legend showed two near-identical
+// reds for opposite problems.
 export function sleepColor(h: number): string {
-  return h < 7 ? 'var(--danger)' : h <= 9 ? 'var(--success)' : 'var(--coral)';
-}
-
-export function Candles({
-  items,
-  w = 300,
-  h = 140,
-  maxBar = 18,
-}: {
-  items: { hours: number }[];
-  w?: number;
-  h?: number;
-  maxBar?: number;
-}) {
-  const maxH = 12,
-    n = items.length;
-  const slotW = n ? w / n : w,
-    bw = Math.max(2.5, Math.min(maxBar, slotW * 0.62));
-  const y = (hrs: number) => h - (Math.min(hrs, maxH) / maxH) * (h - 3);
-  return (
-    <svg
-      width="100%"
-      height={h}
-      viewBox={`0 0 ${w} ${h}`}
-      preserveAspectRatio="none"
-      style={{ display: 'block' }}
-    >
-      {[7, 9].map((g, i) => (
-        <line
-          key={'g' + i}
-          x1={0}
-          y1={y(g)}
-          x2={w}
-          y2={y(g)}
-          stroke="var(--border)"
-          strokeWidth={1}
-          strokeDasharray="3 5"
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
-      {items.map((it, i) => {
-        const cx = slotW * i + slotW / 2,
-          yt = y(it.hours);
-        return (
-          <rect
-            key={i}
-            x={cx - bw / 2}
-            y={yt}
-            width={bw}
-            height={Math.max(2.5, h - yt)}
-            rx={Math.min(4, bw / 2)}
-            style={{ fill: sleepColor(it.hours) }}
-          />
-        );
-      })}
-    </svg>
-  );
+  // In the healthy range the bar takes the accent; outside it, quiet grey.
+  // Three hues for short, healthy and long sleep was one more rainbow on a
+  // screen that only needs to answer "was this a good night?".
+  return h >= 7 && h <= 9 ? 'var(--indigo)' : 'var(--text3)';
 }
 
 // Heatmap rendered from REAL per-day check-in levels (0-4). grid[col][row].
@@ -309,54 +210,322 @@ export function Heat({ grid, colorKey, cell = 13 }: { grid: number[][]; colorKey
   );
 }
 
-// Sleep timeline: Y axis is the 24-hour clock (0 at top → 24 at bottom).
-// Each night is a bar spanning bedtime → wake-up; nights that cross midnight
-// render as two segments (bottom near 24, top near 0).
-export function SleepTimeline({
-  items,
-  w = 300,
-  h = 140,
-  maxBar = 18,
-}: {
-  items: { hours: number; bedH: number | null; wakeH: number | null }[];
-  w?: number;
-  h?: number;
-  maxBar?: number;
-}) {
-  const n = items.length;
-  const slotW = n ? w / n : w;
-  const bw = Math.max(2.5, Math.min(maxBar, slotW * 0.62));
-  // Night-centered axis: 18:00 (evening) at the top → 18:00 next day at the
-  // bottom, so a normal night like 23:00 → 07:00 is ONE continuous block
-  // instead of splitting across midnight. `s` is "hours since 18:00" (0..24).
-  const ANCHOR = 18;
-  const shift = (hod: number) => ((((hod - ANCHOR) % 24) + 24) % 24);
-  const y = (s: number) => (s / 24) * h;
-  const ch: React.ReactNode[] = [];
-  // Gridlines at 00:00, 06:00, 12:00 (shifted positions 6, 12, 18).
-  [6, 12, 18].forEach((g, i) =>
-    ch.push(
-      <line key={'g' + i} x1={0} y1={y(g)} x2={w} y2={y(g)} stroke="var(--border)" strokeWidth={1} strokeDasharray="3 5" vectorEffect="non-scaling-stroke" />
-    )
-  );
-  items.forEach((it, i) => {
-    if (it.bedH == null || it.wakeH == null) return;
-    const cx = slotW * i + slotW / 2;
-    const col = sleepColor(it.hours);
-    const bed = shift(it.bedH);
-    const wake = shift(it.wakeH);
-    const segs: [number, number][] = wake > bed ? [[bed, wake]] : [[bed, 24], [0, wake]];
-    segs.forEach(([a, b], si) => {
-      const yA = y(a);
-      const yB = y(b);
-      ch.push(
-        <rect key={i + '-' + si} x={cx - bw / 2} y={yA} width={bw} height={Math.max(2, yB - yA)} rx={Math.min(4, bw / 2)} style={{ fill: col }} />
-      );
-    });
-  });
+// ---------------------------------------------------------------------------
+// Time charts
+//
+// One chart for every "how much, when" question in the app. It is laid out in
+// HTML rather than a stretched SVG, so labels are real text at a real size and
+// each bar is a real tap target. It always draws the whole period: days or
+// months still to come are faint stubs on the baseline, a past bucket with
+// nothing in it is a short muted mark, and the bucket holding today is the one
+// at full strength. Tapping a bar shows its date and value in a bubble above.
+// ---------------------------------------------------------------------------
+
+/** A round number at or above `v`, so the axis reads 60 / 120, not 47 / 94. */
+export function niceMax(v: number): number {
+  if (!(v > 0)) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const m of [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (v <= m * p) return m * p;
+  return 10 * p;
+}
+
+function useSelection(n: number) {
+  const [sel, setSel] = React.useState<number | null>(null);
+  React.useEffect(() => setSel(null), [n]);
+  return [sel, setSel] as const;
+}
+
+function Bubble({ idx, n, title, value, top, onOpen }: { idx: number; n: number; title: string; value: string; top: number; onOpen?: () => void }) {
+  const x = ((idx + 0.5) / n) * 100;
+  // Anchor to the nearer edge near the ends, so the bubble never leaves the card.
+  const anchor = x < 22 ? 'left' : x > 78 ? 'right' : 'center';
+  const pos: React.CSSProperties =
+    anchor === 'left'
+      ? { left: `max(0px, calc(${x}% - 14px))` }
+      : anchor === 'right'
+      ? { right: `max(0px, calc(${100 - x}% - 14px))` }
+      : { left: `${x}%`, transform: 'translateX(-50%)' };
   return (
-    <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ display: 'block' }}>
-      {ch}
-    </svg>
+    <div
+      role={onOpen ? 'button' : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      onClick={onOpen}
+      style={{
+        position: 'absolute',
+        top,
+        ...pos,
+        zIndex: 2,
+        pointerEvents: onOpen ? 'auto' : 'none',
+        cursor: onOpen ? 'pointer' : undefined,
+        background: 'var(--text)',
+        color: 'var(--bg)',
+        borderRadius: 'calc(10px * var(--sq))',
+        padding: '6px 10px',
+        whiteSpace: 'nowrap',
+        boxShadow: 'var(--shadow-lg)',
+        animation: 'fadeIn .12s ease',
+      }}
+    >
+      <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-.01em' }}>{value}</div>
+      <div style={{ fontSize: 11, opacity: 0.7, marginTop: 1 }}>{title}</div>
+      {onOpen && <div style={{ fontSize: 11.5, fontWeight: 650, marginTop: 4 }}>See payments ›</div>}
+    </div>
+  );
+}
+
+function XAxis({ buckets }: { buckets: Bucket[] }) {
+  const n = buckets.length;
+  return (
+    <div style={{ position: 'relative', height: 16, marginTop: 7 }}>
+      {buckets.map((b, i) =>
+        b.label ? (
+          <span
+            key={i}
+            style={{
+              position: 'absolute',
+              left: `${((i + 0.5) / n) * 100}%`,
+              transform: 'translateX(-50%)',
+              fontSize: 11,
+              fontWeight: b.current ? 650 : 500,
+              color: b.current ? 'var(--text)' : 'var(--text3)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {b.label}
+          </span>
+        ) : null
+      )}
+    </div>
+  );
+}
+
+export function BarChart({
+  buckets,
+  values,
+  color,
+  height = 132,
+  format,
+  max: maxProp,
+  band,
+  interactive = true,
+  axis = true,
+  grid = true,
+  onOpen,
+}: {
+  buckets: Bucket[];
+  values: (number | null)[];
+  color: string;
+  height?: number;
+  /** Formats a value for the bubble and the axis. */
+  format: (v: number) => string;
+  max?: number;
+  /** A shaded target range, e.g. 7–9 hours of sleep. */
+  band?: [number, number];
+  interactive?: boolean;
+  axis?: boolean;
+  grid?: boolean;
+  /** Opens what a bar is made of. Offered in its bubble, and on a second tap. */
+  onOpen?: (i: number) => void;
+}) {
+  const n = buckets.length;
+  const [sel, setSel] = useSelection(n);
+  const canOpen = (i: number) => !!onOpen && (values[i] ?? 0) > 0;
+  const peak = Math.max(0, ...values.map((v) => v ?? 0));
+  const max = maxProp ?? niceMax(peak);
+  const gap = n <= 7 ? 10 : n <= 12 ? 7 : n <= 16 ? 5 : 2.5;
+  const col = cssVar(color);
+  const pct = (v: number) => Math.min(100, (v / max) * 100);
+  const hasData = peak > 0;
+
+  return (
+    <div style={{ position: 'relative', userSelect: 'none' }} onClick={interactive ? (e) => e.stopPropagation() : undefined}>
+      <div style={{ position: 'relative', height }}>
+        {grid &&
+          [1, 0.5].map((f) => (
+            <div key={f} style={{ position: 'absolute', left: 0, right: 0, bottom: `${f * 100}%`, borderTop: '1px dashed var(--hairline)' }}>
+              {hasData && (
+                <span style={{ position: 'absolute', right: 0, top: -15, fontSize: 10.5, color: 'var(--text3)', background: 'var(--surface)', paddingLeft: 4 }}>
+                  {format(max * f)}
+                </span>
+              )}
+            </div>
+          ))}
+        {band && (
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: `${pct(band[0])}%`,
+              height: `${pct(band[1]) - pct(band[0])}%`,
+              background: `color-mix(in srgb, ${col} 8%, transparent)`,
+              borderRadius: 4,
+            }}
+          />
+        )}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', gap }}>
+          {buckets.map((b, i) => {
+            const v = values[i];
+            const dim = sel != null && sel !== i;
+            const future = b.future || v == null;
+            const h = future ? 0 : pct(v!);
+            const tappable = interactive && !future;
+            return (
+              <div
+                role={tappable ? 'button' : undefined}
+                tabIndex={tappable ? 0 : undefined}
+                key={i}
+                onClick={tappable ? () => (sel === i && canOpen(i) ? onOpen!(i) : setSel(sel === i ? null : i)) : undefined}
+                style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', alignItems: 'flex-end', cursor: interactive && !future ? 'pointer' : 'default' }}
+                aria-label={`${b.name}: ${future ? 'not yet' : format(v!)}`}
+              >
+                {b.future ? (
+                  <div style={{ width: '100%', height: 3, borderRadius: 2, background: 'var(--hairline)' }} />
+                ) : v == null || v <= 0 ? (
+                  <div style={{ width: '100%', height: 3, borderRadius: 2, background: `color-mix(in srgb, ${col} 22%, transparent)` }} />
+                ) : (
+                  <div
+                    style={{
+                      width: '100%',
+                      height: `max(4px, ${h}%)`,
+                      borderRadius: n > 16 ? 3 : 6,
+                      background: b.current || sel === i ? col : `color-mix(in srgb, ${col} 62%, transparent)`,
+                      opacity: dim ? 0.35 : 1,
+                      transition: 'opacity .15s, height .35s cubic-bezier(.2,.8,.2,1)',
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {sel != null && values[sel] != null && (
+          <Bubble
+            idx={sel}
+            n={n}
+            title={buckets[sel].name}
+            value={format(values[sel]!)}
+            top={Math.max(-8, (1 - pct(values[sel]!) / 100) * height - (canOpen(sel) ? 70 : 52))}
+            onOpen={canOpen(sel) ? () => onOpen!(sel) : undefined}
+          />
+        )}
+      </div>
+      {axis && <XAxis buckets={buckets} />}
+    </div>
+  );
+}
+
+/**
+ * Bedtime to wake-up, one bar per day of the period, on a clock axis fitted to
+ * the nights shown. The old version spread a full 24 hours from 6 PM to 6 PM,
+ * leaving the actual nights in a narrow strip, and placed bars by index, so
+ * three nights logged in a month looked like three nights in a row.
+ */
+export function SleepClock({
+  buckets,
+  slots,
+  height = 150,
+}: {
+  buckets: Bucket[];
+  slots: ({ hours: number; bedH: number | null; wakeH: number | null } | null)[];
+  height?: number;
+}) {
+  const n = buckets.length;
+  const [sel, setSel] = useSelection(n);
+  // Hours since 18:00, so a night is one continuous span.
+  const sh = (hod: number) => (((hod - 18) % 24) + 24) % 24;
+  const nights = slots
+    .map((s, i) => (s && s.bedH != null && s.wakeH != null ? { i, a: sh(s.bedH), b: sh(s.wakeH) < sh(s.bedH) ? sh(s.wakeH) + 24 : sh(s.wakeH), hours: s.hours } : null))
+    .filter(Boolean) as { i: number; a: number; b: number; hours: number }[];
+  let lo = nights.length ? Math.min(...nights.map((x) => x.a)) : 4; // 10 PM
+  let hi = nights.length ? Math.max(...nights.map((x) => x.b)) : 14; // 8 AM
+  lo = Math.max(0, Math.floor((lo - 0.5) / 2) * 2);
+  hi = Math.min(30, Math.ceil((hi + 0.5) / 2) * 2);
+  if (hi - lo < 8) hi = lo + 8;
+  const y = (v: number) => ((v - lo) / (hi - lo)) * 100;
+  const step = hi - lo > 12 ? 4 : 2;
+  const ticks: number[] = [];
+  for (let t = lo; t <= hi; t += step) ticks.push(t);
+  const label = (t: number) => {
+    const hod = (t + 18) % 24;
+    const h12 = hod % 12 === 0 ? 12 : hod % 12;
+    return `${h12} ${hod < 12 ? 'AM' : 'PM'}`;
+  };
+  const gap = n <= 7 ? 12 : 2.5;
+  const selNight = sel != null ? nights.find((x) => x.i === sel) : null;
+
+  return (
+    <div style={{ display: 'flex', gap: 8, userSelect: 'none' }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ position: 'relative', height }}>
+          {ticks.map((t) => (
+            <div key={t} style={{ position: 'absolute', left: 0, right: 0, top: `${y(t)}%`, borderTop: '1px dashed var(--hairline)' }} />
+          ))}
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', gap }}>
+            {buckets.map((b, i) => {
+              const nt = nights.find((x) => x.i === i);
+              const c = nt ? sleepColor(nt.hours) : 'transparent';
+              return (
+                <div role="button" tabIndex={0}
+                  key={i}
+                  onClick={nt ? () => setSel(sel === i ? null : i) : undefined}
+                  style={{ flex: 1, minWidth: 0, position: 'relative', cursor: nt ? 'pointer' : 'default' }}
+                  aria-label={`${b.name}: ${nt ? `${nt.hours.toFixed(1)} hours` : b.future ? 'not yet' : 'no sleep logged'}`}
+                >
+                  {nt ? (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        right: 0,
+                        top: `${y(nt.a)}%`,
+                        height: `${y(nt.b) - y(nt.a)}%`,
+                        borderRadius: n > 16 ? 3 : 7,
+                        background: c,
+                        opacity: sel != null && sel !== i ? 0.35 : b.current || sel === i ? 1 : 0.85,
+                        transition: 'opacity .15s',
+                      }}
+                    />
+                  ) : (
+                    !b.future && <div style={{ position: 'absolute', left: '50%', bottom: 0, width: 3, height: 3, marginLeft: -1.5, borderRadius: 2, background: 'var(--hairline)' }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {selNight && slots[selNight.i] && (
+            <Bubble
+              idx={selNight.i}
+              n={n}
+              value={`${fmtClock(slots[selNight.i]!.bedH)} → ${fmtClock(slots[selNight.i]!.wakeH)}`}
+              title={`${buckets[selNight.i].name} · ${Math.floor(selNight.hours)}h ${String(Math.round((selNight.hours % 1) * 60)).padStart(2, '0')}m`}
+              top={Math.max(-8, (y(selNight.a) / 100) * height - 54)}
+            />
+          )}
+        </div>
+        <XAxis buckets={buckets} />
+      </div>
+      <div style={{ position: 'relative', width: 40, height, flex: 'none' }}>
+        {ticks.map((t) => (
+          <span key={t} style={{ position: 'absolute', right: 0, top: `calc(${y(t)}% - 7px)`, fontSize: 10.5, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
+            {label(t)}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Legend dots under a chart. */
+export function Legend({ items }: { items: { color: string; label: string }[] }) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', marginTop: 14 }}>
+      {items.map((it) => (
+        <span key={it.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--text2)' }}>
+          <span style={{ width: 8, height: 8, borderRadius: 3, background: it.color }} />
+          {it.label}
+        </span>
+      ))}
+    </div>
   );
 }

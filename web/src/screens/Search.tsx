@@ -111,10 +111,10 @@ export function Search() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <BackButton onClick={() => go('home')} />
-        <div style={{ flex: 1, fontSize: 24, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>Search</div>
+        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>Search</div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '0 14px', height: 50, marginBottom: 18 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: '0 14px', height: 50, marginBottom: 18 }}>
         <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', flex: 'none' }} aria-hidden>
           <circle cx="8.5" cy="8.5" r="5.5" />
           <path d="M13 13l3 3" />
@@ -128,7 +128,7 @@ export function Search() {
           style={{ flex: 1, border: 'none', background: 'none', fontSize: 15.5, color: 'var(--text)', outline: 'none' }}
         />
         {q && (
-          <span onClick={() => setQ('')} role="button" aria-label="Clear" style={{ fontSize: 18, color: 'var(--text2)', cursor: 'pointer', padding: 4 }}>
+          <span tabIndex={0} onClick={() => setQ('')} role="button" aria-label="Clear" style={{ fontSize: 18, color: 'var(--text2)', cursor: 'pointer', padding: 4 }}>
             ×
           </span>
         )}
@@ -148,9 +148,9 @@ export function Search() {
           <div style={{ fontSize: 12.5, color: 'var(--text2)', marginBottom: 10, paddingLeft: 2 }}>
             {hits.length} result{hits.length === 1 ? '' : 's'}
           </div>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
             {shown.map((hit, i) => (
-              <div
+              <div role="button" tabIndex={0}
                 key={hit.id}
                 onClick={hit.open}
                 className="pressRow"

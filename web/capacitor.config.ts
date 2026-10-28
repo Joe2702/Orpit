@@ -6,11 +6,11 @@ const config: CapacitorConfig = {
   // Vite builds the web app into web/dist; Capacitor bundles that into the
   // native shell. Rebuild (npm run build) before `npx cap sync`.
   webDir: 'dist',
-  backgroundColor: '#0e0d1a',
+  backgroundColor: '#0c0c0f',
   plugins: {
     SplashScreen: {
       launchShowDuration: 600,
-      backgroundColor: '#0e0d1a',
+      backgroundColor: '#0c0c0f',
       showSpinner: false,
     },
     LocalNotifications: {

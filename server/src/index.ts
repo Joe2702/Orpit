@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import bcrypt from 'bcryptjs';
 import 'dotenv/config';
 import { fileURLToPath } from 'node:url';
@@ -8,10 +9,12 @@ import { existsSync } from 'node:fs';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import webpush from 'web-push';
 
+import type { PoolClient } from 'pg';
 import { pool, query, one, tx } from './db.js';
 import { signToken, requireAuth, type AuthedRequest } from './auth.js';
 import { seedUser } from './seed.js';
 import { buildState } from './state.js';
+import { fetchRates } from './fx.js';
 import { SCHEMA_SQL } from './schema.js';
 import { legalRouter } from './legal.js';
 import { partnerRouter, listReports } from './partner.js';
@@ -37,6 +40,10 @@ app.use(
       cb(null, !origin || allowedOrigins.includes(origin)),
   })
 );
+// Every save answers with the whole account as JSON, which is mostly repeated
+// keys and digits: gzip makes it several times smaller, which on mobile data
+// is most of the time a save takes to come back.
+app.use(compression());
 
 // ---- Database readiness ----
 // The schema runs on boot, but the server must NOT wait for it before it starts
@@ -540,6 +547,11 @@ app.patch(
       fields.text_scale = Math.min(1.4, Math.max(0.85, Number(req.body.textScale)));
     }
     if (typeof req.body.windDown === 'boolean') fields.wind_down = req.body.windDown;
+    if (typeof req.body.shareUsage === 'boolean') {
+      fields.share_usage = req.body.shareUsage;
+      // Off means off, including what was counted before.
+      if (!req.body.shareUsage) await query('DELETE FROM usage_counts WHERE user_id = $1', [uid]);
+    }
     // Accent colour + which trackers to show.
     if (typeof req.body.accent === 'string' && req.body.accent.length < 20) fields.accent = req.body.accent;
     if (Array.isArray(req.body.modules)) {
@@ -577,10 +589,11 @@ app.post(
       [uid]
     );
     const why = req.body.why ? String(req.body.why).slice(0, 300) : null;
+    const cue = req.body.cue ? String(req.body.cue).trim().slice(0, 120) || null : null;
     const rt = /^\d{2}:\d{2}$/.test(req.body.reminderTime) ? req.body.reminderTime : null;
     await query(
-      'INSERT INTO habits (user_id, name, color, target, days, sort, why, reminder_time) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
-      [uid, name, color, target, days, max!.m, why, rt]
+      'INSERT INTO habits (user_id, name, color, target, days, sort, why, reminder_time, cue) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+      [uid, name, color, target, days, max!.m, why, rt, cue]
     );
     res.json(await buildState(uid));
   })
@@ -601,14 +614,15 @@ app.patch(
     if (owned.locked) return res.status(400).json({ error: 'This habit is permanent and can’t be edited' });
     const days = /^[01]{7}$/.test(req.body.days) ? req.body.days : '1111111';
     const why = req.body.why ? String(req.body.why).slice(0, 300) : null;
+    const cue = req.body.cue ? String(req.body.cue).trim().slice(0, 120) || null : null;
     const rt = /^\d{2}:\d{2}$/.test(req.body.reminderTime) ? req.body.reminderTime : null;
     const paused = !!req.body.paused;
     const archived = !!req.body.archived;
     await query(
       `UPDATE habits SET name = $1, color = $2, target = $3, days = $4, why = $5,
-              reminder_time = $6, paused = $7, archived = $8
-       WHERE id = $9 AND user_id = $10`,
-      [name, String(req.body.color || 'teal'), String(req.body.target || 'Daily'), days, why, rt, paused, archived, req.params.id, uid]
+              reminder_time = $6, paused = $7, archived = $8, cue = $9
+       WHERE id = $10 AND user_id = $11`,
+      [name, String(req.body.color || 'teal'), String(req.body.target || 'Daily'), days, why, rt, paused, archived, cue, req.params.id, uid]
     );
     res.json(await buildState(uid));
   })
@@ -979,6 +993,8 @@ app.post(
     // way, and which way is the whole content of the entry.
     const adjust = !toAccId && !!req.body.adjust;
     const income = !toAccId && !adjust && !!req.body.income;
+    // Money back for a purchase: positive, but not income.
+    const refund = !toAccId && !adjust && !income && !!req.body.refund;
     const cat = toAccId ? 'Transfer' : adjust ? 'Adjustment' : String(req.body.cat || 'Other');
     const ts = req.body.ts ? new Date(Number(req.body.ts)) : new Date();
     const row = await one<{ id: string }>(
@@ -988,7 +1004,7 @@ app.post(
         uid,
         String(req.body.name || cat),
         cat,
-        adjust ? amt : income ? Math.abs(amt) : -Math.abs(amt),
+        adjust ? amt : income || refund ? Math.abs(amt) : -Math.abs(amt),
         income,
         req.body.accId || null,
         toAccId,
@@ -1009,50 +1025,540 @@ app.post(
 // to half-fail.
 //
 // The message text is not sent and is not stored. What arrives is what the
-// device read out of it — an amount, a name, a date — and a hash of the
-// message, which is the only thing that makes a repeat recognisable.
+// device read out of it (an amount, a name, a date, which bank and card) and a
+// hash of the message, which is the only thing that makes a repeat
+// recognisable.
 //
-// Every entry is inserted ON CONFLICT DO NOTHING against the unique index on
-// (user_id, sms_key). That is the whole duplicate story, and it belongs here
-// rather than on the device: a phone only knows the messages it has read
-// itself, so two phones on one account would each import the same payment.
+// The device has already done the reading: categories, currency, which
+// messages are the same payment, which pairs are a transfer between the user's
+// own accounts. This end does what needs the database: finds or creates the
+// account each message belongs to, keeps each account's last reported balance,
+// and writes the entries.
+//
+// Every entry is keyed on (user_id, sms_key). That is the duplicate story, and
+// it belongs here rather than on the device: a phone only knows the messages it
+// has read itself, so two phones on one account would each import the same
+// payment. A key that already exists is rewritten only while the entry is still
+// as the import left it (txns.auto), which is how a better reader can fix
+// entries an older one got wrong without undoing anything the user changed.
+
+// Categories an import may create when the user has nothing that fits. Mirrors
+// CREATABLE in web/src/lib/merchants.ts.
+const SMS_CATEGORIES: Record<string, { icon: string; color: string; kind: 'expense' | 'income' }> = {
+  Groceries: { icon: 'cart', color: 'emerald', kind: 'expense' },
+  'Eating out': { icon: 'food', color: 'coral', kind: 'expense' },
+  Coffee: { icon: 'coffee', color: 'amber', kind: 'expense' },
+  Fuel: { icon: 'car', color: 'blue', kind: 'expense' },
+  Bills: { icon: 'bolt', color: 'amber', kind: 'expense' },
+  Subscriptions: { icon: 'repeat', color: 'purple', kind: 'expense' },
+  Fitness: { icon: 'heart', color: 'rose', kind: 'expense' },
+  Travel: { icon: 'star', color: 'teal', kind: 'expense' },
+  Education: { icon: 'laptop', color: 'cyan', kind: 'expense' },
+  Cash: { icon: 'cash', color: 'emerald', kind: 'expense' },
+  Transfers: { icon: 'repeat', color: 'blue', kind: 'expense' },
+  Fees: { icon: 'other', color: 'text2', kind: 'expense' },
+  Income: { icon: 'cash', color: 'emerald', kind: 'income' },
+};
+
+const ACCOUNT_TYPES = ['Bank', 'Credit card', 'Wallet', 'Cash'];
+const ACCOUNT_COLOR: Record<string, string> = { Bank: 'blue', 'Credit card': 'indigo', Wallet: 'rose', Cash: 'emerald' };
+
+interface SmsLinkIn {
+  sender: string;
+  card: string;
+  label: string;
+  type: string;
+}
+
+function readLink(v: unknown): SmsLinkIn | null {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as Record<string, unknown>;
+  const sender = String(o.sender || '').trim().slice(0, 40);
+  if (!sender) return null;
+  const card = o.card ? String(o.card).replace(/\D/g, '').slice(-4) : '';
+  const label = String(o.label || sender).trim().slice(0, 60) || sender;
+  const type = ACCOUNT_TYPES.includes(String(o.type)) ? String(o.type) : 'Bank';
+  return { sender, card, label, type };
+}
+
+/**
+ * The account a bank message belongs to, created the first time a sender is
+ * seen. The first two steps mirror accountForLink in web/src/lib/ledger.ts.
+ */
+async function accountForSms(c: PoolClient, uid: number, l: SmsLinkIn, seen: Map<string, string>): Promise<string> {
+  const k = `${l.sender.toLowerCase()}|${l.card}`;
+  const known = seen.get(k);
+  if (known) return known;
+
+  // 1. This sender and card has been seen before.
+  let id: string | undefined = (
+    await c.query<{ id: string }>(
+      'SELECT acc_id::text AS id FROM account_links WHERE user_id = $1 AND lower(sender) = lower($2) AND card = $3',
+      [uid, l.sender, l.card]
+    )
+  ).rows[0]?.id;
+
+  // 2. A new card or account number from a bank the user has one account
+  //    with. A debit card and the account behind it are the same money.
+  if (!id && l.type !== 'Credit card') {
+    const r = await c.query<{ id: string }>(
+      `SELECT DISTINCT a.id::text AS id FROM account_links k JOIN accounts a ON a.id = k.acc_id
+       WHERE k.user_id = $1 AND lower(k.sender) = lower($2) AND a.type <> 'Credit card'`,
+      [uid, l.sender]
+    );
+    if (r.rows.length === 1) id = r.rows[0].id;
+  }
+
+  // 3. An account the user made by hand for this bank before turning
+  //    tracking on: "CIB", "CIB current". Cash is never one of them; a
+  //    "Vodafone Cash" wallet is not the money in someone's pocket.
+  if (!id) {
+    const r = await c.query<{ id: string; name: string; type: string }>(
+      `SELECT a.id::text AS id, a.name, a.type FROM accounts a
+       WHERE a.user_id = $1 AND a.type <> 'Cash'
+         AND NOT EXISTS (SELECT 1 FROM account_links k WHERE k.acc_id = a.id)
+         AND position(lower($2) in lower(a.name)) > 0
+       ORDER BY a.sort, a.id`,
+      [uid, l.sender]
+    );
+    const fit = r.rows.filter((a) => (a.type === 'Credit card') === (l.type === 'Credit card'));
+    const best = (l.card && fit.find((a) => a.name.includes(l.card))) || fit[0];
+    if (best) id = best.id;
+  }
+
+  // 4. A bank the user hasn't told the app about: open an account for it.
+  //    It starts at zero and takes its balance from the first message that
+  //    reports one.
+  if (!id) {
+    const max = await c.query<{ m: number }>('SELECT COALESCE(MAX(sort), -1) + 1 AS m FROM accounts WHERE user_id = $1', [uid]);
+    id = (
+      await c.query<{ id: string }>(
+        'INSERT INTO accounts (user_id, name, type, color, opening, sort) VALUES ($1,$2,$3,$4,0,$5) RETURNING id::text AS id',
+        [uid, l.label, l.type, ACCOUNT_COLOR[l.type] || 'blue', max.rows[0].m]
+      )
+    ).rows[0].id;
+  }
+
+  await c.query('INSERT INTO account_links (user_id, acc_id, sender, card) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING', [
+    uid,
+    id,
+    l.sender,
+    l.card,
+  ]);
+  seen.set(k, id);
+  return id;
+}
+
+/** Keep an account's reported balance, unless a newer one is already held. */
+async function anchorBalance(c: PoolClient, uid: number, accId: string, balance: unknown, ts: Date) {
+  const b = Number(balance);
+  if (balance == null || !isFinite(b) || Math.abs(b) > 1e11) return;
+  await c.query(
+    `UPDATE accounts SET sms_balance = $1, sms_balance_ts = $2
+     WHERE id = $3 AND user_id = $4 AND (sms_balance_ts IS NULL OR sms_balance_ts <= $2)`,
+    [b, ts, accId, uid]
+  );
+}
+
+/**
+ * A message that must never become an entry of its own: another copy of a
+ * payment already recorded, or the other half of a transfer. If an earlier
+ * import wrote it as an entry, that entry goes, unless the user has made it
+ * their own.
+ */
+async function ignoreSms(c: PoolClient, uid: number, key: string) {
+  if (!key) return;
+  await c.query('INSERT INTO sms_ignored (user_id, sms_key) VALUES ($1,$2) ON CONFLICT DO NOTHING', [uid, key]);
+  await c.query('DELETE FROM txns WHERE user_id = $1 AND sms_key = $2 AND auto', [uid, key]);
+}
+
+interface SmsEntry {
+  name: string;
+  cat: string;
+  amount: number;
+  income: boolean;
+  accId: string | null;
+  toAccId: string | null;
+  note: string | null;
+  ts: Date;
+  key: string;
+  review: boolean;
+  /** A hand-typed entry this may be the same payment as. */
+  dupOf?: string | null;
+  /** The other message of a possible transfer between the user's accounts. */
+  pairKey?: string | null;
+}
+
+async function writeSms(c: PoolClient, uid: number, e: SmsEntry) {
+  await c.query(
+    `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, to_acc_id, note, ts, sms_key, review, auto, dup_of, pair_key)
+     SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,TRUE,$12,$13
+     WHERE NOT EXISTS (SELECT 1 FROM sms_ignored WHERE user_id = $1 AND sms_key = $10)
+     ON CONFLICT (user_id, sms_key) WHERE sms_key IS NOT NULL DO UPDATE SET
+       name = EXCLUDED.name, cat = EXCLUDED.cat, amount = EXCLUDED.amount, income = EXCLUDED.income,
+       acc_id = EXCLUDED.acc_id, to_acc_id = EXCLUDED.to_acc_id, note = EXCLUDED.note, ts = EXCLUDED.ts,
+       review = EXCLUDED.review, dup_of = EXCLUDED.dup_of, pair_key = EXCLUDED.pair_key
+     WHERE txns.auto`,
+    [uid, e.name, e.cat, e.amount, e.income, e.accId, e.toAccId, e.note, e.ts, e.key, e.review, e.dupOf ?? null, e.pairKey ?? null]
+  );
+  // An entry the user already edited keeps their wording, but one an older
+  // import left without an account can still be given the right one.
+  if (e.accId) {
+    await c.query('UPDATE txns SET acc_id = $1 WHERE user_id = $2 AND sms_key = $3 AND acc_id IS NULL AND NOT auto', [e.accId, uid, e.key]);
+  }
+}
+
 app.post(
   '/api/txns/sms',
   requireAuth,
   idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    const items = Array.isArray(req.body.items) ? req.body.items.slice(0, 200) : [];
+    const items = Array.isArray(req.body.items) ? req.body.items.slice(0, 300) : [];
     // Not "now": a first import walks back through old messages, and dating
     // them today would pile a year of spending onto one afternoon.
     const soon = Date.now() + 86400000;
+    const str = (v: unknown, n: number) => (v == null ? '' : String(v).trim().slice(0, n));
+    const keyOf = (v: unknown) => str(v, 80);
 
-    for (const it of items) {
-      const key = String(it?.key || '').slice(0, 80);
-      if (!key) continue;
-      const amt = Math.abs(Number(it.amount));
-      if (!isFinite(amt) || amt <= 0 || amt > 1e9) continue;
-      const t = Number(it.ts);
-      if (!isFinite(t) || t <= 0 || t > soon) continue;
-      const income = !!it.income;
-      const name = String(it.name || 'Bank').trim().slice(0, 120) || 'Bank';
-      const cat = String(it.cat || (income ? 'Income' : 'Other')).slice(0, 60);
-      const note = it.note ? String(it.note).slice(0, 200) : null;
+    await tx(async (c) => {
+      const seen = new Map<string, string>();
 
-      await query(
-        `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts, sms_key)
-         SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9
-         WHERE NOT EXISTS (SELECT 1 FROM sms_ignored WHERE user_id = $1 AND sms_key = $9)
-         ON CONFLICT (user_id, sms_key) WHERE sms_key IS NOT NULL DO NOTHING`,
-        [uid, name, cat, income ? amt : -amt, income, it.accId || null, note, new Date(t), key]
+      // Categories first, so every entry below lands in one that exists.
+      const have = new Set(
+        (await c.query<{ n: string }>('SELECT lower(name) AS n FROM fcats WHERE user_id = $1', [uid])).rows.map((r) => r.n)
       );
-    }
+      const ensureCat = async (cat: string) => {
+        const spec = SMS_CATEGORIES[cat];
+        if (!spec || have.has(cat.toLowerCase())) return;
+        await c.query(
+          `INSERT INTO fcats (user_id, name, icon, color, kind, sort)
+           SELECT $1,$2,$3,$4,$5, COALESCE(MAX(sort), -1) + 1 FROM fcats WHERE user_id = $1`,
+          [uid, cat, spec.icon, spec.color, spec.kind]
+        );
+        have.add(cat.toLowerCase());
+      };
+      for (const it of items) {
+        await ensureCat(str(it?.cat, 60));
+        if (Number(it?.fee) > 0) await ensureCat(str(it?.feeCat, 60) || 'Fees');
+      }
+
+      for (const it of items) {
+        const key = keyOf(it?.key);
+        if (!key) continue;
+        const amt = Math.abs(Number(it.amount));
+        if (!isFinite(amt) || amt <= 0 || amt > 1e9) continue;
+        const t = Number(it.ts);
+        if (!isFinite(t) || t <= 0 || t > soon) continue;
+        const ts = new Date(t);
+        const link = readLink(it.link);
+        const accId = link ? await accountForSms(c, uid, link, seen) : null;
+        if (accId) await anchorBalance(c, uid, accId, it.balance, ts);
+
+        const also: string[] = Array.isArray(it.alsoKeys) ? it.alsoKeys.slice(0, 10).map(keyOf).filter(Boolean) : [];
+        // A copy the user already edited stands for the payment; this one is the repeat.
+        const kept = also.length
+          ? await c.query('SELECT 1 FROM txns WHERE user_id = $1 AND sms_key = ANY($2::text[]) AND NOT auto LIMIT 1', [uid, also])
+          : { rowCount: 0 };
+        if (kept.rowCount) {
+          await ignoreSms(c, uid, key);
+          for (const k of also) await c.query('INSERT INTO sms_ignored (user_id, sms_key) VALUES ($1,$2) ON CONFLICT DO NOTHING', [uid, k]);
+          continue;
+        }
+        for (const k of also) await ignoreSms(c, uid, k);
+
+        // Already recorded from another message.
+        if (it.dupOf) {
+          await ignoreSms(c, uid, key);
+          continue;
+        }
+
+        const name = str(it.name, 120) || 'Bank';
+        const note = str(it.note, 200) || null;
+        const review = !!it.review;
+        const fee = Math.abs(Number(it.fee)) || 0;
+        const feeCat = str(it.feeCat, 60) || 'Fees';
+
+        // Where the money went, when it stayed the user's own.
+        const from: string | null = accId;
+        let to: string | null = null;
+        let toBalance: unknown = null;
+        let pairedAt: Date | null = null;
+        const toLink = readLink(it.toLink);
+        if (toLink) {
+          to = await accountForSms(c, uid, toLink, seen);
+          toBalance = it.toBalance;
+        } else if (it.toAccId) {
+          const own = await c.query<{ id: string }>('SELECT id::text AS id FROM accounts WHERE id = $1 AND user_id = $2', [
+            String(it.toAccId),
+            uid,
+          ]);
+          to = own.rows[0]?.id || null;
+        } else if (it.pairOf) {
+          // The other half arrived in an earlier batch. If it is still as
+          // imported, the two become one transfer; otherwise the user has
+          // already said what it was, and this one is filed as read.
+          const other = await c.query<{ id: string; acc: string; key: string | null; amount: number; ts: Date }>(
+            `SELECT id::text AS id, acc_id::text AS acc, sms_key AS key, amount, ts FROM txns
+             WHERE id = $1 AND user_id = $2 AND auto AND to_acc_id IS NULL AND acc_id IS NOT NULL`,
+            [String(it.pairOf), uid]
+          );
+          const o = other.rows[0];
+          if (o && accId && o.acc !== accId) {
+            // Dated at the earlier half. Each side's reported balance already
+            // includes the move, and an entry dated at or before a reported
+            // balance is not added to it again.
+            const when = o.ts < ts ? o.ts : ts;
+            if (it.income) {
+              // The money-out half is already an entry: it becomes the
+              // transfer, keyed by its own message, and this one is the echo.
+              // Its amount included any fee; the fee is spending of its own.
+              const fee = Math.round((Math.abs(Number(o.amount)) - amt) * 100) / 100;
+              await c.query(
+                `UPDATE txns SET name = 'Transfer', cat = 'Transfer', amount = $1, income = FALSE, to_acc_id = $2,
+                        ts = $3, review = FALSE
+                 WHERE id = $4 AND user_id = $5`,
+                [-amt, accId, when, o.id, uid]
+              );
+              if (o.key && fee > 0 && fee < amt * 0.05) {
+                await ensureCat(feeCat);
+                await writeSms(c, uid, {
+                  name: 'Transfer fee',
+                  cat: feeCat,
+                  amount: -fee,
+                  income: false,
+                  accId: o.acc,
+                  toAccId: null,
+                  note: null,
+                  ts: when,
+                  key: `${o.key}:fee`.slice(0, 90),
+                  review: false,
+                });
+              }
+              await ignoreSms(c, uid, key);
+              continue;
+            }
+            // This is the money-out half: it becomes the transfer, and the
+            // money-in entry already recorded goes.
+            to = o.acc;
+            pairedAt = when;
+            await c.query('DELETE FROM txns WHERE id = $1 AND user_id = $2', [o.id, uid]);
+            if (o.key) await c.query('INSERT INTO sms_ignored (user_id, sms_key) VALUES ($1,$2) ON CONFLICT DO NOTHING', [uid, o.key]);
+          }
+        }
+        if (to && to === from) {
+          // Both ends are one account (a debit card paying into the account
+          // behind it): nothing moved.
+          await ignoreSms(c, uid, key);
+          continue;
+        }
+        if (toLink && to) {
+          // Each half's balance is anchored at its own message's time, and the
+          // transfer is dated at the earlier of the two, so both reported
+          // balances already include it and neither adds it again.
+          const tt = Number(it.toTs);
+          const inAt = isFinite(tt) && tt > 0 && tt <= soon ? new Date(tt) : ts;
+          if (toBalance != null) await anchorBalance(c, uid, to, toBalance, inAt);
+          pairedAt = inAt < ts ? inAt : ts;
+        }
+
+        if (to) {
+          await writeSms(c, uid, {
+            name: it.toAccId && !toLink ? name : 'Transfer',
+            cat: 'Transfer',
+            amount: -amt,
+            income: false,
+            accId: from,
+            toAccId: to,
+            note,
+            ts: pairedAt || ts,
+            key,
+            review: false,
+          });
+          if (fee > 0) {
+            await writeSms(c, uid, {
+              name: it.toAccId && !toLink ? 'ATM fee' : 'Transfer fee',
+              cat: feeCat,
+              amount: -fee,
+              income: false,
+              accId: from,
+              toAccId: null,
+              note: null,
+              ts: pairedAt || ts,
+              key: `${key}:fee`.slice(0, 90),
+              review: false,
+            });
+          }
+          continue;
+        }
+
+        // A refund is money back for spending: positive, but not income, so it
+        // lowers the month's spending instead of inflating its earnings.
+        const income = !!it.income && !it.refund;
+        // Only a hand-typed entry of this user's can be the one it may repeat.
+        const typed = /^\d+$/.test(String(it.maybeSameAs || ''))
+          ? await c.query('SELECT 1 FROM txns WHERE id = $1 AND user_id = $2 AND sms_key IS NULL', [String(it.maybeSameAs), uid])
+          : { rowCount: 0 };
+        await writeSms(c, uid, {
+          name,
+          cat: str(it.cat, 60) || (income ? 'Income' : 'Other'),
+          amount: income || it.refund ? amt : -amt,
+          income,
+          accId,
+          toAccId: null,
+          note,
+          ts,
+          key,
+          review: review || !!typed.rowCount,
+          dupOf: typed.rowCount ? String(it.maybeSameAs) : null,
+          pairKey: keyOf(it.pairKey) || null,
+        });
+      }
+    });
+
+    // A bill or salary waiting for its bank message may have just got it.
+    await runRecurring(uid);
 
     // A plain state, like every other write. The count of what was actually
     // new is worked out on the device by diffing ids: this response also
     // travels through the offline queue, which replays a failed op later and
     // applies whatever comes back as the app state, so it cannot be a
     // different shape from every other one.
+    res.json(await buildState(uid));
+  })
+);
+
+// "Is this the payment you typed in?" Same: the bank's version stays (it has
+// the shop, the account and the minute) and takes what the user gave theirs, a
+// category, a note, a receipt; the typed one goes. Different: both stay, and
+// the question isn't asked again.
+app.post(
+  '/api/txns/:id/same',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const id = String(req.params.id);
+    const row = await one<{ dup: string | null; note: string | null }>(
+      'SELECT dup_of::text AS dup, note FROM txns WHERE id = $1 AND user_id = $2',
+      [id, uid]
+    );
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    await tx(async (c) => {
+      if (req.body.same && row.dup) {
+        const typed = (
+          await c.query<{ cat: string; note: string | null; recurring: string | null }>(
+            `SELECT cat, note, recurring_id::text AS recurring FROM txns
+             WHERE id = $1 AND user_id = $2 AND sms_key IS NULL`,
+            [row.dup, uid]
+          )
+        ).rows[0];
+        if (typed) {
+          await c.query(
+            `UPDATE txns SET cat = CASE WHEN $1 IN ('Other', '') THEN cat ELSE $1 END,
+                    note = COALESCE(note, $2), recurring_id = COALESCE(recurring_id, $3::bigint)
+             WHERE id = $4 AND user_id = $5`,
+            [typed.cat, typed.note, typed.recurring, id, uid]
+          );
+          // A receipt photo moves to the entry that stays, if it has none.
+          await c.query(
+            `UPDATE txn_photos SET txn_id = $1 WHERE txn_id = $2
+               AND NOT EXISTS (SELECT 1 FROM txn_photos WHERE txn_id = $1)`,
+            [id, row.dup]
+          );
+          await c.query('DELETE FROM txns WHERE id = $1 AND user_id = $2', [row.dup, uid]);
+        }
+      }
+      await c.query('UPDATE txns SET dup_of = NULL, review = FALSE, auto = FALSE WHERE id = $1 AND user_id = $2', [id, uid]);
+    });
+    res.json(await buildState(uid));
+  })
+);
+
+// "Yes, that was me moving my own money." Two imported entries, money out of
+// one account and the same amount into another, become one transfer: the
+// money-out entry turns into it, keyed by its own message, and the money-in
+// entry goes. A difference between the two amounts is the fee.
+app.post(
+  '/api/txns/:id/pair',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const ids = [String(req.params.id), String(req.body.with || '')];
+    const rows = await query<{ id: string; acc: string | null; amount: number; ts: Date; key: string | null }>(
+      `SELECT id::text, acc_id::text AS acc, amount, ts, sms_key AS key FROM txns
+       WHERE user_id = $1 AND id = ANY($2::bigint[]) AND to_acc_id IS NULL AND NOT adjust`,
+      [uid, ids.filter((x) => /^\d+$/.test(x))]
+    );
+    const out = rows.find((r) => r.amount < 0);
+    const into = rows.find((r) => r.amount > 0);
+    if (rows.length !== 2 || !out || !into || !out.acc || !into.acc || out.acc === into.acc) {
+      return res.status(400).json({ error: 'Those two can’t be one transfer' });
+    }
+    const amt = Math.abs(Number(into.amount));
+    const fee = Math.round((Math.abs(Number(out.amount)) - amt) * 100) / 100;
+    const when = out.ts < into.ts ? out.ts : into.ts;
+    await tx(async (c) => {
+      await c.query(
+        `UPDATE txns SET name = 'Transfer', cat = 'Transfer', amount = $1, income = FALSE, to_acc_id = $2, ts = $3,
+                review = FALSE, auto = FALSE, pair_key = NULL, dup_of = NULL
+         WHERE id = $4 AND user_id = $5`,
+        [-amt, into.acc, when, out.id, uid]
+      );
+      if (fee > 0 && fee < amt * 0.05) {
+        await c.query(
+          `INSERT INTO fcats (user_id, name, icon, color, kind, sort)
+           SELECT $1, 'Fees', 'other', 'text2', 'expense', COALESCE(MAX(sort), -1) + 1 FROM fcats WHERE user_id = $1
+           HAVING NOT EXISTS (SELECT 1 FROM fcats WHERE user_id = $1 AND lower(name) = 'fees')`,
+          [uid]
+        );
+        await c.query(
+          `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, ts, sms_key)
+           VALUES ($1, 'Transfer fee', 'Fees', $2, FALSE, $3, $4, $5) ON CONFLICT DO NOTHING`,
+          [uid, -fee, out.acc, when, out.key ? `${out.key}:fee`.slice(0, 90) : null]
+        );
+      }
+      await c.query('DELETE FROM txns WHERE id = $1 AND user_id = $2', [into.id, uid]);
+      if (into.key) await c.query('INSERT INTO sms_ignored (user_id, sms_key) VALUES ($1,$2) ON CONFLICT DO NOTHING', [uid, into.key]);
+    });
+    res.json(await buildState(uid));
+  })
+);
+
+// Mark imported entries as looked at.
+app.post(
+  '/api/txns/reviewed',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const ids = Array.isArray(req.body.ids) ? req.body.ids.slice(0, 1000).map(String) : [];
+    if (ids.length) {
+      await query('UPDATE txns SET review = FALSE WHERE user_id = $1 AND id = ANY($2::bigint[])', [uid, ids]);
+    }
+    res.json(await buildState(uid));
+  })
+);
+
+// One category for several entries at once: "everything from this shop is
+// Groceries". The device picks the entries; this only applies the change.
+app.post(
+  '/api/txns/recat',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const ids = Array.isArray(req.body.ids) ? req.body.ids.slice(0, 2000).map(String) : [];
+    const cat = String(req.body.cat || '').trim().slice(0, 60);
+    if (!cat) return res.status(400).json({ error: 'Category required' });
+    if (ids.length) {
+      await query(
+        `UPDATE txns SET cat = $1, review = FALSE, auto = FALSE
+         WHERE user_id = $2 AND id = ANY($3::bigint[]) AND to_acc_id IS NULL AND NOT adjust`,
+        [cat, uid, ids]
+      );
+    }
     res.json(await buildState(uid));
   })
 );
@@ -1072,15 +1578,20 @@ app.patch(
       return res.status(400).json({ error: (e as Error).message });
     }
     const income = !toAccId && !!req.body.income;
+    // Money back for a purchase stays positive without counting as income.
+    const refund = !toAccId && !income && !!req.body.refund;
     const cat = toAccId ? 'Transfer' : String(req.body.cat || 'Other');
     const ts = req.body.ts ? new Date(Number(req.body.ts)) : new Date();
     await query(
-      `UPDATE txns SET name=$1, cat=$2, amount=$3, income=$4, acc_id=$5, to_acc_id=$6, note=$7, ts=$8
+      // Edited by hand: no longer a guess to review, and no later import may
+      // overwrite it.
+      `UPDATE txns SET name=$1, cat=$2, amount=$3, income=$4, acc_id=$5, to_acc_id=$6, note=$7, ts=$8,
+              review=FALSE, auto=FALSE
        WHERE id=$9 AND user_id=$10`,
       [
         String(req.body.name || cat),
         cat,
-        income ? Math.abs(amt) : -Math.abs(amt),
+        income || refund ? Math.abs(amt) : -Math.abs(amt),
         income,
         req.body.accId || null,
         toAccId,
@@ -1147,6 +1658,80 @@ app.patch(
       'UPDATE accounts SET name=$1, type=$2, color=$3, opening=$4 WHERE id=$5 AND user_id=$6',
       [name, String(req.body.type || 'Bank'), String(req.body.color || 'blue'), Number(req.body.opening) || 0, req.params.id, uid]
     );
+    // "It's 12,400 right now": the same kind of fact a bank message reports,
+    // so it is kept the same way, and whatever is logged afterwards adds to it.
+    if (req.body.balanceNow != null && isFinite(Number(req.body.balanceNow))) {
+      await query('UPDATE accounts SET sms_balance = $1, sms_balance_ts = now() WHERE id = $2 AND user_id = $3', [
+        Number(req.body.balanceNow),
+        req.params.id,
+        uid,
+      ]);
+    }
+    res.json(await buildState(uid));
+  })
+);
+
+// Stop filing a sender's messages here. The next one from it finds or opens
+// another account.
+app.post(
+  '/api/accounts/:id/unlink',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    await query('DELETE FROM account_links WHERE user_id = $1 AND acc_id = $2 AND lower(sender) = lower($3) AND card = $4', [
+      uid,
+      req.params.id,
+      String(req.body.sender || ''),
+      req.body.card ? String(req.body.card) : '',
+    ]);
+    res.json(await buildState(uid));
+  })
+);
+
+// Two accounts that are really one: the debit card the app met before the
+// account behind it, or a bank account made by hand before tracking began.
+// Everything moves into the second, including where future messages go.
+app.post(
+  '/api/accounts/:id/merge',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const from = String(req.params.id);
+    const into = String(req.body.into || '');
+    if (!into || into === from) return res.status(400).json({ error: 'Pick another account' });
+    const both = await query<{ id: string; opening: number; b: number | null; bts: Date | null }>(
+      `SELECT id::text AS id, opening, sms_balance AS b, sms_balance_ts AS bts FROM accounts
+       WHERE user_id = $1 AND id = ANY($2::bigint[])`,
+      [uid, [from, into]]
+    );
+    if (both.length !== 2) return res.status(404).json({ error: 'Account not found' });
+    const src = both.find((a) => a.id === from)!;
+    const dst = both.find((a) => a.id === into)!;
+    // Both reported a balance: they were one bank account seen through two
+    // numbers, and the newer report is the truth. Only one: that one.
+    const anchor = !src.bts ? dst : !dst.bts ? src : src.bts > dst.bts ? src : dst;
+    await tx(async (c) => {
+      // A transfer between the two is a move from an account to itself.
+      await c.query(
+        'DELETE FROM txns WHERE user_id = $1 AND ((acc_id = $2 AND to_acc_id = $3) OR (acc_id = $3 AND to_acc_id = $2))',
+        [uid, from, into]
+      );
+      await c.query('UPDATE txns SET acc_id = $3 WHERE user_id = $1 AND acc_id = $2', [uid, from, into]);
+      await c.query('UPDATE txns SET to_acc_id = $3 WHERE user_id = $1 AND to_acc_id = $2', [uid, from, into]);
+      await c.query('UPDATE recurring SET acc_id = $3 WHERE user_id = $1 AND acc_id = $2', [uid, from, into]);
+      await c.query('UPDATE goals SET acc_id = $3 WHERE user_id = $1 AND acc_id = $2', [uid, from, into]);
+      await c.query('UPDATE account_links SET acc_id = $3 WHERE user_id = $1 AND acc_id = $2', [uid, from, into]);
+      await c.query('UPDATE accounts SET opening = $1, sms_balance = $2, sms_balance_ts = $3 WHERE id = $4 AND user_id = $5', [
+        (Number(src.opening) || 0) + (Number(dst.opening) || 0),
+        anchor.b,
+        anchor.bts,
+        into,
+        uid,
+      ]);
+      await c.query('DELETE FROM accounts WHERE id = $1 AND user_id = $2', [from, uid]);
+    });
     res.json(await buildState(uid));
   })
 );
@@ -1168,9 +1753,40 @@ app.delete(
       );
       await c.query('UPDATE txns SET acc_id = NULL WHERE acc_id = $1 AND user_id = $2', [req.params.id, uid]);
       await c.query('UPDATE recurring SET acc_id = NULL WHERE acc_id = $1 AND user_id = $2', [req.params.id, uid]);
+      await c.query('UPDATE goals SET acc_id = NULL WHERE acc_id = $1 AND user_id = $2', [req.params.id, uid]);
       await c.query('DELETE FROM accounts WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
     });
     res.json(await buildState(uid));
+  })
+);
+
+// ---------------- Exchange rates ----------------
+
+// What a foreign-currency payment is worth in the user's own currency. A card
+// used abroad or a dollar subscription arrives in dollars; a ledger kept in
+// pounds that adds 30 where 1,450 belongs is wrong by the whole exchange rate.
+// Fetched from a free daily feed (fx.ts) and held for half a day: entries
+// need the day's rate, not the minute's.
+const fxCache = new Map<string, { at: number; rates: Record<string, number> }>();
+const FX_TTL = 12 * 3600_000;
+
+app.get(
+  '/api/fx',
+  requireAuth,
+  wrap(async (req, res) => {
+    const base = String(req.query.base || 'EGP').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+    if (base.length !== 3) return res.status(400).json({ error: 'Currency required' });
+    const hit = fxCache.get(base);
+    if (hit && Date.now() - hit.at < FX_TTL) return res.json({ base, rates: hit.rates, at: hit.at });
+    const rates = await fetchRates(base);
+    if (rates) {
+      fxCache.set(base, { at: Date.now(), rates });
+      return res.json({ base, rates, at: Date.now() });
+    }
+    // A stale rate beats none; no rate at all, and the device falls back to
+    // its own rough table and flags the entries for a look.
+    if (hit) return res.json({ base, rates: hit.rates, at: hit.at });
+    res.status(503).json({ error: 'Rates unavailable' });
   })
 );
 
@@ -1284,8 +1900,9 @@ app.post(
       [uid]
     );
     await query(
-      'INSERT INTO goals (user_id, name, target, current, color, due_ts, sort) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-      [uid, name, Number(req.body.target) || 0, Number(req.body.current) || 0, String(req.body.color || 'indigo'), req.body.dueTs ? new Date(Number(req.body.dueTs)) : null, max!.m]
+      `INSERT INTO goals (user_id, name, target, current, color, due_ts, sort, acc_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,(SELECT id FROM accounts WHERE id = $8 AND user_id = $1))`,
+      [uid, name, Number(req.body.target) || 0, Number(req.body.current) || 0, String(req.body.color || 'indigo'), req.body.dueTs ? new Date(Number(req.body.dueTs)) : null, max!.m, /^\d+$/.test(String(req.body.accId || '')) ? String(req.body.accId) : null]
     );
     res.json(await buildState(uid));
   })
@@ -1299,8 +1916,10 @@ app.patch(
     const name = String(req.body.name || '').trim();
     if (!name) return res.status(400).json({ error: 'Name required' });
     await query(
-      'UPDATE goals SET name=$1, target=$2, current=$3, color=$4, due_ts=$5 WHERE id=$6 AND user_id=$7',
-      [name, Number(req.body.target) || 0, Number(req.body.current) || 0, String(req.body.color || 'indigo'), req.body.dueTs ? new Date(Number(req.body.dueTs)) : null, req.params.id, uid]
+      `UPDATE goals SET name=$1, target=$2, current=$3, color=$4, due_ts=$5,
+              acc_id=(SELECT id FROM accounts WHERE id = $8 AND user_id = $7)
+       WHERE id=$6 AND user_id=$7`,
+      [name, Number(req.body.target) || 0, Number(req.body.current) || 0, String(req.body.color || 'indigo'), req.body.dueTs ? new Date(Number(req.body.dueTs)) : null, req.params.id, uid, /^\d+$/.test(String(req.body.accId || '')) ? String(req.body.accId) : null]
     );
     res.json(await buildState(uid));
   })
@@ -1836,6 +2455,88 @@ if (!ADMIN_PASSWORD) {
   console.warn('[admin] ADMIN_PASSWORD is not set — the feedback/error inbox is disabled.');
 }
 
+// ---------------- Bank message formats ----------------
+//
+// The phone masks the text before sending (web/src/lib/smsParse maskMessage)
+// and shows the user exactly what goes. This end refuses anything that still
+// has a digit in it, in case an older or altered build didn't mask.
+app.post(
+  '/api/sms-samples',
+  requireAuth,
+  rateLimit('sms-sample', 30, 60 * 60 * 1000),
+  wrap(async (req, res) => {
+    const text = String(req.body.text || '').slice(0, 600);
+    const sender = String(req.body.sender || '').trim().slice(0, 40);
+    if (!text.trim() || !sender) return res.status(400).json({ error: 'Nothing to send' });
+    if (/[0-8\u0660-\u0668\u06F0-\u06F8]/.test(text)) return res.status(400).json({ error: 'Numbers must be masked' });
+    await query('INSERT INTO sms_samples (user_id, sender, text, reason) VALUES ($1,$2,$3,$4)', [
+      req.userId!,
+      sender,
+      text,
+      String(req.body.reason || '').slice(0, 20),
+    ]);
+    res.json({ ok: true });
+  })
+);
+
+app.get(
+  '/api/admin/sms-samples',
+  requireAuth,
+  rateLimit('admin', 20, 15 * 60 * 1000),
+  wrap(async (req, res) => {
+    if (!ADMIN_PASSWORD) return res.status(503).json({ error: 'Inbox not configured on the server' });
+    if (!adminOk(req)) return res.status(403).json({ error: 'Wrong password' });
+    const items = await query(
+      `SELECT id::text, sender, text, reason, created_at AS "createdAt" FROM sms_samples ORDER BY created_at DESC LIMIT 200`
+    );
+    res.json({ items });
+  })
+);
+
+// ---------------- Usage counts ----------------
+//
+// Which features get used, as counts per day. The names are fixed here, so
+// nothing else can be smuggled in under one.
+const USAGE_NAMES = new Set([
+  'open',
+  'habit_check',
+  'workout_add',
+  'sleep_add',
+  'txn_add',
+  'sms_import',
+  'review_answer',
+  'week_review',
+  'bank_on',
+  'budget_alert',
+  'report_view',
+  'partner_open',
+]);
+
+app.post(
+  '/api/usage',
+  requireAuth,
+  rateLimit('usage', 60, 60 * 60 * 1000),
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const ok = await one<{ share: boolean }>('SELECT share_usage AS share FROM users WHERE id = $1', [uid]);
+    if (!ok?.share) return res.json({ ok: true });
+    const day = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.day)) ? String(req.body.day) : null;
+    const counts = req.body.counts && typeof req.body.counts === 'object' ? req.body.counts : {};
+    if (day) {
+      for (const [name, v] of Object.entries(counts)) {
+        const n = Math.min(500, Math.max(0, Math.floor(Number(v)) || 0));
+        if (!n || !USAGE_NAMES.has(name)) continue;
+        await query(
+          `INSERT INTO usage_counts (user_id, day, name, n) VALUES ($1,$2,$3,$4)
+           ON CONFLICT (user_id, day, name) DO UPDATE SET n = LEAST(usage_counts.n + EXCLUDED.n, 5000)`,
+          [uid, day, name, n]
+        );
+      }
+    }
+    res.json({ ok: true });
+  })
+);
+
 function adminOk(req: AuthedRequest): boolean {
   if (!ADMIN_PASSWORD) return false;
   const given = String(req.headers['x-admin-password'] || '');
@@ -1870,6 +2571,54 @@ app.post(
     if (!adminOk(req)) return res.status(403).json({ error: 'Wrong password' });
     await query('UPDATE partner_reports SET handled = TRUE WHERE id = $1', [req.params.id]);
     res.json({ ok: true });
+  })
+);
+
+// Whether people come back, and what they use. Counts only.
+//   active: distinct users who opened the app in the last 1, 7 and 30 days;
+//   cohorts: for each of the last 8 signup weeks, the share of those users
+//     seen again on their day 1, in their week 1 (days 7-13) and around day 30
+//     (days 28-34), counted only once that much time has passed;
+//   features: over the last 30 days, how many people used each and how often.
+app.get(
+  '/api/admin/metrics',
+  requireAuth,
+  rateLimit('admin', 20, 15 * 60 * 1000),
+  wrap(async (req, res) => {
+    if (!ADMIN_PASSWORD) return res.status(503).json({ error: 'Inbox not configured on the server' });
+    if (!adminOk(req)) return res.status(403).json({ error: 'Wrong password' });
+    const active = await one<{ d1: number; d7: number; d30: number; users: number }>(
+      `SELECT
+         (SELECT count(DISTINCT user_id) FROM usage_counts WHERE name = 'open' AND day >= CURRENT_DATE)::int AS d1,
+         (SELECT count(DISTINCT user_id) FROM usage_counts WHERE name = 'open' AND day > CURRENT_DATE - 7)::int AS d7,
+         (SELECT count(DISTINCT user_id) FROM usage_counts WHERE name = 'open' AND day > CURRENT_DATE - 30)::int AS d30,
+         (SELECT count(*) FROM users)::int AS users`
+    );
+    const cohorts = await query<{ week: string; users: number; d1: number | null; w1: number | null; d30: number | null }>(
+      `WITH c AS (
+         SELECT id, created_at::date AS joined, date_trunc('week', created_at)::date AS week
+         FROM users WHERE created_at > now() - interval '8 weeks'
+       ), seen AS (
+         SELECT c.id, c.week, c.joined, u.day FROM c JOIN usage_counts u ON u.user_id = c.id AND u.name = 'open'
+       )
+       SELECT to_char(c.week, 'YYYY-MM-DD') AS week, count(DISTINCT c.id)::int AS users,
+         CASE WHEN max(c.joined) + 1 < CURRENT_DATE THEN
+           round(100.0 * count(DISTINCT s1.id) / count(DISTINCT c.id)) END::int AS d1,
+         CASE WHEN max(c.joined) + 13 < CURRENT_DATE THEN
+           round(100.0 * count(DISTINCT s7.id) / count(DISTINCT c.id)) END::int AS w1,
+         CASE WHEN max(c.joined) + 34 < CURRENT_DATE THEN
+           round(100.0 * count(DISTINCT s30.id) / count(DISTINCT c.id)) END::int AS d30
+       FROM c
+       LEFT JOIN seen s1 ON s1.id = c.id AND s1.day = c.joined + 1
+       LEFT JOIN seen s7 ON s7.id = c.id AND s7.day BETWEEN c.joined + 7 AND c.joined + 13
+       LEFT JOIN seen s30 ON s30.id = c.id AND s30.day BETWEEN c.joined + 28 AND c.joined + 34
+       GROUP BY c.week ORDER BY c.week DESC`
+    );
+    const features = await query<{ name: string; users: number; total: number }>(
+      `SELECT name, count(DISTINCT user_id)::int AS users, sum(n)::int AS total
+       FROM usage_counts WHERE day > CURRENT_DATE - 30 GROUP BY name ORDER BY users DESC, total DESC`
+    );
+    res.json({ active, cohorts, features });
   })
 );
 
@@ -2079,8 +2828,49 @@ function advance(from: Date, freq: string): Date {
  * Turn due recurring entries into real transactions. Runs periodically; catches
  * up if the server was asleep (loops until the next date is in the future).
  */
-async function runRecurring() {
-  if (!dbReady) return;
+const DAY_MS = 86400000;
+/** How far either side of its due date a bank payment can pay a recurring item. */
+const RECURRING_WINDOW = 5 * DAY_MS;
+
+/**
+ * A payment already in the ledger that is this occurrence of a recurring item:
+ * same direction, an amount within 10%, within five days of the due date, and
+ * either the same name (as letters and digits) or the same category. Never one
+ * that already paid something else.
+ */
+async function recurringMatch(r: { id: string; user_id: number; name: string; cat: string; amount: number; income: boolean }, due: Date) {
+  const amt = Math.abs(Number(r.amount)) || 0;
+  return one<{ id: string }>(
+    `SELECT id::text FROM txns
+      WHERE user_id = $1 AND to_acc_id IS NULL AND NOT adjust AND recurring_id IS NULL
+        AND income = $2 AND abs(amount) BETWEEN $3 * 0.9 AND $3 * 1.1
+        AND ts BETWEEN $4 AND $5
+        AND (cat = $6
+             OR position(regexp_replace(lower($7), '[^[:alnum:]]', '', 'g') in regexp_replace(lower(name), '[^[:alnum:]]', '', 'g')) > 0
+             OR position(regexp_replace(lower(name), '[^[:alnum:]]', '', 'g') in regexp_replace(lower($7), '[^[:alnum:]]', '', 'g')) > 0)
+      ORDER BY abs(extract(epoch FROM ts - $8::timestamptz)) LIMIT 1`,
+    [r.user_id, !!r.income, amt, new Date(due.getTime() - RECURRING_WINDOW), new Date(due.getTime() + RECURRING_WINDOW), r.cat, r.name, due]
+  );
+}
+
+/**
+ * Recurring items are expected payments, not entries of their own.
+ *
+ * Before bank messages, the schedule was the only way a salary or the rent got
+ * into the ledger, so it wrote an entry on the due date. Now the bank's own
+ * message usually brings it in, and writing it as well counted it twice. So:
+ * when a payment that matches is already there (from the bank or typed in),
+ * the occurrence is marked paid by it. When none is, a user whose money is
+ * tracked from bank messages gets a few days' grace for the message to
+ * arrive; only then, or straight away for cash and untracked accounts, is the
+ * entry written from the schedule.
+ */
+let recurringBusy = false;
+async function runRecurring(onlyUser?: number) {
+  // Runs hourly, at boot, and after an import; never twice at once, or two
+  // runs could both write the same occurrence.
+  if (!dbReady || recurringBusy) return;
+  recurringBusy = true;
   try {
     const due = await query<{
       id: string;
@@ -2092,38 +2882,55 @@ async function runRecurring() {
       freq: string;
       income: boolean;
       next_ts: string;
+      tracked: boolean;
     }>(
-      `SELECT id::text, user_id, name, cat, acc_id::text, amount, freq, income, next_ts
-         FROM recurring
-        WHERE next_ts IS NOT NULL AND next_ts <= now()`
+      `SELECT r.id::text, r.user_id, r.name, r.cat, r.acc_id::text, r.amount, r.freq, r.income, r.next_ts,
+              (EXISTS (SELECT 1 FROM account_links k WHERE k.user_id = r.user_id)
+               AND COALESCE((SELECT a.type FROM accounts a WHERE a.id = r.acc_id), 'Bank') <> 'Cash') AS tracked
+         FROM recurring r
+        WHERE r.next_ts IS NOT NULL AND r.next_ts <= now() AND ($1::bigint IS NULL OR r.user_id = $1)`,
+      [onlyUser ?? null]
     );
     for (const r of due) {
       let next = new Date(r.next_ts);
       let guard = 0;
-      // Insert one transaction per missed period (bounded so a very old date
-      // can't spin forever).
+      // One occurrence at a time, oldest first (bounded so a very old date
+      // can't spin forever). Stops at the first one still waiting for its
+      // bank message, so the schedule never runs ahead of what's settled.
       while (next.getTime() <= Date.now() && guard++ < 60) {
-        // Amounts are stored positive; sign them by kind, matching POST /api/txns.
-        await query(
-          `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-          [
-            r.user_id,
-            r.name,
-            r.cat,
-            r.income ? Math.abs(r.amount) : -Math.abs(r.amount),
-            !!r.income,
-            r.acc_id,
-            'Recurring',
-            next,
-          ]
-        );
+        const paid = await recurringMatch(r, next);
+        if (paid) {
+          await query('UPDATE txns SET recurring_id = $1 WHERE id = $2', [r.id, paid.id]);
+        } else if (r.tracked && Date.now() < next.getTime() + RECURRING_WINDOW) {
+          break;
+        } else {
+          // Amounts are stored positive; sign them by kind, matching POST /api/txns.
+          await query(
+            `INSERT INTO txns (user_id, name, cat, amount, income, acc_id, note, ts, recurring_id)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+            [
+              r.user_id,
+              r.name,
+              r.cat,
+              r.income ? Math.abs(r.amount) : -Math.abs(r.amount),
+              !!r.income,
+              r.acc_id,
+              'Recurring',
+              next,
+              r.id,
+            ]
+          );
+        }
         next = advance(next, r.freq);
       }
-      await query('UPDATE recurring SET next_ts = $1 WHERE id = $2', [next, r.id]);
+      if (next.getTime() !== new Date(r.next_ts).getTime()) {
+        await query('UPDATE recurring SET next_ts = $1 WHERE id = $2', [next, r.id]);
+      }
     }
   } catch (e) {
     console.error('[recurring]', e);
+  } finally {
+    recurringBusy = false;
   }
 }
 
@@ -2169,7 +2976,7 @@ function start() {
   setInterval(() => dbReady && pruneOps(), 6 * 60 * 60 * 1000);
   // Post due recurring transactions on boot, then hourly.
   runRecurring();
-  setInterval(runRecurring, 60 * 60 * 1000);
+  setInterval(() => runRecurring(), 60 * 60 * 1000);
 }
 
 start();

@@ -69,7 +69,7 @@ export function ProfileSheet() {
   const input: React.CSSProperties = {
     width: '100%',
     height: 52,
-    borderRadius: 14,
+    borderRadius: 'calc(14px * var(--sq))',
     border: '1px solid var(--border)',
     background: 'var(--bg)',
     padding: '0 16px',
@@ -85,7 +85,7 @@ export function ProfileSheet() {
 
       <input ref={fileRef} type="file" accept="image/*" onChange={pickPhoto} style={{ display: 'none' }} />
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
-        <div style={{ position: 'relative' }} onClick={() => !busy && fileRef.current?.click()}>
+        <div role="button" tabIndex={0} aria-label="Change photo" style={{ position: 'relative' }} onClick={() => !busy && fileRef.current?.click()}>
           <Avatar name={name} src={avatar} size={84} />
           <div style={{ position: 'absolute', right: -2, bottom: -2, width: 30, height: 30, borderRadius: '50%', background: 'var(--indigo)', border: '3px solid var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <svg width="15" height="15" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
@@ -94,14 +94,14 @@ export function ProfileSheet() {
             </svg>
           </div>
         </div>
-        <div
+        <div role="button" tabIndex={0}
           onClick={() => !busy && fileRef.current?.click()}
           style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', marginTop: 12, cursor: 'pointer' }}
         >
           {busy ? 'Processing…' : avatar ? 'Change photo' : 'Add a photo'}
         </div>
         {avatar && !busy && (
-          <div onClick={() => setAvatar(null)} style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)', marginTop: 6, cursor: 'pointer' }}>
+          <div role="button" tabIndex={0} onClick={() => setAvatar(null)} style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)', marginTop: 6, cursor: 'pointer' }}>
             Remove photo
           </div>
         )}
@@ -111,9 +111,9 @@ export function ProfileSheet() {
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" style={input} />
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Email</div>
       <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" style={{ ...input, marginBottom: 24 }} />
-      <div
+      <div role="button" tabIndex={0}
         onClick={save}
-        style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default', letterSpacing: '-.01em' }}
+        style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default', letterSpacing: '-.01em' }}
       >
         Save profile
       </div>

@@ -1,145 +1,103 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
-import { SleepTimeline } from '../lib/charts';
+import { BarChart, Legend, SleepClock, sleepColor } from '../lib/charts';
 import { hm, fmtClock, relLabel } from '../lib/format';
-import { DetailHeader, RangeSeg, SectionLabel, rangeWord } from '../ui';
+import { Card, ChartCard, DetailHeader, RangeSeg, SectionLabel, Stat, StatRow, TrackerAction } from '../ui';
 import { IconSleep } from '../icons';
 import { SwipeRow } from '../SwipeRow';
 import { useEntryActions } from '../lib/entryActions';
 import { UnsyncedDot } from '../UnsyncedDot';
 
 export function Sleep() {
-  const { state, open, range } = useStore();
+  const { state, open } = useStore();
   const { remove } = useEntryActions();
   const { d } = useData();
+  const P = d.period;
   // Render a page at a time so hundreds of nights don't stall the screen.
   const [shown, setShown] = useState(50);
-
-  const miniStat = (val: React.ReactNode, label: string) => (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '14px 16px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{val}</div>
-      <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 3 }}>{label}</div>
-    </div>
+  const list = React.useMemo(
+    () => state!.nights.filter((n) => n.ts >= P.start && n.ts < P.end).sort((a, b) => b.ts - a.ts),
+    [state, P.start, P.end]
   );
-
-  const candleLabels = d.slCandleLabels;
-  const labelEvery = Math.max(1, Math.ceil(candleLabels.length / 6));
+  const none = d.slNights === 0;
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <DetailHeader title="Sleep" iconColor="blue" icon={<IconSleep size={22} />} />
-      <RangeSeg />
+      <DetailHeader title="Sleep" />
+      <TrackerAction label="Log sleep" onClick={() => open('sleep')} />
+      <RangeSeg period={P} />
 
-      <div onClick={() => open('sleep')} className="press99" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, background: 'var(--blue)', color: '#fff', height: 52, borderRadius: 16, fontSize: 15, fontWeight: 700, cursor: 'pointer', marginBottom: 16, boxShadow: '0 10px 22px -12px rgba(40,36,28,.30)' }}>
-        <svg width="20" height="20" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M10 4v12M4 10h12" /></svg>
-        Log sleep
-      </div>
+      <StatRow>
+        <Stat value={none ? '—' : hm(d.slAvg)} label="Average night" />
+        <Stat value={fmtClock(d.avgBed)} label="Usual bedtime" />
+        <Stat value={fmtClock(d.avgWake)} label="Usual wake-up" />
+      </StatRow>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
-        <div style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 18 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)', marginBottom: 6 }}>Avg duration</div>
-          <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>
-            {Math.floor(d.slAvg)}<span style={{ fontSize: 18, fontWeight: 600 }}>h</span>{' '}
-            {String(Math.round((d.slAvg % 1) * 60)).padStart(2, '0')}<span style={{ fontSize: 18, fontWeight: 600 }}>m</span>
-          </div>
-        </div>
-        <div style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 18 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)', marginBottom: 6 }}>Avg quality</div>
-          <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>
-            {d.slAvgQ.toFixed(1)}<span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text2)' }}> / 10</span>
-          </div>
-        </div>
-      </div>
+      {d.sleepByDay ? (
+        <ChartCard title="When you slept" note={none ? P.caption : `${P.caption} · quality ${d.slAvgQ.toFixed(1)}/10`}>
+          <SleepClock buckets={d.buckets} slots={d.sleepSlots} />
+          <Legend items={[{ color: sleepColor(8), label: '7 to 9 hours' }, { color: sleepColor(6), label: 'Shorter or longer' }]} />
+        </ChartCard>
+      ) : (
+        <ChartCard title="Average night" value={none ? '—' : hm(d.slAvg)} note={P.caption}>
+          <BarChart buckets={d.buckets} values={d.slSeries} color="indigo" max={10} band={[7, 9]} format={(v) => hm(v)} />
+          <Legend items={[{ color: 'color-mix(in srgb, var(--indigo) 30%, transparent)', label: '7 to 9 hours, the healthy range' }]} />
+        </ChartCard>
+      )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-        {miniStat(fmtClock(d.avgBed), 'Avg bedtime')}
-        {miniStat(fmtClock(d.avgWake), 'Avg wake-up')}
-      </div>
-
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 18, marginBottom: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text2)' }}>Sleep times</span>
-          <span style={{ fontSize: 12, color: 'var(--text2)' }}>{rangeWord(range)}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <div style={{ position: 'relative', width: 30, height: 140, flex: 'none', fontSize: 10, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
-            <span style={{ position: 'absolute', top: -5, right: 0 }}>6 PM</span>
-            <span style={{ position: 'absolute', top: 'calc(25% - 6px)', right: 0 }}>12 AM</span>
-            <span style={{ position: 'absolute', top: 'calc(50% - 6px)', right: 0 }}>6 AM</span>
-            <span style={{ position: 'absolute', top: 'calc(75% - 6px)', right: 0 }}>12 PM</span>
-            <span style={{ position: 'absolute', bottom: -5, right: 0 }}>6 PM</span>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ height: 140 }}>
-              <SleepTimeline items={d.sleepCandles} w={300} h={140} />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: 'var(--text2)' }}>
-              {candleLabels.map((l, i, arr) => (
-                <span key={i}>{arr.length <= 8 || i === 0 || i === arr.length - 1 || i % labelEvery === 0 ? l : ''}</span>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 16, marginTop: 14, paddingTop: 13, borderTop: '1px solid var(--border)', fontSize: 11.5, color: 'var(--text2)' }}>
-          {[
-            ['var(--danger)', 'Under 7h'],
-            ['var(--success)', '7–9h'],
-            ['var(--coral)', 'Over 9h'],
-          ].map(([c, label]) => (
-            <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 10, height: 10, borderRadius: 3, background: c, flex: 'none' }} />
-              {label}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: '16px 18px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 13 }}>
-        <span style={{ width: 40, height: 40, borderRadius: 12, background: `color-mix(in srgb,var(--${d.slConsistGood ? 'success' : 'warning'}) 14%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-          <svg width="22" height="22" style={{ fill: 'none', stroke: d.slConsistGood ? 'var(--success)' : 'var(--warning)', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-            <path d={d.slConsistGood ? 'M5 12l4 4 10-10' : 'M11 4.5v8.5M11 17v.5'} />
+      <Card style={{ padding: '15px 16px', marginBottom: 22, display: 'flex', alignItems: 'center', gap: 13 }}>
+        <span style={{ width: 38, height: 38, borderRadius: 'calc(12px * var(--sq))', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+          <svg width="20" height="20" viewBox="0 0 22 22" aria-hidden style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+            <path d={d.slConsistGood ? 'M5 12l4 4 8-9' : d.bedDevMin == null ? 'M11 6v5l3 2' : 'M11 5v7M11 16v.5'} />
           </svg>
         </span>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
-            {d.bedDevMin == null ? 'Building your picture' : d.slConsistGood ? 'Consistent schedule' : 'Irregular bedtime'}
+            {d.bedDevMin == null ? 'Consistency' : d.slConsistGood ? 'Steady bedtime' : 'Bedtime moves around'}
           </div>
-          <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
+          <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2, lineHeight: 1.4 }}>
             {d.bedDevMin == null
-              ? 'Log a few nights to see your consistency'
-              : `Bedtime within ±${Math.round(d.bedDevMin)} min of ${fmtClock(d.avgBed)}`}
+              ? 'Log three nights with bed and wake times to see how regular your sleep is'
+              : d.slConsistGood
+              ? `You usually go to bed within ${Math.round(d.bedDevMin)} min of ${fmtClock(d.avgBed)}`
+              : `Your bedtime varies by about ${Math.round(d.bedDevMin)} min around ${fmtClock(d.avgBed)}`}
           </div>
         </div>
-      </div>
+      </Card>
 
-      <SectionLabel>Recent nights</SectionLabel>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
-        {[...state!.nights].sort((a, b) => b.ts - a.ts).slice(0, shown).map((n) => (
+      <SectionLabel>{list.length ? `${P.title} · ${list.length} ${list.length === 1 ? 'night' : 'nights'}` : P.title}</SectionLabel>
+      {list.length === 0 && (
+        <Card style={{ padding: '22px 18px', textAlign: 'center', fontSize: 14, color: 'var(--text2)' }}>No nights logged {P.phrase}</Card>
+      )}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', display: list.length ? undefined : 'none' }}>
+        {list.slice(0, shown).map((n) => (
           <SwipeRow key={n.id} onEdit={() => open('edit', { kind: 'sleep', item: n })} onDelete={() => remove('sleep', n)}>
-            <div
+            <div role="button" tabIndex={0}
               onClick={() => open('edit', { kind: 'sleep', item: n })}
               className="pressRow"
               style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}
             >
-              <span style={{ width: 38, height: 38, borderRadius: 11, flex: 'none', background: 'color-mix(in srgb,var(--blue) 13%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <IconSleep c="var(--blue)" size={20} />
+              <span style={{ width: 38, height: 38, borderRadius: 'calc(11px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <IconSleep c="var(--indigo)" size={20} />
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                   <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{relLabel(n.ts)}</span>
                   <UnsyncedDot id={n.id} />
                 </div>
-                <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--blue)', marginTop: 2 }}>Quality {n.quality}/10</div>
+                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2 }}>
+                  {n.bedH != null && n.wakeH != null ? `${fmtClock(n.bedH)} → ${fmtClock(n.wakeH)} · ` : ''}Quality {n.quality}/10
+                </div>
               </div>
               <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums', flex: 'none' }}>{hm(n.hours)}</div>
             </div>
           </SwipeRow>
         ))}
       </div>
-      {state!.nights.length > shown && (
-        <div onClick={() => setShown(shown + 50)} className="press99" role="button" style={{ marginTop: 12, height: 48, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
-          Show older ({state!.nights.length - shown} more)
+      {list.length > shown && (
+        <div tabIndex={0} onClick={() => setShown(shown + 50)} className="press99" role="button" style={{ marginTop: 12, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
+          Show {Math.min(50, list.length - shown)} more
         </div>
       )}
     </div>

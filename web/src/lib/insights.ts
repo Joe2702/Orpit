@@ -1,3 +1,4 @@
+import { isSpend } from './money';
 import type { GlyphName } from './appIcons';
 import type { AppState } from '../types';
 import { dayKey, money, hm } from './format';
@@ -80,7 +81,7 @@ export function buildInsights(s: AppState): Insight[] {
     const afterNormal: number[] = [];
     s.nights.forEach((n) => {
       const nextDay = dayKey(n.ts);
-      const spend = (txnsByDay.get(nextDay) || []).filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
+      const spend = (txnsByDay.get(nextDay) || []).filter((t) => isSpend(t)).reduce((a, t) => a - t.amount, 0);
       (n.hours < 6 ? afterShort : afterNormal).push(spend);
     });
     if (afterShort.length >= 3 && afterNormal.length >= 3) {
@@ -175,7 +176,7 @@ export function buildInsights(s: AppState): Insight[] {
     const cat = new Map<string, number>();
     const prior = new Map<string, number[]>();
     spendTxns
-      .filter((t) => t.amount < 0)
+      .filter((t) => isSpend(t))
       .forEach((t) => {
         if (t.ts >= weekStart) cat.set(t.cat, (cat.get(t.cat) || 0) + -t.amount);
         else if (t.ts >= now - 35 * D) {
@@ -195,7 +196,7 @@ export function buildInsights(s: AppState): Insight[] {
           icon: 'alert' as GlyphName,
           color: 'warning',
           kind: 'alert',
-          title: `${c} is ${(thisWeek / base).toFixed(1)}× your usual this week.`,
+          title: `${c} is ${(thisWeek / base).toFixed(1)}× your usual over the last 7 days.`,
           detail: `${money(thisWeek)} vs a typical ${money(base)}.`,
         });
       }
@@ -262,7 +263,7 @@ export function buildInsights(s: AppState): Insight[] {
           icon: 'bed' as GlyphName,
           color: 'danger',
           kind: 'alert',
-          title: `You're ${hm(debt)} short on sleep this week.`,
+          title: `You're ${hm(debt)} short on sleep over the last 7 days.`,
           detail: `Against 8h a night across ${recent.length} logged nights.`,
         });
       } else if (debt <= -2) {
@@ -271,7 +272,7 @@ export function buildInsights(s: AppState): Insight[] {
           icon: 'sparkle' as GlyphName,
           color: 'success',
           kind: 'pattern',
-          title: `You're ${hm(-debt)} ahead on sleep this week.`,
+          title: `You're ${hm(-debt)} ahead on sleep over the last 7 days.`,
           detail: `Against 8h a night across ${recent.length} logged nights.`,
         });
       }
@@ -323,7 +324,7 @@ export function buildInsights(s: AppState): Insight[] {
           color: 'indigo',
           kind: 'link',
           title: `"${b.name}" is your keystone habit.`,
-          detail: `On days you do it you get ${(b.on / b.off).toFixed(1)}× more done elsewhere — across ${b.days} days.`,
+          detail: `On days you do it you get ${(b.on / b.off).toFixed(1)}× more done elsewhere, across ${b.days} days.`,
         });
       }
     }
@@ -358,7 +359,10 @@ export function buildInsights(s: AppState): Insight[] {
     }
   }
 
-  // ---- 10. Momentum: this month against the one before ----
+  // ---- 10. Momentum: the last 30 days against the 30 before ----
+  // Rolling blocks of equal length, so the comparison is fair on any day of the
+  // month — and worded that way, since "this month" now means the calendar
+  // month everywhere else in the app.
   // The question every tracker exists to answer — am I actually improving? —
   // stated once, for whichever tracker moved most.
   {
@@ -371,15 +375,15 @@ export function buildInsights(s: AppState): Insight[] {
 
     const wNow = inRange(s.workouts, m0, now).length;
     const wPrev = inRange(s.workouts, m1, m0).length;
-    if (wPrev >= 3) moves.push({ label: 'Training', delta: pct(wNow, wPrev), better: wNow >= wPrev, detail: `${wNow} sessions vs ${wPrev} the month before.` });
+    if (wPrev >= 3) moves.push({ label: 'Training', delta: pct(wNow, wPrev), better: wNow >= wPrev, detail: `${wNow} sessions vs ${wPrev} in the 30 days before.` });
 
     const sNow = avg(inRange(s.nights, m0, now).map((n) => n.hours));
     const sPrev = avg(inRange(s.nights, m1, m0).map((n) => n.hours));
     if (sPrev > 0 && inRange(s.nights, m1, m0).length >= 5)
       moves.push({ label: 'Sleep', delta: pct(sNow, sPrev), better: sNow >= sPrev, detail: `${hm(sNow)} a night vs ${hm(sPrev)}.` });
 
-    const spNow = inRange(spendTxns, m0, now).filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
-    const spPrev = inRange(spendTxns, m1, m0).filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
+    const spNow = inRange(spendTxns, m0, now).filter((t) => isSpend(t)).reduce((a, t) => a - t.amount, 0);
+    const spPrev = inRange(spendTxns, m1, m0).filter((t) => isSpend(t)).reduce((a, t) => a - t.amount, 0);
     if (spPrev > 0) moves.push({ label: 'Spending', delta: pct(spNow, spPrev), better: spNow <= spPrev, detail: `${money(spNow)} vs ${money(spPrev)}.` });
 
     const biggest = moves.filter((m) => Math.abs(m.delta) >= 15).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))[0];
@@ -389,7 +393,7 @@ export function buildInsights(s: AppState): Insight[] {
         icon: biggest.better ? 'trendUp' : 'alert',
         color: biggest.better ? 'success' : 'warning',
         kind: 'pattern',
-        title: `${biggest.label} is ${biggest.delta > 0 ? 'up' : 'down'} ${Math.abs(biggest.delta)}% this month.`,
+        title: `${biggest.label} is ${biggest.delta > 0 ? 'up' : 'down'} ${Math.abs(biggest.delta)}% over the last 30 days.`,
         detail: biggest.detail,
       });
     }

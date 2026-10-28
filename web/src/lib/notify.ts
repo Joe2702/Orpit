@@ -1,3 +1,4 @@
+import { money0 } from './format';
 import { Capacitor } from '@capacitor/core';
 import type { LocalNotificationsPlugin } from '@capacitor/local-notifications';
 import { enablePush as enableWebPush, pushSupported } from './push';
@@ -71,7 +72,7 @@ export async function snoozeDaily(): Promise<void> {
         {
           id: SNOOZE_ID,
           title: 'Orbit',
-          body: 'Picking this back up — how did today go?',
+          body: 'How did today go?',
           schedule: { at: new Date(Date.now() + 60 * 60 * 1000), allowWhileIdle: true },
           channelId: CHANNEL_ID,
         },
@@ -89,6 +90,8 @@ export async function snoozeDaily(): Promise<void> {
 export function listenForNotificationActions(handlers: {
   onDone: (habitId: string) => void;
   onSnooze: () => void;
+  /** A plain tap on a notification that belongs to a screen. */
+  onOpen?: (screen: string) => void;
 }): () => void {
   if (!isNative()) return () => {};
   let cancelled = false;
@@ -104,7 +107,10 @@ export function listenForNotificationActions(handlers: {
         if (e.actionId === 'done') {
           const id = (e.notification?.extra as { habitId?: string } | undefined)?.habitId;
           if (id) handlers.onDone(id);
+          return;
         }
+        const screen = (e.notification?.extra as { screen?: string } | undefined)?.screen;
+        if (e.actionId === 'tap' && screen) handlers.onOpen?.(screen);
       });
       remove = () => h.remove();
     })
@@ -142,9 +148,9 @@ function parseTime(time: string): { hour: number; minute: number } {
  */
 function reminderBody(remaining: number): string {
   if (remaining < 0) return 'How did today go? Take a moment to log it.';
-  if (remaining === 0) return "Everything's checked off today — log the rest of your day?";
-  if (remaining === 1) return 'Just one habit left today — finish strong.';
-  if (remaining <= 3) return `${remaining} habits left today — a couple of taps.`;
+  if (remaining === 0) return "Everything's checked off. Anything else to log today?";
+  if (remaining === 1) return 'One habit left today.';
+  if (remaining <= 3) return `${remaining} habits left today.`;
   return `${remaining} habits waiting. Two minutes now, a clearer picture later.`;
 }
 
@@ -182,7 +188,8 @@ async function scheduleWeekly(): Promise<void> {
       {
         id: WEEKLY_ID,
         title: 'Your week on Orbit',
-        body: 'Your weekly report is ready — see how the week went.',
+        body: 'A minute to look back, and one thing to aim for next week.',
+        extra: { screen: 'weekreview' },
         // weekday 1 = Sunday in the plugin's schedule format.
         schedule: { on: { weekday: 1, hour: 19, minute: 0 }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
@@ -208,7 +215,7 @@ const stableId = (base: number, key: string) => {
  */
 export async function scheduleExtras(
   habits: { id: string; name: string; reminderTime: string | null; paused: boolean; archived: boolean }[],
-  bills: { id: string; name: string; nextTs: number | null; income: boolean }[],
+  bills: { id: string; name: string; nextTs: number | null; income: boolean; amount?: number }[],
   windDown?: { on: boolean; bedHour: number | null }
 ): Promise<void> {
   if (!isNative()) return;
@@ -230,7 +237,7 @@ export async function scheduleExtras(
       notifications.push({
         id: stableId(HABIT_BASE, h.id),
         title: h.name,
-        body: 'Time for this one — tap to check it off.',
+        body: 'Tap to check it off.',
         schedule: { on: { hour, minute }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
         actionTypeId: HABIT_ACTIONS,
@@ -249,7 +256,8 @@ export async function scheduleExtras(
         notifications.push({
           id: stableId(BILL_BASE, b.id),
           title: 'Upcoming bill',
-          body: `${b.name} is due tomorrow.`,
+          body: b.amount ? `${b.name}, ${money0(b.amount)}, is due tomorrow.` : `${b.name} is due tomorrow.`,
+          extra: { screen: 'frecurring' },
           schedule: { at, allowWhileIdle: true },
           channelId: CHANNEL_ID,
         });
@@ -261,7 +269,7 @@ export async function scheduleExtras(
       notifications.push({
         id: WINDDOWN_ID,
         title: 'Time to wind down',
-        body: 'Bed in about 30 minutes — start slowing things down.',
+        body: 'Bed in about 30 minutes. Time to start winding down.',
         schedule: { on: { hour: Math.floor(t), minute: Math.round((t % 1) * 60) }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
       });
@@ -293,6 +301,50 @@ export async function syncReminders(enabled: boolean, time: string, remaining = 
     api.pushUnsubscribeAll().catch(() => {});
   } catch {
     /* ignore */
+  }
+}
+
+/**
+ * Permission to show notifications at all, asked for on its own. Payment
+ * alerts from bank messages need it even for someone who never wanted habit
+ * reminders, and on Android 13+ a notification posted without it is dropped
+ * without a word. Returns whether notifications can be shown.
+ */
+export async function ensureNotificationPermission(): Promise<boolean> {
+  if (!isNative()) return false;
+  try {
+    const { ln } = await LN();
+    let perm = await ln.checkPermissions();
+    if (perm.display !== 'granted') perm = await ln.requestPermissions();
+    return perm.display === 'granted';
+  } catch {
+    return false;
+  }
+}
+
+/** A notification right now, for something that just happened (a budget crossed). */
+export async function notifyNow(id: number, title: string, body: string, screen?: string): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const { ln } = await LN();
+    if ((await ln.checkPermissions()).display !== 'granted') return;
+    await ensureChannel(ln);
+    await ln.schedule({
+      notifications: [{ id, title, body, schedule: { at: new Date(Date.now() + 1000), allowWhileIdle: true }, channelId: CHANNEL_ID, ...(screen ? { extra: { screen } } : {}) }],
+    });
+  } catch {
+    /* best-effort */
+  }
+}
+
+/** Whether notifications can be shown now, without asking. */
+export async function notificationsAllowed(): Promise<boolean> {
+  if (!isNative()) return false;
+  try {
+    const { ln } = await LN();
+    return (await ln.checkPermissions()).display === 'granted';
+  } catch {
+    return false;
   }
 }
 
@@ -437,7 +489,7 @@ export async function sendTestNotification(): Promise<'sent' | 'denied' | 'error
           {
             id: TEST_ID,
             title: 'Orbit',
-            body: 'Test notification — your reminders are working.',
+            body: 'Test notification. Your reminders are working.',
             schedule: { at: new Date(Date.now() + 1500) },
             channelId: CHANNEL_ID,
           },

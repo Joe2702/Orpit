@@ -264,6 +264,76 @@ ALTER TABLE habits ADD COLUMN IF NOT EXISTS paused BOOLEAN NOT NULL DEFAULT FALS
 ALTER TABLE habits ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE habits ADD COLUMN IF NOT EXISTS why TEXT;
 ALTER TABLE habits ADD COLUMN IF NOT EXISTS reminder_time TEXT;
+-- When and where the habit happens ("after my morning coffee, at the desk").
+-- Writing that plan down is one of the best-evidenced ways to follow through:
+-- Gollwitzer & Sheeran's meta-analysis of 94 tests found d = 0.65.
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS cue TEXT;
+
+-- Automatic tracking from bank messages.
+-- Which sender (and card) an account's messages come from, so each payment is
+-- filed against the account it actually came out of. Several rows can point at
+-- one account: a debit card and the account behind it are one pot of money,
+-- and merging two accounts keeps both links. card is '' when the message
+-- named no card, so the unique index can treat "no card" as a value.
+CREATE TABLE IF NOT EXISTS account_links (
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  acc_id  BIGINT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  sender  TEXT NOT NULL,
+  card    TEXT NOT NULL DEFAULT ''
+);
+CREATE UNIQUE INDEX IF NOT EXISTS account_links_key ON account_links(user_id, lower(sender), card);
+-- The last balance a message reported, and when. It keeps the app's balance
+-- equal to the bank's however many payments were missed or typed in between.
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS sms_balance DOUBLE PRECISION;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS sms_balance_ts TIMESTAMPTZ;
+-- An imported entry whose category or amount was a best guess, until looked at.
+ALTER TABLE txns ADD COLUMN IF NOT EXISTS review BOOLEAN NOT NULL DEFAULT FALSE;
+-- Bank message formats the reader couldn't read, sent by users who chose to
+-- help, with every digit and name already masked on the phone. Kept so the
+-- reader can be taught the format; nothing in them identifies anyone.
+CREATE TABLE IF NOT EXISTS sms_samples (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  sender     TEXT NOT NULL,
+  text       TEXT NOT NULL,
+  reason     TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- How much each feature is used: per user, per day, a name and a count.
+-- Never content (no amounts, names, messages or entries), only that the app
+-- was opened or a habit was checked. It answers whether people come back and
+-- what brings them back. Users can turn it off (users.share_usage).
+CREATE TABLE IF NOT EXISTS usage_counts (
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  day     DATE NOT NULL,
+  name    TEXT NOT NULL,
+  n       INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, day, name)
+);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS share_usage BOOLEAN NOT NULL DEFAULT TRUE;
+-- A savings goal can follow an account: its progress is that account's
+-- balance, so it moves when money does instead of waiting to be typed in.
+ALTER TABLE goals ADD COLUMN IF NOT EXISTS acc_id BIGINT;
+-- Which recurring item an entry paid: posted by the schedule, or a bank
+-- payment matched to it. One payment pays one occurrence, never two.
+ALTER TABLE txns ADD COLUMN IF NOT EXISTS recurring_id BIGINT;
+-- An imported payment that may be the same one the user typed in by hand.
+-- Set by the import, cleared when the user answers in "To review".
+ALTER TABLE txns ADD COLUMN IF NOT EXISTS dup_of BIGINT;
+-- The other message of what might be a transfer between the user's own
+-- accounts, when the import wasn't sure enough to pair them itself.
+ALTER TABLE txns ADD COLUMN IF NOT EXISTS pair_key TEXT;
+-- Still exactly as the import wrote it. A later, better reading of the same
+-- message may replace it; once the user has edited it, it is theirs.
+-- Entries imported before the column existed were all written by the old
+-- reader, so they start out marked, once, when the column is added.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'txns' AND column_name = 'auto') THEN
+    ALTER TABLE txns ADD COLUMN auto BOOLEAN NOT NULL DEFAULT FALSE;
+    UPDATE txns SET auto = TRUE WHERE sms_key IS NOT NULL;
+  END IF;
+END $$;
 
 -- Free-text notes turn entries into a diary ("knee hurt", "kid woke me twice").
 ALTER TABLE workouts ADD COLUMN IF NOT EXISTS note TEXT;

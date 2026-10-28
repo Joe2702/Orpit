@@ -6,7 +6,7 @@ import { BackButton } from '../ui';
 const inputStyle: React.CSSProperties = {
   width: '100%',
   height: 52,
-  borderRadius: 14,
+  borderRadius: 'calc(14px * var(--sq))',
   border: '1px solid var(--border)',
   background: 'var(--surface)',
   padding: '0 16px',
@@ -15,10 +15,8 @@ const inputStyle: React.CSSProperties = {
   outline: 'none',
 };
 const labelStyle: React.CSSProperties = {
-  fontSize: 12,
+  fontSize: 13.5,
   fontWeight: 600,
-  textTransform: 'uppercase',
-  letterSpacing: '.06em',
   color: 'var(--text2)',
   marginBottom: 8,
 };
@@ -26,7 +24,7 @@ const cta = (busy: boolean): React.CSSProperties => ({
   background: 'var(--indigo)',
   color: '#fff',
   height: 54,
-  borderRadius: 16,
+  borderRadius: 'calc(16px * var(--sq))',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -82,13 +80,13 @@ export function Forgot() {
                 style={inputStyle}
               />
             </div>
-            <div onClick={busy ? undefined : submit} className="press" style={cta(busy)}>
+            <div role="button" tabIndex={0} onClick={busy ? undefined : submit} className="press" style={cta(busy)}>
               {busy ? 'Sending…' : 'Send reset link'}
             </div>
           </>
         )}
       </div>
-      <div onClick={() => go('signin')} style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: 8, cursor: 'pointer' }}>
+      <div role="button" tabIndex={0} onClick={() => go('signin')} style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: 8, cursor: 'pointer' }}>
         Back to sign in
       </div>
     </div>
@@ -139,7 +137,7 @@ export function Reset() {
                   placeholder="At least 6 characters"
                   style={{ ...inputStyle, paddingRight: 48 }}
                 />
-                <div onClick={() => setShowPw((s) => !s)} style={{ position: 'absolute', right: 6, top: 0, height: 52, width: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <div role="button" tabIndex={0} onClick={() => setShowPw((s) => !s)} style={{ position: 'absolute', right: 6, top: 0, height: 52, width: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                   <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
                     {showPw ? (
                       <path d="M3 3l16 16M9.5 5.2A6.8 6.8 0 0 1 11 5c5 0 8 6 8 6a13 13 0 0 1-2.2 2.8M6.2 6.2A13 13 0 0 0 3 11s3 6 8 6a6.8 6.8 0 0 0 3.3-.8M9.5 9.5a2.2 2.2 0 0 0 3 3" />
@@ -154,7 +152,7 @@ export function Reset() {
               </div>
             </div>
             {error && <div style={{ marginTop: 14, fontSize: 13.5, fontWeight: 500, color: 'var(--danger)' }}>{error}</div>}
-            <div onClick={busy ? undefined : submit} className="press" style={cta(busy)}>
+            <div role="button" tabIndex={0} onClick={busy ? undefined : submit} className="press" style={cta(busy)}>
               {busy ? 'Saving…' : 'Save new password'}
             </div>
           </>

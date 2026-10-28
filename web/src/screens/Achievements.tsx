@@ -31,12 +31,12 @@ export function Achievements() {
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <BackButton onClick={() => go('home')} />
-      <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)', margin: '4px 0 18px' }}>
+      <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--text)', margin: '4px 0 18px' }}>
         Achievements
       </div>
 
       {/* Summary */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow)', padding: 20, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 20 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: 20, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 20 }}>
         <div style={{ position: 'relative', width: 104, height: 104, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Ring pct={pct} colorKey="indigo" size={104} stroke={12} />
           <div style={{ position: 'absolute', textAlign: 'center' }}>
@@ -57,30 +57,30 @@ export function Achievements() {
       </div>
 
       {claimable.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'color-mix(in srgb,var(--warning) 14%,var(--surface))', border: '1px solid color-mix(in srgb,var(--warning) 40%,var(--border))', borderRadius: 16, padding: '13px 15px', marginBottom: 22 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '13px 15px', marginBottom: 22 }}>
           <Glyph name="gift" size={22} color="var(--indigo)" />
           <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
-            {claimable.length} new {claimable.length === 1 ? 'badge' : 'badges'} ready — tap the glowing ones below to reveal.
+            {claimable.length} new {claimable.length === 1 ? 'badge' : 'badges'} to reveal. Tap the outlined ones below.
           </div>
         </div>
       )}
 
       {almost.length > 0 && (
         <>
-          <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text2)', margin: '2px 0 12px' }}>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', margin: '2px 0 12px' }}>
             Almost there
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
             {almost.map((b) => (
-              <div key={b.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, boxShadow: 'var(--shadow)', padding: '13px 15px' }}>
+              <div key={b.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', boxShadow: 'var(--shadow)', padding: '13px 15px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
                   <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)' }}>{b.desc}</span>
-                  <span style={{ fontSize: 12.5, fontWeight: 700, color: `var(--${b.color})`, fontVariantNumeric: 'tabular-nums' }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
                     {b.value} / {b.goal}
                   </span>
                 </div>
                 <div style={{ height: 7, borderRadius: 999, background: 'color-mix(in srgb,var(--text2) 16%,transparent)', overflow: 'hidden' }}>
-                  <div style={{ width: `${b.pct}%`, height: '100%', borderRadius: 999, background: `var(--${b.color})`, transition: 'width .4s' }} />
+                  <div style={{ width: `${b.pct}%`, height: '100%', borderRadius: 999, background: 'var(--indigo)', transition: 'width .4s' }} />
                 </div>
               </div>
             ))}
@@ -88,7 +88,7 @@ export function Achievements() {
         </>
       )}
 
-      <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text2)', margin: '2px 0 12px' }}>
+      <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', margin: '2px 0 12px' }}>
         All badges
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -120,25 +120,24 @@ function BadgeTile({
   // Earned but not yet claimed — a glowing mystery tile inviting a tap to reveal.
   if (b.unlocked && !claimed) {
     return (
-      <div
+      <div role="button" tabIndex={0}
         onClick={() => onClaim(b.id)}
         className="press"
-        style={{ position: 'relative', overflow: 'hidden', background: `color-mix(in srgb,var(--${b.color}) 14%,var(--surface))`, border: `1.5px solid color-mix(in srgb,var(--${b.color}) 45%,var(--border))`, borderRadius: 18, boxShadow: 'var(--shadow)', padding: '16px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8, minHeight: 138, justifyContent: 'center', cursor: 'pointer' }}
+        style={{ position: 'relative', overflow: 'hidden', background: 'var(--surface)', border: '1.5px solid var(--indigo)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: '16px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8, minHeight: 138, justifyContent: 'center', cursor: 'pointer' }}
       >
-        <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 50% 40%, color-mix(in srgb,var(--${b.color}) 32%,transparent), transparent 68%)`, animation: 'glowPulse 2.6s ease-in-out infinite' }} />
-        <div style={{ position: 'relative', width: 56, height: 56, borderRadius: '50%', background: `color-mix(in srgb,var(--${b.color}) 24%,var(--surface))`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Glyph name="gift" size={26} color={`var(--${b.color})`} />
+        <div style={{ position: 'relative', width: 52, height: 52, borderRadius: '50%', background: 'color-mix(in srgb,var(--indigo) 12%,var(--surface))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Glyph name="gift" size={24} color="var(--indigo)" />
         </div>
-        <div style={{ position: 'relative', fontSize: 13, fontWeight: 700, color: `var(--${b.color})` }}>Tap to reveal</div>
+        <div style={{ position: 'relative', fontSize: 13, fontWeight: 650, color: 'var(--indigo)' }}>Tap to reveal</div>
       </div>
     );
   }
   // Claimed — revealed with what was achieved.
   if (b.unlocked && claimed) {
     return (
-      <div style={{ background: `color-mix(in srgb,var(--${b.color}) 12%,var(--surface))`, border: `1px solid color-mix(in srgb,var(--${b.color}) 30%,var(--border))`, borderRadius: 18, boxShadow: 'var(--shadow)', padding: '16px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 7, minHeight: 138, justifyContent: 'center', animation: justClaimed ? 'badgePop .45s ease' : undefined }}>
-        <div style={{ width: 56, height: 56, borderRadius: '50%', background: `color-mix(in srgb,var(--${b.color}) 22%,var(--surface))`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 6px 16px -6px color-mix(in srgb,var(--${b.color}) 60%,transparent)` }}>
-          <Glyph name={b.icon} size={28} color={`var(--${b.color})`} />
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: '16px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 7, minHeight: 138, justifyContent: 'center', animation: justClaimed ? 'badgePop .45s ease' : undefined }}>
+        <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Glyph name={b.icon} size={26} color="var(--on-accent)" />
         </div>
         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>{b.name}</div>
         <div style={{ fontSize: 11.5, color: 'var(--text2)', lineHeight: 1.3 }}>{b.desc}</div>
@@ -147,7 +146,7 @@ function BadgeTile({
   }
   // Locked — the badge stays a mystery, but the requirement + progress show.
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, boxShadow: 'var(--shadow)', padding: '16px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8, minHeight: 138, justifyContent: 'center', opacity: 0.92 }}>
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: '16px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8, minHeight: 138, justifyContent: 'center', opacity: 0.92 }}>
       <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'color-mix(in srgb,var(--text2) 12%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <svg width="24" height="24" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
           <rect x="5" y="10.5" width="14" height="10" rx="2" />

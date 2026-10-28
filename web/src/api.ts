@@ -1,6 +1,25 @@
 import type { AppState, WorkoutSet, PartnerState } from './types';
-import type { SmsRow } from './lib/smsSync';
-import { enqueue, flush, isQueueable, newOpId, noteReachable, OfflineQueuedError, type QueuedOp } from './lib/offline';
+import type { SmsRow } from './lib/ledger';
+import { track, type UsageName } from './lib/usage';
+
+export interface AdminMetrics {
+  active: { d1: number; d7: number; d30: number; users: number } | null;
+  /** Share (%) of each signup week's users seen again; null until enough time has passed. */
+  cohorts: { week: string; users: number; d1: number | null; w1: number | null; d30: number | null }[];
+  features: { name: string; users: number; total: number }[];
+}
+import {
+  enqueue,
+  flush,
+  isQueueable,
+  isUnavailable,
+  networkMessage,
+  newOpId,
+  noteReachable,
+  OfflineQueuedError,
+  serverMessage,
+  type QueuedOp,
+} from './lib/offline';
 
 // On the web the frontend is served by the same server as the API, so a
 // relative path works. Inside a native (Capacitor) build the app runs from a
@@ -28,9 +47,26 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Which feature a request is, for the usage counts (see lib/usage). Counted
+ * here, once per action, so no screen has to remember to; a queued request
+ * replayed later (it carries an op id) isn't counted again.
+ */
+function usageOf(path: string, method: string): UsageName | null {
+  if (method !== 'POST') return null;
+  if (/^\/habits\/[^/]+\/toggle$/.test(path)) return 'habit_check';
+  if (path === '/workouts') return 'workout_add';
+  if (path === '/nights') return 'sleep_add';
+  if (path === '/txns') return 'txn_add';
+  if (/^\/txns\/(?:reviewed|recat|[^/]+\/same|[^/]+\/pair)$/.test(path)) return 'review_answer';
+  return null;
+}
+
 async function request<T>(path: string, opts: RequestInit = {}, opId?: string): Promise<T> {
   const token = getToken();
   const method = (opts.method || 'GET').toUpperCase();
+  const use = opId ? null : usageOf(path, method);
+  if (use) track(use);
   // Loggable mutations carry a stable id so the server can recognise a replay.
   // It's generated up front, not at queue time, so an op whose *response* was
   // lost replays under the same key it originally used.
@@ -47,26 +83,41 @@ async function request<T>(path: string, opts: RequestInit = {}, opId?: string): 
         ...(opts.headers || {}),
       },
     });
-  } catch (netErr) {
+  } catch {
     // fetch only rejects on a network-level failure — exactly the case worth
-    // deferring. Anything the server answered, even an error, is not queued.
-    // This is also the most reliable connectivity signal there is.
+    // deferring. This is also the most reliable connectivity signal there is.
     noteReachable(false);
     if (id && !opId) {
       enqueue({ id, path, method, body: typeof opts.body === 'string' ? opts.body : undefined, at: Date.now() });
       throw new OfflineQueuedError();
     }
-    throw netErr;
+    throw new Error(networkMessage());
   }
 
-  noteReachable(true); // the server answered, whatever it said
+  if (isUnavailable(res.status)) {
+    // Answered, but not serving: booting, the database waking, or a gateway
+    // with nothing behind it. The request never reached the code that would act
+    // on it, so a log is as safe to defer here as with no signal at all — and
+    // far better than rolling it back with "try again".
+    noteReachable(false);
+    if (id && !opId) {
+      enqueue({ id, path, method, body: typeof opts.body === 'string' ? opts.body : undefined, at: Date.now() });
+      throw new OfflineQueuedError();
+    }
+    throw new ApiError(res.status, serverMessage(res.status));
+  }
+
+  noteReachable(true); // the server answered and is serving, whatever it said
   if (!res.ok) {
-    let msg = `Request failed (${res.status})`;
-    try {
-      const body = await res.json();
-      if (body?.error) msg = body.error;
-    } catch {
-      /* ignore */
+    let msg = serverMessage(res.status);
+    if (res.status < 500) {
+      msg = `That didn’t work (${res.status})`;
+      try {
+        const body = await res.json();
+        if (body?.error) msg = body.error;
+      } catch {
+        /* ignore */
+      }
     }
     throw new ApiError(res.status, msg);
   }
@@ -85,6 +136,7 @@ export interface HabitBody {
   target: string;
   days: string;
   why?: string | null;
+  cue?: string | null;
   reminderTime?: string | null;
   paused?: boolean;
   archived?: boolean;
@@ -107,6 +159,31 @@ export interface FeedbackItem {
   createdAt: number;
   name: string;
   email: string;
+}
+
+/**
+ * Is Orbit's server up and serving? Asks the health endpoint, which answers
+ * without touching the database — so probing every few seconds while the
+ * server is unreachable costs nothing and never keeps a metered database
+ * awake. Records the answer either way.
+ */
+export async function probeServer(): Promise<boolean> {
+  const ctl = typeof AbortController === 'undefined' ? null : new AbortController();
+  const t = ctl ? setTimeout(() => ctl.abort(), 10_000) : undefined;
+  try {
+    const res = await fetch(`${API_BASE}/api/health`, { signal: ctl?.signal, cache: 'no-store' });
+    const body = res.ok ? await res.json().catch(() => null) : null;
+    // `schema` is false while the database is still waking: the server is up,
+    // but every real request would get a 503.
+    const ok = !!body?.ok && body?.schema !== false;
+    noteReachable(ok);
+    return ok;
+  } catch {
+    noteReachable(false);
+    return false;
+  } finally {
+    if (t) clearTimeout(t);
+  }
 }
 
 /**
@@ -173,6 +250,7 @@ export const api = {
         | 'modules'
         | 'textScale'
         | 'windDown'
+        | 'shareUsage'
       >
     >
   ) => request<AppState>('/me', { method: 'PATCH', body: JSON.stringify(patch) }),
@@ -239,6 +317,8 @@ export const api = {
     toAccId?: string | null;
     /** A balance correction: real money, but neither income nor spending. */
     adjust?: boolean;
+    /** Money back for a purchase: positive, but not income. */
+    refund?: boolean;
     note?: string | null;
     // A data URL attaches a receipt; null clears one; omit to leave it alone.
     photo?: string | null;
@@ -246,7 +326,19 @@ export const api = {
   }) => request<AppState>('/txns', { method: 'POST', body: JSON.stringify(b) }),
   editTxn: (
     id: string,
-    b: { name?: string; cat: string; amount: number; income: boolean; accId?: string | null; toAccId?: string | null; note?: string | null; photo?: string | null; ts?: number }
+    b: {
+      name?: string;
+      cat: string;
+      amount: number;
+      income: boolean;
+      /** Money back for a purchase: positive, but not income. */
+      refund?: boolean;
+      accId?: string | null;
+      toAccId?: string | null;
+      note?: string | null;
+      photo?: string | null;
+      ts?: number;
+    }
   ) => request<AppState>(`/txns/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteTxn: (id: string) => request<AppState>(`/txns/${id}`, { method: 'DELETE' }),
   /**
@@ -258,6 +350,29 @@ export const api = {
    */
   importSms: (items: SmsRow[]) =>
     request<AppState>('/txns/sms', { method: 'POST', body: JSON.stringify({ items }) }),
+  /** Answer "is this the payment you typed in?" for an imported entry. */
+  answerSame: (id: string, same: boolean) =>
+    request<AppState>(`/txns/${id}/same`, { method: 'POST', body: JSON.stringify({ same }) }),
+  /** Make two imported entries one transfer between the user's own accounts. */
+  pairTxns: (id: string, withId: string) =>
+    request<AppState>(`/txns/${id}/pair`, { method: 'POST', body: JSON.stringify({ with: withId }) }),
+  /** A bank message format the reader couldn't read, masked, sent by choice. */
+  shareSmsFormat: (b: { sender: string; text: string; reason: string }) =>
+    request<{ ok: boolean }>('/sms-samples', { method: 'POST', body: JSON.stringify(b) }),
+  adminSmsSamples: (password: string) =>
+    request<{ items: { id: string; sender: string; text: string; reason: string; createdAt: string }[] }>('/admin/sms-samples', {
+      headers: { 'x-admin-password': password },
+    }),
+  /** Feature counts for a day: names and numbers only (see lib/usage). */
+  usage: (day: string, counts: Record<string, number>) =>
+    request<{ ok: boolean }>('/usage', { method: 'POST', body: JSON.stringify({ day, counts }) }),
+  /** Imported entries the user has looked at and is happy with. */
+  markReviewed: (ids: string[]) => request<AppState>('/txns/reviewed', { method: 'POST', body: JSON.stringify({ ids }) }),
+  /** One category for many entries: "everything from this shop". */
+  recategorise: (ids: string[], cat: string) =>
+    request<AppState>('/txns/recat', { method: 'POST', body: JSON.stringify({ ids, cat }) }),
+  /** What one unit of each currency is worth in `base`. */
+  fx: (base: string) => request<{ base: string; rates: Record<string, number>; at: number }>(`/fx?base=${encodeURIComponent(base)}`),
   /** Fetch a receipt on demand — images are never part of the state bundle. */
   txnPhoto: (id: string) => request<{ photo: string }>(`/txns/${id}/photo`),
   setTxnPhoto: (id: string, photo: string | null) =>
@@ -296,8 +411,12 @@ export const api = {
 
   addAccount: (b: { name: string; type: string; color: string; opening: number }) =>
     request<AppState>('/accounts', { method: 'POST', body: JSON.stringify(b) }),
-  editAccount: (id: string, b: { name: string; type: string; color: string; opening: number }) =>
+  editAccount: (id: string, b: { name: string; type: string; color: string; opening: number; balanceNow?: number }) =>
     request<AppState>(`/accounts/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+  mergeAccount: (id: string, into: string) =>
+    request<AppState>(`/accounts/${id}/merge`, { method: 'POST', body: JSON.stringify({ into }) }),
+  unlinkAccount: (id: string, link: { sender: string; card: string | null }) =>
+    request<AppState>(`/accounts/${id}/unlink`, { method: 'POST', body: JSON.stringify(link) }),
   deleteAccount: (id: string) => request<AppState>(`/accounts/${id}`, { method: 'DELETE' }),
 
   addFcat: (b: { name: string; icon: string; color: string; kind: string }) =>
@@ -312,9 +431,9 @@ export const api = {
     request<AppState>(`/budgets/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteBudget: (id: string) => request<AppState>(`/budgets/${id}`, { method: 'DELETE' }),
 
-  addGoal: (b: { name: string; target: number; current: number; color: string; dueTs: number | null }) =>
+  addGoal: (b: { name: string; target: number; current: number; color: string; dueTs: number | null; accId?: string | null }) =>
     request<AppState>('/goals', { method: 'POST', body: JSON.stringify(b) }),
-  editGoal: (id: string, b: { name: string; target: number; current: number; color: string; dueTs: number | null }) =>
+  editGoal: (id: string, b: { name: string; target: number; current: number; color: string; dueTs: number | null; accId?: string | null }) =>
     request<AppState>(`/goals/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteGoal: (id: string) => request<AppState>(`/goals/${id}`, { method: 'DELETE' }),
 
@@ -350,6 +469,9 @@ export const api = {
   // Deletes the whole user account (not a finance account — see deleteAccount).
   deleteMyAccount: (password: string) =>
     request<{ ok: boolean }>('/me', { method: 'DELETE', body: JSON.stringify({ password }) }),
+  /** Retention and feature use, from the usage counts. */
+  adminMetrics: (password: string) =>
+    request<AdminMetrics>('/admin/metrics', { headers: { 'x-admin-password': password } }),
   adminErrors: (password: string) =>
     request<{ items: ClientErrorItem[] }>('/admin/errors', { headers: { 'x-admin-password': password } }),
 };

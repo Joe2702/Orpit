@@ -15,6 +15,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(OrbitSms.class);
+        registerPlugin(OrbitLock.class);
         super.onCreate(savedInstanceState);
     }
 
@@ -38,8 +39,15 @@ public class MainActivity extends BridgeActivity {
     // public, not protected: Capacitor's BridgeActivity declares the lifecycle
     // methods public, and an override may not narrow access.
     @Override
+    public void onResume() {
+        super.onResume();
+        SmsReceiver.visible = true;
+    }
+
+    @Override
     public void onPause() {
         super.onPause();
+        SmsReceiver.visible = false;
         try {
             OrbitWidget.refreshAll(this);
             for (StatsWidget w : STATS_WIDGETS) {

@@ -20,6 +20,8 @@ export interface Profile {
   // In-app text size multiplier and the optional wind-down nudge.
   textScale: number;
   windDown: boolean;
+  /** Feature-use counts sent for the retention numbers. Absent means on. */
+  shareUsage?: boolean;
   // Confirmed via an emailed link. Never gates anything — it only makes
   // password recovery reliable, so the app nudges instead of blocking.
   emailVerified: boolean;
@@ -89,6 +91,8 @@ export interface Habit {
   paused: boolean; // temporarily off (travel/illness) without losing history
   archived: boolean; // hidden from the app but its check-ins are kept
   why: string | null; // the user's own motivation, shown when slipping
+  /** When and where it happens: "after my morning coffee". Optional. */
+  cue?: string | null;
   reminderTime: string | null; // optional per-habit reminder (HH:MM)
 }
 
@@ -166,7 +170,24 @@ export interface Txn {
    * rather than from their own hands.
    */
   sms?: boolean;
+  /** The message's hash, so the phone can show the text it came from. */
+  smsKey?: string | null;
+  /** Imported and not yet looked at: the category or amount was a best guess. */
+  review?: boolean;
+  /** Still as the import wrote it; a better reading of the message may replace it. */
+  auto?: boolean;
+  /** The recurring item this entry paid, posted by its schedule or matched from the bank. */
+  recurringId?: string | null;
+  /** Imported, and possibly the same payment as this hand-typed entry. */
+  dupOf?: string | null;
+  /** Imported, and possibly one half of a transfer whose other half has this message key. */
+  pairKey?: string | null;
   ts: number;
+}
+
+export interface SmsLink {
+  sender: string;
+  card: string | null;
 }
 
 export interface Account {
@@ -175,6 +196,15 @@ export interface Account {
   type: string;
   color: string;
   opening: number;
+  /** Bank messages from these senders (and cards, when set) are filed here. */
+  smsLinks?: SmsLink[];
+  /**
+   * The latest balance a bank message reported, and when. When present, it is
+   * the account's balance: everything logged after it is added on top, and the
+   * opening balance no longer matters.
+   */
+  smsBalance?: number | null;
+  smsBalanceTs?: number | null;
 }
 
 export interface FCat {
@@ -200,6 +230,8 @@ export interface Goal {
   current: number;
   color: string;
   dueTs: number | null;
+  /** Follows this account: progress is its balance, not the typed `current`. */
+  accId?: string | null;
 }
 
 export interface Recurring {

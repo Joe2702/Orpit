@@ -30,7 +30,7 @@ export function Signin() {
   const inputStyle: React.CSSProperties = {
     width: '100%',
     height: 52,
-    borderRadius: 14,
+    borderRadius: 'calc(14px * var(--sq))',
     border: '1px solid var(--border)',
     background: 'var(--surface)',
     padding: '0 16px',
@@ -39,10 +39,8 @@ export function Signin() {
     outline: 'none',
   };
   const labelStyle: React.CSSProperties = {
-    fontSize: 12,
+    fontSize: 13.5,
     fontWeight: 600,
-    textTransform: 'uppercase',
-    letterSpacing: '.06em',
     color: 'var(--text2)',
     marginBottom: 8,
   };
@@ -115,7 +113,7 @@ export function Signin() {
               placeholder={signUp ? 'At least 6 characters' : 'Your password'}
               style={{ ...inputStyle, paddingRight: 48 }}
             />
-            <div
+            <div role="button" tabIndex={0}
               onClick={() => setShowPw((s) => !s)}
               style={{ position: 'absolute', right: 6, top: 0, height: 52, width: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
               aria-label={showPw ? 'Hide password' : 'Show password'}
@@ -138,14 +136,14 @@ export function Signin() {
           <div style={{ marginTop: 14, fontSize: 13.5, fontWeight: 500, color: 'var(--danger)' }}>{error}</div>
         )}
 
-        <div
+        <div role="button" tabIndex={0}
           onClick={busy ? undefined : submit}
           className="press"
           style={{
             background: 'var(--indigo)',
             color: '#fff',
             height: 54,
-            borderRadius: 16,
+            borderRadius: 'calc(16px * var(--sq))',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -161,7 +159,7 @@ export function Signin() {
         </div>
 
         {!signUp && (
-          <div
+          <div role="button" tabIndex={0}
             onClick={() => go('forgot')}
             style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: '14px 8px 0', cursor: 'pointer' }}
           >
@@ -171,7 +169,7 @@ export function Signin() {
 
         <GoogleButton />
       </div>
-      <div
+      <div role="button" tabIndex={0}
         onClick={() => {
           setAuthMode(signUp ? 'signin' : 'signup');
           setError('');

@@ -47,12 +47,14 @@ export function SleepSheet() {
     value: string,
     setValue: (v: string) => void
   ) => (
-    <div style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 18, padding: '14px 15px' }}>
+    // minWidth 0: a time input has a wide intrinsic size, and without it the
+    // second card was pushed past the edge of the sheet on a 390px phone.
+    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', padding: '14px 15px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
-        <span style={{ width: 28, height: 28, borderRadius: 9, flex: 'none', background: `color-mix(in srgb,var(--${tint}) 15%,transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
+        <span style={{ width: 28, height: 28, borderRadius: 'calc(9px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
         <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>{labelText}</span>
       </div>
-      <input type="time" value={value} onChange={(e) => setValue(e.target.value)} style={{ width: '100%', border: 'none', background: 'none', fontSize: 25, fontWeight: 700, color: 'var(--text)', outline: 'none', fontVariantNumeric: 'tabular-nums', letterSpacing: '-.01em', padding: 0 }} />
+      <input type="time" value={value} onChange={(e) => setValue(e.target.value)} style={{ width: '100%', minWidth: 0, border: 'none', background: 'none', fontSize: 22, fontWeight: 700, color: 'var(--text)', outline: 'none', fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em', padding: 0 }} />
     </div>
   );
 
@@ -77,7 +79,7 @@ export function SleepSheet() {
       </div>
 
       <div style={{ textAlign: 'center', marginBottom: 6 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text2)', marginBottom: 2 }}>Time asleep</div>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', marginBottom: 2 }}>Time asleep</div>
         <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{durLabel}</span>
       </div>
 
@@ -97,9 +99,9 @@ export function SleepSheet() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>Quality</span>
-        <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{quality} / 10</span>
+        <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--indigo)', fontVariantNumeric: 'tabular-nums' }}>{quality} / 10</span>
       </div>
-      <input type="range" min={1} max={10} step={1} value={quality} onChange={(e) => setQuality(parseInt(e.target.value))} style={{ width: '100%', accentColor: 'var(--blue)', height: 6, marginBottom: 6, cursor: 'pointer' }} />
+      <input type="range" min={1} max={10} step={1} value={quality} onChange={(e) => setQuality(parseInt(e.target.value))} style={{ width: '100%', accentColor: 'var(--indigo)', height: 6, marginBottom: 6, cursor: 'pointer' }} />
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--text2)', marginBottom: 26 }}>
         <span>Poor</span>
         <span>Excellent</span>
@@ -111,10 +113,10 @@ export function SleepSheet() {
         onChange={(e) => setNote(e.target.value)}
         placeholder="e.g. woke up twice"
         maxLength={200}
-        style={{ width: '100%', height: 50, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 24 }}
+        style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 24 }}
       />
 
-      <div onClick={save} className="press" style={{ background: 'var(--blue)', color: '#fff', height: 54, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>Save sleep</div>
+      <div role="button" tabIndex={0} onClick={save} className="press" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>Save sleep</div>
     </div>
   );
 }

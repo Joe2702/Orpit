@@ -37,7 +37,7 @@ export function CatchUpSheet() {
     <div style={{ padding: '4px 20px 32px' }}>
       <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 6px' }}>Catch up</div>
       <div style={{ fontSize: 13.5, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.5 }}>
-        The last 7 days. Tap any square to check it off — handy after a trip or a busy week.
+        The last 7 days. Tap a square to check it off, useful after a trip or a busy week.
       </div>
 
       {/* One habit per card: the name gets its own line, and the seven days sit
@@ -49,7 +49,7 @@ export function CatchUpSheet() {
           return (
             <div
               key={h.id}
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, padding: '13px 14px' }}
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', padding: '13px 14px' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 11 }}>
                 <span style={{ width: 9, height: 9, borderRadius: '50%', flex: 'none', background: `var(--${h.color})` }} />
@@ -66,7 +66,7 @@ export function CatchUpSheet() {
                   return (
                     <div key={t} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
                       <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text2)' }}>{WD[dt.getDay()]}</span>
-                      <div
+                      <div tabIndex={0}
                         onClick={() => scheduled && toggle(h.id, ds)}
                         className={scheduled ? 'press92' : undefined}
                         role={scheduled ? 'button' : undefined}
@@ -74,7 +74,7 @@ export function CatchUpSheet() {
                         style={{
                           width: '100%',
                           aspectRatio: '1',
-                          borderRadius: 10,
+                          borderRadius: 'calc(10px * var(--sq))',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',

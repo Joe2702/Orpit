@@ -1,0 +1,66 @@
+name: Checks
+
+# Tests and type checks for every pull request and every push to main.
+# android.yml only builds the APK (and only for web changes); this is what says
+# whether a change broke the app's logic or the server's, before anyone
+# installs it.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Type check
+        run: npx tsc --noEmit -p .
+      - name: Unit tests
+        run: npm test
+
+  server:
+    runs-on: ubuntu-latest
+    # A throwaway database for the server's integration tests.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: orbit
+          POSTGRES_PASSWORD: orbit
+          POSTGRES_DB: orbit
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U orbit"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      TEST_DATABASE_URL: postgres://orbit:orbit@localhost:5432/orbit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install
+        run: npm ci
+        working-directory: server
+      - name: Build
+        run: npm run build
+        working-directory: server
+      - name: Integration tests
+        run: npm test
+        working-directory: server

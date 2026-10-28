@@ -48,8 +48,34 @@ export function money(n: number): string {
   );
 }
 
+/** Whole units, for averages and totals where piastres are noise: "E£351". */
+export function money0(n: number): string {
+  return moneySymbol() + Math.round(Math.abs(n)).toLocaleString('en-US');
+}
+
+/** Axis-sized money: "E£950", "E£12.4k", "E£1.2M". */
+export function moneyShort(n: number): string {
+  const a = Math.abs(n);
+  const sym = moneySymbol();
+  if (a >= 1e6) return `${sym}${(a / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(/\.0$/, '')}M`;
+  if (a >= 1e3) return `${sym}${(a / 1e3).toFixed(a >= 1e4 ? 0 : 1).replace(/\.0$/, '')}k`;
+  return `${sym}${Math.round(a)}`;
+}
+
+// The sign is glued to the figure with no space, so a narrow card can never
+// wrap it onto a line of its own ("–" above "E£2,460").
 export function signMoney(n: number): string {
-  return (n >= 0 ? '+ ' : '− ') + money(n);
+  return (n >= 0 ? '+' : '−') + money(n);
+}
+
+/** Training time the way people say it: "45 min", "1h 20m", "175 h". */
+export function minutes(min: number): string {
+  const m = Math.round(min);
+  if (m < 60) return `${m} min`;
+  if (m >= 600) return `${Math.round(m / 60).toLocaleString('en-US')} h`;
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  return r ? `${h}h ${String(r).padStart(2, '0')}m` : `${h}h`;
 }
 
 export function fmtClock(h: number | null): string {
@@ -64,7 +90,8 @@ export function fmtClock(h: number | null): string {
   const ap = hh < 12 ? 'AM' : 'PM';
   let h12 = hh % 12;
   if (h12 === 0) h12 = 12;
-  return h12 + ':' + String(mm).padStart(2, '0') + ' ' + ap;
+  // A no-break space keeps "PM" from wrapping onto a line of its own.
+  return h12 + ':' + String(mm).padStart(2, '0') + '\u00a0' + ap;
 }
 
 export function parseClock(str: string): number {
@@ -73,14 +100,15 @@ export function parseClock(str: string): number {
 }
 
 export function relLabel(ts: number): string {
-  const D = 86400000;
   const st = new Date();
   st.setHours(0, 0, 0, 0);
-  const di = Math.floor((st.getTime() - new Date(ts).setHours(0, 0, 0, 0)) / D);
+  // Rounded, because the day the clocks change is 23 or 25 hours long.
+  const di = Math.round((st.getTime() - new Date(ts).setHours(0, 0, 0, 0)) / 86400000);
   if (di <= 0) return 'Today';
   if (di === 1) return 'Yesterday';
-  if (di < 7) return new Date(ts).toLocaleDateString('en-US', { weekday: 'short' });
-  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (di < 7) return new Date(ts).toLocaleDateString('en-US', { weekday: 'long' });
+  const sameYear = new Date(ts).getFullYear() === st.getFullYear();
+  return new Date(ts).toLocaleDateString('en-US', sameYear ? { weekday: 'short', month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export function greeting(): string {
@@ -98,20 +126,19 @@ export function todayStr(): string {
 
 // Human-readable schedule from a 7-char day mask (Sun..Sat).
 const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+// Ranges are spelled out ("Sun – Thu") rather than called "weekdays": whose
+// weekdays depends on where you live, and here the work week is Sunday to
+// Thursday.
 export function daysLabel(days: string): string {
   if (!/^[01]{7}$/.test(days) || days === '1111111') return 'Every day';
-  if (days === '0111110') return 'Weekdays';
-  if (days === '1000001') return 'Weekends';
-  const sel: string[] = [];
-  for (let i = 0; i < 7; i++) if (days[i] === '1') sel.push(DAY_ABBR[i]);
-  return sel.join(', ');
-}
-
-// Which week of the year we're in (1–53), counting from Jan 1.
-export function weekOfYear(d = new Date()): number {
-  const start = new Date(d.getFullYear(), 0, 1);
-  const days = Math.floor((d.getTime() - start.getTime()) / 86400000);
-  return Math.min(52, Math.floor((days + start.getDay()) / 7) + 1);
+  const sel: number[] = [];
+  for (let i = 0; i < 7; i++) if (days[i] === '1') sel.push(i);
+  if (sel.length === 0) return 'No days';
+  if (sel.length === 1) return `${DAY_ABBR[sel[0]]}s`;
+  if (sel.length === 2) return `${DAY_ABBR[sel[0]]} & ${DAY_ABBR[sel[1]]}`;
+  const contiguous = sel.every((d, i) => i === 0 || d === sel[i - 1] + 1);
+  if (contiguous) return `${DAY_ABBR[sel[0]]} – ${DAY_ABBR[sel[sel.length - 1]]}`;
+  return sel.map((d) => DAY_ABBR[d]).join(', ');
 }
 
 export const cssVar = (key: string) => `var(--${key})`;
@@ -154,4 +181,13 @@ export function counterTotals(countLogs: { counterId: string; amount: number; ts
     if (l.ts >= m0) month += l.amount;
   });
   return { all, year, month, logs, lastTs };
+}
+
+/** "just now", "4 min ago", "3 h ago", "2 d ago". */
+export function ago(t: number): string {
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  return `${Math.round(s / 86400)} d ago`;
 }

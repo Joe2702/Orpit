@@ -30,7 +30,7 @@ export function ReminderOnboarding() {
       else if (status === 'denied') showToast('Allow notifications to get reminders');
       else showToast('Reminder time saved');
     } catch {
-      showToast('Could not save — try again');
+      showToast('Couldn’t save that. Try again.');
       setBusy(false);
       return;
     }
@@ -40,7 +40,7 @@ export function ReminderOnboarding() {
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 97, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 26 }}>
       <div onClick={dismiss} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.55)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(2px)' }} />
-      <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 24, padding: '26px 22px 20px', width: '100%', maxWidth: 340, boxShadow: '0 20px 60px rgba(8,9,14,.4)', animation: 'fadeUp .28s ease' }}>
+      <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 340, boxShadow: '0 20px 60px rgba(8,9,14,.4)', animation: 'fadeUp .28s ease' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
           <Glyph name="moon" size={32} color="var(--indigo)" sw={1.7} />
         </div>
@@ -48,7 +48,7 @@ export function ReminderOnboarding() {
           When should we check in?
         </div>
         <div style={{ fontSize: 14, color: 'var(--text2)', textAlign: 'center', marginTop: 8, lineHeight: 1.55 }}>
-          Pick a time to log your day. Near the <b style={{ color: 'var(--text)' }}>end of the day</b> works best — it’s the perfect moment to reflect on everything that happened. It only takes about 2 minutes.
+          Pick a time to log your day. Near the <b style={{ color: 'var(--text)' }}>end of the day</b> works best: it’s a natural moment to look back on everything that happened. It only takes about 2 minutes.
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', margin: '22px 0' }}>
@@ -56,18 +56,18 @@ export function ReminderOnboarding() {
             type="time"
             value={time}
             onChange={(e) => e.target.value && setTime(e.target.value)}
-            style={{ fontSize: 30, fontWeight: 700, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 16, padding: '12px 20px', outline: 'none', fontVariantNumeric: 'tabular-nums' }}
+            style={{ fontSize: 30, fontWeight: 700, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '12px 20px', outline: 'none', fontVariantNumeric: 'tabular-nums' }}
           />
         </div>
 
-        <div
+        <div role="button" tabIndex={0}
           onClick={busy ? undefined : turnOn}
           className="press"
-          style={{ background: 'var(--indigo)', color: '#fff', height: 52, borderRadius: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, boxShadow: 'var(--glow)' }}
+          style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 52, borderRadius: 'calc(15px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, boxShadow: 'var(--glow)' }}
         >
           {busy ? 'Setting up…' : 'Turn on daily reminder'}
         </div>
-        <div onClick={dismiss} style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: '14px 8px 4px', cursor: 'pointer', fontWeight: 500 }}>
+        <div role="button" tabIndex={0} onClick={dismiss} style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: '14px 8px 4px', cursor: 'pointer', fontWeight: 500 }}>
           Maybe later
         </div>
       </div>

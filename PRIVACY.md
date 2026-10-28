@@ -1,6 +1,6 @@
 # Orbit — Privacy Policy
 
-_Last updated: 26 July 2026_
+_Last updated: 28 October 2026_
 
 Orbit is a personal life-tracking app. This policy explains, in plain language,
 what the app stores, why, and what control you have over it.
@@ -35,22 +35,45 @@ contact: **youssif_mohammed@aucegypt.edu**
   fixed. This is not used to track you.
 - If you send feedback, we store your message alongside your name and email so
   we can reply.
+- **Usage counts**: how many times a day features are used (for example "opened
+  the app: 2", "checked a habit: 3"), so we can see whether people come back
+  and what helps. Never what you entered: no amounts, names, habits or
+  messages. Turn it off in Profile → Data → Share usage counts, which also
+  deletes what was already counted.
 
 **Bank messages (optional, Android only)**
-- If you turn on Profile → Bank messages → Import from SMS, the app asks Android
-  for permission to read your text messages, so that payment alerts from your
-  bank become transactions without you typing them in.
-- The app only looks at messages whose sender matches a known bank or wallet
-  (for example NBE, CIB, InstaPay, Vodafone Cash). Personal messages are not
-  read.
+- If you turn on Profile → Bank messages → Import from SMS, the app first
+  explains what it will do, then asks Android for permission to read text
+  messages and to be told when one arrives, so that payment alerts from your
+  bank or wallet become transactions without you typing them in.
+- Only messages from senders with letters in their name are looked at: banks,
+  wallets and services (for example "CIB", "NBE", "VF-Cash"). Messages from
+  phone numbers, which is where personal messages come from, are never read.
+  One-time passcodes are ignored.
 - **The text of your messages never leaves your phone and is never sent to our
-  servers.** The app works out the amount, the merchant name and the date on the
-  device, and stores only those — together with the last four digits of the card
-  when the message mentions them, and a one-way hash of the message that is used
-  solely to avoid importing the same payment twice.
+  servers.** The app reads each message on the device and sends only what it
+  found: the amount and currency, the shop or sender name, the date and time,
+  which bank or wallet sent it, the last four digits of the card or account
+  when the message shows them, and the balance the bank reported. A one-way
+  hash of the message is stored too, used solely so the same payment is never
+  imported twice.
+- The text of recent bank messages (up to 600) is kept in the app's own
+  storage on your phone, so you can see which message an entry was read from.
+  It is removed when you uninstall the app or clear its data.
+- When a payment arrives while the app is closed, your phone may show a
+  notification with the amount and the bank's name. It is created on the
+  phone; nothing is sent to deliver it.
+- To convert payments made in another currency, the server downloads daily
+  exchange rates from public rate services. No information about you or your
+  payments is sent to them.
+- If Orbit can't read your bank's messages, you can choose to send one so it
+  can learn the format: Profile → Bank messages → Last check → "Help Orbit read
+  this bank". Before anything is sent you see exactly what goes: the message
+  with every number replaced and names removed. Nothing is ever sent this way
+  without that step.
 - This is entirely optional. Every part of the app works without it, and you can
   turn it off at any time in Profile → Bank messages, or revoke the permission in
-  Android's own settings.
+  Android's own settings. Entries already imported stay until you delete them.
 
 **Accountability partners (optional, 18+)**
 - Your date of birth, if you give it. It is used only to check that you are 18
@@ -68,7 +91,7 @@ contact: **youssif_mohammed@aucegypt.edu**
   someone, a copy of your conversation is kept for review.
 - Ending a partnership deletes the sharing settings and stops all access at once.
 
-**What we do NOT collect:** we do not use advertising or analytics SDKs, we do
+**What we do NOT collect:** we do not use advertising or third-party analytics SDKs, we do
 not track your location, we do not read your contacts, photos, or any data from
 other apps, and we do not build advertising profiles. We do not read, store or
 transmit the content of your text messages.

@@ -15,95 +15,87 @@ const CUTOFF = `now() - interval '${WINDOW_DAYS} days'`;
 
 /** Build the full client state bundle for a user. Raw data; the client derives metrics. */
 export async function buildState(userId: number) {
-  const profile = await one(
+  const profileQ = one(
     `SELECT name, email, theme, reminders, haptics, onboarded, currency, avatar, layout,
             reminder_time AS "reminderTime", reminder_tz AS "reminderTz",
             claimed_badges AS "claimedBadgesRaw", intro_done AS "introDone",
-            accent, modules AS "modulesRaw", text_scale AS "textScale", wind_down AS "windDown",
+            accent, modules AS "modulesRaw", text_scale AS "textScale", wind_down AS "windDown", share_usage AS "shareUsage",
             email_verified AS "emailVerified",
             (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt"
      FROM users WHERE id = $1`,
     [userId]
   );
-  // claimed_badges is stored as a JSON string; hand the client a real array.
-  if (profile) {
-    const p = profile as any;
-    let claimed: string[] = [];
-    try {
-      const parsed = JSON.parse(p.claimedBadgesRaw || '[]');
-      if (Array.isArray(parsed)) claimed = parsed.filter((x: unknown) => typeof x === 'string');
-    } catch {
-      /* corrupt value → treat as none claimed */
-    }
-    p.claimedBadges = claimed;
-    delete p.claimedBadgesRaw;
-  }
 
-  const habits = await query(
-    `SELECT id::text, name, color, target, locked, days, paused, archived, why,
+  const habitsQ = query(
+    `SELECT id::text, name, color, target, locked, days, paused, archived, why, cue,
             reminder_time AS "reminderTime"
      FROM habits WHERE user_id = $1 ORDER BY locked DESC, sort, id`,
     [userId]
   );
 
-  const checkins = await query(
+  const checkinsQ = query(
     `SELECT habit_id::text AS "habitId", to_char(day, 'YYYY-MM-DD') AS day
      FROM habit_checkins WHERE user_id = $1 AND day > (now() - interval '400 days')::date`,
     [userId]
   );
 
-  const wCats = await query(
+  const wCatsQ = query(
     `SELECT id::text, name, color FROM workout_categories
      WHERE user_id = $1 ORDER BY sort, id`,
     [userId]
   );
 
-  const workouts = await query(
+  const workoutsQ = query(
     `SELECT id::text, name, category_id::text AS "catId", dur, dist, kcal, intensity, note, sets,
             ${TS('ts')}
      FROM workouts WHERE user_id = $1 AND ts > now() - interval '400 days' ORDER BY ts DESC`,
     [userId]
   );
 
-  const accounts = await query(
-    `SELECT id::text, name, type, color, opening FROM accounts
-     WHERE user_id = $1 ORDER BY sort, id`,
+  const accountsQ = query(
+    `SELECT a.id::text, a.name, a.type, a.color, a.opening,
+            a.sms_balance AS "smsBalance",
+            (EXTRACT(EPOCH FROM a.sms_balance_ts) * 1000)::float8 AS "smsBalanceTs",
+            COALESCE((SELECT json_agg(json_build_object('sender', l.sender, 'card', NULLIF(l.card, '')) ORDER BY l.sender, l.card)
+                      FROM account_links l WHERE l.acc_id = a.id), '[]'::json) AS "smsLinks"
+     FROM accounts a
+     WHERE a.user_id = $1 ORDER BY a.sort, a.id`,
     [userId]
   );
 
-  const fcats = await query(
+  const fcatsQ = query(
     `SELECT id::text, name, icon, color, kind FROM fcats
      WHERE user_id = $1 ORDER BY sort, id`,
     [userId]
   );
 
-  const budgets = await query(
+  const budgetsQ = query(
     `SELECT id::text, cat, limit_amt AS "limit", rollover FROM budgets
      WHERE user_id = $1 ORDER BY sort, id`,
     [userId]
   );
 
-  const goals = await query(
-    `SELECT id::text, name, target, current, color,
+  const goalsQ = query(
+    `SELECT id::text, name, target, current, color, acc_id::text AS "accId",
             (EXTRACT(EPOCH FROM due_ts) * 1000)::float8 AS "dueTs"
      FROM goals WHERE user_id = $1 ORDER BY sort, id`,
     [userId]
   );
 
-  const recurring = await query(
+  const recurringQ = query(
     `SELECT id::text, name, cat, acc_id::text AS "accId", amount, freq, income,
             (EXTRACT(EPOCH FROM next_ts) * 1000)::float8 AS "nextTs"
      FROM recurring WHERE user_id = $1 ORDER BY next_ts, id`,
     [userId]
   );
 
-  const counters = await query(
+  const countersQ = query(
     `SELECT id::text, name, unit, color, icon, step FROM counters
      WHERE user_id = $1 ORDER BY sort, id`,
     [userId]
   );
 
-  const milestones = await query(
+  const milestonesQ = query(
     // to_char, not the raw DATE: the driver would hand back a JS Date at UTC
     // midnight, which is the previous day for anyone west of Greenwich.
     `SELECT id::text, name, to_char(since, 'YYYY-MM-DD') AS since, color, icon FROM milestones
@@ -111,32 +103,33 @@ export async function buildState(userId: number) {
     [userId]
   );
 
-  const countLogs = await query(
+  const countLogsQ = query(
     `SELECT id::text, counter_id::text AS "counterId", amount, ${TS('ts')}
      FROM count_logs WHERE user_id = $1 AND ts > now() - interval '400 days' ORDER BY ts DESC`,
     [userId]
   );
 
-  const nights = await query(
+  const nightsQ = query(
     `SELECT id::text, hours, quality, bed_h AS "bedH", wake_h AS "wakeH", note,
             ${TS('ts')}
      FROM nights WHERE user_id = $1 AND ts > now() - interval '400 days' ORDER BY ts DESC`,
     [userId]
   );
 
-  const txns = await query(
+  const txnsQ = query(
     // The receipt image itself stays behind GET /api/txns/:id/photo — the state
     // bundle only carries whether one exists, so it stays small.
     `SELECT t.id::text, t.name, t.cat, t.amount, t.income, t.acc_id::text AS "accId",
             t.to_acc_id::text AS "toAccId", t.adjust, t.note,
-            (t.sms_key IS NOT NULL) AS sms,
+            (t.sms_key IS NOT NULL) AS sms, t.sms_key AS "smsKey", t.review, t.auto,
+            t.recurring_id::text AS "recurringId", t.dup_of::text AS "dupOf", t.pair_key AS "pairKey",
             (p.txn_id IS NOT NULL) AS photo, ${TS('t.ts')}
      FROM txns t LEFT JOIN txn_photos p ON p.txn_id = t.id
      WHERE t.user_id = $1 AND t.ts > now() - interval '400 days' ORDER BY t.ts DESC`,
     [userId]
   );
 
-  const wTemplates = await query(
+  const wTemplatesQ = query(
     `SELECT id::text, name, category_id::text AS "catId", dur, intensity
      FROM workout_templates WHERE user_id = $1 ORDER BY sort, id`,
     [userId]
@@ -146,7 +139,7 @@ export async function buildState(userId: number) {
   // Everything older than the window, folded into totals. Badge counts, "days
   // tracked" and account balances must stay exact for a user's whole history,
   // so the numbers survive even though the rows don't travel.
-  const archiveRow = await one<Record<string, any>>(
+  const archiveRowQ = one<Record<string, any>>(
     `SELECT
        (SELECT count(*) FROM workouts   WHERE user_id = $1 AND ts <= now() - interval '400 days')::int AS workouts,
        (SELECT count(*) FROM nights     WHERE user_id = $1 AND ts <= now() - interval '400 days')::int AS nights,
@@ -173,7 +166,7 @@ export async function buildState(userId: number) {
 
   // Pre-window spend per account, so balances and net worth stay correct
   // without shipping years of transactions.
-  const accSumRows = await query<{ accId: string | null; total: number }>(
+  const accSumRowsQ = query<{ accId: string | null; total: number }>(
     // A transfer moves money out of one account and into another, so it appears
     // on both sides of this union. Summing only acc_id would leave the
     // destination account permanently short once the rows aged out of the
@@ -190,6 +183,63 @@ export async function buildState(userId: number) {
      ) s GROUP BY "accId"`,
     [userId]
   );
+
+  // Independent queries, so they run side by side rather than one after
+  // another: every save waits on this, and eighteen round trips in a row to
+  // the database were most of that wait.
+  const [
+    profile,
+    habits,
+    checkins,
+    wCats,
+    workouts,
+    accounts,
+    fcats,
+    budgets,
+    goals,
+    recurring,
+    counters,
+    milestones,
+    countLogs,
+    nights,
+    txns,
+    wTemplates,
+    archiveRow,
+    accSumRows,
+  ] = await Promise.all([
+    profileQ,
+    habitsQ,
+    checkinsQ,
+    wCatsQ,
+    workoutsQ,
+    accountsQ,
+    fcatsQ,
+    budgetsQ,
+    goalsQ,
+    recurringQ,
+    countersQ,
+    milestonesQ,
+    countLogsQ,
+    nightsQ,
+    txnsQ,
+    wTemplatesQ,
+    archiveRowQ,
+    accSumRowsQ,
+  ]);
+
+  // claimed_badges is stored as a JSON string; hand the client a real array.
+  if (profile) {
+    const p = profile as any;
+    let claimed: string[] = [];
+    try {
+      const parsed = JSON.parse(p.claimedBadgesRaw || '[]');
+      if (Array.isArray(parsed)) claimed = parsed.filter((x: unknown) => typeof x === 'string');
+    } catch {
+      /* corrupt value → treat as none claimed */
+    }
+    p.claimedBadges = claimed;
+    delete p.claimedBadgesRaw;
+  }
 
   const archive = {
     workouts: archiveRow?.workouts ?? 0,

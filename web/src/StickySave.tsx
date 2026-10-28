@@ -65,7 +65,7 @@ export function StickySave({
           pointerEvents: 'none',
         }}
       />
-      <div
+      <div tabIndex={0}
         onClick={enabled ? onClick : undefined}
         className={enabled ? 'press99' : undefined}
         role="button"
@@ -75,7 +75,7 @@ export function StickySave({
           background: enabled ? `var(--${color})` : `color-mix(in srgb,var(--${color}) 40%,var(--surface))`,
           color: '#fff',
           height: 54,
-          borderRadius: 16,
+          borderRadius: 'calc(16px * var(--sq))',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
