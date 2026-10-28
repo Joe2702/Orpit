@@ -35,6 +35,11 @@ contact: **youssif_mohammed@aucegypt.edu**
   fixed. This is not used to track you.
 - If you send feedback, we store your message alongside your name and email so
   we can reply.
+- **Usage counts**: how many times a day features are used (for example "opened
+  the app: 2", "checked a habit: 3"), so we can see whether people come back
+  and what helps. Never what you entered: no amounts, names, habits or
+  messages. Turn it off in Profile → Data → Share usage counts, which also
+  deletes what was already counted.
 
 **Bank messages (optional, Android only)**
 - If you turn on Profile → Bank messages → Import from SMS, the app first
@@ -81,7 +86,7 @@ contact: **youssif_mohammed@aucegypt.edu**
   someone, a copy of your conversation is kept for review.
 - Ending a partnership deletes the sharing settings and stops all access at once.
 
-**What we do NOT collect:** we do not use advertising or analytics SDKs, we do
+**What we do NOT collect:** we do not use advertising or third-party analytics SDKs, we do
 not track your location, we do not read your contacts, photos, or any data from
 other apps, and we do not build advertising profiles. We do not read, store or
 transmit the content of your text messages.

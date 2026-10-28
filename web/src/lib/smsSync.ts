@@ -22,6 +22,8 @@ interface OrbitSmsPlugin {
   /** Mirror the switch for the native receiver, which runs without this layer. */
   setLive(o: { on: boolean }): Promise<{ available: boolean; granted: boolean; live?: boolean }>;
   addListener(event: 'message', fn: (e: { sender: string }) => void): Promise<PluginListenerHandle>;
+  /** This month's totals for the line under a payment alert. Absent on older builds. */
+  setSummary?(o: { month: string; home: string; symbol: string; spent: number; budget: number }): Promise<void>;
   read(o: { since: number; senders?: string[] }): Promise<{
     messages: SmsMessage[];
     more: boolean;
@@ -68,6 +70,16 @@ const set = (k: string, v: string): void => {
 export const smsSupported = (): boolean => Capacitor.isNativePlatform();
 export const smsEnabled = (): boolean => get(ON_KEY) === '1';
 
+/** Fired when the switch changes, so the app starts or stops listening without a restart. */
+export const SMS_CHANGED = 'orbit-sms-changed';
+const announce = () => {
+  try {
+    window.dispatchEvent(new Event(SMS_CHANGED));
+  } catch {
+    /* no window: nothing is listening */
+  }
+};
+
 export async function smsStatus(): Promise<{ available: boolean; granted: boolean }> {
   if (!smsSupported()) return { available: false, granted: false };
   try {
@@ -113,6 +125,7 @@ export async function enableSms(): Promise<{ available: boolean; granted: boolea
     // The alert for a payment that arrives while the app is closed is a
     // notification; without this permission it silently never shows.
     await ensureNotificationPermission();
+    announce();
   }
   return st;
 }
@@ -131,6 +144,21 @@ export async function ensureLiveSms(): Promise<void> {
   } catch {
     /* an older native build without these methods: the scan on open still works */
   }
+}
+
+/**
+ * Tell the native receiver this month's spending and total budget, so a
+ * payment alert can say where the month stands. Skipped when nothing changed.
+ */
+let lastSummary = '';
+export function shareMonthSummary(o: { month: string; home: string; symbol: string; spent: number; budget: number }): void {
+  if (!smsSupported() || !smsEnabled()) return;
+  const key = JSON.stringify(o);
+  if (key === lastSummary) return;
+  lastSummary = key;
+  OrbitSms.setSummary?.(o).catch(() => {
+    lastSummary = '';
+  });
 }
 
 /** Called when a bank message arrives while the app is open. */
@@ -152,6 +180,7 @@ export function onSmsArrived(fn: () => void): () => void {
 
 export function disableSms(): void {
   set(ON_KEY, '');
+  announce();
   if (smsSupported()) OrbitSms.setLive({ on: false }).catch(() => {});
   // The watermark stays. Turning the feature back on should not re-offer three
   // months of payments that were already imported and possibly already deleted.

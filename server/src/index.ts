@@ -542,6 +542,11 @@ app.patch(
       fields.text_scale = Math.min(1.4, Math.max(0.85, Number(req.body.textScale)));
     }
     if (typeof req.body.windDown === 'boolean') fields.wind_down = req.body.windDown;
+    if (typeof req.body.shareUsage === 'boolean') {
+      fields.share_usage = req.body.shareUsage;
+      // Off means off, including what was counted before.
+      if (!req.body.shareUsage) await query('DELETE FROM usage_counts WHERE user_id = $1', [uid]);
+    }
     // Accent colour + which trackers to show.
     if (typeof req.body.accent === 'string' && req.body.accent.length < 20) fields.accent = req.body.accent;
     if (Array.isArray(req.body.modules)) {
@@ -1711,6 +1716,7 @@ app.post(
       await c.query('UPDATE txns SET acc_id = $3 WHERE user_id = $1 AND acc_id = $2', [uid, from, into]);
       await c.query('UPDATE txns SET to_acc_id = $3 WHERE user_id = $1 AND to_acc_id = $2', [uid, from, into]);
       await c.query('UPDATE recurring SET acc_id = $3 WHERE user_id = $1 AND acc_id = $2', [uid, from, into]);
+      await c.query('UPDATE goals SET acc_id = $3 WHERE user_id = $1 AND acc_id = $2', [uid, from, into]);
       await c.query('UPDATE account_links SET acc_id = $3 WHERE user_id = $1 AND acc_id = $2', [uid, from, into]);
       await c.query('UPDATE accounts SET opening = $1, sms_balance = $2, sms_balance_ts = $3 WHERE id = $4 AND user_id = $5', [
         (Number(src.opening) || 0) + (Number(dst.opening) || 0),
@@ -1742,6 +1748,7 @@ app.delete(
       );
       await c.query('UPDATE txns SET acc_id = NULL WHERE acc_id = $1 AND user_id = $2', [req.params.id, uid]);
       await c.query('UPDATE recurring SET acc_id = NULL WHERE acc_id = $1 AND user_id = $2', [req.params.id, uid]);
+      await c.query('UPDATE goals SET acc_id = NULL WHERE acc_id = $1 AND user_id = $2', [req.params.id, uid]);
       await c.query('DELETE FROM accounts WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
     });
     res.json(await buildState(uid));
@@ -1888,8 +1895,9 @@ app.post(
       [uid]
     );
     await query(
-      'INSERT INTO goals (user_id, name, target, current, color, due_ts, sort) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-      [uid, name, Number(req.body.target) || 0, Number(req.body.current) || 0, String(req.body.color || 'indigo'), req.body.dueTs ? new Date(Number(req.body.dueTs)) : null, max!.m]
+      `INSERT INTO goals (user_id, name, target, current, color, due_ts, sort, acc_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,(SELECT id FROM accounts WHERE id = $8 AND user_id = $1))`,
+      [uid, name, Number(req.body.target) || 0, Number(req.body.current) || 0, String(req.body.color || 'indigo'), req.body.dueTs ? new Date(Number(req.body.dueTs)) : null, max!.m, /^\d+$/.test(String(req.body.accId || '')) ? String(req.body.accId) : null]
     );
     res.json(await buildState(uid));
   })
@@ -1903,8 +1911,10 @@ app.patch(
     const name = String(req.body.name || '').trim();
     if (!name) return res.status(400).json({ error: 'Name required' });
     await query(
-      'UPDATE goals SET name=$1, target=$2, current=$3, color=$4, due_ts=$5 WHERE id=$6 AND user_id=$7',
-      [name, Number(req.body.target) || 0, Number(req.body.current) || 0, String(req.body.color || 'indigo'), req.body.dueTs ? new Date(Number(req.body.dueTs)) : null, req.params.id, uid]
+      `UPDATE goals SET name=$1, target=$2, current=$3, color=$4, due_ts=$5,
+              acc_id=(SELECT id FROM accounts WHERE id = $8 AND user_id = $7)
+       WHERE id=$6 AND user_id=$7`,
+      [name, Number(req.body.target) || 0, Number(req.body.current) || 0, String(req.body.color || 'indigo'), req.body.dueTs ? new Date(Number(req.body.dueTs)) : null, req.params.id, uid, /^\d+$/.test(String(req.body.accId || '')) ? String(req.body.accId) : null]
     );
     res.json(await buildState(uid));
   })
@@ -2440,6 +2450,50 @@ if (!ADMIN_PASSWORD) {
   console.warn('[admin] ADMIN_PASSWORD is not set — the feedback/error inbox is disabled.');
 }
 
+// ---------------- Usage counts ----------------
+//
+// Which features get used, as counts per day. The names are fixed here, so
+// nothing else can be smuggled in under one.
+const USAGE_NAMES = new Set([
+  'open',
+  'habit_check',
+  'workout_add',
+  'sleep_add',
+  'txn_add',
+  'sms_import',
+  'review_answer',
+  'week_review',
+  'bank_on',
+  'budget_alert',
+  'report_view',
+  'partner_open',
+]);
+
+app.post(
+  '/api/usage',
+  requireAuth,
+  rateLimit('usage', 60, 60 * 60 * 1000),
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const ok = await one<{ share: boolean }>('SELECT share_usage AS share FROM users WHERE id = $1', [uid]);
+    if (!ok?.share) return res.json({ ok: true });
+    const day = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body.day)) ? String(req.body.day) : null;
+    const counts = req.body.counts && typeof req.body.counts === 'object' ? req.body.counts : {};
+    if (day) {
+      for (const [name, v] of Object.entries(counts)) {
+        const n = Math.min(500, Math.max(0, Math.floor(Number(v)) || 0));
+        if (!n || !USAGE_NAMES.has(name)) continue;
+        await query(
+          `INSERT INTO usage_counts (user_id, day, name, n) VALUES ($1,$2,$3,$4)
+           ON CONFLICT (user_id, day, name) DO UPDATE SET n = LEAST(usage_counts.n + EXCLUDED.n, 5000)`,
+          [uid, day, name, n]
+        );
+      }
+    }
+    res.json({ ok: true });
+  })
+);
+
 function adminOk(req: AuthedRequest): boolean {
   if (!ADMIN_PASSWORD) return false;
   const given = String(req.headers['x-admin-password'] || '');
@@ -2474,6 +2528,54 @@ app.post(
     if (!adminOk(req)) return res.status(403).json({ error: 'Wrong password' });
     await query('UPDATE partner_reports SET handled = TRUE WHERE id = $1', [req.params.id]);
     res.json({ ok: true });
+  })
+);
+
+// Whether people come back, and what they use. Counts only.
+//   active: distinct users who opened the app in the last 1, 7 and 30 days;
+//   cohorts: for each of the last 8 signup weeks, the share of those users
+//     seen again on their day 1, in their week 1 (days 7-13) and around day 30
+//     (days 28-34), counted only once that much time has passed;
+//   features: over the last 30 days, how many people used each and how often.
+app.get(
+  '/api/admin/metrics',
+  requireAuth,
+  rateLimit('admin', 20, 15 * 60 * 1000),
+  wrap(async (req, res) => {
+    if (!ADMIN_PASSWORD) return res.status(503).json({ error: 'Inbox not configured on the server' });
+    if (!adminOk(req)) return res.status(403).json({ error: 'Wrong password' });
+    const active = await one<{ d1: number; d7: number; d30: number; users: number }>(
+      `SELECT
+         (SELECT count(DISTINCT user_id) FROM usage_counts WHERE name = 'open' AND day >= CURRENT_DATE)::int AS d1,
+         (SELECT count(DISTINCT user_id) FROM usage_counts WHERE name = 'open' AND day > CURRENT_DATE - 7)::int AS d7,
+         (SELECT count(DISTINCT user_id) FROM usage_counts WHERE name = 'open' AND day > CURRENT_DATE - 30)::int AS d30,
+         (SELECT count(*) FROM users)::int AS users`
+    );
+    const cohorts = await query<{ week: string; users: number; d1: number | null; w1: number | null; d30: number | null }>(
+      `WITH c AS (
+         SELECT id, created_at::date AS joined, date_trunc('week', created_at)::date AS week
+         FROM users WHERE created_at > now() - interval '8 weeks'
+       ), seen AS (
+         SELECT c.id, c.week, c.joined, u.day FROM c JOIN usage_counts u ON u.user_id = c.id AND u.name = 'open'
+       )
+       SELECT to_char(c.week, 'YYYY-MM-DD') AS week, count(DISTINCT c.id)::int AS users,
+         CASE WHEN max(c.joined) + 1 < CURRENT_DATE THEN
+           round(100.0 * count(DISTINCT s1.id) / count(DISTINCT c.id)) END::int AS d1,
+         CASE WHEN max(c.joined) + 13 < CURRENT_DATE THEN
+           round(100.0 * count(DISTINCT s7.id) / count(DISTINCT c.id)) END::int AS w1,
+         CASE WHEN max(c.joined) + 34 < CURRENT_DATE THEN
+           round(100.0 * count(DISTINCT s30.id) / count(DISTINCT c.id)) END::int AS d30
+       FROM c
+       LEFT JOIN seen s1 ON s1.id = c.id AND s1.day = c.joined + 1
+       LEFT JOIN seen s7 ON s7.id = c.id AND s7.day BETWEEN c.joined + 7 AND c.joined + 13
+       LEFT JOIN seen s30 ON s30.id = c.id AND s30.day BETWEEN c.joined + 28 AND c.joined + 34
+       GROUP BY c.week ORDER BY c.week DESC`
+    );
+    const features = await query<{ name: string; users: number; total: number }>(
+      `SELECT name, count(DISTINCT user_id)::int AS users, sum(n)::int AS total
+       FROM usage_counts WHERE day > CURRENT_DATE - 30 GROUP BY name ORDER BY users DESC, total DESC`
+    );
+    res.json({ active, cohorts, features });
   })
 );
 

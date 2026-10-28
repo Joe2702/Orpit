@@ -97,6 +97,7 @@ review screen.
 | **Financial info → Other financial info** (account names, last four digits, balances) | Collected. Optional. App functionality. |
 | Personal info → Name, Email | Collected. Required for an account. App functionality, Account management. |
 | App activity / App info and performance → Crash logs | Collected. Optional. Analytics (crash fixing). |
+| App activity → App interactions (feature usage counts) | Collected. Optional (Profile → Data → Share usage counts). Analytics. |
 | Encrypted in transit | Yes (HTTPS). |
 | Users can request deletion | Yes: Profile → Delete my account, and `https://orbit-x3z7.onrender.com/delete-account`. |
 

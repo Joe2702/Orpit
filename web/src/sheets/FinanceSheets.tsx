@@ -276,8 +276,10 @@ export function BudgetSheet() {
 
 // ================= Goal =================
 export function GoalSheet() {
-  const { sheetData, closeSheet, mutate, haptic, showToast } = useStore();
+  const { state, sheetData, closeSheet, mutate, haptic, showToast } = useStore();
   const editId: string | null = sheetData?.id ?? null;
+  // Following an account: saving into it is progress, with nothing to update.
+  const [accId, setAccId] = useState<string | null>(sheetData?.accId ?? null);
   const [name, setName] = useState(sheetData?.name ?? '');
   const [target, setTarget] = useState(sheetData?.target != null ? String(sheetData.target) : '');
   const [current, setCurrent] = useState(sheetData?.current != null ? String(sheetData.current) : '');
@@ -289,7 +291,7 @@ export function GoalSheet() {
   const save = async () => {
     if (!canSave) { showToast('Add a name and a target'); return; }
     haptic();
-    const body = { name: name.trim(), target: parseFloat(target), current: parseFloat(current || '0') || 0, color, dueTs: due ? new Date(due).getTime() : null };
+    const body = { name: name.trim(), target: parseFloat(target), current: parseFloat(current || '0') || 0, color, dueTs: due ? new Date(due).getTime() : null, accId };
     mutate(() => (editId ? api.editGoal(editId, body) : api.addGoal(body)), editId ? 'Goal updated' : 'Goal added').catch(() => {});
     closeSheet();
   };
@@ -302,7 +304,18 @@ export function GoalSheet() {
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Japan Trip" style={{ ...input, marginBottom: 20 }} />
       <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
         <div style={{ flex: 1 }}>{label('Target')}<input value={target} onChange={(e) => setTarget(e.target.value.replace(/[^0-9.]/g, ''))} inputMode="decimal" placeholder="0" style={input} /></div>
-        <div style={{ flex: 1 }}>{label('Saved so far')}<input value={current} onChange={(e) => setCurrent(e.target.value.replace(/[^0-9.]/g, ''))} inputMode="decimal" placeholder="0" style={input} /></div>
+        {!accId && <div style={{ flex: 1 }}>{label('Saved so far')}<input value={current} onChange={(e) => setCurrent(e.target.value.replace(/[^0-9.]/g, ''))} inputMode="decimal" placeholder="0" style={input} /></div>}
+      </div>
+      {label('Saved in')}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+        {[{ id: null as string | null, name: 'I’ll update it' }, ...state!.accounts.filter((a) => a.type !== 'Credit card').map((a) => ({ id: a.id as string | null, name: a.name }))].map((o) => (
+          <div key={o.id ?? 'none'} onClick={() => setAccId(o.id)} className="press99" style={chip(accId === o.id, 'var(--indigo)')}>
+            {o.name}
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.5, margin: '0 2px 20px' }}>
+        {accId ? 'Progress follows this account’s balance, so it moves as you save.' : 'You type in how much you’ve saved.'}
       </div>
       {label('Target date')}
       <input type="date" value={due} onChange={(e) => setDue(e.target.value)} style={{ ...input, marginBottom: 20, fontWeight: 600 }} />

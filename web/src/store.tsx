@@ -41,6 +41,7 @@ export type Screen =
   | 'frecurring'
   | 'finsights'
   | 'freview'
+  | 'weekreview'
   | 'feedbackInbox'
   | 'privacy'
   | 'insights'
@@ -72,6 +73,7 @@ export type SheetKind =
   | 'habitcal'
   | 'catchup'
   | 'partnerReport'
+  | 'smsFound'
   | null;
 
 interface StoreCtx {
@@ -221,13 +223,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setToast(msg);
     setToastUndo(() => undo);
     clearTimeout(toastTimer.current);
-    // Undo toasts linger a little so there's time to hit them.
+    // Undo toasts linger a little so there's time to hit them, and a longer
+    // message gets time to be read (about a second per eight words).
+    const words = msg.split(/\s+/).length;
     toastTimer.current = setTimeout(
       () => {
         setToast('');
         setToastUndo(undefined);
       },
-      undo ? 5000 : 2200
+      Math.max(undo ? 5000 : 2200, Math.min(7000, words * 130 + 1200))
     );
   }, []);
 

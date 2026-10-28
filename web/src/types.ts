@@ -20,6 +20,8 @@ export interface Profile {
   // In-app text size multiplier and the optional wind-down nudge.
   textScale: number;
   windDown: boolean;
+  /** Feature-use counts sent for the retention numbers. Absent means on. */
+  shareUsage?: boolean;
   // Confirmed via an emailed link. Never gates anything — it only makes
   // password recovery reliable, so the app nudges instead of blocking.
   emailVerified: boolean;
@@ -228,6 +230,8 @@ export interface Goal {
   current: number;
   color: string;
   dueTs: number | null;
+  /** Follows this account: progress is its balance, not the typed `current`. */
+  accId?: string | null;
 }
 
 export interface Recurring {

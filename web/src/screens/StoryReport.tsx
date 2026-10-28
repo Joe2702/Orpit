@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { track } from '../lib/usage';
 import { useStore } from '../store';
 import { buildReport } from '../lib/report';
 import { Glyph } from '../lib/appIcons';
@@ -8,6 +9,7 @@ export function StoryReport({ kind, offset = 0, onClose }: { kind: 'week' | 'mon
   const { state } = useStore();
   const slides = buildReport(state!, kind, offset);
   const [i, setI] = useState(0);
+  useEffect(() => track('report_view'), []);
   const slide = slides[i];
 
   const next = () => (i < slides.length - 1 ? setI(i + 1) : onClose());

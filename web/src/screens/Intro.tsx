@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { api } from '../api';
 import { Glyph } from '../lib/appIcons';
+import { smsSupported } from '../lib/smsSync';
+import { useStartBankTracking } from '../lib/bankTracking';
 
 // A short, skippable first-run tour. Without it, a new user lands on an empty
 // Home screen with no idea what the + button or the tabs do.
@@ -28,11 +30,26 @@ const SLIDES = [
   },
 ];
 
+// The last slide on a phone that can read bank messages: the one feature that
+// fills the app in without typing, offered while someone is deciding whether
+// the app is worth it, rather than left for them to find in Settings. Its text
+// is the full disclosure, so "Turn on" goes straight to Android's prompt.
+const BANK_SLIDE = {
+  icon: 'cash' as const,
+  title: 'Spending, tracked for you',
+  body:
+    'Orbit can read payment alerts from your bank and wallet and keep your accounts, balances and budgets up to date by itself. ' +
+    'Only messages from banks and wallets are read, never ones from phone numbers. The text stays on your phone; only the amount, shop, date, bank and balance are saved.',
+};
+
 export function Intro() {
   const { state, applyState, haptic } = useStore();
+  const startTracking = useStartBankTracking();
+  const slides = smsSupported() ? [...SLIDES, BANK_SLIDE] : SLIDES;
   const [i, setI] = useState(0);
-  const slide = SLIDES[i];
-  const last = i === SLIDES.length - 1;
+  const slide = slides[i];
+  const last = i === slides.length - 1;
+  const bank = slide === BANK_SLIDE;
 
   const finish = () => {
     haptic();
@@ -65,11 +82,11 @@ export function Intro() {
       <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', animation: 'fadeUp .35s ease' }}>
         <Glyph name={slide.icon} size={34} color="rgba(240,240,243,.6)" sw={1.6} />
         <div className="display" style={{ fontSize: 42, lineHeight: 1.05, margin: '20px 0 14px' }}>{slide.title}</div>
-        <div style={{ fontSize: 16, lineHeight: 1.6, color: 'rgba(240,240,243,.78)', maxWidth: 320 }}>{slide.body}</div>
+        <div style={{ fontSize: bank ? 15 : 16, lineHeight: 1.6, color: 'rgba(240,240,243,.78)', maxWidth: 330 }}>{slide.body}</div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 7, marginBottom: 20 }}>
-        {SLIDES.map((_, idx) => (
+        {slides.map((_, idx) => (
           <span
             key={idx}
             style={{ width: idx === i ? 22 : 7, height: 7, borderRadius: 999, background: idx === i ? '#f0f0f3' : 'rgba(255,255,255,.25)', transition: 'width .25s' }}
@@ -78,13 +95,22 @@ export function Intro() {
       </div>
 
       <div
-        onClick={() => (last ? finish() : setI(i + 1))}
+        onClick={() => {
+          if (!last) return setI(i + 1);
+          finish();
+          if (bank) startTracking(true);
+        }}
         className="press"
         role="button"
-        style={{ background: '#f0f0f3', color: '#0c0c0f', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: 'pointer', marginBottom: 26, boxShadow: '0 12px 26px -12px rgba(0,0,0,.5)' }}
+        style={{ background: '#f0f0f3', color: '#0c0c0f', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: 'pointer', marginBottom: bank ? 4 : 26, boxShadow: '0 12px 26px -12px rgba(0,0,0,.5)' }}
       >
-        {last ? 'Start' : 'Next'}
+        {bank ? 'Turn on' : last ? 'Start' : 'Next'}
       </div>
+      {bank && (
+        <div onClick={finish} role="button" style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: 'rgba(240,240,243,.7)', padding: '14px 0 18px', cursor: 'pointer' }}>
+          Not now
+        </div>
+      )}
     </div>
   );
 }

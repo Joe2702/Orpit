@@ -1,4 +1,5 @@
 import React from 'react';
+import { track } from '../lib/usage';
 import { useStore } from '../store';
 import { api } from '../api';
 import { Avatar, SectionLabel, chip, toggleTrack, toggleKnob } from '../ui';
@@ -45,6 +46,7 @@ export function Partner() {
   const { go, showToast, confirm, haptic, open } = useStore();
   const [st, setSt] = React.useState<PartnerState | null>(null);
   const [busy, setBusy] = React.useState(false);
+  React.useEffect(() => track('partner_open'), []);
   const [err, setErr] = React.useState<string | null>(null);
 
   const load = React.useCallback(async () => {
@@ -307,7 +309,11 @@ function TrackerCard({ c, notes, onComment }: { c: PartnerCard; notes: number; o
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{meta.label}</div>
           <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>
-            {c.streak > 0 ? `${c.streak}-day streak` : 'No streak right now'}
+            {/* Days in the last week, not an unbroken streak: one missed day
+                showed a partner "No streak right now", which reads as failure
+                to the person it describes and to the person reading it. */}
+            {`${c.week.filter(Boolean).length} of the last 7 days`}
+            {c.streak >= 3 ? ` · ${c.streak} in a row` : ''}
           </div>
         </div>
         {c.today && (

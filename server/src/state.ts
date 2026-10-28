@@ -19,7 +19,7 @@ export async function buildState(userId: number) {
     `SELECT name, email, theme, reminders, haptics, onboarded, currency, avatar, layout,
             reminder_time AS "reminderTime", reminder_tz AS "reminderTz",
             claimed_badges AS "claimedBadgesRaw", intro_done AS "introDone",
-            accent, modules AS "modulesRaw", text_scale AS "textScale", wind_down AS "windDown",
+            accent, modules AS "modulesRaw", text_scale AS "textScale", wind_down AS "windDown", share_usage AS "shareUsage",
             email_verified AS "emailVerified",
             (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt"
      FROM users WHERE id = $1`,
@@ -89,7 +89,7 @@ export async function buildState(userId: number) {
   );
 
   const goals = await query(
-    `SELECT id::text, name, target, current, color,
+    `SELECT id::text, name, target, current, color, acc_id::text AS "accId",
             (EXTRACT(EPOCH FROM due_ts) * 1000)::float8 AS "dueTs"
      FROM goals WHERE user_id = $1 ORDER BY sort, id`,
     [userId]

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { track, flushUsage, setUsageSharing } from './lib/usage';
 import { useStore } from './store';
 import { api, API_BASE } from './api';
 
@@ -27,6 +28,9 @@ import { Chooser } from './sheets/Chooser';
 import { CounterSheet, CountLogSheet, CountPickSheet } from './sheets/CounterSheets';
 import { MilestoneSheet } from './sheets/MilestoneSheet';
 import { AccountSheet, FcatSheet, BudgetSheet, GoalSheet, RecurringSheet } from './sheets/FinanceSheets';
+import { SmsFoundSheet } from './sheets/SmsFoundSheet';
+import { MoneyWatcher } from './MoneyWatcher';
+import { WeekReview } from './screens/WeekReview';
 import { WorkoutSheet } from './sheets/WorkoutSheet';
 import { SleepSheet } from './sheets/SleepSheet';
 import { ExpenseSheet } from './sheets/ExpenseSheet';
@@ -48,7 +52,7 @@ import { connectivity, subscribe as subscribeConnectivity } from './lib/offline'
 import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
 import { updateWidget } from './lib/widget';
-import { syncSms, smsEnabled, ensureLiveSms, onSmsArrived } from './lib/smsSync';
+import { syncSms, smsEnabled, ensureLiveSms, onSmsArrived, SMS_CHANGED } from './lib/smsSync';
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
 
@@ -101,6 +105,8 @@ function CurrentScreen() {
       return <FInsights />;
     case 'freview':
       return <FReview />;
+    case 'weekreview':
+      return <WeekReview />;
     case 'feedbackInbox':
       return <FeedbackInbox />;
     case 'privacy':
@@ -175,6 +181,8 @@ function SheetBody() {
       return <CatchUpSheet />;
     case 'partnerReport':
       return <PartnerReportBody />;
+    case 'smsFound':
+      return <SmsFoundSheet />;
     default:
       return null;
   }
@@ -539,8 +547,15 @@ export function App() {
   // look. Does nothing at all unless the user turned it on.
   const smsState = React.useRef(state);
   smsState.current = state;
+  // Turned on from onboarding or Finances, not only at launch: listen from then.
+  const [smsOn, setSmsOn] = useState(smsEnabled());
   useEffect(() => {
-    if (!authed || !smsEnabled()) return;
+    const on = () => setSmsOn(smsEnabled());
+    window.addEventListener(SMS_CHANGED, on);
+    return () => window.removeEventListener(SMS_CHANGED, on);
+  }, []);
+  useEffect(() => {
+    if (!authed || !smsOn) return;
     const scan = () => {
       const cur = smsState.current;
       if (!cur) return;
@@ -549,6 +564,7 @@ export function App() {
           if (!r.state) return;
           applyState(r.state);
           if (r.added > 0) {
+            track('sms_import');
             showToast(`${r.added} ${r.added === 1 ? 'payment' : 'payments'} added from your messages`);
           }
         })
@@ -572,7 +588,30 @@ export function App() {
       stop();
       clearTimeout(t);
     };
-  }, [authed, applyState, showToast]);
+  }, [authed, smsOn, applyState, showToast]);
+
+  // ---- Usage counts ----
+  // An open each time the app comes to the front, and what's been counted sent
+  // as it goes to the back (or a few seconds after launch). See lib/usage.
+  const shareUsage = state?.profile.shareUsage !== false;
+  useEffect(() => {
+    setUsageSharing(shareUsage);
+  }, [shareUsage]);
+  useEffect(() => {
+    if (!authed) return;
+    const send = () => flushUsage((day, counts) => api.usage(day, counts as Record<string, number>));
+    track('open');
+    const first = setTimeout(send, 8000);
+    const onVis = () => {
+      if (document.visibilityState === 'visible') track('open');
+      else send();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      clearTimeout(first);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [authed]);
 
   // ---- Reminder action buttons ----
   // "Done" on a habit reminder checks that habit off for today; "Snooze" pushes
@@ -584,6 +623,7 @@ export function App() {
   useEffect(() => {
     return listenForNotificationActions({
       onSnooze: () => snoozeDaily(),
+      onOpen: (screen) => go(screen as Parameters<typeof go>[0]),
       onDone: (habitId) => {
         const cur = liveState.current;
         if (!cur) return;
@@ -749,7 +789,7 @@ export function App() {
       </div>
 
       {toast && (
-        <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, background: 'var(--text)', color: 'var(--bg)', padding: '11px 20px', borderRadius: 999, fontSize: 14, fontWeight: 600, boxShadow: '0 12px 32px rgba(8,9,14,.28)', animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, whiteSpace: 'nowrap' }}>
+        <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, background: 'var(--text)', color: 'var(--bg)', padding: '11px 20px', borderRadius: (toast || '').length > 40 ? 'calc(18px * var(--sq))' : 999, fontSize: 14, fontWeight: 600, lineHeight: 1.4, boxShadow: '0 12px 32px rgba(8,9,14,.28)', animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, width: 'max-content', maxWidth: 'calc(100% - 32px)', whiteSpace: 'normal' }}>
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <path d="M4 9.5l3.4 3.4L14 5" />
           </svg>
@@ -826,6 +866,7 @@ export function App() {
       {/* First run: explain the app before asking about reminders. */}
       {authed && state && !state.profile.introDone && <Intro />}
       {authed && state?.profile.introDone && <ReminderOnboarding />}
+      {authed && state && <MoneyWatcher />}
 
       {report && state && <StoryReport kind={report.kind} offset={report.offset} onClose={closeReport} />}
     </>

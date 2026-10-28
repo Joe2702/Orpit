@@ -15,6 +15,8 @@ import { buildRows, accountBalance, type Fx } from '../../web/src/lib/ledger';
 import type { AppState } from '../../web/src/types';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+/** The test server's admin password, for the admin endpoints. */
+export const ADMIN = 'test-admin';
 
 export interface Server {
   base: string;
@@ -27,7 +29,7 @@ export async function startServer(): Promise<Server> {
   const port = 4800 + Math.floor(Math.random() * 900);
   const child: ChildProcess = spawn(process.execPath, ['--import', 'tsx', 'src/index.ts'], {
     cwd: ROOT,
-    env: { ...process.env, DATABASE_URL: db, JWT_SECRET: 'test-secret', PORT: String(port), ADMIN_PASSWORD: '' },
+    env: { ...process.env, DATABASE_URL: db, JWT_SECRET: 'test-secret', PORT: String(port), ADMIN_PASSWORD: ADMIN },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let log = '';

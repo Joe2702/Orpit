@@ -1,6 +1,7 @@
 import { isSpend, isIncome } from './money';
 import { accountBalance } from './ledger';
-import { merchantKey } from './merchants';
+import { merchantKey, isGenericName } from './merchants';
+import { safeToSpend } from './safeToSpend';
 import type { AppState, Range } from '../types';
 import { dayKey } from './format';
 import { addDays, bucketOf, daysBetween, period, startOfDay, startOfMonth, startOfWeek, type Bucket, type Period } from './period';
@@ -424,7 +425,7 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
   for (const t of Tr) {
     if (!isSpend(t)) continue;
     const k = merchantKey(t.name);
-    if (!k) continue;
+    if (!k || isGenericName(t.name)) continue;
     const p = placeMap.get(k) || { name: t.name, total: 0, count: 0, cat: t.cat };
     p.total -= t.amount;
     if (t.amount < 0) p.count += 1;
@@ -501,10 +502,18 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
   }
   const netWorth = accounts.reduce((s, a) => s + a.balance, 0);
 
-  const goals = state.goals.map((g) => ({
-    ...g,
-    pct: g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0,
-  }));
+  // A goal that follows an account moves with its balance (what the bank last
+  // reported, plus anything since), not with a number typed in once.
+  const goals = state.goals.map((g) => {
+    const acc = g.accId ? accounts.find((a) => a.id === g.accId) : undefined;
+    const current = acc ? Math.max(0, acc.balance) : g.current;
+    return {
+      ...g,
+      current,
+      followsName: acc?.name ?? null,
+      pct: g.target > 0 ? Math.min(100, Math.round((current / g.target) * 100)) : 0,
+    };
+  });
 
   const recurring = [...state.recurring].sort((a, b) => (a.nextTs || 0) - (b.nextTs || 0));
   // Bills and income kept apart: summing them made a salary and the rent cancel
@@ -513,6 +522,17 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
     Math.abs(r.freq === 'Monthly' ? r.amount : r.freq === 'Weekly' ? r.amount * 4.33 : r.freq === 'Yearly' ? r.amount / 12 : r.amount);
   const recurringMonthly = recurring.filter((r) => !r.income).reduce((s, r) => s + perMonth(r), 0);
   const recurringIncomeMonthly = recurring.filter((r) => r.income).reduce((s, r) => s + perMonth(r), 0);
+  const safe = safeToSpend(
+    {
+      incomeThisMonth: incThisMonth,
+      expectedMonthlyIncome: recurringIncomeMonthly,
+      spentThisMonth,
+      budgetTotal: budgets.reduce((s, b) => s + b.effLimit, 0),
+      budgetSpent,
+      recurring: state.recurring,
+    },
+    now
+  );
   const topCatArr = Object.keys(catMonthSpent)
     .map((k) => ({ cat: k, val: catMonthSpent[k] }))
     .sort((a, b) => b.val - a.val);
@@ -645,6 +665,7 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
     fCatSegs,
     topPlaces,
     reviewCount,
+    safe,
     fTrend,
     fYMin,
     fYMax,

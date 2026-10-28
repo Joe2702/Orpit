@@ -2,8 +2,10 @@ import React from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
 import { api } from '../api';
-import { greeting, minutes, hm, money0, moneyShort, cNum, counterTotals, dayKey } from '../lib/format';
-import { addDays, period } from '../lib/period';
+import { greeting, minutes, hm, money0, moneyShort, cNum, counterTotals, dayKey, relLabel } from '../lib/format';
+import { missedRun } from '../lib/comeback';
+import { reviewDue, currentIntention } from '../lib/weekReview';
+import { period } from '../lib/period';
 import { freshStart } from '../lib/freshStart';
 import { parseLayout, reconcile } from '../lib/layout';
 import { Reorderable } from '../Reorderable';
@@ -127,18 +129,25 @@ export function Home() {
     }, () => api.toggleHabit(id, key)).catch(() => {});
   };
 
-  // ---- Never miss twice ----
-  // The best-known habit-recovery mechanic: after ONE missed day, a gentle
-  // nudge (with the user's own reason) so a slip doesn't become a spiral.
-  const yesterday = addDays(Date.now(), -1);
-  const yesterdayKey = dayKey(yesterday);
-  const missedYesterday = todaysHabits.filter((hb) => {
-    const dowY = new Date(yesterday).getDay();
-    const scheduledY = (hb.days || '1111111')[dowY] === '1';
-    if (!scheduledY || hb.done) return false;
-    return !state!.checkins.some((c) => c.habitId === hb.id && c.day === yesterdayKey);
-  });
-  const nudge = missedYesterday[0];
+  // ---- The weekly review, and the one thing chosen in it ----
+  const weekDue = reviewDue() && (state!.txns.length > 0 || state!.checkins.length > 0);
+  const intention = currentIntention();
+
+  // ---- Never miss twice, and coming back ----
+  // After one missed day, a gentle nudge (with the user's own reason) so a slip
+  // doesn't become a spiral. After a longer gap the habit has lapsed, and
+  // "you missed it yesterday" would be both untrue and beside the point: what
+  // helps then is a smaller first step, not a count of what was lost.
+  const todayKey = dayKey();
+  const nudge = todaysHabits
+    .filter((hb) => !hb.done)
+    .map((hb) => {
+      const done = new Set(state!.checkins.filter((c) => c.habitId === hb.id).map((c) => c.day));
+      const last = [...done].filter((d) => d < todayKey).sort().pop() || null;
+      return { ...hb, missed: missedRun(hb.days, done), last };
+    })
+    .filter((hb) => hb.missed > 0)
+    .sort((a, b) => a.missed - b.missed)[0];
 
   // ---- Getting started ----
   // A brand-new account has empty charts everywhere, which feels like a void.
@@ -299,6 +308,9 @@ export function Home() {
             <div style={{ marginTop: 10 }}>
               <BarChart buckets={d.weekBuckets} values={d.homeSpendBuckets} color="indigo" height={34} grid={false} interactive={false} format={(v) => moneyShort(v)} />
             </div>
+            {d.safe && d.safe.left > 0 && (
+              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 8 }}>{money0(d.safe.perDay)} a day safe to spend</div>
+            )}
           </StatCard>
         </div>
       </>
@@ -447,12 +459,37 @@ export function Home() {
         </div>
       )}
 
+      {weekDue && (
+        <div onClick={() => go('weekreview')} className="press99" role="button" style={{ ...listCard, display: 'flex', alignItems: 'center', gap: 12, padding: '14px 14px 14px 16px', marginBottom: 22, cursor: 'pointer' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>Your week in review</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>A minute to look back, and one thing to aim for next week.</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+            <path d="M7 4l5 5-5 5" />
+          </svg>
+        </div>
+      )}
+
+      {intention && !weekDue && (
+        <div style={{ ...listCard, padding: '12px 16px', marginBottom: 22 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)' }}>This week</div>
+          <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)', marginTop: 2 }}>{intention}</div>
+        </div>
+      )}
+
       {nudge && (
         <div style={{ ...listCard, display: 'flex', alignItems: 'center', gap: 12, padding: '14px 14px 14px 16px', marginBottom: 22 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>Don’t miss {nudge.name} twice</div>
+            <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>
+              {nudge.missed === 1 ? `Don’t miss ${nudge.name} twice` : `Back to ${nudge.name}?`}
+            </div>
             <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>
-              {nudge.why ? `You said: “${nudge.why}”` : 'You missed it yesterday. Today keeps it going.'}
+              {nudge.missed === 1
+                ? nudge.why
+                  ? `You said: “${nudge.why}”`
+                  : 'You missed it last time. Today keeps it going.'
+                : `Last done ${nudge.last ? relLabel(new Date(nudge.last + 'T12:00:00').getTime()).replace('Yesterday', 'yesterday') : 'a while ago'}. Start small today: two minutes counts.`}
             </div>
           </div>
           <div

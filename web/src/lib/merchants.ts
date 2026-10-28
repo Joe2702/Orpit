@@ -177,6 +177,14 @@ const KEYWORDS: [RegExp, Canon][] = [
 const PLACES =
   /\s+(?:CAIRO|GIZA|ALEX(?:ANDRIA)?|NEW CAIRO|NASR CITY|MAADI|ZAMALEK|HELIOPOLIS|DOKKI|MOHANDESSIN|6TH OF OCTOBER|6 OCTOBER|OCTOBER|SHEIKH ZAYED|ZAYED|TAGAMOA|EL ?REHAB|MADINATY|SHOROUK|HURGHADA|SHARM|EGY?|EGYPT|EG)\b.*$/i;
 
+/**
+ * Names the importer gives a payment when the message didn't say who it was
+ * to ("Money sent", "Card payment"). Not places: they don't belong in a list
+ * of where the money went, or in anything learned about a shop.
+ */
+export const isGenericName = (name: string): boolean =>
+  /^(?:Money (?:sent|received|in)|Card payment|Cash withdrawal|Transfer|Transfer fee|Refund|Bank)$/i.test(name.trim());
+
 /** Every way of spelling a shop collapses to one key, for learning and grouping. */
 export function merchantKey(name: string): string {
   return name

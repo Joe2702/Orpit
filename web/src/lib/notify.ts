@@ -1,3 +1,4 @@
+import { money0 } from './format';
 import { Capacitor } from '@capacitor/core';
 import type { LocalNotificationsPlugin } from '@capacitor/local-notifications';
 import { enablePush as enableWebPush, pushSupported } from './push';
@@ -89,6 +90,8 @@ export async function snoozeDaily(): Promise<void> {
 export function listenForNotificationActions(handlers: {
   onDone: (habitId: string) => void;
   onSnooze: () => void;
+  /** A plain tap on a notification that belongs to a screen. */
+  onOpen?: (screen: string) => void;
 }): () => void {
   if (!isNative()) return () => {};
   let cancelled = false;
@@ -104,7 +107,10 @@ export function listenForNotificationActions(handlers: {
         if (e.actionId === 'done') {
           const id = (e.notification?.extra as { habitId?: string } | undefined)?.habitId;
           if (id) handlers.onDone(id);
+          return;
         }
+        const screen = (e.notification?.extra as { screen?: string } | undefined)?.screen;
+        if (e.actionId === 'tap' && screen) handlers.onOpen?.(screen);
       });
       remove = () => h.remove();
     })
@@ -182,7 +188,8 @@ async function scheduleWeekly(): Promise<void> {
       {
         id: WEEKLY_ID,
         title: 'Your week on Orbit',
-        body: 'Your week in review is ready.',
+        body: 'A minute to look back, and one thing to aim for next week.',
+        extra: { screen: 'weekreview' },
         // weekday 1 = Sunday in the plugin's schedule format.
         schedule: { on: { weekday: 1, hour: 19, minute: 0 }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
@@ -208,7 +215,7 @@ const stableId = (base: number, key: string) => {
  */
 export async function scheduleExtras(
   habits: { id: string; name: string; reminderTime: string | null; paused: boolean; archived: boolean }[],
-  bills: { id: string; name: string; nextTs: number | null; income: boolean }[],
+  bills: { id: string; name: string; nextTs: number | null; income: boolean; amount?: number }[],
   windDown?: { on: boolean; bedHour: number | null }
 ): Promise<void> {
   if (!isNative()) return;
@@ -249,7 +256,8 @@ export async function scheduleExtras(
         notifications.push({
           id: stableId(BILL_BASE, b.id),
           title: 'Upcoming bill',
-          body: `${b.name} is due tomorrow.`,
+          body: b.amount ? `${b.name}, ${money0(b.amount)}, is due tomorrow.` : `${b.name} is due tomorrow.`,
+          extra: { screen: 'frecurring' },
           schedule: { at, allowWhileIdle: true },
           channelId: CHANNEL_ID,
         });
@@ -311,6 +319,21 @@ export async function ensureNotificationPermission(): Promise<boolean> {
     return perm.display === 'granted';
   } catch {
     return false;
+  }
+}
+
+/** A notification right now, for something that just happened (a budget crossed). */
+export async function notifyNow(id: number, title: string, body: string, screen?: string): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const { ln } = await LN();
+    if ((await ln.checkPermissions()).display !== 'granted') return;
+    await ensureChannel(ln);
+    await ln.schedule({
+      notifications: [{ id, title, body, schedule: { at: new Date(Date.now() + 1000), allowWhileIdle: true }, channelId: CHANNEL_ID, ...(screen ? { extra: { screen } } : {}) }],
+    });
+  } catch {
+    /* best-effort */
   }
 }
 

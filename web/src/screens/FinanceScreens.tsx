@@ -15,6 +15,7 @@ import type { Txn } from '../types';
 import { isRefund } from '../lib/money';
 import { merchantKey } from '../lib/merchants';
 import { smsText } from '../lib/smsSync';
+import { findRecurring, type FoundRecurring } from '../lib/subscriptions';
 import { UnsyncedDot } from '../UnsyncedDot';
 
 function Header({ title, action }: { title: string; action?: React.ReactNode }) {
@@ -707,7 +708,7 @@ export function FGoals() {
       <Header title="Savings goals" action={<AddBtn onClick={() => open('goal')} />} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {d.goals.map((g) => (
-          <div key={g.id} onClick={() => open('goal', { id: g.id, name: g.name, target: g.target, current: g.current, color: g.color, dueTs: g.dueTs })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '17px 18px', cursor: 'pointer' }}>
+          <div key={g.id} onClick={() => open('goal', { id: g.id, name: g.name, target: g.target, current: g.current, color: g.color, dueTs: g.dueTs, accId: g.accId ?? null })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '17px 18px', cursor: 'pointer' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
               <div style={{ position: 'relative', width: 52, height: 52, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Ring pct={g.pct} colorKey={g.color} size={52} stroke={6} />
@@ -715,7 +716,9 @@ export function FGoals() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{g.name}</div>
-                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2 }}>{g.dueTs ? 'Target ' + fmtDate(g.dueTs) : ''}</div>
+                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2 }}>
+                  {[g.followsName ? `Follows ${g.followsName}` : null, g.dueTs ? 'Target ' + fmtDate(g.dueTs) : null].filter(Boolean).join(' · ')}
+                </div>
               </div>
               <div style={{ textAlign: 'right', flex: 'none' }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{money(g.current)}</div>
@@ -773,8 +776,17 @@ export function FAccounts() {
 
 // ================= Recurring =================
 export function FRecurring() {
-  const { state, open } = useStore();
+  const { state, open, mutate, haptic } = useStore();
   const { d } = useData();
+  // Found in what's been paid, not yet set up: one tap each.
+  const found = React.useMemo(() => findRecurring(state!), [state]);
+  const addFound = (f: FoundRecurring) => {
+    haptic();
+    mutate(
+      () => api.addRecurring({ name: f.name, cat: f.cat, accId: f.accId, amount: f.amount, freq: f.freq, income: f.income, nextTs: f.nextTs }),
+      `${f.name} added`
+    ).catch(() => {});
+  };
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <Header title="Recurring" action={<AddBtn onClick={() => open('recurring')} />} />
@@ -787,6 +799,26 @@ export function FRecurring() {
           )}
         </span>
       </div>
+      {found.length > 0 && (
+        <>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', margin: '0 2px 9px' }}>Found in your payments</div>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 18 }}>
+            {found.map((f, i) => (
+              <div key={f.name + f.income} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px 13px 16px', borderTop: i ? '1px solid var(--border)' : 'none' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
+                    {f.income ? 'Comes in' : f.freq} · {money(f.amount)} · paid {f.seen} times · next {fmtDate(f.nextTs)}
+                  </div>
+                </div>
+                <div onClick={() => addFound(f)} role="button" className="press92" style={{ flex: 'none', padding: '8px 14px', borderRadius: 999, border: '1px solid var(--border)', fontSize: 13.5, fontWeight: 650, color: 'var(--indigo)', cursor: 'pointer' }}>
+                  Add
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         {d.recurring.map((r) => {
           const fc = fcatByName(state!.fcats, r.cat);

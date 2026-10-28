@@ -5,6 +5,11 @@ import { BarChart, Donut, Spark } from '../lib/charts';
 import { ago, money0, moneyShort } from '../lib/format';
 import { Card, ChartCard, DetailHeader, RangeSeg, SectionLabel, Stat, StatRow, TrackerAction } from '../ui';
 import { TxnRow } from './FinanceScreens';
+import { smsEnabled, smsSupported } from '../lib/smsSync';
+import { useStartBankTracking } from '../lib/bankTracking';
+import { findRecurring, monthlyCost } from '../lib/subscriptions';
+
+const OFFER_KEY = 'orbit_bank_offer_dismissed';
 
 const HUB: { label: string; icon: string; screen: any; desc: (d: any, s: any) => string }[] = [
   { label: 'Transactions', icon: 'M4 6h12M4 10h12M4 14h8', screen: 'ftxns', desc: (d) => `${d.txnCount} ${d.period.phrase}` },
@@ -18,6 +23,25 @@ const HUB: { label: string; icon: string; screen: any; desc: (d: any, s: any) =>
 
 export function Finances() {
   const { state, go, open } = useStore();
+  const startTracking = useStartBankTracking();
+  // Offered here until it's on or turned down: Finances is where someone
+  // typing in every coffee would most want to hear they don't have to.
+  const [offer, setOffer] = React.useState(() => {
+    try {
+      return smsSupported() && !smsEnabled() && localStorage.getItem(OFFER_KEY) !== '1';
+    } catch {
+      return smsSupported() && !smsEnabled();
+    }
+  });
+  const found = React.useMemo(() => findRecurring(state!).filter((f) => !f.income), [state]);
+  const dismissOffer = () => {
+    setOffer(false);
+    try {
+      localStorage.setItem(OFFER_KEY, '1');
+    } catch {
+      /* shows again next time; harmless */
+    }
+  };
   const { d } = useData();
   const P = d.period;
   // Change across the whole net-worth window (6 months ago → now).
@@ -28,6 +52,28 @@ export function Finances() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <DetailHeader title="Finances" />
       <TrackerAction label="Add transaction" onClick={() => go('faddtx')} />
+
+      {offer && (
+        <Card style={{ padding: '16px 18px', marginBottom: 18 }}>
+          <div style={{ fontSize: 15.5, fontWeight: 650, color: 'var(--text)' }}>Track spending automatically</div>
+          <div style={{ fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.5, marginTop: 4 }}>
+            Orbit can turn the payment alerts your bank and wallet send into entries, with each account&rsquo;s real balance. No typing.
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+            <div
+              onClick={() => startTracking().then((ok) => ok && setOffer(false))}
+              className="press99"
+              role="button"
+              style={{ flex: 1, height: 42, borderRadius: 'calc(12px * var(--sq))', background: 'var(--indigo)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 650, cursor: 'pointer' }}
+            >
+              Turn on
+            </div>
+            <div onClick={dismissOffer} className="press99" role="button" style={{ flex: 1, height: 42, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+              Not now
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Net worth leads, because it is the one figure that is true whatever
           range is picked below: opening balances, every account, every row.
@@ -65,6 +111,32 @@ export function Finances() {
         </div>
       </Card>
 
+      {d.safe && (
+        // The question people open a money app with: can I afford this?
+        <Card style={{ padding: '16px 18px', marginBottom: 18 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)' }}>Safe to spend this month</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-.03em', color: d.safe.left < 0 ? 'var(--danger)' : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+              {(d.safe.left < 0 ? '−' : '') + money0(d.safe.left)}
+            </span>
+            {d.safe.left > 0 && (
+              <span style={{ fontSize: 14, color: 'var(--text2)' }}>
+                about {money0(d.safe.perDay)} a day for {d.safe.daysLeft} {d.safe.daysLeft === 1 ? 'day' : 'days'}
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 12.5, color: 'var(--text3)', marginTop: 4, lineHeight: 1.45 }}>
+            {d.safe.left < 0
+              ? 'Over what this month allows.'
+              : d.safe.basis === 'income'
+                ? d.safe.billsLeft > 0
+                  ? `After ${money0(d.safe.billsLeft)} in bills still due.`
+                  : 'From this month’s income, after what’s been spent.'
+                : 'What’s left in this month’s budgets.'}
+          </div>
+        </Card>
+      )}
+
       {/* Every account at a glance, each with where its figure comes from. A
           balance a bank reported an hour ago and one typed in last spring
           deserve different amounts of trust, and the card says which it is. */}
@@ -101,6 +173,20 @@ export function Finances() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>{d.reviewCount === 1 ? 'One payment to check' : `${d.reviewCount} payments to check`}</div>
             <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Orbit wasn&rsquo;t sure what {d.reviewCount === 1 ? 'it was' : 'these were'}</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+            <path d="M7 4l5 5-5 5" />
+          </svg>
+        </div>
+      )}
+
+      {found.length > 0 && (
+        <div onClick={() => go('frecurring')} className="press99" role="button" style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', boxShadow: 'var(--shadow)', padding: '12px 14px', marginBottom: 18, cursor: 'pointer' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>
+              {found.length === 1 ? `${found[0].name} looks like a subscription` : `${found.length} subscriptions and bills found`}
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>About {money0(monthlyCost(found))} a month. Add them to see what&rsquo;s coming.</div>
           </div>
           <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path d="M7 4l5 5-5 5" />

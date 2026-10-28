@@ -19,11 +19,15 @@ const SECTIONS: { title: string; body: string }[] = [
   },
   {
     title: 'What Orbit does NOT do',
-    body: 'No advertising or analytics SDKs. No location tracking. No access to your contacts, photos or other apps. Your data is never sold or shared with advertisers.',
+    body: 'No advertising or third-party analytics SDKs. No location tracking. No access to your contacts, photos or other apps. Your data is never sold or shared with advertisers.',
   },
   {
     title: 'Crash reports',
     body: "If the app hits an unexpected error, it sends the error text, the build number and your device's browser/OS string so the bug can be fixed. That's it. It isn't used to track you.",
+  },
+  {
+    title: 'Usage counts',
+    body: 'How many times a day features are used, like "opened the app" or "checked a habit", so we can see whether Orbit helps people keep going. Never what you entered. Turn it off in Profile → Data, which also deletes what was counted.',
   },
   {
     title: 'Who processes it',

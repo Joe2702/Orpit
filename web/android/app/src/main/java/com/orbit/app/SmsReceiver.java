@@ -45,6 +45,12 @@ public class SmsReceiver extends BroadcastReceiver {
 
     static final String PREFS = "orbit_sms";
     static final String KEY_LIVE = "live";
+    // This month's totals, from OrbitSms.setSummary.
+    static final String KEY_MONTH = "sum_month";
+    static final String KEY_HOME = "sum_home";
+    static final String KEY_SYMBOL = "sum_symbol";
+    static final String KEY_SPENT = "sum_spent";
+    static final String KEY_BUDGET = "sum_budget";
     private static final String CHANNEL = "bank_messages";
 
     /** The running plugin, while the app's process is alive. */
@@ -137,19 +143,56 @@ public class SmsReceiver extends BroadcastReceiver {
                 open,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
+            String context = in ? null : monthLine(ctx, amount);
+            String text = sender + " · tap to add it to Orbit";
             NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CHANNEL)
                 .setSmallIcon(R.drawable.ic_stat_orbit)
                 .setContentTitle((in ? "Money in · " : "Payment · ") + amount)
-                .setContentText(sender + " · tap to add it to Orbit")
+                .setContentText(context != null ? context : text)
                 .setCategory(NotificationCompat.CATEGORY_STATUS)
                 .setAutoCancel(true)
                 .setContentIntent(pi);
+            if (context != null) b.setStyle(new NotificationCompat.BigTextStyle().bigText(context + "\n" + text));
             nm.notify((sender + body).hashCode(), b.build());
         } catch (SecurityException ignored) {
             // Notifications refused on Android 13+: the scan still files it.
         } catch (Exception ignored) {
             // Never let a notification problem surface as a crash on SMS receipt.
         }
+    }
+
+    /**
+     * "E£12,850 spent this month · E£7,150 left": the month so far plus this
+     * payment, against the budget, when the payment is in the user's own
+     * currency and the app has told us this month's numbers. Keeps the running
+     * total, so two payments before the app is opened both count.
+     */
+    private static String monthLine(Context ctx, String amount) {
+        try {
+            android.content.SharedPreferences p = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            String month = String.format(Locale.ROOT, "%04d-%02d", cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH) + 1);
+            String home = p.getString(KEY_HOME, "");
+            if (!month.equals(p.getString(KEY_MONTH, "")) || home.isEmpty()) return null;
+            String[] parts = amount.split(" ", 2);
+            if (parts.length != 2 || !parts[0].equalsIgnoreCase(home)) return null;
+            double paid = Double.parseDouble(parts[1].replace(",", ""));
+            double spent = p.getFloat(KEY_SPENT, 0f) + paid;
+            double budget = p.getFloat(KEY_BUDGET, 0f);
+            p.edit().putFloat(KEY_SPENT, (float) spent).apply();
+            String sym = p.getString(KEY_SYMBOL, home + " ");
+            String line = sym + whole(spent) + " spent this month";
+            if (budget > 0) {
+                line += spent <= budget ? " · " + sym + whole(budget - spent) + " left" : " · " + sym + whole(spent - budget) + " over budget";
+            }
+            return line;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static String whole(double n) {
+        return String.format(Locale.US, "%,d", Math.round(n));
     }
 
     /** The payment's amount as written, skipping balances and limits. */

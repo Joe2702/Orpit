@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
-import { api, ApiError, type FeedbackItem, type ClientErrorItem } from '../api';
+import { api, ApiError, type AdminMetrics, type FeedbackItem, type ClientErrorItem } from '../api';
 import { BackButton } from '../ui';
 import { Glyph } from '../lib/appIcons';
 
@@ -27,7 +27,8 @@ export function FeedbackInbox() {
   const { go } = useStore();
   const [items, setItems] = useState<FeedbackItem[] | null>(null);
   const [errors, setErrors] = useState<ClientErrorItem[]>([]);
-  const [tab, setTab] = useState<'feedback' | 'crashes'>('feedback');
+  const [tab, setTab] = useState<'feedback' | 'crashes' | 'usage'>('feedback');
+  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [unlocked, setUnlocked] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +45,7 @@ export function FeedbackInbox() {
         setUnlocked(true);
         // Crash reports live behind the same password.
         api.adminErrors(password).then((e) => setErrors(e.items)).catch(() => {});
+        api.adminMetrics(password).then(setMetrics).catch(() => {});
       })
       .catch((e) =>
         setError(
@@ -95,7 +97,7 @@ export function FeedbackInbox() {
       ) : (
         <>
           <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 18 }}>
-            {([['feedback', `Feedback (${items?.length ?? 0})`], ['crashes', `Crashes (${errors.length})`]] as const).map(([k, label]) => (
+            {([['feedback', `Feedback (${items?.length ?? 0})`], ['crashes', `Crashes (${errors.length})`], ['usage', 'Usage']] as const).map(([k, label]) => (
               <div
                 key={k}
                 onClick={() => setTab(k)}
@@ -108,7 +110,9 @@ export function FeedbackInbox() {
             ))}
           </div>
 
-          {tab === 'crashes' ? (
+          {tab === 'usage' ? (
+            <UsagePanel m={metrics} />
+          ) : tab === 'crashes' ? (
             errors.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>
                 No crashes reported.
@@ -178,5 +182,77 @@ export function FeedbackInbox() {
         </>
       )}
     </div>
+  );
+}
+
+const FEATURE: Record<string, string> = {
+  open: 'Opened the app',
+  habit_check: 'Checked a habit',
+  workout_add: 'Logged a workout',
+  sleep_add: 'Logged sleep',
+  txn_add: 'Added a payment',
+  sms_import: 'Bank messages imported',
+  review_answer: 'Answered a review',
+  week_review: 'Did the weekly review',
+  bank_on: 'Turned on bank tracking',
+  budget_alert: 'Got a budget alert',
+  report_view: 'Opened a report',
+  partner_open: 'Opened partner',
+};
+
+/**
+ * Whether people come back, and what they do when they do. Counts only, from
+ * the usage table: no one's entries are visible here.
+ */
+function UsagePanel({ m }: { m: AdminMetrics | null }) {
+  if (!m) return <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>Loading…</div>;
+  const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16, marginBottom: 14 };
+  const head = (t: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t}</div>;
+  const pct = (v: number | null) => (v == null ? '·' : `${v}%`);
+  return (
+    <>
+      <div style={card}>
+        {head('Active people')}
+        <div style={{ display: 'flex', gap: 10 }}>
+          {([['Today', m.active?.d1], ['7 days', m.active?.d7], ['30 days', m.active?.d30], ['Accounts', m.active?.users]] as const).map(([l, v]) => (
+            <div key={l} style={{ flex: 1 }}>
+              <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{v ?? 0}</div>
+              <div style={{ fontSize: 12, color: 'var(--text2)' }}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={card}>
+        {head('Coming back, by signup week')}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr .8fr .8fr .8fr .8fr', rowGap: 8, fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
+          {['Week of', 'New', 'Day 1', 'Week 1', 'Day 30'].map((h) => (
+            <div key={h} style={{ color: 'var(--text3)', fontWeight: 600 }}>{h}</div>
+          ))}
+          {m.cohorts.map((c) => (
+            <React.Fragment key={c.week}>
+              <div style={{ color: 'var(--text)' }}>{new Date(c.week + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+              <div style={{ color: 'var(--text)' }}>{c.users}</div>
+              <div style={{ color: 'var(--text)' }}>{pct(c.d1)}</div>
+              <div style={{ color: 'var(--text)' }}>{pct(c.w1)}</div>
+              <div style={{ color: 'var(--text)' }}>{pct(c.d30)}</div>
+            </React.Fragment>
+          ))}
+        </div>
+        {m.cohorts.length === 0 && <div style={{ fontSize: 13, color: 'var(--text2)' }}>No signups in the last 8 weeks.</div>}
+        <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 10, lineHeight: 1.5 }}>
+          Share of each week&rsquo;s new people who opened the app again the next day, in their second week, and around day 30. Health and fitness apps typically keep 3–8% at day 30.
+        </div>
+      </div>
+      <div style={card}>
+        {head('Last 30 days')}
+        {m.features.map((f) => (
+          <div key={f.name} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '6px 0', borderTop: '1px solid var(--hairline)', fontSize: 13.5 }}>
+            <span style={{ flex: 1, color: 'var(--text)' }}>{FEATURE[f.name] || f.name}</span>
+            <span style={{ color: 'var(--text2)' }}>{f.users} {f.users === 1 ? 'person' : 'people'}</span>
+            <span style={{ color: 'var(--text3)', minWidth: 52, textAlign: 'right' }}>{f.total.toLocaleString('en-US')}×</span>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }

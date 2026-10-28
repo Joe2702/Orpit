@@ -162,7 +162,7 @@ export const state = {
     { id: 'b4', cat: 'Transport', limit: 2500, rollover: false },
   ],
   goals: [
-    { id: 'g1', name: 'Emergency fund', target: 120000, current: 64000, color: 'emerald', dueTs: NOW + 200 * DAY },
+    { id: 'g1', name: 'Emergency fund', target: 120000, current: 64000, color: 'emerald', dueTs: NOW + 200 * DAY, accId: 'a2' },
     { id: 'g2', name: 'New laptop', target: 55000, current: 21500, color: 'indigo', dueTs: NOW + 90 * DAY },
   ],
   recurring: [

@@ -2,6 +2,8 @@ import React from 'react';
 import { useStore } from '../store';
 import { api, setToken } from '../api';
 import { CURRENCIES, ago } from '../lib/format';
+import { useStartBankTracking } from '../lib/bankTracking';
+import { setUsageSharing } from '../lib/usage';
 import { computeBadges } from '../lib/badges';
 import { Avatar, SectionLabel, toggleTrack, toggleKnob, chip } from '../ui';
 import { IconChevron } from '../icons';
@@ -12,11 +14,9 @@ import {
   smsSupported,
   smsEnabled,
   smsStatus,
-  enableSms,
   disableSms,
   rewindSms,
   syncSms,
-  SMS_DISCLOSURE,
   smsDiag,
   type SmsDiag,
 } from '../lib/smsSync';
@@ -84,6 +84,7 @@ export function Settings() {
   // Whether the phone has been given permission to read its inbox is per-device
   // by nature: a second phone has its own messages and its own permission.
   const [smsOn, setSmsOn] = React.useState(smsEnabled());
+  const startTracking = useStartBankTracking();
   const linkedCount = (state?.accounts || []).filter((a) => (a.smsLinks || []).length).length;
   // Payment alerts need notification permission of their own; someone who
   // turned reminders down would otherwise never see one, and never know why.
@@ -119,18 +120,12 @@ export function Settings() {
       showToast('Bank messages off');
       return;
     }
-    if (!(await confirm(SMS_DISCLOSURE))) return;
-    const st = await enableSms();
-    if (!st.available) {
-      showToast('This device does not receive SMS');
-      return;
+    // The same flow as onboarding and Finances: disclosure, permission, first
+    // scan, and a sheet with what it found.
+    if (await startTracking()) {
+      setSmsOn(true);
+      setSmsInfo(smsDiag());
     }
-    if (!st.granted) {
-      showToast('Orbit needs permission to read your messages');
-      return;
-    }
-    setSmsOn(true);
-    scanMessages(true);
   };
 
   const importOlder = async () => {
@@ -187,6 +182,14 @@ export function Settings() {
       alive = false;
     };
   }, []);
+
+  // Usage counts are on unless turned off; turning them off also tells the
+  // server to delete what it has.
+  const toggleUsage = () => {
+    const next = profile.shareUsage === false;
+    setUsageSharing(next);
+    mutateOpt((s) => ({ ...s, profile: { ...s.profile, shareUsage: next } }), () => api.updateMe({ shareUsage: next }));
+  };
 
   const toggle = (key: 'reminders' | 'haptics') => {
     const next = !profile[key];
@@ -986,6 +989,19 @@ export function Settings() {
 
       <SectionLabel>Data</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 14 }}>
+        <PrefRow
+          iconKey="indigo"
+          title="Share usage counts"
+          sub="How often features are used, never what you enter"
+          on={profile.shareUsage !== false}
+          onToggle={toggleUsage}
+          icon={
+            <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+              <path d="M4 16V9M10 16V4M16 16v-5" />
+            </svg>
+          }
+          border
+        />
         <div onClick={exportData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>

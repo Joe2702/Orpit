@@ -1,5 +1,13 @@
 import type { AppState, WorkoutSet, PartnerState } from './types';
 import type { SmsRow } from './lib/ledger';
+import { track, type UsageName } from './lib/usage';
+
+export interface AdminMetrics {
+  active: { d1: number; d7: number; d30: number; users: number } | null;
+  /** Share (%) of each signup week's users seen again; null until enough time has passed. */
+  cohorts: { week: string; users: number; d1: number | null; w1: number | null; d30: number | null }[];
+  features: { name: string; users: number; total: number }[];
+}
 import {
   enqueue,
   flush,
@@ -39,9 +47,26 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Which feature a request is, for the usage counts (see lib/usage). Counted
+ * here, once per action, so no screen has to remember to; a queued request
+ * replayed later (it carries an op id) isn't counted again.
+ */
+function usageOf(path: string, method: string): UsageName | null {
+  if (method !== 'POST') return null;
+  if (/^\/habits\/[^/]+\/toggle$/.test(path)) return 'habit_check';
+  if (path === '/workouts') return 'workout_add';
+  if (path === '/nights') return 'sleep_add';
+  if (path === '/txns') return 'txn_add';
+  if (/^\/txns\/(?:reviewed|recat|[^/]+\/same|[^/]+\/pair)$/.test(path)) return 'review_answer';
+  return null;
+}
+
 async function request<T>(path: string, opts: RequestInit = {}, opId?: string): Promise<T> {
   const token = getToken();
   const method = (opts.method || 'GET').toUpperCase();
+  const use = opId ? null : usageOf(path, method);
+  if (use) track(use);
   // Loggable mutations carry a stable id so the server can recognise a replay.
   // It's generated up front, not at queue time, so an op whose *response* was
   // lost replays under the same key it originally used.
@@ -225,6 +250,7 @@ export const api = {
         | 'modules'
         | 'textScale'
         | 'windDown'
+        | 'shareUsage'
       >
     >
   ) => request<AppState>('/me', { method: 'PATCH', body: JSON.stringify(patch) }),
@@ -330,6 +356,9 @@ export const api = {
   /** Make two imported entries one transfer between the user's own accounts. */
   pairTxns: (id: string, withId: string) =>
     request<AppState>(`/txns/${id}/pair`, { method: 'POST', body: JSON.stringify({ with: withId }) }),
+  /** Feature counts for a day: names and numbers only (see lib/usage). */
+  usage: (day: string, counts: Record<string, number>) =>
+    request<{ ok: boolean }>('/usage', { method: 'POST', body: JSON.stringify({ day, counts }) }),
   /** Imported entries the user has looked at and is happy with. */
   markReviewed: (ids: string[]) => request<AppState>('/txns/reviewed', { method: 'POST', body: JSON.stringify({ ids }) }),
   /** One category for many entries: "everything from this shop". */
@@ -395,9 +424,9 @@ export const api = {
     request<AppState>(`/budgets/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteBudget: (id: string) => request<AppState>(`/budgets/${id}`, { method: 'DELETE' }),
 
-  addGoal: (b: { name: string; target: number; current: number; color: string; dueTs: number | null }) =>
+  addGoal: (b: { name: string; target: number; current: number; color: string; dueTs: number | null; accId?: string | null }) =>
     request<AppState>('/goals', { method: 'POST', body: JSON.stringify(b) }),
-  editGoal: (id: string, b: { name: string; target: number; current: number; color: string; dueTs: number | null }) =>
+  editGoal: (id: string, b: { name: string; target: number; current: number; color: string; dueTs: number | null; accId?: string | null }) =>
     request<AppState>(`/goals/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteGoal: (id: string) => request<AppState>(`/goals/${id}`, { method: 'DELETE' }),
 
@@ -433,6 +462,9 @@ export const api = {
   // Deletes the whole user account (not a finance account — see deleteAccount).
   deleteMyAccount: (password: string) =>
     request<{ ok: boolean }>('/me', { method: 'DELETE', body: JSON.stringify({ password }) }),
+  /** Retention and feature use, from the usage counts. */
+  adminMetrics: (password: string) =>
+    request<AdminMetrics>('/admin/metrics', { headers: { 'x-admin-password': password } }),
   adminErrors: (password: string) =>
     request<{ items: ClientErrorItem[] }>('/admin/errors', { headers: { 'x-admin-password': password } }),
 };

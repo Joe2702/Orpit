@@ -81,6 +81,24 @@ public class OrbitSms extends Plugin {
     }
 
     /**
+     * This month's spending and budget, for the line under a payment alert:
+     * "E£12,850 spent this month · E£7,150 left". Written by the web layer
+     * whenever its numbers change; the receiver adds each new payment to it
+     * until the app next refreshes it.
+     */
+    @PluginMethod
+    public void setSummary(PluginCall call) {
+        getContext().getSharedPreferences(SmsReceiver.PREFS, Context.MODE_PRIVATE).edit()
+            .putString(SmsReceiver.KEY_MONTH, call.getString("month", ""))
+            .putString(SmsReceiver.KEY_HOME, call.getString("home", ""))
+            .putString(SmsReceiver.KEY_SYMBOL, call.getString("symbol", ""))
+            .putFloat(SmsReceiver.KEY_SPENT, call.getFloat("spent", 0f))
+            .putFloat(SmsReceiver.KEY_BUDGET, call.getFloat("budget", 0f))
+            .apply();
+        call.resolve();
+    }
+
+    /**
      * Mirror the Settings switch where SmsReceiver can see it. The receiver runs
      * without the web layer, so it can't ask; it reads this.
      */

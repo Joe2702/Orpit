@@ -288,6 +288,21 @@ ALTER TABLE accounts ADD COLUMN IF NOT EXISTS sms_balance DOUBLE PRECISION;
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS sms_balance_ts TIMESTAMPTZ;
 -- An imported entry whose category or amount was a best guess, until looked at.
 ALTER TABLE txns ADD COLUMN IF NOT EXISTS review BOOLEAN NOT NULL DEFAULT FALSE;
+-- How much each feature is used: per user, per day, a name and a count.
+-- Never content (no amounts, names, messages or entries), only that the app
+-- was opened or a habit was checked. It answers whether people come back and
+-- what brings them back. Users can turn it off (users.share_usage).
+CREATE TABLE IF NOT EXISTS usage_counts (
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  day     DATE NOT NULL,
+  name    TEXT NOT NULL,
+  n       INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, day, name)
+);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS share_usage BOOLEAN NOT NULL DEFAULT TRUE;
+-- A savings goal can follow an account: its progress is that account's
+-- balance, so it moves when money does instead of waiting to be typed in.
+ALTER TABLE goals ADD COLUMN IF NOT EXISTS acc_id BIGINT;
 -- Which recurring item an entry paid: posted by the schedule, or a bank
 -- payment matched to it. One payment pays one occurrence, never two.
 ALTER TABLE txns ADD COLUMN IF NOT EXISTS recurring_id BIGINT;
