@@ -41,7 +41,7 @@ export function SmsFoundSheet() {
         </div>
       )}
 
-      <div
+      <div tabIndex={0}
         onClick={() => {
           closeSheet();
           go(f.review > 0 ? 'freview' : 'finances');

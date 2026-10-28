@@ -42,7 +42,7 @@ export function FeedbackSheet() {
         {KINDS.map(([val, label]) => {
           const active = kind === val;
           return (
-            <div
+            <div role="button" tabIndex={0}
               key={val}
               onClick={() => setKind(val)}
               style={{
@@ -71,7 +71,7 @@ export function FeedbackSheet() {
         style={{ width: '100%', borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '13px 15px', fontSize: 15, color: 'var(--text)', outline: 'none', resize: 'none', marginBottom: 22, lineHeight: 1.5 }}
       />
 
-      <div
+      <div role="button" tabIndex={0}
         onClick={send}
         className="press"
         style={{ background: canSend ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSend ? 'pointer' : 'default' }}

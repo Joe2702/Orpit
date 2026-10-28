@@ -66,7 +66,7 @@ export function CatchUpSheet() {
                   return (
                     <div key={t} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
                       <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text2)' }}>{WD[dt.getDay()]}</span>
-                      <div
+                      <div tabIndex={0}
                         onClick={() => scheduled && toggle(h.id, ds)}
                         className={scheduled ? 'press92' : undefined}
                         role={scheduled ? 'button' : undefined}

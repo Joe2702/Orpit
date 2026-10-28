@@ -356,6 +356,13 @@ export const api = {
   /** Make two imported entries one transfer between the user's own accounts. */
   pairTxns: (id: string, withId: string) =>
     request<AppState>(`/txns/${id}/pair`, { method: 'POST', body: JSON.stringify({ with: withId }) }),
+  /** A bank message format the reader couldn't read, masked, sent by choice. */
+  shareSmsFormat: (b: { sender: string; text: string; reason: string }) =>
+    request<{ ok: boolean }>('/sms-samples', { method: 'POST', body: JSON.stringify(b) }),
+  adminSmsSamples: (password: string) =>
+    request<{ items: { id: string; sender: string; text: string; reason: string; createdAt: string }[] }>('/admin/sms-samples', {
+      headers: { 'x-admin-password': password },
+    }),
   /** Feature counts for a day: names and numbers only (see lib/usage). */
   usage: (day: string, counts: Record<string, number>) =>
     request<{ ok: boolean }>('/usage', { method: 'POST', body: JSON.stringify({ day, counts }) }),

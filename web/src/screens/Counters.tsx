@@ -37,7 +37,7 @@ export function Counters() {
               Pull-ups, pages read, hours of focus. Make a counter and your monthly and yearly totals add up here.
             </div>
           </div>
-          <div onClick={() => open('counter')} className="press" style={ctaBtn}>
+          <div role="button" tabIndex={0} onClick={() => open('counter')} className="press" style={ctaBtn}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M10 4v11M4 9.5h11" /></svg>
             New counter
           </div>
@@ -64,7 +64,7 @@ export function Counters() {
             {counters.map((c) => {
               const t = counterTotals(logs, c.id);
               return (
-                <div
+                <div role="button" tabIndex={0}
                   key={c.id}
                   onClick={() => open('counter', { id: c.id, name: c.name, unit: c.unit, color: c.color, icon: c.icon, step: c.step })}
                   className="press99"
@@ -80,7 +80,7 @@ export function Counters() {
                         {c.unit} · {t.lastTs ? `last logged ${relLabel(t.lastTs) === 'Today' || relLabel(t.lastTs) === 'Yesterday' ? relLabel(t.lastTs).toLowerCase() : relLabel(t.lastTs)}` : 'nothing logged yet'}
                       </div>
                     </div>
-                    <div
+                    <div role="button" tabIndex={0} aria-label={`Log ${c.name}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         open('countlog', { counterId: c.id, amount: c.step });
@@ -101,7 +101,7 @@ export function Counters() {
             })}
           </div>
 
-          <div onClick={() => open('counter')} className="press99" style={dashBtn}>
+          <div role="button" tabIndex={0} onClick={() => open('counter')} className="press99" style={dashBtn}>
             <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M10 4v12M4 10h12" /></svg>
             New counter
           </div>

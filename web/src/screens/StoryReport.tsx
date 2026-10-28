@@ -55,8 +55,8 @@ export function StoryReport({ kind, offset = 0, onClose }: { kind: 'week' | 'mon
     >
       {/* Tap zones — left third goes back, the rest advances. */}
       <div style={{ position: 'absolute', inset: 0, display: 'flex', zIndex: 2 }}>
-        <div onClick={prev} style={{ width: '33%', cursor: 'pointer' }} />
-        <div onClick={next} style={{ flex: 1, cursor: 'pointer' }} />
+        <div role="button" tabIndex={0} aria-label="Previous" onClick={prev} style={{ width: '33%', cursor: 'pointer' }} />
+        <div role="button" tabIndex={0} aria-label="Next" onClick={next} style={{ flex: 1, cursor: 'pointer' }} />
       </div>
 
       {/* Progress + close (above the tap zones). */}
@@ -69,12 +69,12 @@ export function StoryReport({ kind, offset = 0, onClose }: { kind: 'week' | 'mon
           ))}
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 4, padding: '8px 14px 0' }}>
-          <div onClick={share} className="press92" role="button" aria-label="Share this report" style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <div tabIndex={0} onClick={share} className="press92" role="button" aria-label="Share this report" style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <svg width="20" height="20" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <path d="M10 13V3M6.5 6.5L10 3l3.5 3.5M4 12v4.5h12V12" />
             </svg>
           </div>
-          <div onClick={onClose} className="press92" role="button" aria-label="Close report" style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <div tabIndex={0} onClick={onClose} className="press92" role="button" aria-label="Close report" style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <svg width="20" height="20" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }} aria-hidden><path d="M5 5l10 10M15 5L5 15" /></svg>
           </div>
         </div>

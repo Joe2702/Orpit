@@ -52,7 +52,7 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
         {REPORT_REASONS.map((r) => {
           const on = reason === r.key;
           return (
-            <div
+            <div tabIndex={0}
               key={r.key}
               onClick={() => setReason(r.key)}
               className="press99"
@@ -85,7 +85,7 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
         }}
       />
 
-      <div
+      <div tabIndex={0}
         onClick={reason && !busy ? send : undefined}
         className={reason ? 'press99' : undefined}
         role="button"

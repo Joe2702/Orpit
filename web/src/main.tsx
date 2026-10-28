@@ -9,6 +9,9 @@ import { App } from './App';
 import { StoreProvider } from './store';
 import { ErrorBoundary } from './ErrorBoundary';
 import { installCrashReporter } from './lib/crash';
+import { installKeyActivation } from './lib/a11y';
+
+installKeyActivation();
 
 const start = () =>
   ReactDOM.createRoot(document.getElementById('root')!).render(

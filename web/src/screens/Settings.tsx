@@ -4,6 +4,7 @@ import { api, setToken } from '../api';
 import { CURRENCIES, ago } from '../lib/format';
 import { useStartBankTracking } from '../lib/bankTracking';
 import { setUsageSharing } from '../lib/usage';
+import { lockAvailable, lockEnabled, setLockEnabled, unlock } from '../lib/appLock';
 import { computeBadges } from '../lib/badges';
 import { Avatar, SectionLabel, toggleTrack, toggleKnob, chip } from '../ui';
 import { IconChevron } from '../icons';
@@ -19,6 +20,7 @@ import {
   syncSms,
   smsDiag,
   type SmsDiag,
+  type SmsDiagEntry,
 } from '../lib/smsSync';
 
 export const MODULE_OPTS = [
@@ -96,6 +98,27 @@ export function Settings() {
 
   const [smsInfo, setSmsInfo] = React.useState<SmsDiag | null>(smsDiag());
   const [diagOpenSms, setDiagOpenSms] = React.useState(false);
+
+  // A bank whose messages Orbit can't read gets fixed by seeing the format.
+  // Only ever by choice, one message at a time, and only after showing the
+  // user exactly what will be sent: digits and names masked out.
+  const [sharedFormats, setSharedFormats] = React.useState<string[]>([]);
+  const shareFormat = async (r: SmsDiagEntry) => {
+    if (!r.masked || sharedFormats.includes(r.masked)) return;
+    const ok = await confirm({
+      title: 'Send this format?',
+      message: `This is exactly what will be sent, with numbers and names hidden, so Orbit can learn to read ${r.sender}:\n\n${r.masked}`,
+      confirmLabel: 'Send',
+    });
+    if (!ok) return;
+    try {
+      await api.shareSmsFormat({ sender: r.sender, text: r.masked, reason: r.reason || '' });
+      setSharedFormats((x) => [...x, r.masked!]);
+      showToast('Sent, thank you');
+    } catch {
+      showToast('Could not send it. Try again later.');
+    }
+  };
 
   const scanMessages = async (announceNothing: boolean) => {
     if (!state) return;
@@ -182,6 +205,26 @@ export function Settings() {
       alive = false;
     };
   }, []);
+
+  // App lock, offered only on a phone with a screen lock to ask for. Turning it
+  // on asks once first, so it's known to work before it can lock anyone out.
+  const [lockOffer, setLockOffer] = React.useState(false);
+  const [lockOn, setLockOn] = React.useState(lockEnabled());
+  React.useEffect(() => {
+    lockAvailable().then(setLockOffer);
+  }, []);
+  const toggleLock = async () => {
+    if (lockOn) {
+      setLockEnabled(false);
+      setLockOn(false);
+      showToast('App lock off');
+      return;
+    }
+    if (!(await unlock('Turn on app lock'))) return;
+    setLockEnabled(true);
+    setLockOn(true);
+    showToast('Orbit will ask to unlock when it opens');
+  };
 
   // Usage counts are on unless turned off; turning them off also tells the
   // server to delete what it has.
@@ -402,7 +445,7 @@ export function Settings() {
     onClick: () => void,
     last = false
   ) => (
-    <div
+    <div role="button" tabIndex={0}
       onClick={onClick}
       className="pressRow"
       style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: last ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}
@@ -419,7 +462,7 @@ export function Settings() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--text)', marginBottom: 18 }}>Profile</div>
 
-      <div
+      <div role="button" tabIndex={0}
         onClick={() => open('profile')}
         className="press99"
         style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16, display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14, cursor: 'pointer' }}
@@ -466,7 +509,7 @@ export function Settings() {
               So you can reset your password if you ever lose it.
             </div>
           </div>
-          <div
+          <div tabIndex={0}
             onClick={async () => {
               haptic();
               try {
@@ -490,7 +533,7 @@ export function Settings() {
         {themeSeg.map(([label, val]) => {
           const active = (profile.theme || 'light') === val;
           return (
-            <div
+            <div role="button" tabIndex={0}
               key={val}
               onClick={() => setTheme(val)}
               style={{
@@ -523,7 +566,7 @@ export function Settings() {
                 <Glyph name={m.icon} size={19} color="var(--text2)" />
               </span>
               <div style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{m.label}</div>
-              <div
+              <div tabIndex={0}
                 onClick={() => {
                   const cur = profile.modules || MODULE_OPTS.map((x) => x.key);
                   const next = on ? cur.filter((k) => k !== m.key) : [...cur, m.key];
@@ -553,7 +596,7 @@ export function Settings() {
         {['indigo', 'text', 'blue', 'teal', 'emerald', 'rose'].map((c) => {
           const active = (profile.accent || 'indigo') === c;
           return (
-            <div
+            <div tabIndex={0}
               key={c}
               onClick={() => mutateOpt((s) => ({ ...s, profile: { ...s.profile, accent: c } }), () => api.updateMe({ accent: c }))}
               role="button"
@@ -569,7 +612,7 @@ export function Settings() {
         {([['Small', 0.9], ['Default', 1], ['Large', 1.1], ['Largest', 1.2]] as const).map(([lbl, v]) => {
           const active = Math.abs((profile.textScale || 1) - v) < 0.01;
           return (
-            <div
+            <div tabIndex={0}
               key={lbl}
               onClick={() => mutateOpt((st) => ({ ...st, profile: { ...st.profile, textScale: v } }), () => api.updateMe({ textScale: v }))}
               role="button"
@@ -588,7 +631,7 @@ export function Settings() {
         {CURRENCIES.map((c) => {
           const active = (profile.currency || 'EGP') === c.code;
           return (
-            <div
+            <div tabIndex={0}
               key={c.code}
               onClick={() => mutateOpt((st) => ({ ...st, profile: { ...st.profile, currency: c.code } }), () => api.updateMe({ currency: c.code }))}
               role="button"
@@ -637,13 +680,13 @@ export function Settings() {
           </div>
         )}
         {profile.reminders && (
-          <div onClick={sendTest} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+          <div role="button" tabIndex={0} onClick={sendTest} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
             <span style={{ width: 36, flex: 'none' }} />
             <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--indigo)' }}>Send a test notification</div>
           </div>
         )}
         {isNative() && (
-          <div
+          <div role="button" tabIndex={0}
             onClick={() => (diag ? setDiagOpen((v) => !v) : runDiagnostics())}
             className="pressRow"
             style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: diagShown ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}
@@ -699,7 +742,7 @@ export function Settings() {
               </div>
             )}
             {diag.permission === 'granted' && diag.exact === false && (
-              <div
+              <div tabIndex={0}
                 onClick={async () => {
                   await requestExactAlarms();
                   runDiagnostics();
@@ -716,7 +759,7 @@ export function Settings() {
                 Nothing is scheduled. Turn the daily reminder off and on again to re-schedule it.
               </div>
             )}
-            <div
+            <div tabIndex={0}
               onClick={() => runDiagnostics()}
               className="press99"
               role="button"
@@ -780,7 +823,7 @@ export function Settings() {
             {smsOn && (
               <>
                 {!alertsOk && (
-                  <div
+                  <div tabIndex={0}
                     onClick={() => ensureNotificationPermission().then(setAlertsOk)}
                     className="pressRow"
                     role="button"
@@ -805,7 +848,7 @@ export function Settings() {
                   </div>
                 </div>
 
-                <div
+                <div role="button" tabIndex={0}
                   onClick={() => !scanning && scanMessages(true)}
                   className="pressRow"
                   style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
@@ -816,7 +859,7 @@ export function Settings() {
                   </div>
                 </div>
 
-                <div
+                <div role="button" tabIndex={0}
                   onClick={() => !scanning && importOlder()}
                   className="pressRow"
                   style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
@@ -829,7 +872,7 @@ export function Settings() {
                     "it doesn't work" and a fixable sentence: a native error, no
                     bank messages found, or bank messages that didn't read as
                     payments each look completely different here. */}
-                <div
+                <div role="button" tabIndex={0}
                   onClick={() => smsInfo && setDiagOpenSms((v) => !v)}
                   className={smsInfo ? 'pressRow' : undefined}
                   style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: smsInfo ? 'pointer' : 'default' }}
@@ -864,6 +907,15 @@ export function Settings() {
                         <div dir="auto" style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3, lineHeight: 1.45, overflowWrap: 'anywhere' }}>
                           {r.snippet}
                         </div>
+                        {r.masked && (
+                          <div tabIndex={0}
+                            onClick={() => shareFormat(r)}
+                            role="button"
+                            style={{ fontSize: 12, fontWeight: 650, color: sharedFormats.includes(r.masked) ? 'var(--text3)' : 'var(--indigo)', marginTop: 5, cursor: 'pointer' }}
+                          >
+                            {sharedFormats.includes(r.masked) ? 'Sent, thank you' : 'Help Orbit read this bank'}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -904,7 +956,7 @@ export function Settings() {
           the Home header, where it asked for attention on every launch. */}
       <SectionLabel>Progress</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
-        <div
+        <div tabIndex={0}
           onClick={() => go('achievements')}
           className="pressRow"
           role="button"
@@ -921,7 +973,7 @@ export function Settings() {
           </div>
           <IconChevron />
         </div>
-        <div
+        <div role="button" tabIndex={0}
           onClick={() => go('partner')}
           className="pressRow"
           style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}
@@ -1002,7 +1054,7 @@ export function Settings() {
           }
           border
         />
-        <div onClick={exportData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} onClick={exportData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M10 3v9M6.5 8.5L10 12l3.5-3.5M4 14v2h12v-2" />
@@ -1014,7 +1066,7 @@ export function Settings() {
           </div>
           <IconChevron />
         </div>
-        <div onClick={importData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderTop: '1px solid var(--border)', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} onClick={importData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderTop: '1px solid var(--border)', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <path d="M10 12V3M6.5 6.5L10 3l3.5 3.5M4 14v2h12v-2" />
@@ -1026,7 +1078,7 @@ export function Settings() {
           </div>
           <IconChevron />
         </div>
-        <div onClick={resetData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderTop: '1px solid var(--border)', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} onClick={resetData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderTop: '1px solid var(--border)', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--danger)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M4 6h12M8 6V4.5h4V6M6.5 6l.7 10h5.6l.7-10" />
@@ -1041,7 +1093,22 @@ export function Settings() {
 
       <SectionLabel>Security</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
-        <div onClick={changePassword} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+        {lockOffer && (
+          <PrefRow
+            iconKey="indigo"
+            title="App lock"
+            sub="Fingerprint, face or your phone's PIN to open Orbit"
+            on={lockOn}
+            onToggle={toggleLock}
+            icon={
+              <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+                <path d="M5.5 9h9v7.5h-9zM7.5 9V6.5a2.5 2.5 0 0 1 5 0V9" />
+              </svg>
+            }
+            border
+          />
+        )}
+        <div role="button" tabIndex={0} onClick={changePassword} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <rect x="4" y="8.5" width="12" height="8" rx="2" />
@@ -1054,7 +1121,7 @@ export function Settings() {
           </div>
           <IconChevron />
         </div>
-        <div onClick={signOutOthers} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} onClick={signOutOthers} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <rect x="3" y="4" width="9" height="12" rx="2" />
@@ -1071,7 +1138,7 @@ export function Settings() {
 
       <SectionLabel>Support</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
-        <div onClick={() => go('privacy')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} onClick={() => go('privacy')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <path d="M10 2.5l6 2.5v5c0 3.4-2.5 6.4-6 7.5-3.5-1.1-6-4.1-6-7.5V5l6-2.5Z" />
@@ -1083,7 +1150,7 @@ export function Settings() {
           </div>
           <IconChevron />
         </div>
-        <div onClick={() => open('feedback')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} onClick={() => open('feedback')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M4 4h12v9H8l-4 3.5V4Z" />
@@ -1097,7 +1164,7 @@ export function Settings() {
         </div>
       </div>
 
-      <div
+      <div tabIndex={0}
         onClick={deleteAccount}
         className="press99"
         role="button"
@@ -1106,7 +1173,7 @@ export function Settings() {
         Delete my account
       </div>
 
-      <div
+      <div role="button" tabIndex={0}
         onClick={signOut}
         className="press99"
         style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 15, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}
@@ -1155,7 +1222,7 @@ function PrefRow({
         <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{title}</div>
         <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{sub}</div>
       </div>
-      <div onClick={onToggle} style={toggleTrack(on)}>
+      <div role="switch" tabIndex={0} aria-checked={on} aria-label={title} onClick={onToggle} style={toggleTrack(on)}>
         <div style={toggleKnob(on)} />
       </div>
     </div>

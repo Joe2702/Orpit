@@ -135,7 +135,7 @@ export function HabitSheet() {
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Suggestions</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
             {HABIT_PRESETS.map((p) => (
-              <div
+              <div role="button" tabIndex={0}
                 key={p.name}
                 onClick={() => {
                   setName(p.name);
@@ -155,7 +155,7 @@ export function HabitSheet() {
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>Color</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, paddingLeft: 2 }}>
         {COLORS.map((c) => (
-          <div
+          <div role="button" tabIndex={0} aria-label={c} aria-pressed={color === c}
             key={c}
             onClick={() => setColor(c)}
             style={{ width: 38, height: 38, borderRadius: '50%', cursor: 'pointer', flex: 'none', background: `var(--${c})`, transition: 'all .15s', boxShadow: color === c ? `0 0 0 3px var(--surface),0 0 0 5px var(--${c})` : '0 0 0 0 transparent' }}
@@ -168,7 +168,7 @@ export function HabitSheet() {
         {DAY_LABELS.map((lbl, i) => {
           const on = days[i] === '1';
           return (
-            <div
+            <div role="button" tabIndex={0}
               key={i}
               onClick={() => toggleDay(i)}
               style={{
@@ -232,10 +232,11 @@ export function HabitSheet() {
       </div>
 
       {editId && (
-        <div
+        <div tabIndex={0}
           onClick={() => setPaused(!paused)}
           className="pressRow"
-          role="button"
+          role="switch"
+          aria-checked={paused}
           style={{ display: 'flex', alignItems: 'center', gap: 12, background: paused ? 'color-mix(in srgb,var(--warning) 12%,var(--surface))' : 'var(--bg)', border: `1px solid ${paused ? 'color-mix(in srgb,var(--warning) 35%,var(--border))' : 'var(--border)'}`, borderRadius: 'calc(14px * var(--sq))', padding: '12px 14px', marginBottom: 20, cursor: 'pointer' }}
         >
           <Glyph name={paused ? 'pause' : 'play'} size={19} color={paused ? 'var(--warning)' : 'var(--text2)'} />
@@ -251,7 +252,7 @@ export function HabitSheet() {
         </div>
       )}
 
-      <div
+      <div role="button" tabIndex={0}
         onClick={save}
         style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', marginTop: 8, transition: 'all .2s' }}
       >
@@ -259,7 +260,7 @@ export function HabitSheet() {
       </div>
 
       {editId && (
-        <div
+        <div tabIndex={0}
           onClick={archive}
           className="press99"
           role="button"
@@ -270,7 +271,7 @@ export function HabitSheet() {
       )}
 
       {editId && (
-        <div onClick={del} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
+        <div role="button" tabIndex={0} onClick={del} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
           <IconTrash />
           Delete habit
         </div>

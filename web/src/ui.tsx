@@ -47,7 +47,7 @@ export function toggleKnob(on: boolean): CSSProperties {
 
 export function BackButton({ onClick }: { onClick: () => void }) {
   return (
-    <div
+    <div role="button" tabIndex={0} aria-label="Back"
       onClick={onClick}
       style={{
         width: 38,
@@ -89,7 +89,7 @@ export function SectionLabel({
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '6px 2px 10px', ...style }}>
       <div style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 650, letterSpacing: '-.01em', color: 'var(--text)' }}>{children}</div>
       {action && (
-        <span onClick={action.onClick} role="button" style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer', flex: 'none' }}>
+        <span tabIndex={0} onClick={action.onClick} role="button" style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer', flex: 'none' }}>
           {action.label}
         </span>
       )}
@@ -128,7 +128,7 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
   const { range, setRange, rangeOffset, setRangeOffset } = useStore();
   const items: Range[] = ['Week', 'Month', 'Year', 'All'];
   const navBtn = (dir: 'l' | 'r', enabled: boolean, onClick: () => void, label: string) => (
-    <div
+    <div tabIndex={0}
       onClick={enabled ? onClick : undefined}
       role="button"
       aria-label={label}
@@ -163,7 +163,7 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
         }}
       >
         {items.map((r) => (
-          <div
+          <div tabIndex={0}
             key={r}
             role="tab"
             aria-selected={range === r}
@@ -212,7 +212,7 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
  */
 export function TrackerAction({ label, onClick }: { color?: string; label: string; onClick: () => void }) {
   return (
-    <div
+    <div tabIndex={0}
       onClick={onClick}
       className="press99"
       role="button"
@@ -337,7 +337,7 @@ export function ChartCard({
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: 'var(--text2)' }}>{title}</div>
         {action && (
-          <span onClick={action.onClick} role="button" style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
+          <span tabIndex={0} onClick={action.onClick} role="button" style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
             {action.label}
           </span>
         )}
@@ -370,7 +370,7 @@ export function Avatar({
   onClick?: () => void;
 }) {
   return (
-    <div
+    <div role="button" tabIndex={0}
       onClick={onClick}
       className={onClick ? 'press96' : undefined}
       style={{

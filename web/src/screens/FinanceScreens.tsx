@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
 import { api } from '../api';
 import { ago, money, fmtDate, relLabel, moneySymbol } from '../lib/format';
-import { guessFinIcon, FinIcon } from '../lib/iconPaths';
+import { FinIcon } from '../lib/iconPaths';
 import { Ring } from '../lib/charts';
 import { BackButton, chip } from '../ui';
 import { IconTrash } from '../icons';
@@ -16,7 +16,8 @@ import { isRefund } from '../lib/money';
 import { merchantKey } from '../lib/merchants';
 import { smsText } from '../lib/smsSync';
 import { findRecurring, type FoundRecurring } from '../lib/subscriptions';
-import { UnsyncedDot } from '../UnsyncedDot';
+import { TxnRow, fcatByName } from './TxnRow';
+import { inFocus, type TxnFocus } from '../lib/txnFocus';
 
 function Header({ title, action }: { title: string; action?: React.ReactNode }) {
   const { go } = useStore();
@@ -29,13 +30,10 @@ function Header({ title, action }: { title: string; action?: React.ReactNode }) 
   );
 }
 
-function fcatByName(fcats: { name: string; icon: string; color: string }[], name: string) {
-  return fcats.find((c) => c.name === name) || { ...guessFinIcon(name), name };
-}
 
 function AddBtn({ onClick }: { onClick: () => void }) {
   return (
-    <div onClick={onClick} className="press92" role="button" aria-label="Add" style={{ width: 38, height: 38, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+    <div tabIndex={0} onClick={onClick} className="press92" role="button" aria-label="Add" style={{ width: 38, height: 38, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none', background: 'var(--surface)', border: '1px solid var(--border)' }}>
       <svg width="18" height="18" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2.2, strokeLinecap: 'round' }} aria-hidden><path d="M10 4v12M4 10h12" /></svg>
     </div>
   );
@@ -157,7 +155,7 @@ export function FAddTx() {
       () => (edit ? api.editTxn(edit.id, body) : api.addTxn({ ...body, ...(newPhoto ? { photo: newPhoto } : {}) })),
       edit ? 'Transaction updated' : 'Transaction saved'
     ).catch(() => {});
-    go('ftxns');
+    go('ftxns', screenData?.back ?? null);
 
     // A new category for a shop is usually a new category for the shop, not
     // for one payment. Offer to move the others; never move ones the user
@@ -192,7 +190,7 @@ export function FAddTx() {
       () => api.deleteTxn(edit.id),
       'Transaction deleted'
     ).catch(() => {});
-    go('ftxns');
+    go('ftxns', screenData?.back ?? null);
   };
 
   // Same 44px floor as the range tabs: three targets now share this row, so
@@ -204,9 +202,9 @@ export function FAddTx() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <Header title={edit ? (isTransfer ? 'Edit transfer' : 'Edit transaction') : 'Add transaction'} />
       <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 20 }}>
-        <div onClick={() => setKind('expense')} style={tab(kind === 'expense', 'var(--text)')}>Expense</div>
-        <div onClick={() => setKind('income')} style={tab(income, 'var(--indigo)')}>Income</div>
-        <div onClick={() => setKind('transfer')} style={tab(isTransfer, 'var(--indigo)')}>Transfer</div>
+        <div role="button" tabIndex={0} onClick={() => setKind('expense')} style={tab(kind === 'expense', 'var(--text)')}>Expense</div>
+        <div role="button" tabIndex={0} onClick={() => setKind('income')} style={tab(income, 'var(--indigo)')}>Income</div>
+        <div role="button" tabIndex={0} onClick={() => setKind('transfer')} style={tab(isTransfer, 'var(--indigo)')}>Transfer</div>
       </div>
       <div style={{ textAlign: 'center', marginBottom: 16 }}>
         <span style={{ fontSize: 30, fontWeight: 600, color: 'var(--text2)', verticalAlign: 'top', lineHeight: 1.7 }}>{moneySymbol().trim()}</span>
@@ -214,7 +212,7 @@ export function FAddTx() {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 22 }}>
         {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'].map((k) => (
-          <div key={k} onClick={() => press(k)} style={{ height: 50, borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', background: 'var(--bg)' }}>
+          <div role="button" tabIndex={0} aria-label={k === 'del' ? 'Delete digit' : k === '.' ? 'Decimal point' : k} key={k} onClick={() => press(k)} style={{ height: 50, borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', background: 'var(--bg)' }}>
             {k === 'del' ? <svg width="24" height="24" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M9 5h10v14H9l-6-7 6-7ZM13 9.5l4 5M17 9.5l-4 5" /></svg> : k}
           </div>
         ))}
@@ -227,7 +225,7 @@ export function FAddTx() {
         {catList.map((c) => {
           const active = cat === c.name;
           return (
-            <div key={c.id} onClick={() => (income ? setIncCat(c.name) : setExCat(c.name))} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '12px 4px', borderRadius: 'calc(16px * var(--sq))', cursor: 'pointer', transition: 'all .15s', border: `1px solid ${active ? `var(--${c.color})` : 'var(--border)'}`, background: active ? `var(--${c.color})` : 'var(--surface)' }}>
+            <div role="button" tabIndex={0} key={c.id} onClick={() => (income ? setIncCat(c.name) : setExCat(c.name))} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '12px 4px', borderRadius: 'calc(16px * var(--sq))', cursor: 'pointer', transition: 'all .15s', border: `1px solid ${active ? `var(--${c.color})` : 'var(--border)'}`, background: active ? `var(--${c.color})` : 'var(--surface)' }}>
               <FinIcon icon={c.icon} color={active ? '#fff' : `var(--${c.color})`} size={22} />
               <span style={{ fontSize: 12, fontWeight: 600, color: active ? '#fff' : 'var(--text)' }}>{c.name}</span>
             </div>
@@ -235,7 +233,7 @@ export function FAddTx() {
         })}
       </div>
       {kind === 'expense' && (edit ? isRefund(edit) || edit.sms : false) && (
-        <div onClick={() => setRefund((v) => !v)} role="switch" aria-checked={refund} className="press99" style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: -8, marginBottom: 22, cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={() => setRefund((v) => !v)} role="switch" aria-checked={refund} className="press99" style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: -8, marginBottom: 22, cursor: 'pointer' }}>
           <span style={{ flex: 1, fontSize: 14, color: 'var(--text)' }}>
             Money back (a refund)
             <span style={{ display: 'block', fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>Takes it off your spending instead of counting as income</span>
@@ -251,7 +249,7 @@ export function FAddTx() {
         // checked against the bank's own words. The text lives on this phone
         // only; another device, or one that was reset, won't have it.
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '12px 14px', marginBottom: 22 }}>
-          <div onClick={() => source && setShowSource((v) => !v)} role={source ? 'button' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: source ? 'pointer' : 'default' }}>
+          <div tabIndex={0} onClick={() => source && setShowSource((v) => !v)} role={source ? 'button' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: source ? 'pointer' : 'default' }}>
             <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>
               {source ? `From ${source.sender} · ${fmtDate(source.ts)}` : 'Read from a bank message'}
             </span>
@@ -277,7 +275,7 @@ export function FAddTx() {
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{isTransfer ? 'From' : 'Account'}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 22 }}>
         {accounts.map((a) => (
-          <div key={a.id} onClick={() => pickFrom(a.id)} style={chip(accId === a.id, `var(--${a.color})`)}>{a.name}</div>
+          <div role="button" tabIndex={0} aria-pressed={accId === a.id} key={a.id} onClick={() => pickFrom(a.id)} style={chip(accId === a.id, `var(--${a.color})`)}>{a.name}</div>
         ))}
       </div>
       {isTransfer && (
@@ -285,7 +283,7 @@ export function FAddTx() {
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>To</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 10 }}>
             {accounts.filter((a) => a.id !== accId).map((a) => (
-              <div key={a.id} onClick={() => pickTo(a.id)} style={chip(toAccId === a.id, `var(--${a.color})`)}>{a.name}</div>
+              <div role="button" tabIndex={0} aria-pressed={toAccId === a.id} key={a.id} onClick={() => pickTo(a.id)} style={chip(toAccId === a.id, `var(--${a.color})`)}>{a.name}</div>
             ))}
           </div>
           {/* The one thing worth saying about transfers, said once, where the
@@ -317,7 +315,7 @@ export function FAddTx() {
         bottom={92}
       />
       {edit && (
-        <div onClick={del} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
+        <div role="button" tabIndex={0} onClick={del} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
           <IconTrash />Delete transaction
         </div>
       )}
@@ -325,88 +323,22 @@ export function FAddTx() {
   );
 }
 
-/**
- * One line of the ledger, the same everywhere it appears.
- *
- * A transfer shows both ends and a neutral colour: it is not a loss, and
- * painting it like an expense is the whole confusion transfers exist to remove.
- * A correction is real money but not an event you did, shown plainly with its
- * direction. A refund says so, so a plus sign on a shop's name isn't a puzzle.
- */
-export function TxnRow({ t, onClick, last }: { t: Txn; onClick: () => void; last?: boolean }) {
-  const { state } = useStore();
-  const accById = Object.fromEntries(state!.accounts.map((a) => [a.id, a]));
-  const fc = fcatByName(state!.fcats, t.cat);
-  const xfer = !!t.toAccId;
-  const adj = t.adjust;
-  const refund = isRefund(t);
-  const acc = accById[t.accId || '']?.name;
-  const sub = xfer
-    ? `${accById[t.accId || '']?.name || 'Account'} → ${accById[t.toAccId || '']?.name || 'Account'}`
-    : adj
-      ? `Balance correction${acc ? ` · ${acc}` : ''}`
-      : [refund ? 'Refund' : null, t.cat, acc].filter(Boolean).join(' · ');
-  return (
-    <div onClick={onClick} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: last ? 'none' : '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}>
-      <span style={{ position: 'relative', width: 38, height: 38, borderRadius: 'calc(11px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {xfer ? (
-          <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Transfer">
-            <path d="M3 7h12M12 4l3 3-3 3M17 13H5M8 10l-3 3 3 3" />
-          </svg>
-        ) : adj ? (
-          <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label="Balance correction">
-            <path d="M4 13.5a6 6 0 0 1 10-4.4M16 6.5a6 6 0 0 1-10 4.4" />
-            <path d="M14 5v4h-4M6 15v-4h4" />
-          </svg>
-        ) : (
-          <FinIcon icon={fc.icon} color="var(--text2)" size={20} />
-        )}
-        {/* Waiting for a look: the category was a guess. A dot, not a badge,
-            so a list with a few of them still reads as a list. */}
-        {t.review && (
-          <span aria-label="Needs a look" style={{ position: 'absolute', top: -2, right: -2, width: 10, height: 10, borderRadius: '50%', background: 'var(--indigo)', boxShadow: '0 0 0 2px var(--surface)' }} />
-        )}
-      </span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
-          <UnsyncedDot id={t.id} />
-          {t.sms && (
-            // Read out of a bank message rather than entered. Worth a tag: a
-            // machine picked the name and the category, and the user should be
-            // able to see at a glance which figures came from that.
-            <span
-              style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: '.04em', color: 'var(--indigo)', background: 'color-mix(in srgb,var(--indigo) 14%,transparent)', borderRadius: 5, padding: '2px 5px', flex: 'none' }}
-              aria-label="Imported from a bank message"
-            >
-              SMS
-            </span>
-          )}
-          {t.photo && (
-            <svg width="13" height="13" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.8, strokeLinejoin: 'round', flex: 'none' }} aria-label="Has a receipt">
-              <path d="M1.5 4h2.2l1-1.4h3.6L9.3 4h2.2v7h-10z" />
-              <circle cx="6.5" cy="7.4" r="2.1" />
-            </svg>
-          )}
-        </div>
-        <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div>
-      </div>
-      <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: xfer || adj ? 'var(--text2)' : 'var(--text)' }}>
-        {(xfer ? '' : t.amount >= 0 ? '+' : '−') + money(t.amount)}
-      </div>
-    </div>
-  );
-}
-
 // ================= Transactions list (grouped, search, filter) =================
 export function FTxns() {
-  const { state, go } = useStore();
+  const { state, go, screenData } = useStore();
   const { remove } = useEntryActions();
   const fcats = state!.fcats;
   const accById = Object.fromEntries(state!.accounts.map((a) => [a.id, a]));
   const [q, setQ] = useState('');
-  const [fcat, setFcat] = useState('All');
+  // Opened from a chart: only the spending behind what was tapped.
+  const [focus, setFocus] = useState<TxnFocus | null>(screenData?.focus ?? null);
+  const [fcat, setFcat] = useState<string>(screenData?.cat ?? 'All');
   const [facc, setFacc] = useState('All');
+  const catRow = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // A category chosen from a chart may be far along the row.
+    catRow.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }, []);
 
   const [shown, setShown] = useState(80);
   const matched = [...state!.txns]
@@ -416,8 +348,12 @@ export function FTxns() {
       if (ql && !(t.name.toLowerCase().includes(ql) || t.cat.toLowerCase().includes(ql) || (t.note || '').toLowerCase().includes(ql))) return false;
       if (fcat !== 'All' && t.cat !== fcat) return false;
       if (facc !== 'All' && accById[t.accId || '']?.name !== facc) return false;
+      if (focus && !inFocus(focus, t)) return false;
       return true;
     });
+  const back = { focus, cat: fcat };
+  const focusTotal = focus ? matched.reduce((s, t) => s - t.amount, 0) : 0;
+  const focusCount = focus ? matched.filter((t) => t.amount < 0).length : 0;
   // Render a page at a time — a year of transactions shouldn't stall the screen.
   const list = matched.slice(0, shown);
   const groups: { label: string; items: Txn[] }[] = [];
@@ -435,14 +371,35 @@ export function FTxns() {
         <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', flex: 'none' }}><circle cx="8.5" cy="8.5" r="5.5" /><path d="M13 13l3 3" /></svg>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search transactions" style={{ flex: 1, border: 'none', background: 'none', fontSize: 15, color: 'var(--text)', outline: 'none' }} />
       </div>
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 9, paddingBottom: 2 }}>
+      {focus && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', boxShadow: 'var(--shadow)', padding: '12px 10px 12px 16px', marginBottom: 14 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Spent{fcat !== 'All' ? ` on ${fcat}` : ''} · {focus.title}
+            </div>
+            <div style={{ fontSize: 19, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', marginTop: 2 }}>
+              {money(focusTotal)}
+              <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: 0, color: 'var(--text2)' }}> · {focusCount} {focusCount === 1 ? 'payment' : 'payments'}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setFocus(null)}
+            aria-label="Show all transactions"
+            className="press92"
+            style={{ width: 36, height: 36, flex: 'none', borderRadius: '50%', border: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          >
+            <svg width="14" height="14" aria-hidden style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M3 3l8 8M11 3l-8 8" /></svg>
+          </button>
+        </div>
+      )}
+      <div ref={catRow} style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 9, paddingBottom: 2 }}>
         {['All', ...fcats.map((c) => c.name)].map((c) => (
-          <div key={c} onClick={() => setFcat(c)} style={{ ...chip(fcat === c, 'var(--indigo)'), flex: 'none' }}>{c === 'All' ? 'All categories' : c}</div>
+          <div role="button" tabIndex={0} aria-pressed={fcat === c} key={c} onClick={() => setFcat(c)} style={{ ...chip(fcat === c, 'var(--indigo)'), flex: 'none' }}>{c === 'All' ? 'All categories' : c}</div>
         ))}
       </div>
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 2 }}>
         {['All', ...state!.accounts.map((a) => a.name)].map((a) => (
-          <div key={a} onClick={() => setFacc(a)} style={{ ...chip(facc === a, 'var(--indigo)'), flex: 'none' }}>{a === 'All' ? 'All accounts' : a}</div>
+          <div role="button" tabIndex={0} aria-pressed={facc === a} key={a} onClick={() => setFacc(a)} style={{ ...chip(facc === a, 'var(--indigo)'), flex: 'none' }}>{a === 'All' ? 'All accounts' : a}</div>
         ))}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -452,8 +409,8 @@ export function FTxns() {
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
               {g.items.map((t) => {
                 return (
-                  <SwipeRow key={t.id} onEdit={() => go('faddtx', { edit: t })} onDelete={() => remove('txn', t)}>
-                    <TxnRow t={t} onClick={() => go('faddtx', { edit: t })} />
+                  <SwipeRow key={t.id} onEdit={() => go('faddtx', { edit: t, back })} onDelete={() => remove('txn', t)}>
+                    <TxnRow t={t} onClick={() => go('faddtx', { edit: t, back })} />
                   </SwipeRow>
                 );
               })}
@@ -462,13 +419,13 @@ export function FTxns() {
         ))}
       </div>
       {matched.length > shown && (
-        <div onClick={() => setShown(shown + 80)} className="press99" role="button" style={{ marginTop: 16, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={() => setShown(shown + 80)} className="press99" role="button" style={{ marginTop: 16, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
           Show older · {matched.length - shown} more
         </div>
       )}
       {matched.length === 0 && (
         <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>
-          No transactions match your search.
+          {focus ? 'Nothing left here. Close the filter above to see everything.' : 'No transactions match your search.'}
         </div>
       )}
     </div>
@@ -547,7 +504,7 @@ export function FReview() {
               Read from your bank messages. Pick what each one was, and Orbit remembers the shop.
             </div>
             {items.length > 1 && (
-              <div onClick={() => looksRight(items.map((t) => t.id))} role="button" className="press99" style={{ flex: 'none', fontSize: 13.5, fontWeight: 650, color: 'var(--indigo)', cursor: 'pointer', padding: '8px 2px' }}>
+              <div tabIndex={0} onClick={() => looksRight(items.map((t) => t.id))} role="button" className="press99" style={{ flex: 'none', fontSize: 13.5, fontWeight: 650, color: 'var(--indigo)', cursor: 'pointer', padding: '8px 2px' }}>
                 All fine
               </div>
             )}
@@ -588,10 +545,10 @@ export function FReview() {
                           .join(' · ')}
                       </div>
                       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                        <div onClick={() => answerSame(t, true)} role="button" className="press99" style={{ flex: 1, height: 40, borderRadius: 'calc(11px * var(--sq))', background: 'var(--indigo)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 650, cursor: 'pointer' }}>
+                        <div tabIndex={0} onClick={() => answerSame(t, true)} role="button" className="press99" style={{ flex: 1, height: 40, borderRadius: 'calc(11px * var(--sq))', background: 'var(--indigo)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 650, cursor: 'pointer' }}>
                           Same payment
                         </div>
-                        <div onClick={() => answerSame(t, false)} role="button" className="press99" style={{ flex: 1, height: 40, borderRadius: 'calc(11px * var(--sq))', border: '1px solid var(--border)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>
+                        <div tabIndex={0} onClick={() => answerSame(t, false)} role="button" className="press99" style={{ flex: 1, height: 40, borderRadius: 'calc(11px * var(--sq))', border: '1px solid var(--border)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>
                           Two payments
                         </div>
                       </div>
@@ -609,10 +566,10 @@ export function FReview() {
                         {money(Math.abs(half.amount))} {t.amount < 0 ? 'arrived' : 'left'} {relLabel(half.ts).toLowerCase()}
                       </div>
                       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                        <div onClick={() => pair(t, half)} role="button" className="press99" style={{ flex: 1, height: 40, borderRadius: 'calc(11px * var(--sq))', background: 'var(--indigo)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 650, cursor: 'pointer' }}>
+                        <div tabIndex={0} onClick={() => pair(t, half)} role="button" className="press99" style={{ flex: 1, height: 40, borderRadius: 'calc(11px * var(--sq))', background: 'var(--indigo)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 650, cursor: 'pointer' }}>
                           Yes, a transfer
                         </div>
-                        <div onClick={() => looksRight([t.id, half.id])} role="button" className="press99" style={{ flex: 1, height: 40, borderRadius: 'calc(11px * var(--sq))', border: '1px solid var(--border)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>
+                        <div tabIndex={0} onClick={() => looksRight([t.id, half.id])} role="button" className="press99" style={{ flex: 1, height: 40, borderRadius: 'calc(11px * var(--sq))', border: '1px solid var(--border)', color: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>
                           No, separate
                         </div>
                       </div>
@@ -621,7 +578,7 @@ export function FReview() {
                   {!(half && halfOpen) && (
                   <div style={{ display: 'flex', gap: 7, overflowX: 'auto', margin: '12px -16px 0', padding: '0 16px 2px' }}>
                     {cats.map((c) => (
-                      <div key={c.id} onClick={() => setCat(t, c.name)} className="press99" style={{ ...chip(t.cat === c.name, 'var(--indigo)'), flex: 'none' }}>
+                      <div role="button" tabIndex={0} aria-pressed={t.cat === c.name} key={c.id} onClick={() => setCat(t, c.name)} className="press99" style={{ ...chip(t.cat === c.name, 'var(--indigo)'), flex: 'none' }}>
                         {c.name}
                       </div>
                     ))}
@@ -630,7 +587,7 @@ export function FReview() {
                   {/* A question above answers this card on its own; a third
                       button beside it would only ask which one to press. */}
                   {!typed && !(half && halfOpen) && (
-                    <div onClick={() => looksRight([t.id])} role="button" className="press99" style={{ marginTop: 12, height: 42, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+                    <div tabIndex={0} onClick={() => looksRight([t.id])} role="button" className="press99" style={{ marginTop: 12, height: 42, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
                       {t.cat} is right
                     </div>
                   )}
@@ -666,7 +623,7 @@ export function FBudgets() {
         {d.budgets.map((b) => {
           const fc = fcatByName(state!.fcats, b.cat);
           return (
-            <div key={b.id} onClick={() => open('budget', { id: b.id, cat: b.cat, limit: b.limit, rollover: b.rollover })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: 'pointer' }}>
+            <div role="button" tabIndex={0} key={b.id} onClick={() => open('budget', { id: b.id, cat: b.cat, limit: b.limit, rollover: b.rollover })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: 'pointer' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 12 }}>
                 <span style={{ width: 34, height: 34, borderRadius: 'calc(10px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FinIcon icon={fc.icon} color="var(--text2)" size={18} /></span>
                 <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{b.cat}</span>
@@ -708,7 +665,7 @@ export function FGoals() {
       <Header title="Savings goals" action={<AddBtn onClick={() => open('goal')} />} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {d.goals.map((g) => (
-          <div key={g.id} onClick={() => open('goal', { id: g.id, name: g.name, target: g.target, current: g.current, color: g.color, dueTs: g.dueTs, accId: g.accId ?? null })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '17px 18px', cursor: 'pointer' }}>
+          <div role="button" tabIndex={0} key={g.id} onClick={() => open('goal', { id: g.id, name: g.name, target: g.target, current: g.current, color: g.color, dueTs: g.dueTs, accId: g.accId ?? null })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '17px 18px', cursor: 'pointer' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
               <div style={{ position: 'relative', width: 52, height: 52, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Ring pct={g.pct} colorKey={g.color} size={52} stroke={6} />
@@ -751,7 +708,7 @@ export function FAccounts() {
       </div>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         {d.accounts.map((a) => (
-          <div key={a.id} onClick={() => open('account', { id: a.id, name: a.name, type: a.type, color: a.color, opening: a.opening })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+          <div role="button" tabIndex={0} key={a.id} onClick={() => open('account', { id: a.id, name: a.name, type: a.type, color: a.color, opening: a.opening })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
             <span style={{ width: 44, height: 44, borderRadius: 'calc(13px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="22" height="22" viewBox="0 0 20 20" style={{ fill: 'none', stroke: `var(--${a.color})`, strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M3 6h14v9H3zM3 9.5h14M6 12.5h3" /></svg>
             </span>
@@ -811,7 +768,7 @@ export function FRecurring() {
                     {f.income ? 'Comes in' : f.freq} · {money(f.amount)} · paid {f.seen} times · next {fmtDate(f.nextTs)}
                   </div>
                 </div>
-                <div onClick={() => addFound(f)} role="button" className="press92" style={{ flex: 'none', padding: '8px 14px', borderRadius: 999, border: '1px solid var(--border)', fontSize: 13.5, fontWeight: 650, color: 'var(--indigo)', cursor: 'pointer' }}>
+                <div tabIndex={0} onClick={() => addFound(f)} role="button" className="press92" style={{ flex: 'none', padding: '8px 14px', borderRadius: 999, border: '1px solid var(--border)', fontSize: 13.5, fontWeight: 650, color: 'var(--indigo)', cursor: 'pointer' }}>
                   Add
                 </div>
               </div>
@@ -833,7 +790,7 @@ export function FRecurring() {
               ? `${last.sms ? 'Paid' : 'Added'} ${fmtDate(last.ts)}${last.sms ? ' · from your bank' : ''}`
               : null;
           return (
-            <div key={r.id} onClick={() => open('recurring', { id: r.id, name: r.name, cat: r.cat, amount: r.amount, freq: r.freq, accId: r.accId })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+            <div role="button" tabIndex={0} key={r.id} onClick={() => open('recurring', { id: r.id, name: r.name, cat: r.cat, amount: r.amount, freq: r.freq, accId: r.accId })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
               <span style={{ width: 38, height: 38, borderRadius: 'calc(11px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FinIcon icon={fc.icon} color="var(--text2)" size={18} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{r.name}</div>
@@ -857,7 +814,7 @@ export function FCats() {
       <Header title="Categories" action={<AddBtn onClick={() => open('fcat')} />} />
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         {state!.fcats.map((c) => (
-          <div key={c.id} onClick={() => open('fcat', { id: c.id, name: c.name, icon: c.icon, color: c.color, kind: c.kind })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+          <div role="button" tabIndex={0} key={c.id} onClick={() => open('fcat', { id: c.id, name: c.name, icon: c.icon, color: c.color, kind: c.kind })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
             <span style={{ width: 40, height: 40, borderRadius: 'calc(12px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FinIcon icon={c.icon} color="var(--text2)" size={20} /></span>
             <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{c.name}</span>
             <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>{c.kind === 'income' ? 'Income' : 'Expense'}</span>

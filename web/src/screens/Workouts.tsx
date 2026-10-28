@@ -67,7 +67,7 @@ export function Workouts() {
         </ChartCard>
       )}
       {d.wTypeSegs.length === 0 && d.wCount > 0 && (
-        <div onClick={() => open('wcats')} className="pressRow" role="button" style={{ fontSize: 13, color: 'var(--text2)', textAlign: 'center', padding: '6px 0 14px', cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={() => open('wcats')} className="pressRow" role="button" style={{ fontSize: 13, color: 'var(--text2)', textAlign: 'center', padding: '6px 0 14px', cursor: 'pointer' }}>
           Add workout types to see how your training splits up
         </div>
       )}
@@ -96,7 +96,7 @@ export function Workouts() {
               onEdit={() => open('edit', { kind: 'workout', item: w })}
               onDelete={() => remove('workout', w)}
             >
-              <div
+              <div role="button" tabIndex={0}
                 onClick={() => open('edit', { kind: 'workout', item: w })}
                 className="pressRow"
                 style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}
@@ -128,7 +128,7 @@ export function Workouts() {
         })}
       </div>
       {list.length > shown && (
-        <div onClick={() => setShown(shown + 50)} className="press99" role="button" style={{ marginTop: 12, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={() => setShown(shown + 50)} className="press99" role="button" style={{ marginTop: 12, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
           Show {Math.min(50, list.length - shown)} more
         </div>
       )}

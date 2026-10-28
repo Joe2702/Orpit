@@ -15,6 +15,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(OrbitSms.class);
+        registerPlugin(OrbitLock.class);
         super.onCreate(savedInstanceState);
     }
 

@@ -40,7 +40,7 @@ export function HomeEmpty() {
       <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>Start tracking</div>
       <div style={{ display: 'flex', gap: 10 }}>
         {quick.map((it) => (
-          <div
+          <div role="button" tabIndex={0}
             key={it.label}
             onClick={() => open(it.sheet)}
             className="press96"
@@ -87,7 +87,7 @@ function DetailEmpty({
           <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)' }}>{heading}</div>
           <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 6, lineHeight: 1.55, maxWidth: 262 }}>{body}</div>
         </div>
-        <div
+        <div role="button" tabIndex={0}
           onClick={() => open(sheet)}
           className="press"
           style={{ background: `var(--${colorKey})`, color: 'var(--on-accent)', height: 52, padding: '0 26px', borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}

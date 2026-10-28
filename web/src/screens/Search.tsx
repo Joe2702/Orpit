@@ -128,7 +128,7 @@ export function Search() {
           style={{ flex: 1, border: 'none', background: 'none', fontSize: 15.5, color: 'var(--text)', outline: 'none' }}
         />
         {q && (
-          <span onClick={() => setQ('')} role="button" aria-label="Clear" style={{ fontSize: 18, color: 'var(--text2)', cursor: 'pointer', padding: 4 }}>
+          <span tabIndex={0} onClick={() => setQ('')} role="button" aria-label="Clear" style={{ fontSize: 18, color: 'var(--text2)', cursor: 'pointer', padding: 4 }}>
             ×
           </span>
         )}
@@ -150,7 +150,7 @@ export function Search() {
           </div>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
             {shown.map((hit, i) => (
-              <div
+              <div role="button" tabIndex={0}
                 key={hit.id}
                 onClick={hit.open}
                 className="pressRow"

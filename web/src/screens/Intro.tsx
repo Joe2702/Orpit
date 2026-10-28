@@ -74,7 +74,7 @@ export function Intro() {
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 14 }}>
-        <span onClick={finish} role="button" style={{ fontSize: 14, fontWeight: 600, color: 'rgba(240,240,243,.7)', padding: 10, cursor: 'pointer' }}>
+        <span tabIndex={0} onClick={finish} role="button" style={{ fontSize: 14, fontWeight: 600, color: 'rgba(240,240,243,.7)', padding: 10, cursor: 'pointer' }}>
           Skip
         </span>
       </div>
@@ -94,7 +94,7 @@ export function Intro() {
         ))}
       </div>
 
-      <div
+      <div tabIndex={0}
         onClick={() => {
           if (!last) return setI(i + 1);
           finish();
@@ -107,7 +107,7 @@ export function Intro() {
         {bank ? 'Turn on' : last ? 'Start' : 'Next'}
       </div>
       {bank && (
-        <div onClick={finish} role="button" style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: 'rgba(240,240,243,.7)', padding: '14px 0 18px', cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={finish} role="button" style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: 'rgba(240,240,243,.7)', padding: '14px 0 18px', cursor: 'pointer' }}>
           Not now
         </div>
       )}

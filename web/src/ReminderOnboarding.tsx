@@ -60,14 +60,14 @@ export function ReminderOnboarding() {
           />
         </div>
 
-        <div
+        <div role="button" tabIndex={0}
           onClick={busy ? undefined : turnOn}
           className="press"
           style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 52, borderRadius: 'calc(15px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, boxShadow: 'var(--glow)' }}
         >
           {busy ? 'Setting up…' : 'Turn on daily reminder'}
         </div>
-        <div onClick={dismiss} style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: '14px 8px 4px', cursor: 'pointer', fontWeight: 500 }}>
+        <div role="button" tabIndex={0} onClick={dismiss} style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: '14px 8px 4px', cursor: 'pointer', fontWeight: 500 }}>
           Maybe later
         </div>
       </div>

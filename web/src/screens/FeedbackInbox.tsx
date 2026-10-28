@@ -27,7 +27,8 @@ export function FeedbackInbox() {
   const { go } = useStore();
   const [items, setItems] = useState<FeedbackItem[] | null>(null);
   const [errors, setErrors] = useState<ClientErrorItem[]>([]);
-  const [tab, setTab] = useState<'feedback' | 'crashes' | 'usage'>('feedback');
+  const [tab, setTab] = useState<'feedback' | 'crashes' | 'usage' | 'formats'>('feedback');
+  const [formats, setFormats] = useState<{ id: string; sender: string; text: string; reason: string; createdAt: string }[]>([]);
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [unlocked, setUnlocked] = useState(false);
   const [password, setPassword] = useState('');
@@ -46,6 +47,7 @@ export function FeedbackInbox() {
         // Crash reports live behind the same password.
         api.adminErrors(password).then((e) => setErrors(e.items)).catch(() => {});
         api.adminMetrics(password).then(setMetrics).catch(() => {});
+        api.adminSmsSamples(password).then((r) => setFormats(r.items)).catch(() => {});
       })
       .catch((e) =>
         setError(
@@ -86,7 +88,7 @@ export function FeedbackInbox() {
             style={{ width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: `1px solid ${error ? 'var(--danger)' : 'var(--border)'}`, background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginBottom: 12 }}
           />
           {error && <div style={{ fontSize: 13, color: 'var(--danger)', marginBottom: 12, textAlign: 'center' }}>{error}</div>}
-          <div
+          <div role="button" tabIndex={0}
             onClick={submit}
             className="press"
             style={{ background: password ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 52, borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, cursor: password ? 'pointer' : 'default' }}
@@ -97,8 +99,8 @@ export function FeedbackInbox() {
       ) : (
         <>
           <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 18 }}>
-            {([['feedback', `Feedback (${items?.length ?? 0})`], ['crashes', `Crashes (${errors.length})`], ['usage', 'Usage']] as const).map(([k, label]) => (
-              <div
+            {([['feedback', `Feedback (${items?.length ?? 0})`], ['crashes', `Crashes (${errors.length})`], ['usage', 'Usage'], ['formats', `Formats (${formats.length})`]] as const).map(([k, label]) => (
+              <div tabIndex={0}
                 key={k}
                 onClick={() => setTab(k)}
                 role="tab"
@@ -110,7 +112,27 @@ export function FeedbackInbox() {
             ))}
           </div>
 
-          {tab === 'usage' ? (
+          {tab === 'formats' ? (
+            // Bank messages people couldn't get read, masked on their phones,
+            // for teaching the reader new banks (web/src/lib/smsParse.ts).
+            formats.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>No formats sent yet.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {formats.map((f) => (
+                  <div key={f.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16 }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', marginBottom: 6 }}>
+                      <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }}>{f.sender}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text2)' }}>{f.reason === 'no-verb' ? 'direction unclear' : 'no amount found'}</span>
+                      <span style={{ flex: 1 }} />
+                      <span style={{ fontSize: 12, color: 'var(--text2)' }}>{timeAgo(new Date(f.createdAt).getTime())}</span>
+                    </div>
+                    <div dir="auto" style={{ fontSize: 13.5, color: 'var(--text)', lineHeight: 1.5, overflowWrap: 'anywhere', fontFamily: 'ui-monospace, monospace' }}>{f.text}</div>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : tab === 'usage' ? (
             <UsagePanel m={metrics} />
           ) : tab === 'crashes' ? (
             errors.length === 0 ? (
@@ -168,7 +190,7 @@ export function FeedbackInbox() {
                     {k.label}
                   </span>
                   <span style={{ flex: 1 }} />
-                  <span style={{ fontSize: 12, color: 'var(--text2)' }}>{timeAgo(f.createdAt)}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text2)' }}>{timeAgo(new Date(f.createdAt).getTime())}</span>
                 </div>
                 <div style={{ fontSize: 14.5, color: 'var(--text)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.message}</div>
                 <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 10 }}>

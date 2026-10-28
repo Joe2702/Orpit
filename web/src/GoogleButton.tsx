@@ -72,7 +72,7 @@ export function GoogleButton() {
       </div>
       {native ? (
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <div
+          <div role="button" tabIndex={0}
             onClick={signInNative}
             className="press"
             style={{

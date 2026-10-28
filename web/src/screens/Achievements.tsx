@@ -120,7 +120,7 @@ function BadgeTile({
   // Earned but not yet claimed — a glowing mystery tile inviting a tap to reveal.
   if (b.unlocked && !claimed) {
     return (
-      <div
+      <div role="button" tabIndex={0}
         onClick={() => onClaim(b.id)}
         className="press"
         style={{ position: 'relative', overflow: 'hidden', background: 'var(--surface)', border: '1.5px solid var(--indigo)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: '16px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8, minHeight: 138, justifyContent: 'center', cursor: 'pointer' }}

@@ -22,7 +22,7 @@ function Arrow() {
 /** Tracker card heading: the whole row opens the tracker; the chart below stays tappable on its own. */
 function Head({ title, value, onClick }: { title: string; value?: React.ReactNode; onClick: () => void }) {
   return (
-    <div onClick={onClick} role="button" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, cursor: 'pointer' }}>
+    <div tabIndex={0} onClick={onClick} role="button" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, cursor: 'pointer' }}>
       <span style={title_}>{title}</span>
       {value != null && <span style={statRight}>{value}</span>}
       <Arrow />
@@ -57,7 +57,7 @@ export function Analytics() {
     ),
     habits: (
       <div style={cardB}>
-        <div onClick={() => go('habits')} role="button" style={{ display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={() => go('habits')} role="button" style={{ display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }}>
           <div style={{ position: 'relative', width: 64, height: 64, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Ring pct={h.rangePct} colorKey="indigo" size={64} stroke={7} />
             <div style={{ position: 'absolute', fontSize: 15, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{h.rangePct}%</div>
@@ -78,7 +78,7 @@ export function Analytics() {
               const r = h.rangeByHabit[hb.id];
               const pct = r && r.scheduled ? Math.round((r.done / r.scheduled) * 100) : 0;
               return (
-                <div
+                <div tabIndex={0}
                   key={hb.id}
                   onClick={() => open('habitcal', { habitId: hb.id })}
                   className="pressRow"
@@ -107,7 +107,15 @@ export function Analytics() {
           value={<span style={{ color: d.net < 0 ? 'var(--danger)' : 'var(--text)' }}>{(d.net >= 0 ? '+' : '−') + money0(d.net)}</span>}
           onClick={() => go('finances')}
         />
-        <BarChart buckets={d.buckets} values={d.spendBuckets} color="indigo" height={88} grid={false} format={(v) => moneyShort(v)} />
+        <BarChart
+          buckets={d.buckets}
+          values={d.spendBuckets}
+          color="indigo"
+          height={88}
+          grid={false}
+          format={(v) => moneyShort(v)}
+          onOpen={(i) => go('ftxns', { focus: { title: d.buckets[i].name, start: d.buckets[i].start, end: d.buckets[i].end } })}
+        />
         <div style={sub}>
           {money0(d.income)} in · {money0(d.spent)} out
         </div>
@@ -171,7 +179,7 @@ export function Analytics() {
 
       <SectionLabel>Look back</SectionLabel>
       <div style={{ ...cardB, padding: 0, overflow: 'hidden', marginBottom: 12 }}>
-        <div onClick={() => go('insights')} className="pressRow" role="button" aria-label="Open insights" style={rowS}>
+        <div tabIndex={0} onClick={() => go('insights')} className="pressRow" role="button" aria-label="Open insights" style={rowS}>
           <span style={iconBox}>
             <Glyph name="search" size={19} color="var(--text2)" />
           </span>
@@ -182,7 +190,7 @@ export function Analytics() {
           <Arrow />
         </div>
         {reports.map((r) => (
-          <div key={r.label} onClick={r.run} className="pressRow" role="button" aria-label={`Open ${r.label} report`} style={rowS}>
+          <div tabIndex={0} key={r.label} onClick={r.run} className="pressRow" role="button" aria-label={`Open ${r.label} report`} style={rowS}>
             <span style={iconBox}>
               <Glyph name={r.icon} size={19} color="var(--text2)" />
             </span>

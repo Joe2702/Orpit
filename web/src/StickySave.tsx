@@ -65,7 +65,7 @@ export function StickySave({
           pointerEvents: 'none',
         }}
       />
-      <div
+      <div tabIndex={0}
         onClick={enabled ? onClick : undefined}
         className={enabled ? 'press99' : undefined}
         role="button"

@@ -108,7 +108,7 @@ export function AccountSheet() {
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Main Bank" style={{ ...input, marginBottom: 20 }} />
       {label('Type')}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 20 }}>
-        {['Cash', 'Bank', 'Savings', 'Wallet', 'Credit card'].map((t) => (<div key={t} onClick={() => setType(t)} style={{ ...chip(type === t, 'var(--indigo)'), textAlign: 'center' }}>{t}</div>))}
+        {['Cash', 'Bank', 'Savings', 'Wallet', 'Credit card'].map((t) => (<div role="button" tabIndex={0} aria-pressed={type === t} key={t} onClick={() => setType(t)} style={{ ...chip(type === t, 'var(--indigo)'), textAlign: 'center' }}>{t}</div>))}
       </div>
       {label(editId ? 'Current balance' : 'Starting balance')}
       <input value={balance} onChange={(e) => setBalance(e.target.value.replace(/[^0-9.-]/g, ''))} inputMode="decimal" placeholder="0" style={input} />
@@ -135,7 +135,7 @@ export function AccountSheet() {
                   {l.sender}
                   {l.card ? <span style={{ color: 'var(--text2)' }}> · ••{l.card}</span> : null}
                 </span>
-                <span onClick={() => unlink(l)} role="button" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', padding: '4px 0' }}>Unlink</span>
+                <span tabIndex={0} onClick={() => unlink(l)} role="button" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', padding: '4px 0' }}>Unlink</span>
               </div>
             ))}
           </div>
@@ -150,7 +150,7 @@ export function AccountSheet() {
           {label('Same money as another account?')}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
             {others.map((o) => (
-              <div key={o.id} onClick={() => merge(o.id, o.name)} className="press99" style={chip(false, 'var(--indigo)')}>
+              <div role="button" tabIndex={0} key={o.id} onClick={() => merge(o.id, o.name)} className="press99" style={chip(false, 'var(--indigo)')}>
                 Merge into {o.name}
               </div>
             ))}
@@ -159,10 +159,10 @@ export function AccountSheet() {
       )}
       {label('Color')}
       <div style={{ display: 'flex', gap: 14, marginBottom: 24, paddingLeft: 2 }}>
-        {['emerald', 'blue', 'indigo', 'coral', 'teal'].map((c) => (<div key={c} onClick={() => setColor(c)} style={swatch(c, color === c)} />))}
+        {['emerald', 'blue', 'indigo', 'coral', 'teal'].map((c) => (<div role="button" tabIndex={0} aria-pressed={color === c} aria-label={c} key={c} onClick={() => setColor(c)} style={swatch(c, color === c)} />))}
       </div>
-      <div onClick={save} style={cta(canSave)}>{editId ? 'Save changes' : 'Add account'}</div>
-      {editId && <div onClick={del} className="press99" style={delBtn}><IconTrash />Delete account</div>}
+      <div role="button" tabIndex={0} onClick={save} style={cta(canSave)}>{editId ? 'Save changes' : 'Add account'}</div>
+      {editId && <div role="button" tabIndex={0} onClick={del} className="press99" style={delBtn}><IconTrash />Delete account</div>}
     </div>
   );
 }
@@ -200,22 +200,22 @@ export function FcatSheet() {
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Groceries" style={{ ...input, marginBottom: 20 }} />
       {label('Type')}
       <div style={{ display: 'flex', gap: 9, marginBottom: 20 }}>
-        {(['expense', 'income'] as const).map((k) => (<div key={k} onClick={() => setKind(k)} style={{ ...chip(kind === k, 'var(--indigo)'), flex: 1, textAlign: 'center' }}>{k === 'income' ? 'Income' : 'Expense'}</div>))}
+        {(['expense', 'income'] as const).map((k) => (<div role="button" tabIndex={0} aria-pressed={kind === k} key={k} onClick={() => setKind(k)} style={{ ...chip(kind === k, 'var(--indigo)'), flex: 1, textAlign: 'center' }}>{k === 'income' ? 'Income' : 'Expense'}</div>))}
       </div>
       {label('Color')}
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, paddingLeft: 2 }}>
-        {['coral', 'blue', 'indigo', 'teal', 'emerald', 'warning'].map((c) => (<div key={c} onClick={() => setColor(c)} style={{ ...swatch(c, color === c), width: 36, height: 36 }} />))}
+        {['coral', 'blue', 'indigo', 'teal', 'emerald', 'warning'].map((c) => (<div role="button" tabIndex={0} aria-pressed={color === c} aria-label={c} key={c} onClick={() => setColor(c)} style={{ ...swatch(c, color === c), width: 36, height: 36 }} />))}
       </div>
       {label('Icon')}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 9, marginBottom: 24 }}>
         {ICONS.map((ic) => (
-          <div key={ic} onClick={() => setIcon(ic)} style={{ width: '100%', aspectRatio: '1', borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .15s', border: `1px solid ${icon === ic ? `var(--${color})` : 'var(--border)'}`, background: icon === ic ? `color-mix(in srgb,var(--${color}) 12%,var(--surface))` : 'var(--surface)' }}>
+          <div role="button" tabIndex={0} aria-label={ic} aria-pressed={icon === ic} key={ic} onClick={() => setIcon(ic)} style={{ width: '100%', aspectRatio: '1', borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all .15s', border: `1px solid ${icon === ic ? `var(--${color})` : 'var(--border)'}`, background: icon === ic ? `color-mix(in srgb,var(--${color}) 12%,var(--surface))` : 'var(--surface)' }}>
             <FinIcon icon={ic} color={icon === ic ? `var(--${color})` : 'var(--text2)'} size={22} />
           </div>
         ))}
       </div>
-      <div onClick={save} style={cta(canSave)}>{editId ? 'Save changes' : 'Add category'}</div>
-      {editId && <div onClick={del} className="press99" style={delBtn}><IconTrash />Delete category</div>}
+      <div role="button" tabIndex={0} onClick={save} style={cta(canSave)}>{editId ? 'Save changes' : 'Add category'}</div>
+      {editId && <div role="button" tabIndex={0} onClick={del} className="press99" style={delBtn}><IconTrash />Delete category</div>}
     </div>
   );
 }
@@ -243,14 +243,14 @@ export function BudgetSheet() {
       <Title>{editId ? 'Edit budget' : 'New budget'}</Title>
       {label('Category')}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 20 }}>
-        {state!.fcats.filter((c) => c.kind === 'expense').map((c) => (<div key={c.id} onClick={() => setCat(c.name)} style={chip(cat === c.name, 'var(--indigo)')}>{c.name}</div>))}
+        {state!.fcats.filter((c) => c.kind === 'expense').map((c) => (<div role="button" tabIndex={0} aria-pressed={cat === c.name} key={c.id} onClick={() => setCat(c.name)} style={chip(cat === c.name, 'var(--indigo)')}>{c.name}</div>))}
       </div>
       {label('Monthly limit')}
       <input value={limit} onChange={(e) => setLimit(e.target.value.replace(/[^0-9.]/g, ''))} inputMode="decimal" placeholder="0" style={{ ...input, marginBottom: 18 }} />
 
       {/* Rollover: a good month shouldn't be wasted — carry whatever was left
           into next month's limit instead of resetting to zero. */}
-      <div
+      <div tabIndex={0}
         onClick={() => { haptic(); setRollover(!rollover); }}
         className="press99"
         role="switch"
@@ -268,8 +268,8 @@ export function BudgetSheet() {
         </span>
       </div>
 
-      <div onClick={save} style={cta(canSave)}>{editId ? 'Save changes' : 'Add budget'}</div>
-      {editId && <div onClick={del} className="press99" style={delBtn}><IconTrash />Delete budget</div>}
+      <div role="button" tabIndex={0} onClick={save} style={cta(canSave)}>{editId ? 'Save changes' : 'Add budget'}</div>
+      {editId && <div role="button" tabIndex={0} onClick={del} className="press99" style={delBtn}><IconTrash />Delete budget</div>}
     </div>
   );
 }
@@ -309,7 +309,7 @@ export function GoalSheet() {
       {label('Saved in')}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
         {[{ id: null as string | null, name: 'I’ll update it' }, ...state!.accounts.filter((a) => a.type !== 'Credit card').map((a) => ({ id: a.id as string | null, name: a.name }))].map((o) => (
-          <div key={o.id ?? 'none'} onClick={() => setAccId(o.id)} className="press99" style={chip(accId === o.id, 'var(--indigo)')}>
+          <div role="button" tabIndex={0} aria-pressed={accId === o.id} key={o.id ?? 'none'} onClick={() => setAccId(o.id)} className="press99" style={chip(accId === o.id, 'var(--indigo)')}>
             {o.name}
           </div>
         ))}
@@ -321,10 +321,10 @@ export function GoalSheet() {
       <input type="date" value={due} onChange={(e) => setDue(e.target.value)} style={{ ...input, marginBottom: 20, fontWeight: 600 }} />
       {label('Color')}
       <div style={{ display: 'flex', gap: 14, marginBottom: 24, paddingLeft: 2 }}>
-        {['indigo', 'coral', 'teal', 'blue', 'emerald'].map((c) => (<div key={c} onClick={() => setColor(c)} style={swatch(c, color === c)} />))}
+        {['indigo', 'coral', 'teal', 'blue', 'emerald'].map((c) => (<div role="button" tabIndex={0} aria-pressed={color === c} aria-label={c} key={c} onClick={() => setColor(c)} style={swatch(c, color === c)} />))}
       </div>
-      <div onClick={save} style={cta(canSave)}>{editId ? 'Save changes' : 'Add goal'}</div>
-      {editId && <div onClick={del} className="press99" style={delBtn}><IconTrash />Delete goal</div>}
+      <div role="button" tabIndex={0} onClick={save} style={cta(canSave)}>{editId ? 'Save changes' : 'Add goal'}</div>
+      {editId && <div role="button" tabIndex={0} onClick={del} className="press99" style={delBtn}><IconTrash />Delete goal</div>}
     </div>
   );
 }
@@ -355,7 +355,7 @@ export function RecurringSheet() {
       <Title>{editId ? 'Edit recurring' : 'New recurring'}</Title>
       <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 18 }}>
         {([[false, 'Expense'], [true, 'Income']] as const).map(([v, lbl]) => (
-          <div
+          <div role="button" tabIndex={0}
             key={lbl}
             onClick={() => setIncome(v)}
             style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 'calc(11px * var(--sq))', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(income === v ? { background: 'var(--surface)', color: v ? 'var(--indigo)' : 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
@@ -370,18 +370,18 @@ export function RecurringSheet() {
       <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))} inputMode="decimal" placeholder="0" style={{ ...input, marginBottom: 20 }} />
       {label('Frequency')}
       <div style={{ display: 'flex', gap: 9, marginBottom: 20 }}>
-        {(['Weekly', 'Monthly', 'Yearly'] as const).map((f) => (<div key={f} onClick={() => setFreq(f)} style={{ ...chip(freq === f, 'var(--indigo)'), flex: 1, textAlign: 'center' }}>{f}</div>))}
+        {(['Weekly', 'Monthly', 'Yearly'] as const).map((f) => (<div role="button" tabIndex={0} aria-pressed={freq === f} key={f} onClick={() => setFreq(f)} style={{ ...chip(freq === f, 'var(--indigo)'), flex: 1, textAlign: 'center' }}>{f}</div>))}
       </div>
       {label('Category')}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 20 }}>
-        {state!.fcats.filter((c) => c.kind === 'expense').map((c) => (<div key={c.id} onClick={() => setCat(c.name)} style={chip(cat === c.name, 'var(--indigo)')}>{c.name}</div>))}
+        {state!.fcats.filter((c) => c.kind === 'expense').map((c) => (<div role="button" tabIndex={0} aria-pressed={cat === c.name} key={c.id} onClick={() => setCat(c.name)} style={chip(cat === c.name, 'var(--indigo)')}>{c.name}</div>))}
       </div>
       {label('Account')}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 24 }}>
-        {state!.accounts.map((a) => (<div key={a.id} onClick={() => setAccId(a.id)} style={chip(accId === a.id, `var(--${a.color})`)}>{a.name}</div>))}
+        {state!.accounts.map((a) => (<div role="button" tabIndex={0} aria-pressed={accId === a.id} key={a.id} onClick={() => setAccId(a.id)} style={chip(accId === a.id, `var(--${a.color})`)}>{a.name}</div>))}
       </div>
-      <div onClick={save} style={cta(canSave)}>{editId ? 'Save changes' : 'Add recurring'}</div>
-      {editId && <div onClick={del} className="press99" style={delBtn}><IconTrash />Delete recurring</div>}
+      <div role="button" tabIndex={0} onClick={save} style={cta(canSave)}>{editId ? 'Save changes' : 'Add recurring'}</div>
+      {editId && <div role="button" tabIndex={0} onClick={del} className="press99" style={delBtn}><IconTrash />Delete recurring</div>}
     </div>
   );
 }

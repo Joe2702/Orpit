@@ -235,7 +235,7 @@ function useSelection(n: number) {
   return [sel, setSel] as const;
 }
 
-function Bubble({ idx, n, title, value, top }: { idx: number; n: number; title: string; value: string; top: number }) {
+function Bubble({ idx, n, title, value, top, onOpen }: { idx: number; n: number; title: string; value: string; top: number; onOpen?: () => void }) {
   const x = ((idx + 0.5) / n) * 100;
   // Anchor to the nearer edge near the ends, so the bubble never leaves the card.
   const anchor = x < 22 ? 'left' : x > 78 ? 'right' : 'center';
@@ -247,12 +247,16 @@ function Bubble({ idx, n, title, value, top }: { idx: number; n: number; title: 
       : { left: `${x}%`, transform: 'translateX(-50%)' };
   return (
     <div
+      role={onOpen ? 'button' : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      onClick={onOpen}
       style={{
         position: 'absolute',
         top,
         ...pos,
         zIndex: 2,
-        pointerEvents: 'none',
+        pointerEvents: onOpen ? 'auto' : 'none',
+        cursor: onOpen ? 'pointer' : undefined,
         background: 'var(--text)',
         color: 'var(--bg)',
         borderRadius: 'calc(10px * var(--sq))',
@@ -264,6 +268,7 @@ function Bubble({ idx, n, title, value, top }: { idx: number; n: number; title: 
     >
       <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-.01em' }}>{value}</div>
       <div style={{ fontSize: 11, opacity: 0.7, marginTop: 1 }}>{title}</div>
+      {onOpen && <div style={{ fontSize: 11.5, fontWeight: 650, marginTop: 4 }}>See payments ›</div>}
     </div>
   );
 }
@@ -305,6 +310,7 @@ export function BarChart({
   interactive = true,
   axis = true,
   grid = true,
+  onOpen,
 }: {
   buckets: Bucket[];
   values: (number | null)[];
@@ -318,9 +324,12 @@ export function BarChart({
   interactive?: boolean;
   axis?: boolean;
   grid?: boolean;
+  /** Opens what a bar is made of. Offered in its bubble, and on a second tap. */
+  onOpen?: (i: number) => void;
 }) {
   const n = buckets.length;
   const [sel, setSel] = useSelection(n);
+  const canOpen = (i: number) => !!onOpen && (values[i] ?? 0) > 0;
   const peak = Math.max(0, ...values.map((v) => v ?? 0));
   const max = maxProp ?? niceMax(peak);
   const gap = n <= 7 ? 10 : n <= 12 ? 7 : n <= 16 ? 5 : 2.5;
@@ -360,10 +369,13 @@ export function BarChart({
             const dim = sel != null && sel !== i;
             const future = b.future || v == null;
             const h = future ? 0 : pct(v!);
+            const tappable = interactive && !future;
             return (
               <div
+                role={tappable ? 'button' : undefined}
+                tabIndex={tappable ? 0 : undefined}
                 key={i}
-                onClick={interactive && !b.future && v != null ? () => setSel(sel === i ? null : i) : undefined}
+                onClick={tappable ? () => (sel === i && canOpen(i) ? onOpen!(i) : setSel(sel === i ? null : i)) : undefined}
                 style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', alignItems: 'flex-end', cursor: interactive && !future ? 'pointer' : 'default' }}
                 aria-label={`${b.name}: ${future ? 'not yet' : format(v!)}`}
               >
@@ -388,7 +400,14 @@ export function BarChart({
           })}
         </div>
         {sel != null && values[sel] != null && (
-          <Bubble idx={sel} n={n} title={buckets[sel].name} value={format(values[sel]!)} top={Math.max(-8, (1 - pct(values[sel]!) / 100) * height - 52)} />
+          <Bubble
+            idx={sel}
+            n={n}
+            title={buckets[sel].name}
+            value={format(values[sel]!)}
+            top={Math.max(-8, (1 - pct(values[sel]!) / 100) * height - (canOpen(sel) ? 70 : 52))}
+            onOpen={canOpen(sel) ? () => onOpen!(sel) : undefined}
+          />
         )}
       </div>
       {axis && <XAxis buckets={buckets} />}
@@ -447,7 +466,7 @@ export function SleepClock({
               const nt = nights.find((x) => x.i === i);
               const c = nt ? sleepColor(nt.hours) : 'transparent';
               return (
-                <div
+                <div role="button" tabIndex={0}
                   key={i}
                   onClick={nt ? () => setSel(sel === i ? null : i) : undefined}
                   style={{ flex: 1, minWidth: 0, position: 'relative', cursor: nt ? 'pointer' : 'default' }}

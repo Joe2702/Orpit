@@ -576,3 +576,39 @@ export function parseAll(messages: SmsMessage[], home = 'EGP'): ParsedSms[] {
   }
   return out;
 }
+
+// ---------------------------------------------------------------------------
+// Sharing a format the reader doesn't know
+
+/**
+ * A bank message with everything personal taken out, for the "help Orbit read
+ * this bank" button: every digit becomes 9 (amounts, dates, card and phone
+ * numbers keep their shape, which is what the reader needs), links and emails
+ * go, and a name after "to", "from", "Dear" and their Arabic equivalents
+ * becomes [name]. The user sees exactly this before anything is sent.
+ */
+export function maskMessage(body: string): string {
+  // Words that end a name: what comes after "to Ahmed Ali" in a bank message.
+  const STOP =
+    /^(?:via|on|at|for|from|to|with|using|in|by|your|you|the|a|an|account|acct|card|wallet|atm|mobile|and|ref|reference|instapay|balance|amount|egp|usd|le|is|was|has|of|من|عن|في|على|بقيمة|بمبلغ|عبر|حساب|حسابك|بطاقة|بطاقتك|رصيد|رصيدك|محفظة|محفظتك|مبلغ|جنيه)$/i;
+  const nameAfter = (lead: string, gap: string, rest: string) => {
+    const words = rest.split(/\s+/);
+    let n = 0;
+    while (n < words.length && n < 3 && !STOP.test(words[n].replace(/[.,:;]+$/, ''))) n++;
+    if (!n) return lead + gap + rest;
+    const trail = words[n - 1].match(/[.,:;]+$/)?.[0] || '';
+    return `${lead}${gap}[name]${trail}${n < words.length ? ' ' + words.slice(n).join(' ') : ''}`;
+  };
+  return body
+    .replace(/[\u0660-\u0669\u06F0-\u06F9]/g, '9')
+    .replace(/\d/g, '9')
+    .replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '[email]')
+    .replace(/\b(?:https?:\/\/|www\.)\S+/gi, '[link]')
+    .replace(
+      /\b(to|from|dear|mr\.?|mrs\.?|ms\.?|beneficiary|sender)(\s*:?\s+)((?:[A-Za-z][A-Za-z'.-]*[.,]?|[\u0621-\u064A]+)(?:\s+(?:[A-Za-z][A-Za-z'.-]*[.,]?|[\u0621-\u064A]+)){0,3})/gi,
+      (_m, w: string, gap: string, rest: string) => nameAfter(w, gap, rest)
+    )
+    .replace(/(إلى|الى|من|عزيزي|عزيزتي|السيد|السيدة)(\s+)([\u0621-\u064A]+(?:\s+[\u0621-\u064A]+){0,3})/g, (_m, w: string, gap: string, rest: string) =>
+      nameAfter(w, gap, rest)
+    );
+}

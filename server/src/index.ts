@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import bcrypt from 'bcryptjs';
 import 'dotenv/config';
 import { fileURLToPath } from 'node:url';
@@ -39,6 +40,10 @@ app.use(
       cb(null, !origin || allowedOrigins.includes(origin)),
   })
 );
+// Every save answers with the whole account as JSON, which is mostly repeated
+// keys and digits: gzip makes it several times smaller, which on mobile data
+// is most of the time a save takes to come back.
+app.use(compression());
 
 // ---- Database readiness ----
 // The schema runs on boot, but the server must NOT wait for it before it starts
@@ -2449,6 +2454,44 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 if (!ADMIN_PASSWORD) {
   console.warn('[admin] ADMIN_PASSWORD is not set — the feedback/error inbox is disabled.');
 }
+
+// ---------------- Bank message formats ----------------
+//
+// The phone masks the text before sending (web/src/lib/smsParse maskMessage)
+// and shows the user exactly what goes. This end refuses anything that still
+// has a digit in it, in case an older or altered build didn't mask.
+app.post(
+  '/api/sms-samples',
+  requireAuth,
+  rateLimit('sms-sample', 30, 60 * 60 * 1000),
+  wrap(async (req, res) => {
+    const text = String(req.body.text || '').slice(0, 600);
+    const sender = String(req.body.sender || '').trim().slice(0, 40);
+    if (!text.trim() || !sender) return res.status(400).json({ error: 'Nothing to send' });
+    if (/[0-8\u0660-\u0668\u06F0-\u06F8]/.test(text)) return res.status(400).json({ error: 'Numbers must be masked' });
+    await query('INSERT INTO sms_samples (user_id, sender, text, reason) VALUES ($1,$2,$3,$4)', [
+      req.userId!,
+      sender,
+      text,
+      String(req.body.reason || '').slice(0, 20),
+    ]);
+    res.json({ ok: true });
+  })
+);
+
+app.get(
+  '/api/admin/sms-samples',
+  requireAuth,
+  rateLimit('admin', 20, 15 * 60 * 1000),
+  wrap(async (req, res) => {
+    if (!ADMIN_PASSWORD) return res.status(503).json({ error: 'Inbox not configured on the server' });
+    if (!adminOk(req)) return res.status(403).json({ error: 'Wrong password' });
+    const items = await query(
+      `SELECT id::text, sender, text, reason, created_at AS "createdAt" FROM sms_samples ORDER BY created_at DESC LIMIT 200`
+    );
+    res.json({ items });
+  })
+);
 
 // ---------------- Usage counts ----------------
 //

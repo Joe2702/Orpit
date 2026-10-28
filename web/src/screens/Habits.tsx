@@ -29,7 +29,7 @@ export function Habits() {
     const col = 'var(--indigo)';
     const strength = Math.min(1, hb.total / FORMED);
     return (
-      <div
+      <div role="button" tabIndex={0}
         onClick={() => !hb.locked && open('habit', { id: hb.id, name: hb.name, color: hb.color, target: hb.target, days: hb.days, why: hb.why, cue: hb.cue, paused: hb.paused, reminderTime: hb.reminderTime })}
         className={hb.locked ? undefined : 'press99'}
         style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: '15px 16px', cursor: hb.locked ? 'default' : 'pointer', opacity: hb.paused ? 0.6 : 1 }}
@@ -165,7 +165,7 @@ export function Habits() {
         </div>
       </Card>
 
-      <div
+      <div tabIndex={0}
         onClick={() => open('catchup')}
         className="press99"
         role="button"
@@ -186,7 +186,7 @@ export function Habits() {
         items={h.habits.map((hb) => ({ id: hb.id, node: <div style={{ marginBottom: 10 }}>{habitCard(hb)}</div> }))}
         onReorder={(ids) => mutate(() => api.reorderHabits(ids)).catch(() => {})}
       />
-      <div
+      <div tabIndex={0}
         onClick={() => open('habit')}
         className="press99"
         role="button"

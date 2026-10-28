@@ -1,58 +1,116 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { track, flushUsage, setUsageSharing } from './lib/usage';
+import { Capacitor, SystemBars, SystemBarsStyle } from '@capacitor/core';
 import { useStore } from './store';
 import { api, API_BASE } from './api';
 
-import { Welcome } from './screens/Welcome';
-import { Signin } from './screens/Signin';
-import { Forgot, Reset } from './screens/ForgotReset';
 import { Home } from './screens/Home';
 import { Workouts } from './screens/Workouts';
 import { Habits } from './screens/Habits';
 import { Sleep } from './screens/Sleep';
 import { Finances } from './screens/Finances';
-import { Analytics } from './screens/Analytics';
-import { Settings } from './screens/Settings';
 import { HomeEmpty, WorkoutsEmpty, HabitsEmpty, SleepEmpty, FinancesEmpty } from './screens/Empty';
-import { Counters } from './screens/Counters';
-import { Achievements } from './screens/Achievements';
-import { FAddTx, FTxns, FBudgets, FGoals, FAccounts, FRecurring, FCats, FInsights, FReview } from './screens/FinanceScreens';
-import { FeedbackInbox } from './screens/FeedbackInbox';
-import { Privacy } from './screens/Privacy';
-import { Insights } from './screens/Insights';
-import { Search } from './screens/Search';
-import { VerifyEmail } from './screens/VerifyEmail';
 import { SyncStatus } from './SyncStatus';
 
 import { Chooser } from './sheets/Chooser';
-import { CounterSheet, CountLogSheet, CountPickSheet } from './sheets/CounterSheets';
-import { MilestoneSheet } from './sheets/MilestoneSheet';
-import { AccountSheet, FcatSheet, BudgetSheet, GoalSheet, RecurringSheet } from './sheets/FinanceSheets';
-import { SmsFoundSheet } from './sheets/SmsFoundSheet';
 import { MoneyWatcher } from './MoneyWatcher';
-import { WeekReview } from './screens/WeekReview';
+import { LockScreen } from './LockScreen';
+import { lockSupported, lockEnabled, RELOCK_AFTER } from './lib/appLock';
 import { WorkoutSheet } from './sheets/WorkoutSheet';
 import { SleepSheet } from './sheets/SleepSheet';
 import { ExpenseSheet } from './sheets/ExpenseSheet';
 import { HabitSheet } from './sheets/HabitSheet';
 import { EditSheet } from './sheets/EditSheet';
-import { WCatsSheet, WCatSheet } from './sheets/CategorySheets';
-import { ProfileSheet } from './sheets/ProfileSheet';
-import { FeedbackSheet } from './sheets/FeedbackSheet';
-import { HabitCalendarSheet } from './sheets/HabitCalendarSheet';
-import { CatchUpSheet } from './sheets/CatchUpSheet';
 import { ReminderOnboarding } from './ReminderOnboarding';
-import { StoryReport } from './screens/StoryReport';
-import { Intro } from './screens/Intro';
-import { Partner } from './screens/Partner';
-import { PartnerThread } from './screens/PartnerThread';
-import { PartnerReportSheet } from './sheets/PartnerReportSheet';
 import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily } from './lib/notify';
 import { connectivity, subscribe as subscribeConnectivity } from './lib/offline';
 import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
 import { updateWidget } from './lib/widget';
 import { syncSms, smsEnabled, ensureLiveSms, onSmsArrived, SMS_CHANGED } from './lib/smsSync';
+
+// Screens and sheets that aren't needed to open the app and log something load
+// when first used, so a cold start parses less. A few seconds after launch the
+// rest are fetched anyway (see warmLazyScreens), so they're instant when
+// tapped and, on the website, cached for offline use like everything else.
+const LOAD = {
+  FinanceScreens: () => import('./screens/FinanceScreens'),
+  Achievements: () => import('./screens/Achievements'),
+  Analytics: () => import('./screens/Analytics'),
+  Counters: () => import('./screens/Counters'),
+  FeedbackInbox: () => import('./screens/FeedbackInbox'),
+  ForgotReset: () => import('./screens/ForgotReset'),
+  Insights: () => import('./screens/Insights'),
+  Intro: () => import('./screens/Intro'),
+  Partner: () => import('./screens/Partner'),
+  PartnerThread: () => import('./screens/PartnerThread'),
+  Privacy: () => import('./screens/Privacy'),
+  Search: () => import('./screens/Search'),
+  Settings: () => import('./screens/Settings'),
+  Signin: () => import('./screens/Signin'),
+  StoryReport: () => import('./screens/StoryReport'),
+  VerifyEmail: () => import('./screens/VerifyEmail'),
+  WeekReview: () => import('./screens/WeekReview'),
+  Welcome: () => import('./screens/Welcome'),
+  CatchUpSheet: () => import('./sheets/CatchUpSheet'),
+  CategorySheets: () => import('./sheets/CategorySheets'),
+  CounterSheets: () => import('./sheets/CounterSheets'),
+  FeedbackSheet: () => import('./sheets/FeedbackSheet'),
+  FinanceSheets: () => import('./sheets/FinanceSheets'),
+  HabitCalendarSheet: () => import('./sheets/HabitCalendarSheet'),
+  MilestoneSheet: () => import('./sheets/MilestoneSheet'),
+  PartnerReportSheet: () => import('./sheets/PartnerReportSheet'),
+  ProfileSheet: () => import('./sheets/ProfileSheet'),
+  SmsFoundSheet: () => import('./sheets/SmsFoundSheet'),
+};
+function warmLazyScreens(): void {
+  Object.values(LOAD).forEach((load) => load().catch(() => {}));
+}
+const FAddTx = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FAddTx })));
+const FTxns = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FTxns })));
+const FBudgets = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FBudgets })));
+const FGoals = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FGoals })));
+const FAccounts = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FAccounts })));
+const FRecurring = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FRecurring })));
+const FCats = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FCats })));
+const FInsights = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FInsights })));
+const FReview = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FReview })));
+const Welcome = lazy(() => LOAD.Welcome().then((m) => ({ default: m.Welcome })));
+const Signin = lazy(() => LOAD.Signin().then((m) => ({ default: m.Signin })));
+const Forgot = lazy(() => LOAD.ForgotReset().then((m) => ({ default: m.Forgot })));
+const Reset = lazy(() => LOAD.ForgotReset().then((m) => ({ default: m.Reset })));
+const Analytics = lazy(() => LOAD.Analytics().then((m) => ({ default: m.Analytics })));
+const Settings = lazy(() => LOAD.Settings().then((m) => ({ default: m.Settings })));
+const Counters = lazy(() => LOAD.Counters().then((m) => ({ default: m.Counters })));
+const Achievements = lazy(() => LOAD.Achievements().then((m) => ({ default: m.Achievements })));
+const FeedbackInbox = lazy(() => LOAD.FeedbackInbox().then((m) => ({ default: m.FeedbackInbox })));
+const Privacy = lazy(() => LOAD.Privacy().then((m) => ({ default: m.Privacy })));
+const Insights = lazy(() => LOAD.Insights().then((m) => ({ default: m.Insights })));
+const Search = lazy(() => LOAD.Search().then((m) => ({ default: m.Search })));
+const VerifyEmail = lazy(() => LOAD.VerifyEmail().then((m) => ({ default: m.VerifyEmail })));
+const StoryReport = lazy(() => LOAD.StoryReport().then((m) => ({ default: m.StoryReport })));
+const Intro = lazy(() => LOAD.Intro().then((m) => ({ default: m.Intro })));
+const Partner = lazy(() => LOAD.Partner().then((m) => ({ default: m.Partner })));
+const PartnerThread = lazy(() => LOAD.PartnerThread().then((m) => ({ default: m.PartnerThread })));
+const WeekReview = lazy(() => LOAD.WeekReview().then((m) => ({ default: m.WeekReview })));
+const CounterSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m.CounterSheet })));
+const CountLogSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m.CountLogSheet })));
+const CountPickSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m.CountPickSheet })));
+const MilestoneSheet = lazy(() => LOAD.MilestoneSheet().then((m) => ({ default: m.MilestoneSheet })));
+const AccountSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.AccountSheet })));
+const FcatSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.FcatSheet })));
+const BudgetSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.BudgetSheet })));
+const GoalSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.GoalSheet })));
+const RecurringSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.RecurringSheet })));
+const SmsFoundSheet = lazy(() => LOAD.SmsFoundSheet().then((m) => ({ default: m.SmsFoundSheet })));
+const WCatsSheet = lazy(() => LOAD.CategorySheets().then((m) => ({ default: m.WCatsSheet })));
+const WCatSheet = lazy(() => LOAD.CategorySheets().then((m) => ({ default: m.WCatSheet })));
+const ProfileSheet = lazy(() => LOAD.ProfileSheet().then((m) => ({ default: m.ProfileSheet })));
+const FeedbackSheet = lazy(() => LOAD.FeedbackSheet().then((m) => ({ default: m.FeedbackSheet })));
+const HabitCalendarSheet = lazy(() => LOAD.HabitCalendarSheet().then((m) => ({ default: m.HabitCalendarSheet })));
+const CatchUpSheet = lazy(() => LOAD.CatchUpSheet().then((m) => ({ default: m.CatchUpSheet })));
+const PartnerReportSheet = lazy(() => LOAD.PartnerReportSheet().then((m) => ({ default: m.PartnerReportSheet })));
+
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
 
@@ -221,7 +279,7 @@ function TabBar() {
   // A floating bar over the screen. Each destination is labelled: an icon
   // alone makes people guess, and the guess is the moment an app feels unsure.
   const item = (active: boolean, onClick: () => void, path: React.ReactNode, label: string) => (
-    <div
+    <div tabIndex={0}
       onClick={onClick}
       className="press92"
       role="tab"
@@ -262,7 +320,7 @@ function TabBar() {
         {item(screen === 'home', () => go('home'), <path d="M4 11l8-7 8 7M6 9.5V19h4.5v-5h3v5H18V9.5" />, 'Home')}
         {item(screen === 'analytics', () => go('analytics'), <path d="M4 20V11M10 20V5M16 20v-6M4 20h16" />, 'Analytics')}
         {/* Add — the primary create action; accented but flat within the bar. */}
-        <div onClick={() => open('chooser')} className="press92" role="button" aria-label="Add an entry" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 48 }}>
+        <div tabIndex={0} onClick={() => open('chooser')} className="press92" role="button" aria-label="Add an entry" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 48 }}>
           <div style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--bg)', strokeWidth: 2.3, strokeLinecap: 'round' }} aria-hidden><path d="M11 4v14M4 11h14" /></svg>
           </div>
@@ -308,10 +366,10 @@ function PasswordPrompt() {
           style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginTop: 18 }}
         />
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-          <div onClick={() => closePassword(null)} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+          <div role="button" tabIndex={0} onClick={() => closePassword(null)} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
             Cancel
           </div>
-          <div
+          <div role="button" tabIndex={0}
             onClick={() => value && closePassword(value)}
             className="press"
             style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', background: value ? 'var(--danger)' : 'color-mix(in srgb,var(--danger) 40%,var(--surface))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: value ? 'pointer' : 'default' }}
@@ -385,7 +443,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
             <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.6)', marginBottom: 16, maxWidth: 280, wordBreak: 'break-all', lineHeight: 1.45 }}>
               {apiBase || 'no backend URL configured'}
             </div>
-            <div onClick={onRetry} className="press" style={{ display: 'inline-flex', background: '#f0f0f3', color: '#0c0c0f', height: 46, padding: '0 26px', borderRadius: 'calc(14px * var(--sq))', alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px -10px rgba(0,0,0,.4)' }}>Try again</div>
+            <div role="button" tabIndex={0} onClick={onRetry} className="press" style={{ display: 'inline-flex', background: '#f0f0f3', color: '#0c0c0f', height: 46, padding: '0 26px', borderRadius: 'calc(14px * var(--sq))', alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px -10px rgba(0,0,0,.4)' }}>Try again</div>
           </div>
         ) : (
           <>
@@ -476,6 +534,18 @@ export function App() {
 
   const rawTheme = authed && state ? state.profile.theme : localTheme;
   const theme: 'light' | 'dark' = rawTheme === 'system' ? (sysDark ? 'dark' : 'light') : rawTheme;
+
+  // The status and navigation bar icons, matched to what's behind them. On
+  // Android 15 and later the bars are transparent and the app draws under
+  // them, so with nothing set, light theme showed white clock and battery
+  // icons on a light background. The welcome and intro screens are dark
+  // whatever the theme.
+  const introShowing = authed && !!state && !state.profile.introDone;
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const darkBehind = theme === 'dark' || !authed || introShowing;
+    SystemBars.setStyle({ style: darkBehind ? SystemBarsStyle.Dark : SystemBarsStyle.Light }).catch(() => {});
+  }, [theme, authed, introShowing]);
 
   const setTheme = (t: 'light' | 'dark') => {
     if (authed)
@@ -589,6 +659,27 @@ export function App() {
       clearTimeout(t);
     };
   }, [authed, smsOn, applyState, showToast]);
+
+  // ---- App lock ----
+  // Locked from the start when it's on, and again after a minute away. Short
+  // trips (the unlock prompt itself, a permission dialog, a glance at a
+  // message) don't count.
+  const [locked, setLocked] = useState(() => lockSupported() && lockEnabled());
+  const hiddenAt = useRef<number | null>(null);
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') hiddenAt.current = Date.now();
+      else if (lockEnabled() && hiddenAt.current != null && Date.now() - hiddenAt.current > RELOCK_AFTER) setLocked(true);
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
+  // ---- The rest of the app, fetched once the first screen is up ----
+  useEffect(() => {
+    const t = setTimeout(warmLazyScreens, 2500);
+    return () => clearTimeout(t);
+  }, []);
 
   // ---- Usage counts ----
   // An open each time the app comes to the front, and what's been counted sent
@@ -784,7 +875,11 @@ export function App() {
             side the swipe came from. */}
         {ready && <SyncStatus />}
         <div key={screen} style={slide ? { animation: `${slide === 'l' ? 'slideInR' : 'slideInL'} .26s cubic-bezier(.2,.8,.3,1)` } : undefined}>
-          {ready ? <CurrentScreen /> : null}
+          {ready ? (
+            <Suspense fallback={null}>
+              <CurrentScreen />
+            </Suspense>
+          ) : null}
         </div>
       </div>
 
@@ -795,7 +890,7 @@ export function App() {
           </svg>
           {toast}
           {toastUndo && (
-            <span
+            <span tabIndex={0}
               onClick={runUndo}
               role="button"
               aria-label="Undo"
@@ -817,7 +912,9 @@ export function App() {
               <div style={{ width: 38, height: 4, borderRadius: 999, background: 'var(--border)' }} />
             </div>
             <div style={{ overflowY: 'auto', paddingBottom: mobile ? 'env(safe-area-inset-bottom)' : 0 }}>
-              <SheetBody />
+              <Suspense fallback={null}>
+                <SheetBody />
+              </Suspense>
             </div>
           </div>
         </div>
@@ -830,10 +927,10 @@ export function App() {
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>Exit Orbit?</div>
             <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>Are you sure you want to close the app?</div>
             <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
-              <div onClick={cancelExit} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+              <div role="button" tabIndex={0} onClick={cancelExit} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
                 Stay
               </div>
-              <div onClick={confirmExit} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', background: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
+              <div role="button" tabIndex={0} onClick={confirmExit} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', background: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
                 Exit
               </div>
             </div>
@@ -847,13 +944,13 @@ export function App() {
           <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(8,9,14,.35)', animation: 'fadeUp .25s ease', textAlign: 'center' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>{confirmState.title}</div>
             {confirmState.message && (
-              <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>{confirmState.message}</div>
+              <div dir="auto" style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5, whiteSpace: 'pre-line', overflowWrap: 'anywhere', maxHeight: '50vh', overflowY: 'auto' }}>{confirmState.message}</div>
             )}
             <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
-              <div onClick={() => closeConfirm(false)} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+              <div role="button" tabIndex={0} onClick={() => closeConfirm(false)} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
                 Cancel
               </div>
-              <div onClick={() => closeConfirm(true)} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', background: confirmState.danger === false ? 'var(--indigo)' : 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
+              <div role="button" tabIndex={0} onClick={() => closeConfirm(true)} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', background: confirmState.danger === false ? 'var(--indigo)' : 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
                 {confirmState.confirmLabel || 'Delete'}
               </div>
             </div>
@@ -864,11 +961,20 @@ export function App() {
       {passwordState && <PasswordPrompt />}
 
       {/* First run: explain the app before asking about reminders. */}
-      {authed && state && !state.profile.introDone && <Intro />}
+      {locked && authed && <LockScreen onUnlocked={() => setLocked(false)} />}
+      {authed && state && !state.profile.introDone && (
+        <Suspense fallback={null}>
+          <Intro />
+        </Suspense>
+      )}
       {authed && state?.profile.introDone && <ReminderOnboarding />}
       {authed && state && <MoneyWatcher />}
 
-      {report && state && <StoryReport kind={report.kind} offset={report.offset} onClose={closeReport} />}
+      {report && state && (
+        <Suspense fallback={null}>
+          <StoryReport kind={report.kind} offset={report.offset} onClose={closeReport} />
+        </Suspense>
+      )}
     </>
   );
 
@@ -899,8 +1005,8 @@ export function App() {
   return (
     <div className="stage">
       <div style={{ display: 'flex', gap: 4, alignItems: 'center', background: 'rgba(255,255,255,.7)', backdropFilter: 'blur(8px)', borderRadius: 999, padding: 5, boxShadow: '0 2px 12px rgba(20,21,30,.12)' }}>
-        <div onClick={() => setTheme('light')} style={pill(theme === 'light')}>Light</div>
-        <div onClick={() => setTheme('dark')} style={pill(theme === 'dark')}>Dark</div>
+        <div role="button" tabIndex={0} aria-pressed={theme === 'light'} onClick={() => setTheme('light')} style={pill(theme === 'light')}>Light</div>
+        <div role="button" tabIndex={0} aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')} style={pill(theme === 'dark')}>Dark</div>
       </div>
 
       <div style={{ width: 414, height: 868, background: '#08080a', borderRadius: 56, padding: 12, boxShadow: '0 60px 120px -30px rgba(15,16,24,.6), 0 0 0 2px rgba(255,255,255,.05) inset', flex: 'none' }}>

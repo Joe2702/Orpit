@@ -113,7 +113,7 @@ export function Signin() {
               placeholder={signUp ? 'At least 6 characters' : 'Your password'}
               style={{ ...inputStyle, paddingRight: 48 }}
             />
-            <div
+            <div role="button" tabIndex={0}
               onClick={() => setShowPw((s) => !s)}
               style={{ position: 'absolute', right: 6, top: 0, height: 52, width: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
               aria-label={showPw ? 'Hide password' : 'Show password'}
@@ -136,7 +136,7 @@ export function Signin() {
           <div style={{ marginTop: 14, fontSize: 13.5, fontWeight: 500, color: 'var(--danger)' }}>{error}</div>
         )}
 
-        <div
+        <div role="button" tabIndex={0}
           onClick={busy ? undefined : submit}
           className="press"
           style={{
@@ -159,7 +159,7 @@ export function Signin() {
         </div>
 
         {!signUp && (
-          <div
+          <div role="button" tabIndex={0}
             onClick={() => go('forgot')}
             style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: '14px 8px 0', cursor: 'pointer' }}
           >
@@ -169,7 +169,7 @@ export function Signin() {
 
         <GoogleButton />
       </div>
-      <div
+      <div role="button" tabIndex={0}
         onClick={() => {
           setAuthMode(signUp ? 'signin' : 'signup');
           setError('');

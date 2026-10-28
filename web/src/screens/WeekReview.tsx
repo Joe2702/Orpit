@@ -85,7 +85,7 @@ export function WeekReview() {
       </Card>
 
       {d.reviewCount > 0 && (
-        <div onClick={() => go('freview')} className="press99" role="button" style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '12px 14px', marginBottom: 18, cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={() => go('freview')} className="press99" role="button" style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '12px 14px', marginBottom: 18, cursor: 'pointer' }}>
           <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>
             {d.reviewCount === 1 ? 'One payment to check' : `${d.reviewCount} payments to check`}
           </span>
@@ -123,7 +123,7 @@ export function WeekReview() {
       {section('One thing for next week')}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
         {ideas.map((i) => (
-          <div
+          <div role="button" tabIndex={0} aria-pressed={pick === i && !own}
             key={i}
             onClick={() => {
               setPick(pick === i ? null : i);
@@ -145,7 +145,7 @@ export function WeekReview() {
       />
 
       {good && <div style={{ fontSize: 15, color: 'var(--text)', textAlign: 'center', marginBottom: 14 }}>{good}</div>}
-      <div onClick={done} className="press" role="button" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>
+      <div tabIndex={0} onClick={done} className="press" role="button" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>
         Done
       </div>
     </div>

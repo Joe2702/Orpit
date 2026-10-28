@@ -77,7 +77,7 @@ export function MilestoneSheet() {
           {label('Suggestions')}
           <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 20 }}>
             {SUGGESTIONS.map((s) => (
-              <div
+              <div role="button" tabIndex={0}
                 key={s.name}
                 onClick={() => { setName(s.name); setIcon(s.icon); setColor(s.color); }}
                 style={{ ...chip(false, `var(--${s.color})`), flex: 'none' }}
@@ -114,14 +114,14 @@ export function MilestoneSheet() {
       {label('Colour')}
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, paddingLeft: 2 }}>
         {['indigo', 'teal', 'coral', 'blue', 'emerald', 'warning'].map((c) => (
-          <div key={c} onClick={() => setColor(c)} style={{ ...swatch(c, color === c), width: 34, height: 34 }} />
+          <div role="button" tabIndex={0} aria-pressed={color === c} aria-label={c} key={c} onClick={() => setColor(c)} style={{ ...swatch(c, color === c), width: 34, height: 34 }} />
         ))}
       </div>
 
       {label('Icon')}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 9, marginBottom: 24 }}>
         {CTR_ICONS.map((ic) => (
-          <div
+          <div role="button" tabIndex={0} aria-label={ic} aria-pressed={icon === ic}
             key={ic}
             onClick={() => setIcon(ic)}
             style={{
@@ -136,7 +136,7 @@ export function MilestoneSheet() {
         ))}
       </div>
 
-      <div
+      <div role="button" tabIndex={0}
         onClick={save}
         className={canSave ? 'press99' : undefined}
         style={{
@@ -148,7 +148,7 @@ export function MilestoneSheet() {
         {editId ? 'Save changes' : 'Start counting'}
       </div>
       {editId && (
-        <div
+        <div role="button" tabIndex={0}
           onClick={del}
           className="press99"
           style={{

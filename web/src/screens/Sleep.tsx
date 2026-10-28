@@ -73,7 +73,7 @@ export function Sleep() {
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', display: list.length ? undefined : 'none' }}>
         {list.slice(0, shown).map((n) => (
           <SwipeRow key={n.id} onEdit={() => open('edit', { kind: 'sleep', item: n })} onDelete={() => remove('sleep', n)}>
-            <div
+            <div role="button" tabIndex={0}
               onClick={() => open('edit', { kind: 'sleep', item: n })}
               className="pressRow"
               style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}
@@ -96,7 +96,7 @@ export function Sleep() {
         ))}
       </div>
       {list.length > shown && (
-        <div onClick={() => setShown(shown + 50)} className="press99" role="button" style={{ marginTop: 12, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={() => setShown(shown + 50)} className="press99" role="button" style={{ marginTop: 12, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
           Show {Math.min(50, list.length - shown)} more
         </div>
       )}

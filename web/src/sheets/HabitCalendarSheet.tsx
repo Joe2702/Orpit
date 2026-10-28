@@ -67,11 +67,11 @@ export function HabitCalendarSheet() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div onClick={() => setOffset(offset + 1)} className="press92" style={{ width: 36, height: 36, borderRadius: 'calc(10px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} aria-label="Previous month" onClick={() => setOffset(offset + 1)} className="press92" style={{ width: 36, height: 36, borderRadius: 'calc(10px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M11 4l-5 5 5 5" /></svg>
         </div>
         <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{monthLabel}</div>
-        <div onClick={() => offset > 0 && setOffset(offset - 1)} className="press92" style={{ width: 36, height: 36, borderRadius: 'calc(10px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: offset > 0 ? 'pointer' : 'default', opacity: offset > 0 ? 1 : 0.4 }}>
+        <div role="button" tabIndex={0} aria-label="Next month" aria-disabled={offset === 0} onClick={() => offset > 0 && setOffset(offset - 1)} className="press92" style={{ width: 36, height: 36, borderRadius: 'calc(10px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: offset > 0 ? 'pointer' : 'default', opacity: offset > 0 ? 1 : 0.4 }}>
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M7 4l5 5-5 5" /></svg>
         </div>
       </div>
@@ -90,7 +90,7 @@ export function HabitCalendarSheet() {
           const scheduled = (habit?.days || '1111111')[new Date(year, mo, day).getDay()] === '1';
           const future = ds > todayStr;
           return (
-            <div
+            <div role="button" tabIndex={future ? -1 : 0} aria-label={`${monthLabel.split(' ')[0]} ${day}`} aria-pressed={done} aria-disabled={future}
               key={i}
               onClick={() => toggle(ds)}
               className={future ? undefined : 'press92'}

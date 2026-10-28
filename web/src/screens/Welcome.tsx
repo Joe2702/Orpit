@@ -37,7 +37,7 @@ export function Welcome() {
         </div>
       </div>
       <div style={{ paddingBottom: 'max(30px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <div
+        <div tabIndex={0}
           onClick={() => open('signup')}
           className="press"
           role="button"
@@ -45,7 +45,7 @@ export function Welcome() {
         >
           Create an account
         </div>
-        <div
+        <div tabIndex={0}
           onClick={() => open('signin')}
           role="button"
           style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: 'rgba(240,240,243,.75)', padding: 15, cursor: 'pointer' }}

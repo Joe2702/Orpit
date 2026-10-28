@@ -1,5 +1,5 @@
 import { Capacitor, registerPlugin, type PluginListenerHandle } from '@capacitor/core';
-import { analyseSms, SKIP_LABEL, type SmsMessage, type ParsedSms } from './smsParse';
+import { analyseSms, maskMessage, SKIP_LABEL, type SmsMessage, type ParsedSms } from './smsParse';
 import { buildRows, type Fx, type SmsRow } from './ledger';
 import type { AppState } from '../types';
 import { ensureNotificationPermission } from './notify';
@@ -219,6 +219,12 @@ export interface SmsDiagEntry {
   /** 'imported', 'duplicate' or a human-readable reason it was skipped. */
   outcome: string;
   ok: boolean;
+  /**
+   * For a message that looked like a payment but couldn't be read: the whole
+   * text with digits and names masked, ready to share if the user chooses to.
+   */
+  masked?: string;
+  reason?: string;
 }
 
 export interface SmsDiag {
@@ -321,6 +327,9 @@ export async function syncSms(
       ts: m.ts,
       outcome: a.ok ? 'Read as a payment' : SKIP_LABEL[a.reason],
       ok: a.ok,
+      ...(!a.ok && (a.reason === 'no-amount' || a.reason === 'no-verb')
+        ? { masked: maskMessage(m.body).slice(0, 600), reason: a.reason }
+        : {}),
     };
     if (a.ok && !seen.has(a.parsed.key)) {
       seen.add(a.parsed.key);

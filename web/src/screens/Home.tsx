@@ -185,7 +185,7 @@ export function Home() {
               </div>
             )}
             {todaysHabits.map((hb) => (
-              <div key={hb.id} onClick={() => toggleHabit(hb.id)} role="checkbox" aria-checked={hb.done} aria-label={hb.name} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderBottom: '1px solid var(--hairline)', cursor: 'pointer' }}>
+              <div tabIndex={0} key={hb.id} onClick={() => toggleHabit(hb.id)} role="checkbox" aria-checked={hb.done} aria-label={hb.name} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderBottom: '1px solid var(--hairline)', cursor: 'pointer' }}>
                 <div
                   style={{
                     width: 26,
@@ -323,7 +323,7 @@ export function Home() {
           {state!.milestones.map((m) => {
             const e = elapsed(new Date(`${m.since}T12:00:00`).getTime());
             return (
-              <div
+              <div role="button" tabIndex={0}
                 key={m.id}
                 onClick={() => open('milestone', m)}
                 className="pressRow"
@@ -342,7 +342,7 @@ export function Home() {
               </div>
             );
           })}
-          <div
+          <div role="button" tabIndex={0}
             onClick={() => open('milestone')}
             className="pressRow"
             style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', cursor: 'pointer' }}
@@ -365,7 +365,7 @@ export function Home() {
     counters: (
       <>
         <SectionLabel>{state!.counters.length ? `Counters in ${monthName}` : 'Counters'}</SectionLabel>
-        <div
+        <div role="button" tabIndex={0}
           onClick={() => go('counters')}
           className="press99"
           style={{ ...listCard, cursor: 'pointer' }}
@@ -427,7 +427,7 @@ export function Home() {
         <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
         </div>
-        <div onClick={() => go('search')} className="press96" role="button" aria-label="Search" style={headBtn}>
+        <div tabIndex={0} onClick={() => go('search')} className="press96" role="button" aria-label="Search" style={headBtn}>
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <circle cx="8.5" cy="8.5" r="5.5" />
             <path d="M13 13l3 3" />
@@ -447,20 +447,20 @@ export function Home() {
               <div className="display" style={{ fontSize: 24, lineHeight: 1.1, color: 'var(--text)' }}>{fresh.title}</div>
               <div style={{ fontSize: 13.5, color: 'var(--text2)', marginTop: 6, lineHeight: 1.45 }}>{fresh.body}</div>
             </div>
-            <div onClick={dismissFresh} role="button" aria-label="Dismiss" className="press92" style={{ width: 30, height: 30, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 99, color: 'var(--text3)', cursor: 'pointer', marginTop: -4, marginRight: -6 }}>
+            <div tabIndex={0} onClick={dismissFresh} role="button" aria-label="Dismiss" className="press92" style={{ width: 30, height: 30, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 99, color: 'var(--text3)', cursor: 'pointer', marginTop: -4, marginRight: -6 }}>
               <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' }}>
                 <path d="M3 3l8 8M11 3l-8 8" />
               </svg>
             </div>
           </div>
-          <div onClick={fresh.run} role="button" style={{ display: 'inline-block', marginTop: 12, fontSize: 14, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
+          <div tabIndex={0} onClick={fresh.run} role="button" style={{ display: 'inline-block', marginTop: 12, fontSize: 14, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
             {fresh.cta}
           </div>
         </div>
       )}
 
       {weekDue && (
-        <div onClick={() => go('weekreview')} className="press99" role="button" style={{ ...listCard, display: 'flex', alignItems: 'center', gap: 12, padding: '14px 14px 14px 16px', marginBottom: 22, cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={() => go('weekreview')} className="press99" role="button" style={{ ...listCard, display: 'flex', alignItems: 'center', gap: 12, padding: '14px 14px 14px 16px', marginBottom: 22, cursor: 'pointer' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>Your week in review</div>
             <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>A minute to look back, and one thing to aim for next week.</div>
@@ -492,7 +492,7 @@ export function Home() {
                 : `Last done ${nudge.last ? relLabel(new Date(nudge.last + 'T12:00:00').getTime()).replace('Yesterday', 'yesterday') : 'a while ago'}. Start small today: two minutes counts.`}
             </div>
           </div>
-          <div
+          <div tabIndex={0}
             onClick={() => toggleHabit(nudge.id)}
             className="press92"
             role="button"
@@ -539,7 +539,7 @@ export function Home() {
 
 function StatCard({ onClick, label, children }: { onClick: () => void; label: string; children: React.ReactNode }) {
   return (
-    <div onClick={onClick} className="press" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: 15, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, overflow: 'hidden' }}>
+    <div role="button" tabIndex={0} onClick={onClick} className="press" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: 15, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, overflow: 'hidden' }}>
       <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
       {children}
     </div>

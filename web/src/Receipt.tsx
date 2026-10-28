@@ -153,12 +153,12 @@ export function ReceiptPicker({ value, onChange }: { value: string | null; onCha
             <img src={value} alt="Receipt" style={{ display: 'block', width: '100%', maxHeight: 200, objectFit: 'cover' }} />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <div onClick={choose} className="press99" role="button" style={{ ...pickerBox, flex: 1 }}>Replace</div>
-            <div onClick={() => onChange(null)} className="press99" role="button" style={{ ...pickerBox, flex: 1, color: 'var(--danger)', borderColor: 'color-mix(in srgb,var(--danger) 35%,var(--border))' }}>Remove</div>
+            <div tabIndex={0} onClick={choose} className="press99" role="button" style={{ ...pickerBox, flex: 1 }}>Replace</div>
+            <div tabIndex={0} onClick={() => onChange(null)} className="press99" role="button" style={{ ...pickerBox, flex: 1, color: 'var(--danger)', borderColor: 'color-mix(in srgb,var(--danger) 35%,var(--border))' }}>Remove</div>
           </div>
         </div>
       ) : (
-        <div onClick={choose} className="press99" role="button" style={{ ...pickerBox, opacity: busy ? 0.6 : 1 }}>
+        <div tabIndex={0} onClick={choose} className="press99" role="button" style={{ ...pickerBox, opacity: busy ? 0.6 : 1 }}>
           <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <path d="M2.5 6.5h3l1.5-2h5l1.5 2h3v9h-14z" />
             <circle cx="9.5" cy="11" r="3" />
@@ -275,20 +275,20 @@ export function ReceiptField({ txn }: { txn: Txn }) {
 
       {photo ? (
         <div>
-          <div onClick={() => setFull(true)} className="press99" role="button" style={{ borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', border: '1px solid var(--border)', cursor: 'pointer', marginBottom: 10, background: 'var(--bg)' }}>
+          <div tabIndex={0} onClick={() => setFull(true)} className="press99" role="button" aria-label="View receipt full size" style={{ borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', border: '1px solid var(--border)', cursor: 'pointer', marginBottom: 10, background: 'var(--bg)' }}>
             <img src={photo} alt="Receipt" style={{ display: 'block', width: '100%', maxHeight: 220, objectFit: 'cover' }} />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <div onClick={choose} className="press99" role="button" style={{ ...box, flex: 1 }}>
+            <div tabIndex={0} onClick={choose} className="press99" role="button" style={{ ...box, flex: 1 }}>
               Replace
             </div>
-            <div onClick={removePhoto} className="press99" role="button" style={{ ...box, flex: 1, color: 'var(--danger)', borderColor: 'color-mix(in srgb,var(--danger) 35%,var(--border))' }}>
+            <div tabIndex={0} onClick={removePhoto} className="press99" role="button" style={{ ...box, flex: 1, color: 'var(--danger)', borderColor: 'color-mix(in srgb,var(--danger) 35%,var(--border))' }}>
               Remove
             </div>
           </div>
         </div>
       ) : (
-        <div onClick={choose} className="press99" role="button" style={{ ...box, opacity: loading ? 0.6 : 1 }}>
+        <div tabIndex={0} onClick={choose} className="press99" role="button" style={{ ...box, opacity: loading ? 0.6 : 1 }}>
           <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <path d="M2.5 6.5h3l1.5-2h5l1.5 2h3v9h-14z" />
             <circle cx="9.5" cy="11" r="3" />
@@ -299,7 +299,7 @@ export function ReceiptField({ txn }: { txn: Txn }) {
 
       {/* Full-screen view — receipts are only useful if you can read them. */}
       {full && photo && (
-        <div
+        <div role="button" tabIndex={0} aria-label="Close receipt"
           onClick={() => setFull(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(8,9,14,.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, animation: 'fadeIn .2s ease' }}
         >

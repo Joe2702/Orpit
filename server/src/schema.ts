@@ -288,6 +288,17 @@ ALTER TABLE accounts ADD COLUMN IF NOT EXISTS sms_balance DOUBLE PRECISION;
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS sms_balance_ts TIMESTAMPTZ;
 -- An imported entry whose category or amount was a best guess, until looked at.
 ALTER TABLE txns ADD COLUMN IF NOT EXISTS review BOOLEAN NOT NULL DEFAULT FALSE;
+-- Bank message formats the reader couldn't read, sent by users who chose to
+-- help, with every digit and name already masked on the phone. Kept so the
+-- reader can be taught the format; nothing in them identifies anyone.
+CREATE TABLE IF NOT EXISTS sms_samples (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  sender     TEXT NOT NULL,
+  text       TEXT NOT NULL,
+  reason     TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 -- How much each feature is used: per user, per day, a name and a count.
 -- Never content (no amounts, names, messages or entries), only that the app
 -- was opened or a habit was checked. It answers whether people come back and

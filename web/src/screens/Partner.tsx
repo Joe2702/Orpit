@@ -77,7 +77,7 @@ export function Partner() {
       <Shell go={go}>
         <div style={{ ...card, padding: 20, textAlign: 'center', color: 'var(--text2)', fontSize: 14 }}>
           {err}
-          <div onClick={load} className="press99" style={{ marginTop: 14, color: 'var(--indigo)', fontWeight: 700, cursor: 'pointer' }}>
+          <div role="button" tabIndex={0} onClick={load} className="press99" style={{ marginTop: 14, color: 'var(--indigo)', fontWeight: 700, cursor: 'pointer' }}>
             Try again
           </div>
         </div>
@@ -194,7 +194,7 @@ export function Partner() {
       {/* Talking */}
       <SectionLabel>Messages</SectionLabel>
       <div style={{ ...card, marginBottom: 22 }}>
-        <div
+        <div role="button" tabIndex={0}
           onClick={() => go('partnerThread', { module: null })}
           className="pressRow"
           style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
@@ -232,7 +232,7 @@ export function Partner() {
                   : 'Both of you need to turn this on'}
             </div>
           </div>
-          <div onClick={() => setChat(!p.chat.mine)} style={toggleTrack(p.chat.mine)}>
+          <div role="switch" tabIndex={0} aria-checked={p.chat.mine} aria-label="Free chat" onClick={() => setChat(!p.chat.mine)} style={toggleTrack(p.chat.mine)}>
             <div style={toggleKnob(p.chat.mine)} />
           </div>
         </div>
@@ -259,10 +259,10 @@ export function Partner() {
 
       {/* Leaving */}
       <div style={{ ...card, marginBottom: 30 }}>
-        <div onClick={busy ? undefined : end} className="pressRow" style={{ padding: '15px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)', fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
+        <div role="button" tabIndex={0} onClick={busy ? undefined : end} className="pressRow" style={{ padding: '15px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)', fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
           End partnership
         </div>
-        <div onClick={() => open('partnerReport' as any, { name: p.name, reload: load })} className="pressRow" style={{ padding: '15px 16px', cursor: 'pointer', fontSize: 15, fontWeight: 600, color: 'var(--danger)' }}>
+        <div role="button" tabIndex={0} onClick={() => open('partnerReport' as any, { name: p.name, reload: load })} className="pressRow" style={{ padding: '15px 16px', cursor: 'pointer', fontSize: 15, fontWeight: 600, color: 'var(--danger)' }}>
           Report {p.name.split(' ')[0]}
         </div>
       </div>
@@ -362,7 +362,7 @@ function TrackerCard({ c, notes, onComment }: { c: PartnerCard; notes: number; o
       )}
 
       {c.level >= 3 && (
-        <div onClick={onComment} className="press99" role="button" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, height: 40, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', fontSize: 13.5, fontWeight: 600, color: col, cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={onComment} className="press99" role="button" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, height: 40, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', fontSize: 13.5, fontWeight: 600, color: col, cursor: 'pointer' }}>
           {notes > 0 ? `${notes} note${notes === 1 ? '' : 's'}` : 'Leave a note'}
         </div>
       )}
@@ -380,7 +380,7 @@ function ShareRow({
 
   return (
     <div style={{ borderBottom: last ? 'none' : '1px solid var(--border)' }}>
-      <div
+      <div role="button" tabIndex={0}
         onClick={() => setOpenRow((v) => !v)}
         className="pressRow"
         style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', cursor: 'pointer' }}
@@ -404,7 +404,7 @@ function ShareRow({
           {SHARE_LEVELS.map((l) => {
             const on = l.level === level;
             return (
-              <div
+              <div tabIndex={0}
                 key={l.level}
                 onClick={() => onChange(l.level)}
                 className="press99"
@@ -497,7 +497,7 @@ function AgeGate({
         You can only set this once, so please check it. {dob && !ok && <span style={{ color: 'var(--danger)' }}>That date doesn&rsquo;t look right.</span>}
         {adult === false && ok && <span style={{ color: 'var(--text2)' }}> You&rsquo;ll be able to use this section when you turn 18.</span>}
       </div>
-      <div
+      <div tabIndex={0}
         onClick={ok && !busy ? save : undefined}
         className={ok ? 'press99' : undefined}
         role="button"
@@ -569,7 +569,7 @@ function Matchmaker({
           You&rsquo;ll be matched as soon as somebody compatible is also looking. You can close the app &mdash; this
           keeps going without it.
         </div>
-        <div onClick={busy ? undefined : cancel} className="press99" role="button" style={{ height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14.5, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={busy ? undefined : cancel} className="press99" role="button" style={{ height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14.5, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
           Stop looking
         </div>
       </div>
@@ -596,7 +596,7 @@ function Matchmaker({
           { k: 'male', l: 'Male' },
           { k: 'other', l: 'Prefer not to say' },
         ].map((g) => (
-          <div key={g.k} onClick={() => setGender(g.k)} className="press99" style={chip(gender === g.k, 'var(--indigo)')}>
+          <div role="button" tabIndex={0} aria-pressed={gender === g.k} key={g.k} onClick={() => setGender(g.k)} className="press99" style={chip(gender === g.k, 'var(--indigo)')}>
             {g.l}
           </div>
         ))}
@@ -612,7 +612,7 @@ function Matchmaker({
           { k: 'female', l: 'Women' },
           { k: 'male', l: 'Men' },
         ].map((w) => (
-          <div key={w.k} onClick={() => setWant(w.k)} className="press99" style={chip(want === w.k, 'var(--indigo)')}>
+          <div role="button" tabIndex={0} aria-pressed={want === w.k} key={w.k} onClick={() => setWant(w.k)} className="press99" style={chip(want === w.k, 'var(--indigo)')}>
             {w.l}
           </div>
         ))}
@@ -623,7 +623,7 @@ function Matchmaker({
           : 'A narrower choice can take longer to match.'}
       </div>
 
-      <div
+      <div tabIndex={0}
         onClick={busy || !gender ? undefined : find}
         className={gender ? 'press99' : undefined}
         role="button"
@@ -643,7 +643,7 @@ function Matchmaker({
       </div>
 
       {state.recent && (
-        <div
+        <div tabIndex={0}
           onClick={() => open('partnerReport' as any, { name: state.recent!.name, reload })}
           className="pressRow"
           role="button"

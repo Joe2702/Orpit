@@ -38,7 +38,7 @@ export function Chooser() {
           scan, and the choice is the label, not the colour. */}
       <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', overflow: 'hidden' }}>
         {items.map((it, i) => (
-          <div
+          <div tabIndex={0}
             key={it.label}
             onClick={() => (it.action ? it.action() : it.sheet && open(it.sheet))}
             className="pressRow"

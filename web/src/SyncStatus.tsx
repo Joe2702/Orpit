@@ -55,7 +55,7 @@ export function SyncStatus() {
 
   return (
     <div style={{ padding: '0 20px', marginBottom: 12 }} aria-live="polite">
-      <div
+      <div tabIndex={0}
         onClick={onTap}
         role={tappable ? 'button' : 'status'}
         className={tappable ? 'press99' : undefined}

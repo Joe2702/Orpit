@@ -115,7 +115,7 @@ export function PartnerThread({ module }: { module: string | null }) {
               {addressable.map((a) => {
                 const on = a === to;
                 return (
-                  <div
+                  <div role="button" tabIndex={0}
                     key={a ?? 'chat'}
                     onClick={() => setTo(a)}
                     className="press99"
@@ -143,7 +143,7 @@ export function PartnerThread({ module }: { module: string | null }) {
                   resize: 'none', fontFamily: 'inherit', lineHeight: 1.4,
                 }}
               />
-              <div
+              <div tabIndex={0}
                 onClick={text.trim() && !sending ? send : undefined}
                 className={text.trim() ? 'press92' : undefined}
                 role="button"

@@ -66,6 +66,11 @@ contact: **youssif_mohammed@aucegypt.edu**
 - To convert payments made in another currency, the server downloads daily
   exchange rates from public rate services. No information about you or your
   payments is sent to them.
+- If Orbit can't read your bank's messages, you can choose to send one so it
+  can learn the format: Profile → Bank messages → Last check → "Help Orbit read
+  this bank". Before anything is sent you see exactly what goes: the message
+  with every number replaced and names removed. Nothing is ever sent this way
+  without that step.
 - This is entirely optional. Every part of the app works without it, and you can
   turn it off at any time in Profile → Bank messages, or revoke the permission in
   Android's own settings. Entries already imported stay until you delete them.
