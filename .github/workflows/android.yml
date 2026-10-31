@@ -43,6 +43,11 @@ jobs:
     # occasional deliberate bump, and in exchange a red build always means
     # somebody changed something.
     runs-on: ubuntu-24.04
+    env:
+      # A step's `if` can't see an env value the same step sets, and can't read
+      # secrets directly, so whether the release key exists is decided here,
+      # once, for the whole job.
+      HAS_RELEASE_KEY: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -141,13 +146,13 @@ jobs:
       # RELEASE_KEYSTORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD.
       # See RELEASE.md for how to create the key. Never commit the keystore.
       - name: Decode release keystore
-        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_RELEASE_KEY == 'true' }}
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         run: echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > web/android/release.keystore
 
       - name: Build signed release bundle (AAB)
-        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_RELEASE_KEY == 'true' }}
         working-directory: web/android
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
@@ -160,7 +165,7 @@ jobs:
         run: ./gradlew bundleRelease --no-daemon
 
       - name: Upload release bundle
-        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_RELEASE_KEY == 'true' }}
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         uses: actions/upload-artifact@v4

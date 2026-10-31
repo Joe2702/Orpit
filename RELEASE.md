@@ -4,11 +4,25 @@ The APK your testers install is signed with a **debug** key that lives in this
 repo. That's fine for sharing with friends, but Google Play needs a **release**
 key that only you control.
 
-> ⚠️ **The most important rule:** once you publish an app with a release key, you
-> can never change it. If you lose that key you cannot update your own app. Back
-> it up somewhere safe (a password manager, an encrypted drive — not this repo).
+> ⚠️ **Back the key up.** Play signs the app it ships with its own key (Play App
+> Signing); yours is the *upload* key that proves a new version came from you.
+> Lose it and every update waits on Google support resetting it, which takes
+> days. Keep it in a password manager or encrypted drive, never in this repo.
 
-## 1. Create your release key (one time)
+## 1–2. The quick way: one command
+
+On your Mac, from the repo folder:
+
+```bash
+bash scripts/make-release-key.sh
+```
+
+It creates the key with a strong random password in `~/orbit-release-key`, and,
+if the GitHub CLI (`gh`) is signed in, saves the four secrets below for you.
+Without `gh` it copies the key to your clipboard and prints the other three
+values to paste in. Then back up `~/orbit-release-key` and skip to step 3.
+
+## 1. Create your release key by hand (one time)
 
 On any computer with Java installed:
 
