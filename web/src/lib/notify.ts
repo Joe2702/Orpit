@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import type { LocalNotificationsPlugin } from '@capacitor/local-notifications';
 import { enablePush as enableWebPush, pushSupported } from './push';
 import { api } from '../api';
+import { t, tn } from '../i18n';
 
 // Unified reminder/notification layer.
 //
@@ -50,8 +51,8 @@ async function ensureActionTypes(ln: LocalNotificationsPlugin): Promise<void> {
   try {
     await ln.registerActionTypes({
       types: [
-        { id: HABIT_ACTIONS, actions: [{ id: 'done', title: 'Done' }] },
-        { id: DAILY_ACTIONS, actions: [{ id: 'snooze', title: 'Snooze 1 hour' }] },
+        { id: HABIT_ACTIONS, actions: [{ id: 'done', title: t('Done') }] },
+        { id: DAILY_ACTIONS, actions: [{ id: 'snooze', title: t('Snooze 1 hour') }] },
       ],
     });
     actionsRegistered = true;
@@ -71,8 +72,8 @@ export async function snoozeDaily(): Promise<void> {
       notifications: [
         {
           id: SNOOZE_ID,
-          title: 'Orbit',
-          body: 'How did today go?',
+          title: t('Orbit'),
+          body: t('How did today go?'),
           schedule: { at: new Date(Date.now() + 60 * 60 * 1000), allowWhileIdle: true },
           channelId: CHANNEL_ID,
         },
@@ -126,8 +127,8 @@ async function ensureChannel(ln: LocalNotificationsPlugin): Promise<void> {
   try {
     await ln.createChannel({
       id: CHANNEL_ID,
-      name: 'Reminders',
-      description: 'Daily check-in reminders',
+      name: t('Reminders'),
+      description: t('Daily check-in reminders'),
       importance: 5,
       visibility: 1,
     });
@@ -147,11 +148,10 @@ function parseTime(time: string): { hour: number; minute: number } {
  * unchecked; -1 means "unknown".
  */
 function reminderBody(remaining: number): string {
-  if (remaining < 0) return 'How did today go? Take a moment to log it.';
-  if (remaining === 0) return "Everything's checked off. Anything else to log today?";
-  if (remaining === 1) return 'One habit left today.';
-  if (remaining <= 3) return `${remaining} habits left today.`;
-  return `${remaining} habits waiting. Two minutes now, a clearer picture later.`;
+  if (remaining < 0) return t('How did today go? Take a moment to log it.');
+  if (remaining === 0) return t("Everything's checked off. Anything else to log today?");
+  if (remaining <= 3) return tn(remaining, 'One habit left today.', '{n} habits left today.');
+  return tn(remaining, '{n} habit waiting. Two minutes now, a clearer picture later.', '{n} habits waiting. Two minutes now, a clearer picture later.');
 }
 
 async function scheduleDaily(time: string, remaining = -1): Promise<void> {
@@ -165,7 +165,7 @@ async function scheduleDaily(time: string, remaining = -1): Promise<void> {
     notifications: [
       {
         id: REMINDER_ID,
-        title: 'Orbit',
+        title: t('Orbit'),
         body: reminderBody(remaining),
         schedule: { on: { hour, minute }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
@@ -187,8 +187,8 @@ async function scheduleWeekly(): Promise<void> {
     notifications: [
       {
         id: WEEKLY_ID,
-        title: 'Your week on Orbit',
-        body: 'A minute to look back, and one thing to aim for next week.',
+        title: t('Your week on Orbit'),
+        body: t('A minute to look back, and one thing to aim for next week.'),
         extra: { screen: 'weekreview' },
         // weekday 1 = Sunday in the plugin's schedule format.
         schedule: { on: { weekday: 1, hour: 19, minute: 0 }, allowWhileIdle: true },
@@ -237,7 +237,7 @@ export async function scheduleExtras(
       notifications.push({
         id: stableId(HABIT_BASE, h.id),
         title: h.name,
-        body: 'Tap to check it off.',
+        body: t('Tap to check it off.'),
         schedule: { on: { hour, minute }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
         actionTypeId: HABIT_ACTIONS,
@@ -255,8 +255,8 @@ export async function scheduleExtras(
         if (at.getTime() <= Date.now()) return;
         notifications.push({
           id: stableId(BILL_BASE, b.id),
-          title: 'Upcoming bill',
-          body: b.amount ? `${b.name}, ${money0(b.amount)}, is due tomorrow.` : `${b.name} is due tomorrow.`,
+          title: t('Upcoming bill'),
+          body: b.amount ? t('{name}, {amount}, is due tomorrow.', { name: b.name, amount: money0(b.amount) }) : t('{name} is due tomorrow.', { name: b.name }),
           extra: { screen: 'frecurring' },
           schedule: { at, allowWhileIdle: true },
           channelId: CHANNEL_ID,
@@ -265,12 +265,12 @@ export async function scheduleExtras(
     // Wind-down: 30 minutes before the user's usual bedtime.
     await ln.cancel({ notifications: [{ id: WINDDOWN_ID }] }).catch(() => {});
     if (windDown?.on && windDown.bedHour != null) {
-      const t = (windDown.bedHour - 0.5 + 24) % 24;
+      const tx = (windDown.bedHour - 0.5 + 24) % 24;
       notifications.push({
         id: WINDDOWN_ID,
-        title: 'Time to wind down',
-        body: 'Bed in about 30 minutes. Time to start winding down.',
-        schedule: { on: { hour: Math.floor(t), minute: Math.round((t % 1) * 60) }, allowWhileIdle: true },
+        title: t('Time to wind down'),
+        body: t('Bed in about 30 minutes. Time to start winding down.'),
+        schedule: { on: { hour: Math.floor(tx), minute: Math.round((tx % 1) * 60) }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
       });
     }
@@ -488,8 +488,8 @@ export async function sendTestNotification(): Promise<'sent' | 'denied' | 'error
         notifications: [
           {
             id: TEST_ID,
-            title: 'Orbit',
-            body: 'Test notification. Your reminders are working.',
+            title: t('Orbit'),
+            body: t('Test notification. Your reminders are working.'),
             schedule: { at: new Date(Date.now() + 1500) },
             channelId: CHANNEL_ID,
           },

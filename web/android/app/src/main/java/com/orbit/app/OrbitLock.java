@@ -39,6 +39,7 @@ public class OrbitLock extends Plugin {
     @PluginMethod
     public void unlock(PluginCall call) {
         final String reason = call.getString("reason", "Your money and habits are behind this.");
+        final String title = call.getString("title", "Unlock Orbit");
         getActivity().runOnUiThread(() -> {
             try {
                 BiometricPrompt prompt = new BiometricPrompt(
@@ -64,7 +65,7 @@ public class OrbitLock extends Plugin {
                     }
                 );
                 BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
-                    .setTitle("Unlock Orbit")
+                    .setTitle(title)
                     .setSubtitle(reason)
                     .setAllowedAuthenticators(AUTHENTICATORS)
                     .build();

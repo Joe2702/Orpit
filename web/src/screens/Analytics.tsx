@@ -10,11 +10,12 @@ import { Reorderable } from '../Reorderable';
 import { RangeSeg, SectionLabel } from '../ui';
 import { enabled } from '../lib/modules';
 import { Glyph, type GlyphName } from '../lib/appIcons';
+import { t, tData, tn, yearStr } from '../i18n';
 
 function Arrow() {
   return (
     <svg width="16" height="16" viewBox="0 0 18 18" aria-hidden style={{ fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', flex: 'none' }}>
-      <path d="M7 4l5 5-5 5" />
+      <path className="flip-rtl" d="M7 4l5 5-5 5" />
     </svg>
   );
 }
@@ -39,19 +40,19 @@ export function Analytics() {
   const blocks: Record<string, React.ReactNode> = {
     workouts: (
       <div style={cardB}>
-        <Head title="Workouts" value={d.wTotalMin ? minutes(d.wTotalMin) : '—'} onClick={() => go('workouts')} />
+        <Head title={t('Workouts')} value={d.wTotalMin ? minutes(d.wTotalMin) : '—'} onClick={() => go('workouts')} />
         <BarChart buckets={d.buckets} values={d.wMinBuckets} color="indigo" height={88} grid={false} format={(v) => minutes(v)} />
         <div style={sub}>
-          {d.wCount} {d.wCount === 1 ? 'session' : 'sessions'} · {d.wActiveDays} active {d.wActiveDays === 1 ? 'day' : 'days'}
+          {tn(d.wCount, '{n} session', '{n} sessions')} · {tn(d.wActiveDays, '{n} active day', '{n} active days')}
         </div>
       </div>
     ),
     sleep: (
       <div style={cardB}>
-        <Head title="Sleep" value={d.slNights ? hm(d.slAvg) : '—'} onClick={() => go('sleep')} />
+        <Head title={t('Sleep')} value={d.slNights ? hm(d.slAvg) : '—'} onClick={() => go('sleep')} />
         <BarChart buckets={d.buckets} values={d.slSeries} color="indigo" height={88} grid={false} max={10} band={[7, 9]} format={(v) => hm(v)} />
         <div style={sub}>
-          {d.slNights ? `${d.slNights} ${d.slNights === 1 ? 'night' : 'nights'} · quality ${d.slAvgQ.toFixed(1)}/10` : `No nights logged ${P.phrase}`}
+          {d.slNights ? `${tn(d.slNights, '{n} night', '{n} nights')} · ${t('quality {q}/10', { q: d.slAvgQ.toFixed(1) })}` : t('No nights logged {phrase}', { phrase: P.phrase })}
         </div>
       </div>
     ),
@@ -64,11 +65,11 @@ export function Analytics() {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-              <span style={title_}>Habits</span>
+              <span style={title_}>{t('Habits')}</span>
               <Arrow />
             </div>
             <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.45 }}>
-              {h.rangeTotal ? `${h.rangeDone} of ${h.rangeTotal} check-ins ${P.phrase}` : `Nothing scheduled ${P.phrase}`}
+              {h.rangeTotal ? t('{rangeDone} of {rangeTotal} check-ins {phrase}', { rangeDone: h.rangeDone, rangeTotal: h.rangeTotal, phrase: P.phrase }) : t('Nothing scheduled {phrase}', { phrase: P.phrase })}
             </div>
           </div>
         </div>
@@ -86,11 +87,11 @@ export function Analytics() {
                   style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 2px', cursor: 'pointer', borderBottom: '1px solid var(--hairline)' }}
                 >
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: `var(--${hb.color})`, flex: 'none' }} />
-                  <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 550, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{hb.name}</span>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 550, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tData(hb.name)}</span>
                   <span style={{ flex: '0 1 54px', minWidth: 20, height: 5, borderRadius: 3, background: 'var(--hairline)', overflow: 'hidden' }}>
                     <span style={{ display: 'block', width: `${pct}%`, height: '100%', background: 'var(--indigo)', borderRadius: 3 }} />
                   </span>
-                  <span style={{ minWidth: 44, textAlign: 'right', fontSize: 12.5, color: 'var(--text2)', flex: 'none', fontVariantNumeric: 'tabular-nums' }}>
+                  <span style={{ minWidth: 44, textAlign: 'end', fontSize: 12.5, color: 'var(--text2)', flex: 'none', fontVariantNumeric: 'tabular-nums' }}>
                     {r ? `${r.done}/${r.scheduled}` : '—'}
                   </span>
                 </div>
@@ -103,7 +104,7 @@ export function Analytics() {
     finances: (
       <div style={cardB}>
         <Head
-          title="Finances"
+          title={t('Finances')}
           value={<span style={{ color: d.net < 0 ? 'var(--danger)' : 'var(--text)' }}>{(d.net >= 0 ? '+' : '−') + money0(d.net)}</span>}
           onClick={() => go('finances')}
         />
@@ -117,17 +118,16 @@ export function Analytics() {
           onOpen={(i) => go('ftxns', { focus: { title: d.buckets[i].name, start: d.buckets[i].start, end: d.buckets[i].end } })}
         />
         <div style={sub}>
-          {money0(d.income)} in · {money0(d.spent)} out
-        </div>
+          {t('{amount} in · {amount2} out', { amount: money0(d.income), amount2: money0(d.spent) })}</div>
       </div>
     ),
     counters: (
       <div style={cardB}>
-        <Head title="Counters" onClick={() => go('counters')} />
+        <Head title={t('Counters')} onClick={() => go('counters')} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
           {d.counterRange.map((c) => (
             <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tData(c.name)}</span>
               <span style={{ fontSize: 14, fontWeight: 650, color: 'var(--text)', fontVariantNumeric: 'tabular-nums', flex: 'none' }}>
                 {cNum(c.val)} <span style={{ fontWeight: 500, color: 'var(--text2)' }}>{c.unit}</span>
               </span>
@@ -135,7 +135,7 @@ export function Analytics() {
           ))}
         </div>
         <div style={sub}>
-          {d.countLogsWin} {d.countLogsWin === 1 ? 'entry' : 'entries'} {P.phrase}
+          {tn(d.countLogsWin, '{n} entry {phrase}', '{n} entries {phrase}', { phrase: P.phrase })}
         </div>
       </div>
     ),
@@ -160,16 +160,16 @@ export function Analytics() {
   const lastMonthName = new Date(now.getFullYear(), now.getMonth() - 1, 1).toLocaleDateString('en-US', { month: 'long' });
   const lastWeek = period('Week', 1);
   const reports: { label: string; note: string; icon: GlyphName; run: () => void }[] = [
-    { label: 'This week so far', note: period('Week', 0).caption, icon: 'calendar', run: () => openReport('week', 0) },
-    { label: 'Last week', note: lastWeek.caption, icon: 'calendar', run: () => openReport('week', 1) },
-    { label: 'Last month', note: lastMonthName, icon: 'moon', run: () => openReport('month', 1) },
-    { label: 'Year in review', note: `${now.getFullYear()} so far`, icon: 'star', run: () => openReport('year', 0) },
+    { label: t('This week so far'), note: period('Week', 0).caption, icon: 'calendar', run: () => openReport('week', 0) },
+    { label: t('Last week'), note: lastWeek.caption, icon: 'calendar', run: () => openReport('week', 1) },
+    { label: t('Last month'), note: lastMonthName, icon: 'moon', run: () => openReport('month', 1) },
+    { label: t('Year in review'), note: t('{year} so far', { year: yearStr(now.getFullYear()) }), icon: 'star', run: () => openReport('year', 0) },
   ];
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ marginBottom: 16 }}>
-        <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--text)' }}>Analytics</div>
+        <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--text)' }}>{t('Analytics')}</div>
       </div>
       <RangeSeg period={P} />
 
@@ -177,20 +177,20 @@ export function Analytics() {
 
       <div style={{ height: 14 }} />
 
-      <SectionLabel>Look back</SectionLabel>
+      <SectionLabel>{t('Look back')}</SectionLabel>
       <div style={{ ...cardB, padding: 0, overflow: 'hidden', marginBottom: 12 }}>
-        <div tabIndex={0} onClick={() => go('insights')} className="pressRow" role="button" aria-label="Open insights" style={rowS}>
+        <div tabIndex={0} onClick={() => go('insights')} className="pressRow" role="button" aria-label={t('Open insights')} style={rowS}>
           <span style={iconBox}>
             <Glyph name="search" size={19} color="var(--text2)" />
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={rowTitle}>Insights</div>
-            <div style={{ ...rowNote, whiteSpace: 'normal' }}>How your trackers affect each other</div>
+            <div style={rowTitle}>{t('Insights')}</div>
+            <div style={{ ...rowNote, whiteSpace: 'normal' }}>{t('How your trackers affect each other')}</div>
           </div>
           <Arrow />
         </div>
         {reports.map((r) => (
-          <div tabIndex={0} key={r.label} onClick={r.run} className="pressRow" role="button" aria-label={`Open ${r.label} report`} style={rowS}>
+          <div tabIndex={0} key={r.label} onClick={r.run} className="pressRow" role="button" aria-label={t('Open {label} report', { label: r.label })} style={rowS}>
             <span style={iconBox}>
               <Glyph name={r.icon} size={19} color="var(--text2)" />
             </span>

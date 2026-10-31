@@ -1,6 +1,7 @@
 import React from 'react';
 import { useStore } from './store';
 import { probeServer } from './api';
+import { t, tn } from './i18n';
 
 // A slim status line shown only when something needs saying: the phone has no
 // connection, Orbit isn't answering, or writes are still waiting to go out.
@@ -21,7 +22,6 @@ export function SyncStatus() {
   if (connection === 'online' && pendingCount === 0) return null;
 
   const waiting = pendingCount > 0;
-  const noun = pendingCount === 1 ? 'entry' : 'entries';
 
   let tone: string;
   let title: string;
@@ -29,17 +29,21 @@ export function SyncStatus() {
   let spinning = false;
   if (connection === 'offline') {
     tone = 'var(--warning)';
-    title = 'No connection';
-    detail = waiting ? `${pendingCount} ${noun} saved here · will sync when you’re back` : 'Anything you log is saved on this phone';
+    title = t('No connection');
+    detail = waiting
+      ? tn(pendingCount, '{n} entry saved here · will sync when you’re back', '{n} entries saved here · will sync when you’re back')
+      : t('Anything you log is saved on this phone');
   } else if (connection === 'unreachable') {
     tone = 'var(--text3)';
-    title = 'Reconnecting to Orbit';
-    detail = waiting ? `${pendingCount} ${noun} saved here · will sync automatically` : 'Anything you log is saved on this phone';
+    title = t('Reconnecting to Orbit');
+    detail = waiting
+      ? tn(pendingCount, '{n} entry saved here · will sync automatically', '{n} entries saved here · will sync automatically')
+      : t('Anything you log is saved on this phone');
     spinning = true;
   } else {
     tone = 'var(--indigo)';
-    title = isSyncing ? 'Syncing' : `${pendingCount} ${noun} waiting`;
-    detail = isSyncing ? `Sending ${pendingCount} ${noun}…` : 'Tap to try again';
+    title = isSyncing ? t('Syncing') : tn(pendingCount, '{n} entry waiting', '{n} entries waiting');
+    detail = isSyncing ? tn(pendingCount, 'Sending {n} entry…', 'Sending {n} entries…') : t('Tap to try again');
     spinning = isSyncing;
   }
 
@@ -86,7 +90,7 @@ export function SyncStatus() {
         />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--text)', letterSpacing: '-.005em', lineHeight: 1.25 }}>
-            {retrying ? 'Checking…' : title}
+            {retrying ? t('Checking…') : title}
           </div>
           <div
             style={{

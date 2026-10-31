@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core';
 import { dayKey } from './format';
 import { buildPanels, encodePanel, PANEL_KEYS } from './widgetStats';
 import type { AppState } from '../types';
+import { t } from '../i18n';
 
 // Feeds the home-screen widget.
 //
@@ -20,11 +21,11 @@ export function summarise(s: AppState, now: number = Date.now()): string {
   const due = s.habits.filter(
     (h) => !h.paused && !h.archived && (/^[01]{7}$/.test(h.days) ? h.days : '1111111')[dow] === '1'
   );
-  if (due.length === 0) return 'Tap to log';
+  if (due.length === 0) return t('Tap to log');
   const doneIds = new Set(s.checkins.filter((c) => c.day === today).map((c) => c.habitId));
   const done = due.filter((h) => doneIds.has(h.id)).length;
-  if (done === due.length) return `All ${due.length} done`;
-  return `${done}/${due.length} habits`;
+  if (done === due.length) return t('All {n} done', { n: due.length });
+  return t('{done}/{due} habits', { done, due: due.length });
 }
 
 /**

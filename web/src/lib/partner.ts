@@ -15,6 +15,8 @@
 // "did they log a workout" to a stranger would be a decision made on the user's
 // behalf about a person they have not met.
 
+import { t } from '../i18n';
+
 /** How much of one tracker one person shows their partner. */
 export const SHARE = {
   /** Not shared. The partner is not told the tracker exists. */
@@ -30,10 +32,10 @@ export const SHARE = {
 export type ShareLevel = 0 | 1 | 2 | 3;
 
 export const SHARE_LEVELS: { level: ShareLevel; label: string; blurb: string }[] = [
-  { level: 0, label: 'Private', blurb: 'Not shared at all' },
-  { level: 1, label: 'Streak only', blurb: 'They see whether you tracked it, but no numbers' },
-  { level: 2, label: 'Full stats', blurb: 'They see your numbers for this tracker' },
-  { level: 3, label: 'Stats + comments', blurb: 'They can also leave you notes on it' },
+  { level: 0, label: t('Private'), blurb: t('Not shared at all') },
+  { level: 1, label: t('Streak only'), blurb: t('They see whether you tracked it, but no numbers') },
+  { level: 2, label: t('Full stats'), blurb: t('They see your numbers for this tracker') },
+  { level: 3, label: t('Stats + comments'), blurb: t('They can also leave you notes on it') },
 ];
 
 export const asLevel = (n: unknown): ShareLevel => {
@@ -192,12 +194,12 @@ export const chatOpen = (mine: boolean, theirs: boolean): boolean => mine && the
 
 /** Reasons offered when reporting. Free text is collected separately. */
 export const REPORT_REASONS = [
-  { key: 'harassment', label: 'Harassment or abuse' },
-  { key: 'sexual', label: 'Sexual or inappropriate content' },
-  { key: 'spam', label: 'Spam, scams or advertising' },
-  { key: 'personal', label: 'Asking for personal or financial details' },
-  { key: 'underage', label: 'I think they are under 18' },
-  { key: 'other', label: 'Something else' },
+  { key: 'harassment', label: t('Harassment or abuse') },
+  { key: 'sexual', label: t('Sexual or inappropriate content') },
+  { key: 'spam', label: t('Spam, scams or advertising') },
+  { key: 'personal', label: t('Asking for personal or financial details') },
+  { key: 'underage', label: t('I think they are under 18') },
+  { key: 'other', label: t('Something else') },
 ] as const;
 
 export const isReportReason = (s: unknown): boolean =>

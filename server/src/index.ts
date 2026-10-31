@@ -327,21 +327,39 @@ async function sendMail(tag: string, to: string, subject: string, htmlContent: s
   }
 }
 
-const mailButton = (link: string, label: string) =>
+const mailButton = (link: string, label: string, ar = false) =>
   `<p><a href="${link}" style="display:inline-block;background:#5c57c9;color:#fff;padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:600">${label}</a></p>
-   <p style="color:#807a70;font-size:13px">Or paste this link: ${link}</p>`;
+   <p style="color:#807a70;font-size:13px">${ar ? 'أو الصق هذا الرابط:' : 'Or paste this link:'} <span dir="ltr">${link}</span></p>`;
 
-const sendResetEmail = (to: string, link: string) =>
-  sendMail(
-    'reset',
-    to,
-    'Reset your Orbit password',
-    `<div style="font-family:sans-serif;font-size:15px;color:#211f1b">
-      <p>Tap the button to set a new password. This link expires in 1 hour.</p>
+/** The app sends its language with each request, so its emails can match it. */
+const wantsArabic = (req: express.Request) => req.get('x-orbit-lang') === 'ar';
+const mailWrap = (ar: boolean, inner: string) =>
+  `<div dir="${ar ? 'rtl' : 'ltr'}" style="font-family:sans-serif;font-size:15px;color:#211f1b">${inner}</div>`;
+
+const sendResetEmail = (to: string, link: string, ar = false) =>
+  ar
+    ? sendMail(
+        'reset',
+        to,
+        'إعادة تعيين كلمة مرور Orbit',
+        mailWrap(
+          true,
+          `<p>اضغط الزر لتعيين كلمة مرور جديدة. ينتهي هذا الرابط خلال ساعة.</p>
+      ${mailButton(link, 'إعادة تعيين كلمة المرور', true)}
+      <p style="color:#807a70;font-size:13px">إن لم تطلب ذلك، يمكنك تجاهل هذه الرسالة.</p>`
+        )
+      )
+    : sendMail(
+        'reset',
+        to,
+        'Reset your Orbit password',
+        mailWrap(
+          false,
+          `<p>Tap the button to set a new password. This link expires in 1 hour.</p>
       ${mailButton(link, 'Reset password')}
-      <p style="color:#807a70;font-size:13px">If you didn't request this, you can ignore this email.</p>
-    </div>`
-  );
+      <p style="color:#807a70;font-size:13px">If you didn't request this, you can ignore this email.</p>`
+        )
+      );
 
 // Request a reset link (always responds ok, so it can't be used to probe emails).
 app.post(
@@ -368,7 +386,7 @@ app.post(
           [sha256(token), u.id, expires]
         );
         const base = process.env.APP_URL || `https://${req.headers.host}`;
-        await sendResetEmail(email, `${base}/reset?token=${token}`);
+        await sendResetEmail(email, `${base}/reset?token=${token}`, wantsArabic(req));
       }
     } else {
       console.log('[reset] rejected malformed email:', JSON.stringify(req.body.email));
@@ -459,15 +477,25 @@ app.post(
       [sha256(token), uid, u.email, new Date(Date.now() + 24 * 60 * 60 * 1000)]
     );
     const base = process.env.APP_URL || `https://${req.headers.host}`;
+    const link = `${base}/verify?token=${token}`;
+    const ar = wantsArabic(req);
     const sent = await sendMail(
       'verify',
       u.email,
-      'Confirm your email for Orbit',
-      `<div style="font-family:sans-serif;font-size:15px;color:#211f1b">
-        <p>Confirm this address so you can recover your account if you ever forget your password.</p>
-        ${mailButton(`${base}/verify?token=${token}`, 'Confirm email')}
-        <p style="color:#807a70;font-size:13px">This link expires in 24 hours. If you didn't sign up for Orbit, you can ignore this email.</p>
-      </div>`
+      ar ? 'أكّد بريدك الإلكتروني في Orbit' : 'Confirm your email for Orbit',
+      ar
+        ? mailWrap(
+            true,
+            `<p>أكّد هذا العنوان لتتمكن من استعادة حسابك إن نسيت كلمة المرور.</p>
+        ${mailButton(link, 'تأكيد البريد', true)}
+        <p style="color:#807a70;font-size:13px">ينتهي هذا الرابط خلال 24 ساعة. إن لم تسجّل في Orbit، يمكنك تجاهل هذه الرسالة.</p>`
+          )
+        : mailWrap(
+            false,
+            `<p>Confirm this address so you can recover your account if you ever forget your password.</p>
+        ${mailButton(link, 'Confirm email')}
+        <p style="color:#807a70;font-size:13px">This link expires in 24 hours. If you didn't sign up for Orbit, you can ignore this email.</p>`
+          )
     );
     if (!sent) return res.status(503).json({ error: "Email isn't set up on the server yet" });
     res.json({ ok: true });

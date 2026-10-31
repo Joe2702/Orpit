@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { BackButton } from '../ui';
 import { money, relLabel, hm } from '../lib/format';
+import { t, tData, tn } from '../i18n';
 
 interface Hit {
   id: string;
@@ -32,9 +33,9 @@ export function Search() {
       hits.push({
         id: 'w' + w.id,
         kind: 'workout',
-        title: w.name,
+        title: tData(w.name),
         sub: `${relLabel(w.ts)}${w.note ? ` · ${w.note}` : ''}`,
-        right: `${w.dur}m`,
+        right: t('{n} min', { n: w.dur }),
         color: 'coral',
         ts: w.ts,
         open: () => open('edit', { kind: 'workout', item: w }),
@@ -47,7 +48,7 @@ export function Search() {
       hits.push({
         id: 'n' + n.id,
         kind: 'sleep',
-        title: 'Sleep',
+        title: t('Sleep'),
         sub: `${relLabel(n.ts)}${n.note ? ` · ${n.note}` : ''}`,
         right: hm(n.hours),
         color: 'blue',
@@ -81,8 +82,8 @@ export function Search() {
           id: 'h' + h.id,
           kind: 'habit',
           title: h.name,
-          sub: h.why || 'Habit',
-          right: `${count} days`,
+          sub: h.why || t('Habit'),
+          right: tn(count, '{n} day', '{n} days'),
           color: h.color,
           ts: Number.MAX_SAFE_INTEGER, // habits sort to the top
           open: () => open('habitcal', { habitId: h.id }),
@@ -95,7 +96,7 @@ export function Search() {
         id: 'c' + c.id,
         kind: 'counter',
         title: c.name,
-        sub: 'Counter',
+        sub: t('Counter'),
         right: c.unit,
         color: c.color,
         ts: Number.MAX_SAFE_INTEGER - 1,
@@ -111,7 +112,7 @@ export function Search() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <BackButton onClick={() => go('home')} />
-        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>Search</div>
+        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>{t('Search')}</div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: '0 14px', height: 50, marginBottom: 18 }}>
@@ -123,12 +124,12 @@ export function Search() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           autoFocus
-          placeholder="Workouts, notes, transactions, habits…"
-          aria-label="Search everything"
+          placeholder={t('Workouts, notes, transactions, habits…')}
+          aria-label={t('Search everything')}
           style={{ flex: 1, border: 'none', background: 'none', fontSize: 15.5, color: 'var(--text)', outline: 'none' }}
         />
         {q && (
-          <span tabIndex={0} onClick={() => setQ('')} role="button" aria-label="Clear" style={{ fontSize: 18, color: 'var(--text2)', cursor: 'pointer', padding: 4 }}>
+          <span tabIndex={0} onClick={() => setQ('')} role="button" aria-label={t('Clear')} style={{ fontSize: 18, color: 'var(--text2)', cursor: 'pointer', padding: 4 }}>
             ×
           </span>
         )}
@@ -136,17 +137,16 @@ export function Search() {
 
       {ql.length < 2 ? (
         <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14, lineHeight: 1.6 }}>
-          Type at least two letters.<br />
-          Searches names, categories and your notes.
+          {t('Type at least two letters.')}<br />
+          {t('Searches names, categories and your notes.')}
         </div>
       ) : shown.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>
-          Nothing matches “{q}”.
-        </div>
+          {t('Nothing matches “{q}”.', { q })}</div>
       ) : (
         <>
-          <div style={{ fontSize: 12.5, color: 'var(--text2)', marginBottom: 10, paddingLeft: 2 }}>
-            {hits.length} result{hits.length === 1 ? '' : 's'}
+          <div style={{ fontSize: 12.5, color: 'var(--text2)', marginBottom: 10, paddingInlineStart: 2 }}>
+            {tn(hits.length, '{n} result', '{n} results')}
           </div>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
             {shown.map((hit, i) => (

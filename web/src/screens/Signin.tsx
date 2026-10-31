@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { BackButton } from '../ui';
 import { GoogleButton } from '../GoogleButton';
+import { t } from '../i18n';
 
 export function Signin() {
   const { go, authMode, setAuthMode, login, signup } = useStore();
@@ -21,7 +22,7 @@ export function Signin() {
       if (signUp) await signup(email.trim(), password, name.trim(), dob || undefined);
       else await login(email.trim(), password);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong');
+      setError(e instanceof Error ? e.message : t('Something went wrong'));
     } finally {
       setBusy(false);
     }
@@ -50,19 +51,19 @@ export function Signin() {
       <BackButton onClick={() => go('welcome')} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px 0' }}>
         <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>
-          {signUp ? 'Create your account' : 'Welcome back'}
+          {signUp ? t('Create your account') : t('Welcome back')}
         </div>
         <div style={{ fontSize: 15, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>
-          {signUp ? 'Start tracking in seconds.' : 'Sign in to pick up where you left off.'}
+          {signUp ? t('Start tracking in seconds.') : t('Sign in to pick up where you left off.')}
         </div>
 
         {signUp && (
           <div style={{ marginTop: 30 }}>
-            <div style={labelStyle}>Name</div>
+            <div style={labelStyle}>{t('Name')}</div>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
+              placeholder={t('Your name')}
               style={inputStyle}
             />
           </div>
@@ -76,7 +77,7 @@ export function Signin() {
             is filled in, which is a smaller, more honest cost. */}
         {signUp && (
           <div style={{ marginTop: 16 }}>
-            <div style={labelStyle}>Date of birth · optional</div>
+            <div style={labelStyle}>{t('Date of birth · optional')}</div>
             <input
               type="date"
               value={dob}
@@ -85,38 +86,37 @@ export function Signin() {
               style={inputStyle}
             />
             <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 7, lineHeight: 1.5 }}>
-              Only used to unlock accountability partners, which is for members aged 18 and over. Never shown to
-              anyone.
+              {t('Only used to unlock accountability partners, which is for members aged 18 and over. Never shown to anyone.')}
             </div>
           </div>
         )}
 
         <div style={{ marginTop: signUp ? 16 : 30 }}>
-          <div style={labelStyle}>Email</div>
+          <div style={labelStyle}>{t('Email')}</div>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder={t('you@example.com')}
             style={inputStyle}
           />
         </div>
 
         <div style={{ marginTop: 16 }}>
-          <div style={labelStyle}>Password</div>
+          <div style={labelStyle}>{t('Password')}</div>
           <div style={{ position: 'relative' }}>
             <input
               type={showPw ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && submit()}
-              placeholder={signUp ? 'At least 6 characters' : 'Your password'}
-              style={{ ...inputStyle, paddingRight: 48 }}
+              placeholder={signUp ? t('At least 6 characters') : t('Your password')}
+              style={{ ...inputStyle, paddingInlineEnd: 48 }}
             />
             <div role="button" tabIndex={0}
               onClick={() => setShowPw((s) => !s)}
-              style={{ position: 'absolute', right: 6, top: 0, height: 52, width: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-              aria-label={showPw ? 'Hide password' : 'Show password'}
+              style={{ position: 'absolute', insetInlineEnd: 6, top: 0, height: 52, width: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              aria-label={showPw ? t('Hide password') : t('Show password')}
             >
               {showPw ? (
                 <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
@@ -155,7 +155,7 @@ export function Signin() {
             boxShadow: '0 8px 20px -10px rgba(40,36,28,.26)',
           }}
         >
-          {busy ? 'Please wait…' : signUp ? 'Create account' : 'Continue'}
+          {busy ? t('Please wait…') : signUp ? t('Create account') : t('Continue')}
         </div>
 
         {!signUp && (
@@ -163,7 +163,7 @@ export function Signin() {
             onClick={() => go('forgot')}
             style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: '14px 8px 0', cursor: 'pointer' }}
           >
-            Forgot password?
+            {t('Forgot password?')}
           </div>
         )}
 
@@ -176,7 +176,7 @@ export function Signin() {
         }}
         style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: 8, cursor: 'pointer' }}
       >
-        {signUp ? 'Already have an account? Sign in' : 'New here? Create an account'}
+        {signUp ? t('Already have an account? Sign in') : t('New here? Create an account')}
       </div>
     </div>
   );

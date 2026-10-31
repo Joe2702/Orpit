@@ -1,4 +1,5 @@
-// Reading a bank's SMS and turning it into a transaction.
+
+import { tk } from '../i18n';// Reading a bank's SMS and turning it into a transaction.
 //
 // Banks do not publish these formats and change them without telling anyone, so
 // nothing here is a per-bank template — those rot. It is one generic reader:
@@ -68,14 +69,14 @@ export interface ParsedSms {
 export type SkipReason = 'empty' | 'otp' | 'promo' | 'declined' | 'not-yet' | 'request' | 'no-amount' | 'no-verb';
 
 export const SKIP_LABEL: Record<SkipReason, string> = {
-  empty: 'Empty message',
-  otp: 'Security code, ignored',
-  promo: 'Promotion, ignored',
-  declined: 'Declined payment, ignored',
-  'not-yet': 'Reminder or future charge, ignored',
-  request: 'Payment request, ignored',
-  'no-amount': 'No amount found',
-  'no-verb': "Couldn't tell if money went in or out",
+  empty: tk('Empty message'),
+  otp: tk('Security code, ignored'),
+  promo: tk('Promotion, ignored'),
+  declined: tk('Declined payment, ignored'),
+  'not-yet': tk('Reminder or future charge, ignored'),
+  request: tk('Payment request, ignored'),
+  'no-amount': tk('No amount found'),
+  'no-verb': tk("Couldn't tell if money went in or out"),
 };
 
 // ---------------------------------------------------------------------------

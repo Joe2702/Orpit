@@ -1,4 +1,5 @@
 import type { Range } from '../types';
+import { date, dateRange, getLang, num, t } from '../i18n';
 
 // What "this week", "this month" and "this year" mean, decided once.
 //
@@ -24,11 +25,24 @@ import type { Range } from '../types';
 /** Sunday. Matches the habit schedule mask (Sun..Sat) and the work week here. */
 export const WEEK_STARTS_ON = 0;
 
-export const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTH_LETTERS = 'JFMAMJJASOND';
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTH_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+// English keeps its hand-picked short forms; Arabic asks the platform, which
+// knows the Egyptian month names and the one-letter day initials (ح ن ث ر خ ج س).
+const ar = () => getLang() === 'ar';
+const dayRef = (d: number) => new Date(2026, 0, 4 + d); // Jan 4 2026 was a Sunday
+const monthRef = (m: number) => new Date(2026, m, 1);
+/** One letter for a chart axis. */
+export const dayLetter = (d: number) => (ar() ? date(dayRef(d), { weekday: 'narrow' }) : DAY_LETTERS[d]);
+export const dayName = (d: number) => (ar() ? date(dayRef(d), { weekday: 'long' }) : DAY_NAMES[d]);
+const monthLetter = (m: number) => (ar() ? date(monthRef(m), { month: 'narrow' }) : MONTH_LETTERS[m]);
+export const monthShort = (m: number) => (ar() ? date(monthRef(m), { month: 'short' }) : MONTH_SHORT[m]);
+export const monthLong = (m: number) => (ar() ? date(monthRef(m), { month: 'long' }) : MONTH_LONG[m]);
+const yr = (y: number) => num(y, { useGrouping: false });
 
 export function startOfDay(ts: number): number {
   const d = new Date(ts);
@@ -95,6 +109,7 @@ export interface Period {
 }
 
 const shortDate = (ts: number) => {
+  if (ar()) return date(ts, { day: 'numeric', month: 'short' });
   const d = new Date(ts);
   return `${MONTH_SHORT[d.getMonth()]} ${d.getDate()}`;
 };
@@ -103,6 +118,7 @@ const shortDate = (ts: number) => {
 export function rangeCaption(start: number, endExclusive: number): string {
   const a = new Date(start);
   const b = new Date(addDays(endExclusive, -1));
+  if (ar()) return dateRange(start, b.getTime(), a.getFullYear() !== b.getFullYear() ? { day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short' });
   if (a.getFullYear() !== b.getFullYear()) return `${shortDate(start)}, ${a.getFullYear()} – ${shortDate(b.getTime())}, ${b.getFullYear()}`;
   if (a.getMonth() === b.getMonth()) return `${shortDate(start)} – ${b.getDate()}`;
   return `${shortDate(start)} – ${shortDate(b.getTime())}`;
@@ -128,11 +144,11 @@ export function period(range: Range, offset = 0, opts: { now?: number; earliest?
     for (let i = 0; i < 7; i++) {
       const s = addDays(start, i);
       const dow = new Date(s).getDay();
-      push(s, addDays(start, i + 1), DAY_LETTERS[dow], `${DAY_NAMES[dow]}, ${shortDate(s)}`);
+      push(s, addDays(start, i + 1), dayLetter(dow), ar() ? date(s, { weekday: 'long', day: 'numeric', month: 'short' }) : `${DAY_NAMES[dow]}, ${shortDate(s)}`);
     }
-    title = off === 0 ? 'This week' : off === 1 ? 'Last week' : `Week of ${shortDate(start)}`;
+    title = off === 0 ? t('This week') : off === 1 ? t('Last week') : t('Week of {date}', { date: shortDate(start) });
     caption = rangeCaption(start, end);
-    phrase = off === 0 ? 'this week' : off === 1 ? 'last week' : `the week of ${shortDate(start)}`;
+    phrase = off === 0 ? t('this week') : off === 1 ? t('last week') : t('the week of {date}', { date: shortDate(start) });
   } else if (range === 'Month') {
     start = startOfMonth(now, -off);
     end = startOfMonth(start, 1);
@@ -142,23 +158,30 @@ export function period(range: Range, offset = 0, opts: { now?: number; earliest?
       const day = i + 1;
       // A label every week from the 1st keeps five of them on any month, with
       // none crowding the next.
-      push(s, addDays(start, i + 1), day % 7 === 1 ? String(day) : '', shortDate(s));
+      push(s, addDays(start, i + 1), day % 7 === 1 ? num(day) : '', shortDate(s));
     }
     const d = new Date(start);
     const sameYear = d.getFullYear() === new Date(now).getFullYear();
-    title = off === 0 ? 'This month' : off === 1 ? 'Last month' : sameYear ? MONTH_LONG[d.getMonth()] : `${MONTH_SHORT[d.getMonth()]} ${d.getFullYear()}`;
-    caption = `${MONTH_LONG[d.getMonth()]} ${d.getFullYear()}`;
-    phrase = off === 0 ? 'this month' : off === 1 ? 'last month' : `in ${MONTH_LONG[d.getMonth()]}`;
+    title =
+      off === 0
+        ? t('This month')
+        : off === 1
+          ? t('Last month')
+          : sameYear
+            ? monthLong(d.getMonth())
+            : t('{month} {year}', { month: monthShort(d.getMonth()), year: yr(d.getFullYear()) });
+    caption = t('{month} {year}', { month: monthLong(d.getMonth()), year: yr(d.getFullYear()) });
+    phrase = off === 0 ? t('this month') : off === 1 ? t('last month') : t('in {month}', { month: monthLong(d.getMonth()) });
   } else if (range === 'Year') {
     const y = new Date(now).getFullYear() - off;
     start = new Date(y, 0, 1).getTime();
     end = new Date(y + 1, 0, 1).getTime();
     for (let m = 0; m < 12; m++) {
-      push(new Date(y, m, 1).getTime(), new Date(y, m + 1, 1).getTime(), MONTH_LETTERS[m], `${MONTH_LONG[m]} ${y}`);
+      push(new Date(y, m, 1).getTime(), new Date(y, m + 1, 1).getTime(), monthLetter(m), t('{month} {year}', { month: monthLong(m), year: yr(y) }));
     }
-    title = off === 0 ? 'This year' : off === 1 ? 'Last year' : String(y);
-    caption = off === 0 ? `Jan – ${MONTH_SHORT[new Date(now).getMonth()]} ${y}` : String(y);
-    phrase = off === 0 ? 'this year' : `in ${y}`;
+    title = off === 0 ? t('This year') : off === 1 ? t('Last year') : yr(y);
+    caption = off === 0 ? t('{from} – {to} {year}', { from: monthShort(0), to: monthShort(new Date(now).getMonth()), year: yr(y) }) : yr(y);
+    phrase = off === 0 ? t('this year') : t('in {year}', { year: yr(y) });
   } else {
     // All time, a month per bar. A short history still gets a few bars so one
     // month of data doesn't fill the chart edge to edge.
@@ -174,13 +197,13 @@ export function period(range: Range, offset = 0, opts: { now?: number; earliest?
       const d = new Date(s);
       // Count back from the newest bar so the current month is always labelled.
       const tick = (months - 1 - i) % every === 0;
-      const label = !tick ? '' : every === 1 ? MONTH_LETTERS[d.getMonth()] : MONTH_SHORT[d.getMonth()];
-      push(s, startOfMonth(s, 1), label, `${MONTH_LONG[d.getMonth()]} ${d.getFullYear()}`);
+      const label = !tick ? '' : every === 1 ? monthLetter(d.getMonth()) : monthShort(d.getMonth());
+      push(s, startOfMonth(s, 1), label, t('{month} {year}', { month: monthLong(d.getMonth()), year: yr(d.getFullYear()) }));
     }
     const e = new Date(startOfMonth(earliest));
-    title = 'All time';
-    caption = `Since ${MONTH_SHORT[e.getMonth()]} ${e.getFullYear()}`;
-    phrase = 'all time';
+    title = t('All time');
+    caption = t('Since {month} {year}', { month: monthShort(e.getMonth()), year: yr(e.getFullYear()) });
+    phrase = t('all time');
   }
 
   const until = Math.min(end, now);

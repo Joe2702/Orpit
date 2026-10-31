@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { t } from '../i18n';
 
 // The Web OAuth client ID (…apps.googleusercontent.com). Used as the token
 // audience on every platform; on Android it's the "serverClientId" that makes
@@ -27,6 +28,6 @@ export async function nativeGoogleSignIn(): Promise<string> {
   // MainActivity changes. The returned idToken carries the email + name.
   const res = await SocialLogin.login({ provider: 'google', options: {} });
   const idToken = (res.result as { idToken?: string | null } | undefined)?.idToken;
-  if (!idToken) throw new Error('Google did not return a token');
+  if (!idToken) throw new Error(t('Google did not return a token'));
   return idToken;
 }

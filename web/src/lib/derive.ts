@@ -3,11 +3,11 @@ import { accountBalance } from './ledger';
 import { merchantKey, isGenericName } from './merchants';
 import { safeToSpend } from './safeToSpend';
 import type { AppState, Range } from '../types';
-import { dayKey } from './format';
-import { addDays, bucketOf, daysBetween, period, startOfDay, startOfMonth, startOfWeek, type Bucket, type Period } from './period';
+import { dayKey, fmtDate } from './format';
+import { addDays, bucketOf, daysBetween, monthShort, period, startOfDay, startOfMonth, startOfWeek, type Bucket, type Period } from './period';
+import { t } from '../i18n';
 
 const shades = [100, 72, 50, 33, 22, 15];
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export type { Bucket, Period };
 
@@ -376,7 +376,7 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
   const avgWake = wakeVals.length ? wakeVals.reduce((a, b) => a + b, 0) / wakeVals.length : null;
   const slCandleLabels = Nr.map((n) => {
     const dt = new Date(n.ts);
-    return `${MONTH_SHORT[dt.getMonth()]} ${dt.getDate()}`;
+    return fmtDate(dt.getTime());
   });
   const bedDevMin =
     bedVals.length && avgBed != null
@@ -467,7 +467,7 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
     const pct = effLimit > 0 ? Math.round((sp / effLimit) * 100) : 0;
     // `status` carries the same meaning as `color` in words, so budget health
     // isn't communicated by colour alone.
-    const status = pct >= 100 ? 'Over budget' : pct >= 80 ? 'Close to limit' : 'On track';
+    const status = pct >= 100 ? t('Over budget') : pct >= 80 ? t('Close to limit') : t('On track');
     // Forecast: project this month's pace to month-end, so a warning arrives
     // while there's still time to act rather than after the fact.
     const nowD = new Date(now);
@@ -497,7 +497,7 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
     for (let i = months - 1; i >= 0; i--) {
       const cutoff = i === 0 ? now + 1 : monthStart(i - 1, now); // end of that month, or now
       netWorthSeries.push(state.accounts.reduce((sum, a) => sum + accountBalance(a, ALL, accSums[a.id] || 0, cutoff), 0));
-      netWorthLabels.push(MONTH_SHORT[new Date(monthStart(i, now)).getMonth()]);
+      netWorthLabels.push(monthShort(new Date(monthStart(i, now)).getMonth()));
     }
   }
   const netWorth = accounts.reduce((s, a) => s + a.balance, 0);

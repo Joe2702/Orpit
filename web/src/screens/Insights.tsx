@@ -3,12 +3,13 @@ import { useStore } from '../store';
 import { BackButton } from '../ui';
 import { buildInsights, insightsReady } from '../lib/insights';
 import { Glyph } from '../lib/appIcons';
+import { t, tk } from '../i18n';
 
 const KIND_LABEL: Record<string, string> = {
-  alert: 'Worth noticing',
-  link: 'Connection',
-  pattern: 'Pattern',
-  record: 'Personal best',
+  alert: tk('Worth noticing'),
+  link: tk('Connection'),
+  pattern: tk('Pattern'),
+  record: tk('Personal best'),
 };
 
 export function Insights() {
@@ -20,10 +21,10 @@ export function Insights() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
         <BackButton onClick={() => go('analytics')} />
-        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>Insights</div>
+        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>{t('Insights')}</div>
       </div>
-      <div style={{ fontSize: 13.5, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.5, paddingLeft: 2 }}>
-        What your habits, training, sleep and spending look like <i>together</i>.
+      <div style={{ fontSize: 13.5, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.5, paddingInlineStart: 2 }}>
+        {t('What your habits, training, sleep and spending look like') + ' '}<i>{t('together')}</i>.
       </div>
 
       {!ready || insights.length === 0 ? (
@@ -32,12 +33,12 @@ export function Insights() {
           <Glyph name="search" size={40} color="var(--text2)" sw={1.6} />
         </div>
           <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-            {ready ? 'Nothing stands out yet' : 'Still gathering data'}
+            {ready ? t('Nothing stands out yet') : t('Still gathering data')}
           </div>
           <div style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.6, maxWidth: 300, margin: '0 auto' }}>
             {ready
-              ? "Your numbers look steady, with no strong patterns yet. Keep logging and check back."
-              : 'Log for about a week and Orbit will start finding links, like how training affects your sleep, or sleep your spending.'}
+              ? t('Your numbers look steady, with no strong patterns yet. Keep logging and check back.')
+              : t('Log for about a week and Orbit will start finding links, like how training affects your sleep, or sleep your spending.')}
           </div>
         </div>
       ) : (
@@ -62,7 +63,7 @@ export function Insights() {
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 600, color: it.kind === 'alert' ? 'var(--danger)' : 'var(--text2)', marginBottom: 4 }}>
-                  {KIND_LABEL[it.kind]}
+                  {t(KIND_LABEL[it.kind])}
                 </div>
                 <div style={{ fontSize: 16, fontWeight: 650, color: 'var(--text)', lineHeight: 1.35, letterSpacing: '-.01em' }}>{it.title}</div>
                 <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 5, lineHeight: 1.5 }}>{it.detail}</div>
@@ -73,8 +74,7 @@ export function Insights() {
       )}
 
       <div style={{ fontSize: 11.5, color: 'var(--text2)', textAlign: 'center', marginTop: 22, lineHeight: 1.6, opacity: 0.8 }}>
-        These are observations from your own data, not medical or financial advice.
-        Patterns need enough entries before they appear.
+        {t('These are observations from your own data, not medical or financial advice. Patterns need enough entries before they appear.')}
       </div>
     </div>
   );

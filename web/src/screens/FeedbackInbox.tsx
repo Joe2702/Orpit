@@ -3,12 +3,13 @@ import { useStore } from '../store';
 import { api, ApiError, type AdminMetrics, type FeedbackItem, type ClientErrorItem } from '../api';
 import { BackButton } from '../ui';
 import { Glyph } from '../lib/appIcons';
+import { t } from '../i18n';
 
 const KIND_STYLE: Record<string, { label: string; color: string }> = {
-  bug: { label: 'Bug', color: 'danger' },
-  suggestion: { label: 'Suggestion', color: 'indigo' },
-  complaint: { label: 'Complaint', color: 'coral' },
-  other: { label: 'Other', color: 'blue' },
+  bug: { label: t('Bug'), color: 'danger' },
+  suggestion: { label: t('Suggestion'), color: 'indigo' },
+  complaint: { label: t('Complaint'), color: 'coral' },
+  other: { label: t('Other'), color: 'blue' },
 };
 
 function timeAgo(ts: number): string {
@@ -52,10 +53,10 @@ export function FeedbackInbox() {
       .catch((e) =>
         setError(
           e instanceof ApiError && e.status === 403
-            ? 'Wrong password.'
+            ? t('Wrong password.')
             : e instanceof ApiError && e.status === 503
-            ? 'Not configured. Set ADMIN_PASSWORD on the server.'
-            : 'Could not load feedback.'
+            ? t('Not configured. Set ADMIN_PASSWORD on the server.')
+            : t('Could not load feedback.')
         )
       )
       .finally(() => setChecking(false));
@@ -65,7 +66,7 @@ export function FeedbackInbox() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
         <BackButton onClick={() => go('settings')} />
-        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>Feedback</div>
+        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>{t('Feedback')}</div>
         {unlocked && items && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{items.length}</div>}
       </div>
 
@@ -75,8 +76,8 @@ export function FeedbackInbox() {
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
               <Glyph name="lock" size={38} color="var(--text2)" sw={1.6} />
             </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Enter password</div>
-            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4 }}>This inbox is protected.</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{t('Enter password')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4 }}>{t('This inbox is protected.')}</div>
           </div>
           <input
             type="password"
@@ -84,7 +85,7 @@ export function FeedbackInbox() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && submit()}
-            placeholder="Password"
+            placeholder={t('Password')}
             style={{ width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: `1px solid ${error ? 'var(--danger)' : 'var(--border)'}`, background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginBottom: 12 }}
           />
           {error && <div style={{ fontSize: 13, color: 'var(--danger)', marginBottom: 12, textAlign: 'center' }}>{error}</div>}
@@ -93,7 +94,7 @@ export function FeedbackInbox() {
             className="press"
             style={{ background: password ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 52, borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, cursor: password ? 'pointer' : 'default' }}
           >
-            {checking ? 'Checking…' : 'Unlock'}
+            {checking ? t('Checking…') : t('Unlock')}
           </div>
         </div>
       ) : (
@@ -116,14 +117,14 @@ export function FeedbackInbox() {
             // Bank messages people couldn't get read, masked on their phones,
             // for teaching the reader new banks (web/src/lib/smsParse.ts).
             formats.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>No formats sent yet.</div>
+              <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>{t('No formats sent yet.')}</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {formats.map((f) => (
                   <div key={f.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16 }}>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', marginBottom: 6 }}>
                       <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }}>{f.sender}</span>
-                      <span style={{ fontSize: 12, color: 'var(--text2)' }}>{f.reason === 'no-verb' ? 'direction unclear' : 'no amount found'}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text2)' }}>{f.reason === 'no-verb' ? t('direction unclear') : t('no amount found')}</span>
                       <span style={{ flex: 1 }} />
                       <span style={{ fontSize: 12, color: 'var(--text2)' }}>{timeAgo(new Date(f.createdAt).getTime())}</span>
                     </div>
@@ -137,14 +138,14 @@ export function FeedbackInbox() {
           ) : tab === 'crashes' ? (
             errors.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>
-                No crashes reported.
+                {t('No crashes reported.')}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {errors.map((e) => (
                   <div key={e.id} style={{ background: 'var(--surface)', border: '1px solid color-mix(in srgb,var(--danger) 25%,var(--border))', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--danger)', background: 'color-mix(in srgb,var(--danger) 13%,transparent)', padding: '3px 9px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '.04em' }}>Crash</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--danger)', background: 'color-mix(in srgb,var(--danger) 13%,transparent)', padding: '3px 9px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '.04em' }}>{t('Crash')}</span>
                       <span style={{ flex: 1 }} />
                       <span style={{ fontSize: 12, color: 'var(--text2)' }}>{timeAgo(e.createdAt)}</span>
                     </div>
@@ -155,7 +156,7 @@ export function FeedbackInbox() {
                       </div>
                     )}
                     <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 10 }}>
-                      {e.email} · build {e.build || '—'}
+                      {t('{email} · build {n}', { email: e.email, n: e.build || '—' })}
                     </div>
                   </div>
                 ))}
@@ -163,7 +164,7 @@ export function FeedbackInbox() {
             )
           ) : items && items.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>
-              No feedback yet. When your testers send some, it shows up here.
+              {t('No feedback yet. When your testers send some, it shows up here.')}
             </div>
           ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -227,7 +228,7 @@ const FEATURE: Record<string, string> = {
  * the usage table: no one's entries are visible here.
  */
 function UsagePanel({ m }: { m: AdminMetrics | null }) {
-  if (!m) return <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>Loading…</div>;
+  if (!m) return <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>{t('Loading…')}</div>;
   const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16, marginBottom: 14 };
   const head = (t: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t}</div>;
   const pct = (v: number | null) => (v == null ? '·' : `${v}%`);
@@ -260,9 +261,9 @@ function UsagePanel({ m }: { m: AdminMetrics | null }) {
             </React.Fragment>
           ))}
         </div>
-        {m.cohorts.length === 0 && <div style={{ fontSize: 13, color: 'var(--text2)' }}>No signups in the last 8 weeks.</div>}
+        {m.cohorts.length === 0 && <div style={{ fontSize: 13, color: 'var(--text2)' }}>{t('No signups in the last 8 weeks.')}</div>}
         <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 10, lineHeight: 1.5 }}>
-          Share of each week&rsquo;s new people who opened the app again the next day, in their second week, and around day 30. Health and fitness apps typically keep 3–8% at day 30.
+          {t('Share of each week’s new people who opened the app again the next day, in their second week, and around day 30. Health and fitness apps typically keep 3–8% at day 30.')}
         </div>
       </div>
       <div style={card}>
@@ -271,7 +272,7 @@ function UsagePanel({ m }: { m: AdminMetrics | null }) {
           <div key={f.name} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '6px 0', borderTop: '1px solid var(--hairline)', fontSize: 13.5 }}>
             <span style={{ flex: 1, color: 'var(--text)' }}>{FEATURE[f.name] || f.name}</span>
             <span style={{ color: 'var(--text2)' }}>{f.users} {f.users === 1 ? 'person' : 'people'}</span>
-            <span style={{ color: 'var(--text3)', minWidth: 52, textAlign: 'right' }}>{f.total.toLocaleString('en-US')}×</span>
+            <span style={{ color: 'var(--text3)', minWidth: 52, textAlign: 'end' }}>{f.total.toLocaleString('en-US')}×</span>
           </div>
         ))}
       </div>

@@ -9,6 +9,8 @@
 // So this counts the way a person does: whole years first, then whole months,
 // then the days left over.
 
+import { listJoin, t, tn } from '../i18n';
+
 const DAY = 86400000;
 
 export interface Elapsed {
@@ -75,7 +77,6 @@ export function elapsed(fromTs: number, toTs: number = Date.now()): Elapsed {
   };
 }
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /**
  * Read it aloud: "3 years, 5 months and 2 days".
@@ -86,20 +87,19 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
  */
 export function formatElapsed(e: Elapsed): string {
   const parts: string[] = [];
-  if (e.years) parts.push(plural(e.years, 'year'));
-  if (e.months) parts.push(plural(e.months, 'month'));
-  if (e.days) parts.push(plural(e.days, 'day'));
-  if (parts.length === 0) return 'Today';
-  if (parts.length === 1) return parts[0];
-  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+  if (e.years) parts.push(tn(e.years, '{n} year', '{n} years'));
+  if (e.months) parts.push(tn(e.months, '{n} month', '{n} months'));
+  if (e.days) parts.push(tn(e.days, '{n} day', '{n} days'));
+  if (parts.length === 0) return t('Today');
+  return listJoin(parts);
 }
 
 /** The compact form for a tight space: "3y 5m 2d". */
 export function shortElapsed(e: Elapsed): string {
   const parts: string[] = [];
-  if (e.years) parts.push(`${e.years}y`);
-  if (e.months) parts.push(`${e.months}m`);
-  if (e.days || parts.length === 0) parts.push(`${e.days}d`);
+  if (e.years) parts.push(t('{n}y', { n: e.years }));
+  if (e.months) parts.push(t('{n}m', { n: e.months }));
+  if (e.days || parts.length === 0) parts.push(t('{n}d', { n: e.days }));
   return parts.join(' ');
 }
 
@@ -108,5 +108,5 @@ export function nextMilestone(e: Elapsed): { label: string; daysAway: number } |
   const marks = [100, 365, 500, 1000, 1500, 2000, 3000, 5000, 10000];
   const next = marks.find((m) => m > e.totalDays);
   if (next == null) return null;
-  return { label: `${next.toLocaleString()} days`, daysAway: next - e.totalDays };
+  return { label: tn(next, '{n} day', '{n} days'), daysAway: next - e.totalDays };
 }

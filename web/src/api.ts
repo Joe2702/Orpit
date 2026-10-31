@@ -20,6 +20,7 @@ import {
   serverMessage,
   type QueuedOp,
 } from './lib/offline';
+import { getLang, t } from './i18n';
 
 // On the web the frontend is served by the same server as the API, so a
 // relative path works. Inside a native (Capacitor) build the app runs from a
@@ -78,6 +79,8 @@ async function request<T>(path: string, opts: RequestInit = {}, opId?: string): 
       ...opts,
       headers: {
         'Content-Type': 'application/json',
+        // So the server writes its emails in the app's language.
+        'X-Orbit-Lang': getLang(),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(id ? { 'x-orbit-op-id': id } : {}),
         ...(opts.headers || {}),
@@ -111,7 +114,7 @@ async function request<T>(path: string, opts: RequestInit = {}, opId?: string): 
   if (!res.ok) {
     let msg = serverMessage(res.status);
     if (res.status < 500) {
-      msg = `That didn’t work (${res.status})`;
+      msg = t('That didn’t work ({status})', { status: String(res.status) });
       try {
         const body = await res.json();
         if (body?.error) msg = body.error;

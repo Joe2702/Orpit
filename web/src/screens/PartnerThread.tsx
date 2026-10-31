@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import { api } from '../api';
 import { BackButton } from '../ui';
 import type { PartnerState, PartnerNote } from '../types';
+import { t, tk } from '../i18n';
 
 // The conversation with an accountability partner.
 //
@@ -17,11 +18,11 @@ import type { PartnerState, PartnerNote } from '../types';
 // shown is the whole thread, so nothing is hidden behind a filter.
 
 const MODULE_LABEL: Record<string, string> = {
-  habits: 'Habits',
-  workouts: 'Workouts',
-  sleep: 'Sleep',
-  counters: 'Counters',
-  finances: 'Finances',
+  habits: tk('Habits'),
+  workouts: tk('Workouts'),
+  sleep: tk('Sleep'),
+  counters: tk('Counters'),
+  finances: tk('Finances'),
 };
 
 export function PartnerThread({ module }: { module: string | null }) {
@@ -71,7 +72,7 @@ export function PartnerThread({ module }: { module: string | null }) {
       setText('');
       await load();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Could not send');
+      showToast(e instanceof Error ? e.message : t('Could not send'));
     }
     setSending(false);
   };
@@ -81,14 +82,13 @@ export function PartnerThread({ module }: { module: string | null }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '2px 0 18px' }}>
         <BackButton onClick={() => go('partner')} />
         <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>
-          {p ? p.name.split(' ')[0] : 'Messages'}
+          {p ? p.name.split(' ')[0] : t('Messages')}
         </div>
       </div>
 
       {notes.length === 0 ? (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', padding: '24px 18px', textAlign: 'center', color: 'var(--text2)', fontSize: 13.5, lineHeight: 1.6 }}>
-          Nothing here yet. A short, specific note lands better than a general
-          one &mdash; &ldquo;you&rsquo;ve missed two days of workouts&rdquo; beats &ldquo;keep going&rdquo;.
+          {t('Nothing here yet. A short, specific note lands better than a general one — “you’ve missed two days of workouts” beats “keep going”.')}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
@@ -103,8 +103,9 @@ export function PartnerThread({ module }: { module: string | null }) {
       <div style={{ position: 'sticky', bottom: 0, paddingTop: 14, marginTop: 14 }}>
         {addressable.length === 0 ? (
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '14px 16px', fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.55 }}>
-            You can&rsquo;t send anything yet. {p ? p.name.split(' ')[0] : 'Your partner'} needs to open a tracker for
-            comments, or you both need to turn on free chat.
+            {t('You can’t send anything yet. {name} needs to open a tracker for comments, or you both need to turn on free chat.', {
+              name: p ? p.name.split(' ')[0] : t('Your partner'),
+            })}
           </div>
         ) : (
           <>
@@ -126,7 +127,7 @@ export function PartnerThread({ module }: { module: string | null }) {
                       background: on ? 'color-mix(in srgb,var(--indigo) 10%,transparent)' : 'var(--surface)',
                     }}
                   >
-                    {a === null ? 'Chat' : MODULE_LABEL[a] || a}
+                    {a === null ? t('Chat') : MODULE_LABEL[a] ? t(MODULE_LABEL[a]) : a}
                   </div>
                 );
               })}
@@ -135,7 +136,7 @@ export function PartnerThread({ module }: { module: string | null }) {
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value.slice(0, 500))}
-                placeholder={to === null ? 'Message…' : `Note about ${(MODULE_LABEL[to] || to).toLowerCase()}…`}
+                placeholder={to === null ? t('Message…') : t('Note about {module}…', { module: (MODULE_LABEL[to] ? t(MODULE_LABEL[to]) : to).toLowerCase() })}
                 rows={1}
                 style={{
                   flex: 1, minWidth: 0, minHeight: 48, maxHeight: 120, borderRadius: 'calc(16px * var(--sq))', border: '1px solid var(--border)',
@@ -147,7 +148,7 @@ export function PartnerThread({ module }: { module: string | null }) {
                 onClick={text.trim() && !sending ? send : undefined}
                 className={text.trim() ? 'press92' : undefined}
                 role="button"
-                aria-label="Send"
+                aria-label={t('Send')}
                 style={{
                   width: 48, height: 48, borderRadius: 'calc(16px * var(--sq))', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: text.trim() ? 'pointer' : 'default',
@@ -176,18 +177,18 @@ function Bubble({ n, mine }: { n: PartnerNote; mine: boolean }) {
           border: mine ? 'none' : '1px solid var(--border)',
           color: mine ? '#fff' : 'var(--text)',
           borderRadius: 'calc(18px * var(--sq))',
-          borderBottomRightRadius: mine ? 6 : 18,
-          borderBottomLeftRadius: mine ? 18 : 6,
+          borderEndEndRadius: mine ? 6 : 18,
+          borderEndStartRadius: mine ? 18 : 6,
           padding: '10px 14px',
         }}
       >
         {n.module && (
           <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.05em', textTransform: 'uppercase', opacity: mine ? 0.75 : 0.6, marginBottom: 3 }}>
-            {MODULE_LABEL[n.module] || n.module}
+            {MODULE_LABEL[n.module] ? t(MODULE_LABEL[n.module]) : n.module}
           </div>
         )}
         <div style={{ fontSize: 14.5, lineHeight: 1.45, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{n.body}</div>
-        <div style={{ fontSize: 10.5, opacity: mine ? 0.7 : 0.55, marginTop: 4, textAlign: 'right' }}>
+        <div style={{ fontSize: 10.5, opacity: mine ? 0.7 : 0.55, marginTop: 4, textAlign: 'end' }}>
           {new Date(n.ts).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
         </div>
       </div>

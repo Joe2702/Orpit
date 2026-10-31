@@ -1,6 +1,7 @@
 import React, { type CSSProperties } from 'react';
 import { useStore } from './store';
 import type { Range } from './types';
+import { t, tk } from './i18n';
 
 export const S = (s: CSSProperties) => s; // identity helper for readability
 
@@ -41,13 +42,13 @@ export function toggleKnob(on: boolean): CSSProperties {
     background: '#fff',
     transition: 'all .25s cubic-bezier(.34,1.56,.64,1)',
     boxShadow: '0 1px 3px rgba(0,0,0,.3)',
-    left: on ? 23 : 3,
+    insetInlineStart: on ? 23 : 3,
   };
 }
 
 export function BackButton({ onClick }: { onClick: () => void }) {
   return (
-    <div role="button" tabIndex={0} aria-label="Back"
+    <div role="button" tabIndex={0} aria-label={t('Back')}
       onClick={onClick}
       style={{
         width: 38,
@@ -67,7 +68,7 @@ export function BackButton({ onClick }: { onClick: () => void }) {
         height="20"
         style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}
       >
-        <path d="M12 5l-5 5 5 5" />
+        <path className="flip-rtl" d="M12 5l-5 5 5 5" />
       </svg>
     </div>
   );
@@ -112,7 +113,7 @@ export function DetailHeader({ title, subtitle }: { title: string; subtitle?: st
 
 const Chevron = ({ dir }: { dir: 'l' | 'r' }) => (
   <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-    <path d={dir === 'l' ? 'M12 5l-5 5 5 5' : 'M8 5l5 5-5 5'} />
+    <path className="flip-rtl" d={dir === 'l' ? 'M12 5l-5 5 5 5' : 'M8 5l5 5-5 5'} />
   </svg>
 );
 
@@ -124,6 +125,8 @@ const Chevron = ({ dir }: { dir: 'l' | 'r' }) => (
  * screen said so. Now every chart sits under the exact dates it covers, and the
  * arrows step back through earlier weeks, months and years.
  */
+const RANGE_LABEL: Record<Range, string> = { Week: tk('Week'), Month: tk('Month'), Year: tk('Year'), All: tk('All') };
+
 export function RangeSeg({ period }: { period?: { title: string; caption: string; hasPrev: boolean; isCurrent: boolean } }) {
   const { range, setRange, rangeOffset, setRangeOffset } = useStore();
   const items: Range[] = ['Week', 'Month', 'Year', 'All'];
@@ -186,18 +189,18 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
                 : { color: 'var(--text2)' }),
             }}
           >
-            {r}
+            {t(RANGE_LABEL[r])}
           </div>
         ))}
       </div>
       {period && (
         <div style={{ display: 'flex', alignItems: 'center', marginTop: 8 }}>
-          {range !== 'All' && navBtn('l', period.hasPrev, () => setRangeOffset(rangeOffset + 1), 'Previous period')}
+          {range !== 'All' && navBtn('l', period.hasPrev, () => setRangeOffset(rangeOffset + 1), t('Previous period'))}
           <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }} aria-live="polite">
             <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--text)', letterSpacing: '-.01em' }}>{period.title}</div>
             <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>{period.caption}</div>
           </div>
-          {range !== 'All' && navBtn('r', !period.isCurrent, () => setRangeOffset(rangeOffset - 1), 'Next period')}
+          {range !== 'All' && navBtn('r', !period.isCurrent, () => setRangeOffset(rangeOffset - 1), t('Next period'))}
         </div>
       )}
     </div>

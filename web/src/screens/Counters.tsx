@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import { CIcon } from '../lib/iconPaths';
 import { cNum, counterTotals, relLabel } from '../lib/format';
 import { BackButton } from '../ui';
+import { t } from '../i18n';
 
 export function Counters() {
   const { state, go, open, emptyMode } = useStore();
@@ -16,7 +17,7 @@ export function Counters() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
         <BackButton onClick={() => go('home')} />
-        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>Counters</div>
+        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>{t('Counters')}</div>
         <span style={{ width: 40, height: 40, borderRadius: 'calc(13px * var(--sq))', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
           <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path d="M6 4l-1.2 12M11.4 4l-1.2 12M3.6 8h13M2.9 12h13" />
@@ -32,23 +33,23 @@ export function Counters() {
             </svg>
           </div>
           <div>
-            <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)' }}>Count anything</div>
+            <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)' }}>{t('Count anything')}</div>
             <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 6, lineHeight: 1.55, maxWidth: 266 }}>
-              Pull-ups, pages read, hours of focus. Make a counter and your monthly and yearly totals add up here.
+              {t('Pull-ups, pages read, hours of focus. Make a counter and your monthly and yearly totals add up here.')}
             </div>
           </div>
           <div role="button" tabIndex={0} onClick={() => open('counter')} className="press" style={ctaBtn}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M10 4v11M4 9.5h11" /></svg>
-            New counter
+            {t('New counter')}
           </div>
         </div>
       ) : (
         <>
           <div style={{ display: 'flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '16px 8px', marginBottom: 16 }}>
             {[
-              [String(counters.length), 'Counters'],
-              [String(logsMonth), 'Logs this month'],
-              [String(logs.length), 'Total logs'],
+              [String(counters.length), t('Counters')],
+              [String(logsMonth), t('Logs this month')],
+              [String(logs.length), t('Total logs')],
             ].map(([v, l], i) => (
               <React.Fragment key={l}>
                 {i > 0 && <div style={{ width: 1, background: 'var(--border)' }} />}
@@ -62,7 +63,7 @@ export function Counters() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
             {counters.map((c) => {
-              const t = counterTotals(logs, c.id);
+              const tx = counterTotals(logs, c.id);
               return (
                 <div role="button" tabIndex={0}
                   key={c.id}
@@ -77,10 +78,10 @@ export function Counters() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{c.name}</div>
                       <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
-                        {c.unit} · {t.lastTs ? `last logged ${relLabel(t.lastTs) === 'Today' || relLabel(t.lastTs) === 'Yesterday' ? relLabel(t.lastTs).toLowerCase() : relLabel(t.lastTs)}` : 'nothing logged yet'}
+                        {c.unit} · {tx.lastTs ? t('last logged {when}', { when: relLabel(tx.lastTs) === t('Today') || relLabel(tx.lastTs) === t('Yesterday') ? relLabel(tx.lastTs).toLowerCase() : relLabel(tx.lastTs) }) : t('nothing logged yet')}
                       </div>
                     </div>
-                    <div role="button" tabIndex={0} aria-label={`Log ${c.name}`}
+                    <div role="button" tabIndex={0} aria-label={t('Log {name}', { name: c.name })}
                       onClick={(e) => {
                         e.stopPropagation();
                         open('countlog', { counterId: c.id, amount: c.step });
@@ -92,9 +93,9 @@ export function Counters() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'stretch', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: '12px 8px' }}>
-                    <TotCell value={cNum(t.month)} label="This month" />
+                    <TotCell value={cNum(tx.month)} label={t('This month')} />
                     <div style={{ width: 1, background: 'var(--border)' }} />
-                    <TotCell value={cNum(t.all)} label="All time" />
+                    <TotCell value={cNum(tx.all)} label={t('All time')} />
                   </div>
                 </div>
               );
@@ -103,7 +104,7 @@ export function Counters() {
 
           <div role="button" tabIndex={0} onClick={() => open('counter')} className="press99" style={dashBtn}>
             <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M10 4v12M4 10h12" /></svg>
-            New counter
+            {t('New counter')}
           </div>
         </>
       )}

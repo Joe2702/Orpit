@@ -1,4 +1,5 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import { t } from '../i18n';
 
 // App lock: asks for the phone's own fingerprint, face or screen-lock PIN when
 // Orbit opens, and again when it comes back after a while away. A setting of
@@ -6,7 +7,7 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 
 interface OrbitLockPlugin {
   available(): Promise<{ available: boolean }>;
-  unlock(o?: { reason?: string }): Promise<{ ok: boolean; message?: string }>;
+  unlock(o?: { reason?: string; title?: string }): Promise<{ ok: boolean; message?: string }>;
 }
 
 const OrbitLock = registerPlugin<OrbitLockPlugin>('OrbitLock');
@@ -46,7 +47,7 @@ export async function lockAvailable(): Promise<boolean> {
 
 export async function unlock(reason?: string): Promise<boolean> {
   try {
-    return (await OrbitLock.unlock({ reason })).ok;
+    return (await OrbitLock.unlock({ reason: reason ?? t('Your money and habits are behind this.'), title: t('Unlock Orbit') })).ok;
   } catch {
     return false;
   }

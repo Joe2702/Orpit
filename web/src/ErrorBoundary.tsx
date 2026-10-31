@@ -1,5 +1,6 @@
 import React from 'react';
 import { reportError } from './lib/crash';
+import { t } from './i18n';
 
 interface State {
   err: Error | null;
@@ -42,15 +43,15 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
           <circle cx="12" cy="11" r="6" />
           <ellipse cx="12" cy="11" rx="10.5" ry="4" transform="rotate(-24 12 11)" />
         </svg>
-        <div style={{ fontSize: 21, fontWeight: 700, marginBottom: 10 }}>Something went wrong</div>
+        <div style={{ fontSize: 21, fontWeight: 700, marginBottom: 10 }}>{t('Something went wrong')}</div>
         <div style={{ fontSize: 14.5, lineHeight: 1.55, opacity: 0.9, maxWidth: 300, marginBottom: 26 }}>
-          The error has been reported. Reloading usually fixes it, and your data is safe on the server.
+          {t('The error has been reported. Reloading usually fixes it, and your data is safe on the server.')}
         </div>
         <div role="button" tabIndex={0}
           onClick={() => window.location.reload()}
           style={{ background: '#fff', color: '#4a45a6', height: 50, padding: '0 30px', borderRadius: 'calc(15px * var(--sq))', display: 'flex', alignItems: 'center', fontSize: 15.5, fontWeight: 700, cursor: 'pointer' }}
         >
-          Reload Orbit
+          {t('Reload Orbit')}
         </div>
       </div>
     );

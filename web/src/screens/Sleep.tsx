@@ -8,6 +8,7 @@ import { IconSleep } from '../icons';
 import { SwipeRow } from '../SwipeRow';
 import { useEntryActions } from '../lib/entryActions';
 import { UnsyncedDot } from '../UnsyncedDot';
+import { t, tn } from '../i18n';
 
 export function Sleep() {
   const { state, open } = useStore();
@@ -24,25 +25,25 @@ export function Sleep() {
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <DetailHeader title="Sleep" />
-      <TrackerAction label="Log sleep" onClick={() => open('sleep')} />
+      <DetailHeader title={t('Sleep')} />
+      <TrackerAction label={t('Log sleep')} onClick={() => open('sleep')} />
       <RangeSeg period={P} />
 
       <StatRow>
-        <Stat value={none ? '—' : hm(d.slAvg)} label="Average night" />
-        <Stat value={fmtClock(d.avgBed)} label="Usual bedtime" />
-        <Stat value={fmtClock(d.avgWake)} label="Usual wake-up" />
+        <Stat value={none ? '—' : hm(d.slAvg)} label={t('Average night')} />
+        <Stat value={fmtClock(d.avgBed)} label={t('Usual bedtime')} />
+        <Stat value={fmtClock(d.avgWake)} label={t('Usual wake-up')} />
       </StatRow>
 
       {d.sleepByDay ? (
-        <ChartCard title="When you slept" note={none ? P.caption : `${P.caption} · quality ${d.slAvgQ.toFixed(1)}/10`}>
+        <ChartCard title={t('When you slept')} note={none ? P.caption : t('{caption} · quality {v}/10', { caption: P.caption, v: d.slAvgQ.toFixed(1) })}>
           <SleepClock buckets={d.buckets} slots={d.sleepSlots} />
-          <Legend items={[{ color: sleepColor(8), label: '7 to 9 hours' }, { color: sleepColor(6), label: 'Shorter or longer' }]} />
+          <Legend items={[{ color: sleepColor(8), label: t('7 to 9 hours') }, { color: sleepColor(6), label: t('Shorter or longer') }]} />
         </ChartCard>
       ) : (
-        <ChartCard title="Average night" value={none ? '—' : hm(d.slAvg)} note={P.caption}>
+        <ChartCard title={t('Average night')} value={none ? '—' : hm(d.slAvg)} note={P.caption}>
           <BarChart buckets={d.buckets} values={d.slSeries} color="indigo" max={10} band={[7, 9]} format={(v) => hm(v)} />
-          <Legend items={[{ color: 'color-mix(in srgb, var(--indigo) 30%, transparent)', label: '7 to 9 hours, the healthy range' }]} />
+          <Legend items={[{ color: 'color-mix(in srgb, var(--indigo) 30%, transparent)', label: t('7 to 9 hours, the healthy range') }]} />
         </ChartCard>
       )}
 
@@ -54,21 +55,21 @@ export function Sleep() {
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
-            {d.bedDevMin == null ? 'Consistency' : d.slConsistGood ? 'Steady bedtime' : 'Bedtime moves around'}
+            {d.bedDevMin == null ? t('Consistency') : d.slConsistGood ? t('Steady bedtime') : t('Bedtime moves around')}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2, lineHeight: 1.4 }}>
             {d.bedDevMin == null
-              ? 'Log three nights with bed and wake times to see how regular your sleep is'
+              ? t('Log three nights with bed and wake times to see how regular your sleep is')
               : d.slConsistGood
-              ? `You usually go to bed within ${Math.round(d.bedDevMin)} min of ${fmtClock(d.avgBed)}`
-              : `Your bedtime varies by about ${Math.round(d.bedDevMin)} min around ${fmtClock(d.avgBed)}`}
+              ? t('You usually go to bed within {n} min of {v}', { n: Math.round(d.bedDevMin), v: fmtClock(d.avgBed) })
+              : t('Your bedtime varies by about {n} min around {v}', { n: Math.round(d.bedDevMin), v: fmtClock(d.avgBed) })}
           </div>
         </div>
       </Card>
 
-      <SectionLabel>{list.length ? `${P.title} · ${list.length} ${list.length === 1 ? 'night' : 'nights'}` : P.title}</SectionLabel>
+      <SectionLabel>{list.length ? `${P.title} · ${tn(list.length, '{n} night', '{n} nights')}` : P.title}</SectionLabel>
       {list.length === 0 && (
-        <Card style={{ padding: '22px 18px', textAlign: 'center', fontSize: 14, color: 'var(--text2)' }}>No nights logged {P.phrase}</Card>
+        <Card style={{ padding: '22px 18px', textAlign: 'center', fontSize: 14, color: 'var(--text2)' }}>{t('No nights logged {phrase}', { phrase: P.phrase })}</Card>
       )}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', display: list.length ? undefined : 'none' }}>
         {list.slice(0, shown).map((n) => (
@@ -87,7 +88,8 @@ export function Sleep() {
                   <UnsyncedDot id={n.id} />
                 </div>
                 <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2 }}>
-                  {n.bedH != null && n.wakeH != null ? `${fmtClock(n.bedH)} → ${fmtClock(n.wakeH)} · ` : ''}Quality {n.quality}/10
+                  {n.bedH != null && n.wakeH != null ? `${fmtClock(n.bedH)} – ${fmtClock(n.wakeH)} · ` : ''}
+                  {t('Quality {q}/10', { q: n.quality })}
                 </div>
               </div>
               <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums', flex: 'none' }}>{hm(n.hours)}</div>
@@ -97,8 +99,7 @@ export function Sleep() {
       </div>
       {list.length > shown && (
         <div tabIndex={0} onClick={() => setShown(shown + 50)} className="press99" role="button" style={{ marginTop: 12, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
-          Show {Math.min(50, list.length - shown)} more
-        </div>
+          {t('Show {v} more', { v: Math.min(50, list.length - shown) })}</div>
       )}
     </div>
   );

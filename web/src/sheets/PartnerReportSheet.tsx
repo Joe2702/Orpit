@@ -2,6 +2,7 @@ import React from 'react';
 import { useStore } from '../store';
 import { api } from '../api';
 import { REPORT_REASONS } from '../lib/partner';
+import { t } from '../i18n';
 
 /**
  * Reporting an accountability partner.
@@ -29,10 +30,10 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
     try {
       await api.reportPartner({ reason, detail: detail.trim() || undefined });
       closeSheet();
-      showToast('Report sent. You are no longer partners.');
+      showToast(t('Report sent. You are no longer partners.'));
       reload();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Could not send that');
+      showToast(e instanceof Error ? e.message : t('Could not send that'));
       setBusy(false);
     }
   };
@@ -40,14 +41,13 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
   return (
     <div style={{ padding: '4px 20px 28px' }}>
       <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 6px' }}>
-        Report {name.split(' ')[0]}
+        {t('Report {v}', { v: name.split(' ')[0] })}
       </div>
       <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.6, marginBottom: 20 }}>
-        This goes to Orbit for review, along with a copy of your messages. You will stop being partners straight away
-        and will not be matched with each other again.
+        {t('This goes to Orbit for review, along with a copy of your messages. You will stop being partners straight away and will not be matched with each other again.')}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>What happened?</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('What happened?')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
         {REPORT_REASONS.map((r) => {
           const on = reason === r.key;
@@ -71,12 +71,12 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
       </div>
 
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>
-        Anything else? (optional)
+        {t('Anything else? (optional)')}
       </div>
       <textarea
         value={detail}
         onChange={(e) => setDetail(e.target.value.slice(0, 2000))}
-        placeholder="What you'd like us to know"
+        placeholder={t('What you\'d like us to know')}
         rows={4}
         style={{
           width: '100%', borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)',
@@ -96,7 +96,7 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
           background: reason ? 'var(--danger)' : 'color-mix(in srgb,var(--danger) 40%,var(--surface))',
         }}
       >
-        {busy ? 'Sending…' : 'Send report and end partnership'}
+        {busy ? t('Sending…') : t('Send report and end partnership')}
       </div>
     </div>
   );

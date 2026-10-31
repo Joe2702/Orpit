@@ -1,7 +1,8 @@
 import type { AppState } from '../types';
 import { derive, deriveHabits } from './derive';
 import { hm } from './format';
-import { startOfWeek } from './period';
+import { monthLong, startOfWeek } from './period';
+import { listJoin, num, t, tn } from '../i18n';
 
 // The fresh-start card.
 //
@@ -20,12 +21,7 @@ export interface FreshStart {
   cta: string;
 }
 
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-function list(parts: string[]): string {
-  if (parts.length <= 1) return parts.join('');
-  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
-}
+const year = (y: number) => num(y, { useGrouping: false });
 
 export function freshStart(s: AppState, now: number = Date.now()): FreshStart | null {
   const d = new Date(now);
@@ -38,15 +34,16 @@ export function freshStart(s: AppState, now: number = Date.now()): FreshStart | 
   const habits = deriveHabits(s, range, 1, now);
 
   const parts: string[] = [];
-  if (habits.rangeTotal > 0) parts.push(`${habits.rangePct}% of your habits`);
-  if (past.wCount > 0) parts.push(`${past.wCount} ${past.wCount === 1 ? 'workout' : 'workouts'}`);
-  if (past.slNights > 0) parts.push(`${hm(past.slAvg)} of sleep a night`);
+  if (habits.rangeTotal > 0) parts.push(t('{n}% of your habits', { n: habits.rangePct }));
+  if (past.wCount > 0) parts.push(tn(past.wCount, '{n} workout', '{n} workouts'));
+  if (past.slNights > 0) parts.push(t('{time} of sleep a night', { time: hm(past.slAvg) }));
   // Nothing to look back on: a new account is better served by the
   // getting-started list than by a summary of an empty week.
   if (!parts.length) return null;
 
-  const when = kind === 'week' ? 'Last week' : kind === 'month' ? `In ${MONTHS[(d.getMonth() + 11) % 12]}` : `In ${d.getFullYear() - 1}`;
-  const next = kind === 'week' ? 'this week' : kind === 'month' ? 'this month' : 'this year';
+  const lastMonth = monthLong((d.getMonth() + 11) % 12);
+  const when = kind === 'week' ? t('Last week') : kind === 'month' ? t('In {month}', { month: lastMonth }) : t('In {year}', { year: year(d.getFullYear() - 1) });
+  const next = kind === 'week' ? t('this week') : kind === 'month' ? t('this month') : t('this year');
   const key =
     kind === 'week'
       ? `w-${new Date(startOfWeek(now)).toDateString()}`
@@ -57,8 +54,8 @@ export function freshStart(s: AppState, now: number = Date.now()): FreshStart | 
   return {
     key,
     kind,
-    title: kind === 'week' ? 'A fresh week' : kind === 'month' ? `Welcome to ${MONTHS[d.getMonth()]}` : 'A new year',
-    body: `${when}: ${list(parts)}. A good moment to choose one thing to do a little better ${next}.`,
-    cta: kind === 'week' ? 'Look back at last week' : kind === 'month' ? `See your ${MONTHS[(d.getMonth() + 11) % 12]} report` : `See ${d.getFullYear() - 1} in review`,
+    title: kind === 'week' ? t('A fresh week') : kind === 'month' ? t('Welcome to {month}', { month: monthLong(d.getMonth()) }) : t('A new year'),
+    body: t('{when}: {summary}. A good moment to choose one thing to do a little better {next}.', { when, summary: listJoin(parts), next }),
+    cta: kind === 'week' ? t('Look back at last week') : kind === 'month' ? t('See your {month} report', { month: lastMonth }) : t('See {year} in review', { year: year(d.getFullYear() - 1) }),
   };
 }

@@ -2,6 +2,7 @@ import { useStore } from '../store';
 import { api } from '../api';
 import { isUnsynced, unsyncedMessage } from './offline';
 import type { Workout, Night, Txn, AppState } from '../types';
+import { t } from '../i18n';
 
 export type EntryKind = 'workout' | 'sleep' | 'txn';
 export type Entry = Workout | Night | Txn;
@@ -16,7 +17,7 @@ export type Entry = Workout | Night | Txn;
 export function useEntryActions() {
   const { mutate, mutateOpt, haptic, showToast } = useStore();
 
-  const restore = (kind: EntryKind, item: Entry, toast = 'Restored', photo?: string | null) => {
+  const restore = (kind: EntryKind, item: Entry, toast = t('Restored'), photo?: string | null) => {
     if (kind === 'workout') {
       const x = item as Workout;
       mutate(() => api.addWorkout({ catId: x.catId || '', dur: x.dur, dist: x.dist, kcal: x.kcal, intensity: x.intensity, note: x.note, sets: x.sets, ts: x.ts }), toast).catch(() => {});
@@ -34,7 +35,7 @@ export function useEntryActions() {
   /** Re-log the same entry dated now. */
   const duplicate = (kind: EntryKind, item: Entry) => {
     haptic();
-    restore(kind, { ...(item as Workout & Night & Txn), ts: Date.now() } as Entry, 'Duplicated to today');
+    restore(kind, { ...(item as Workout & Night & Txn), ts: Date.now() } as Entry, t('Duplicated to today'));
   };
 
   /**
@@ -68,7 +69,7 @@ export function useEntryActions() {
         : { ...s, txns: s.txns.filter((x) => x.id !== id) };
 
     mutateOpt(optimistic, fn)
-      .then(() => showToast('Entry deleted', () => txnPhoto.then((p) => restore(kind, item, 'Restored', p))))
+      .then(() => showToast(t('Entry deleted'), () => txnPhoto.then((p) => restore(kind, item, t('Restored'), p))))
       .catch(() => {});
   };
 

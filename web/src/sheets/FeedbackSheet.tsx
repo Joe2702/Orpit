@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
 import { api } from '../api';
+import { t, tk } from '../i18n';
 
 const KINDS: [string, string][] = [
-  ['suggestion', 'Suggestion'],
-  ['bug', 'Bug'],
-  ['complaint', 'Complaint'],
-  ['other', 'Other'],
+  ['suggestion', tk('Suggestion')],
+  ['bug', tk('Bug')],
+  ['complaint', tk('Complaint')],
+  ['other', tk('Other')],
 ];
 
 export function FeedbackSheet() {
@@ -22,22 +23,22 @@ export function FeedbackSheet() {
     haptic();
     try {
       await api.sendFeedback(kind, message.trim());
-      showToast('Thanks, it’s sent');
+      showToast(t('Thanks, it’s sent'));
       closeSheet();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Could not send');
+      showToast(e instanceof Error ? e.message : t('Could not send'));
       setBusy(false);
     }
   };
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 6px' }}>Send feedback</div>
+      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 6px' }}>{t('Send feedback')}</div>
       <div style={{ fontSize: 13.5, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.5 }}>
-        Ideas, bugs, or anything on your mind. It goes straight to the person who builds Orbit.
+        {t('Ideas, bugs, or anything on your mind. It goes straight to the person who builds Orbit.')}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Type</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('Type')}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
         {KINDS.map(([val, label]) => {
           const active = kind === val;
@@ -56,17 +57,17 @@ export function FeedbackSheet() {
                 color: active ? 'var(--indigo)' : 'var(--text2)',
               }}
             >
-              {label}
+              {t(label)}
             </div>
           );
         })}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Message</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('Message')}</div>
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        placeholder="Tell us what's on your mind…"
+        placeholder={t('Tell us what\'s on your mind…')}
         rows={5}
         style={{ width: '100%', borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '13px 15px', fontSize: 15, color: 'var(--text)', outline: 'none', resize: 'none', marginBottom: 22, lineHeight: 1.5 }}
       />
@@ -76,7 +77,7 @@ export function FeedbackSheet() {
         className="press"
         style={{ background: canSend ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSend ? 'pointer' : 'default' }}
       >
-        {busy ? 'Sending…' : 'Send feedback'}
+        {busy ? t('Sending…') : t('Send feedback')}
       </div>
     </div>
   );

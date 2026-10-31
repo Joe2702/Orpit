@@ -2,6 +2,7 @@ import { useStore } from '../store';
 import { track } from './usage';
 import { api } from '../api';
 import { enableSms, syncSms, smsSupported, SMS_DISCLOSURE } from './smsSync';
+import { t } from '../i18n';
 
 // Turning on bank tracking, from wherever it's offered: onboarding, an empty
 // Finances screen, Settings. One flow, so the disclosure, the permission and
@@ -28,15 +29,15 @@ export function useStartBankTracking() {
     if (!disclosed && !(await confirm(SMS_DISCLOSURE))) return false;
     const st = await enableSms();
     if (!st.available) {
-      showToast('This phone does not receive SMS');
+      showToast(t('This phone does not receive SMS'));
       return false;
     }
     if (!st.granted) {
-      showToast('Orbit needs permission to read your bank messages');
+      showToast(t('Orbit needs permission to read your bank messages'));
       return false;
     }
     track('bank_on');
-    showToast('Looking through your bank messages…');
+    showToast(t('Looking through your bank messages…'));
     const r = await syncSms(state, (items) => api.importSms(items), (base) => api.fx(base));
     const next = r.state || state;
     if (r.state) applyState(r.state);

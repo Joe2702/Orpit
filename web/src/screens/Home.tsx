@@ -14,6 +14,7 @@ import { Avatar, SectionLabel } from '../ui';
 import { enabled } from '../lib/modules';
 import { CIcon } from '../lib/iconPaths';
 import { elapsed, formatElapsed } from '../lib/since';
+import { t, tData, tn } from '../i18n';
 
 
 /** ↑/↓ vs the previous week. `lowerIsBetter` flips the colour (e.g. spending). */
@@ -46,7 +47,7 @@ function Delta({ pct, lowerIsBetter }: { pct: number | null; lowerIsBetter?: boo
   return (
     <span
       style={{ fontSize: 11.5, fontWeight: 700, color: good ? 'var(--text2)' : 'var(--danger)', whiteSpace: 'nowrap' }}
-      aria-label={`${up ? 'up' : 'down'} ${Math.abs(pct)} percent vs last week`}
+      aria-label={up ? t('Up {n} percent vs last week', { n: Math.abs(pct) }) : t('Down {n} percent vs last week', { n: Math.abs(pct) })}
     >
       {up ? '↑' : '↓'}{Math.abs(pct)}%
     </span>
@@ -54,7 +55,7 @@ function Delta({ pct, lowerIsBetter }: { pct: number | null; lowerIsBetter?: boo
 }
 
 const bigNum: React.CSSProperties = { fontSize: 28, fontWeight: 700, letterSpacing: '-.035em', color: 'var(--text)', lineHeight: 1.05, whiteSpace: 'nowrap' };
-const unit: React.CSSProperties = { fontSize: 17, fontWeight: 600, color: 'var(--text2)', marginLeft: 1 };
+const unit: React.CSSProperties = { fontSize: 17, fontWeight: 600, color: 'var(--text2)', marginInlineStart: 1 };
 const listCard: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' };
 const iconCell: React.CSSProperties = { width: 24, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const headBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer', flex: 'none' };
@@ -154,10 +155,10 @@ export function Home() {
   // This gives immediate, visible progress (the first step is already done just
   // by signing up) and disappears for good once every step is complete.
   const steps = [
-    { label: 'Create your account', done: true },
-    { label: 'Check off a habit', done: state!.checkins.length > 0 },
-    { label: 'Log a workout or a night of sleep', done: state!.workouts.length > 0 || state!.nights.length > 0 },
-    { label: 'Add your first transaction', done: state!.txns.length > 0 },
+    { label: t('Create your account'), done: true },
+    { label: t('Check off a habit'), done: state!.checkins.length > 0 },
+    { label: t('Log a workout or a night of sleep'), done: state!.workouts.length > 0 || state!.nights.length > 0 },
+    { label: t('Add your first transaction'), done: state!.txns.length > 0 },
   ];
   const stepsDone = steps.filter((s) => s.done).length;
   const showChecklist = stepsDone < steps.length;
@@ -166,9 +167,9 @@ export function Home() {
   const blocks: Record<string, React.ReactNode> = {
     habits: (
       <>
-        <SectionLabel action={todaysHabits.length ? { label: `${doneCount} of ${todaysHabits.length}`, onClick: () => go('habits') } : undefined}>Today</SectionLabel>
+        <SectionLabel action={todaysHabits.length ? { label: t('{doneCount} of {n}', { doneCount, n: todaysHabits.length }), onClick: () => go('habits') } : undefined}>{t('Today')}</SectionLabel>
         {todaysHabits.length === 0 ? (
-          <div style={{ ...listCard, padding: '18px 16px', fontSize: 14, color: 'var(--text2)', textAlign: 'center' }}>Nothing scheduled today</div>
+          <div style={{ ...listCard, padding: '18px 16px', fontSize: 14, color: 'var(--text2)', textAlign: 'center' }}>{t('Nothing scheduled today')}</div>
         ) : (
           <div style={listCard}>
             {/* Progress across the day's list. Effort rises as a goal gets
@@ -181,11 +182,11 @@ export function Home() {
                 <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', flex: 'none' }}>
                   <path d="M4.5 10.5l3.5 3.5 7.5-8" />
                 </svg>
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Today’s list is done.</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{t('Today’s list is done.')}</span>
               </div>
             )}
             {todaysHabits.map((hb) => (
-              <div tabIndex={0} key={hb.id} onClick={() => toggleHabit(hb.id)} role="checkbox" aria-checked={hb.done} aria-label={hb.name} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderBottom: '1px solid var(--hairline)', cursor: 'pointer' }}>
+              <div tabIndex={0} key={hb.id} onClick={() => toggleHabit(hb.id)} role="checkbox" aria-checked={hb.done} aria-label={tData(hb.name)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderBottom: '1px solid var(--hairline)', cursor: 'pointer' }}>
                 <div
                   style={{
                     width: 26,
@@ -220,12 +221,12 @@ export function Home() {
                   </svg>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15.5, fontWeight: 550, color: hb.done ? 'var(--text3)' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color .2s' }}>{hb.name}</div>
+                  <div style={{ fontSize: 15.5, fontWeight: 550, color: hb.done ? 'var(--text3)' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', transition: 'color .2s' }}>{tData(hb.name)}</div>
                   {/* The plan the user wrote ("after my morning coffee") is the
                       most useful thing to read at the moment of doing it. */}
                   {(hb.cue || hb.reminderTime) && !hb.done && (
                     <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {hb.cue || `Reminder at ${hb.reminderTime}`}
+                      {hb.cue || t('Reminder at {reminderTime}', { reminderTime: hb.reminderTime ?? '' })}
                     </div>
                   )}
                 </div>
@@ -234,10 +235,10 @@ export function Home() {
             ))}
             <div style={{ padding: '11px 16px', fontSize: 13, color: 'var(--text2)' }}>
               {h.weekPlanned === 0
-                ? 'Nothing else planned this week.'
+                ? t('Nothing else planned this week.')
                 : h.weekSecured
-                ? 'This week already counts. Anything more is extra.'
-                : `${h.weekToGo} more ${h.weekToGo === 1 ? 'check-in' : 'check-ins'} and this week counts.`}
+                ? t('This week already counts. Anything more is extra.')
+                : tn(h.weekToGo, '{n} more check-in and this week counts.', '{n} more check-ins and this week counts.')}
             </div>
           </div>
         )}
@@ -246,7 +247,7 @@ export function Home() {
 
     week: (
       <>
-        <SectionLabel action={{ label: weekCaption, onClick: () => go('analytics') }}>This week</SectionLabel>
+        <SectionLabel action={{ label: weekCaption, onClick: () => go('analytics') }}>{t('This week')}</SectionLabel>
         {/* auto-fit rather than a hard 1fr 1fr: below ~310px of usable width —
             a small phone, or any phone with the in-app text size turned up,
             which shrinks the layout viewport — two columns cannot hold their
@@ -254,10 +255,10 @@ export function Home() {
             folds to a single column instead, with no media query, so it also
             reacts to `zoom` the way a media query would not. */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(148px, 1fr))', gap: 10 }}>
-          <StatCard onClick={() => go('workouts')} label="Workouts">
+          <StatCard onClick={() => go('workouts')} label={t('Workouts')}>
             <div style={bigNum}>{d.homeWorkoutCount}</div>
             <div style={subLabel}>
-              <span>{d.homeWorkoutCount === 1 ? 'session' : 'sessions'}</span>
+              <span>{tn(d.homeWorkoutCount, 'session', 'sessions')}</span>
               <Delta pct={d.deltas.workouts} />
             </div>
             <div style={{ marginTop: 10 }}>
@@ -265,20 +266,20 @@ export function Home() {
             </div>
           </StatCard>
 
-          <StatCard onClick={() => go('sleep')} label="Sleep">
+          <StatCard onClick={() => go('sleep')} label={t('Sleep')}>
             <div style={bigNum}>
               {d.homeSleepData.length ? (
                 <>
                   {Math.floor(d.homeSlAvg)}
-                  <span style={unit}>h</span> {String(Math.round((d.homeSlAvg % 1) * 60)).padStart(2, '0')}
-                  <span style={unit}>m</span>
+                  <span style={unit}>{t('h')}</span> {String(Math.round((d.homeSlAvg % 1) * 60)).padStart(2, '0')}
+                  <span style={unit}>{t('m')}</span>
                 </>
               ) : (
                 '—'
               )}
             </div>
             <div style={subLabel}>
-              <span>a night</span>
+              <span>{t('a night')}</span>
               <Delta pct={d.deltas.sleep} />
             </div>
             <div style={{ marginTop: 10 }}>
@@ -286,30 +287,30 @@ export function Home() {
             </div>
           </StatCard>
 
-          <StatCard onClick={() => go('habits')} label="Habits">
+          <StatCard onClick={() => go('habits')} label={t('Habits')}>
             <div style={bigNum}>
               {h.habitPct}
               <span style={unit}>%</span>
             </div>
             <div style={subLabel}>
-              <span>{h.weekDone} of {h.weekTotal} so far</span>
+              <span>{t('{weekDone} of {weekTotal} so far', { weekDone: h.weekDone, weekTotal: h.weekTotal })}</span>
             </div>
             <div style={{ marginTop: 10 }}>
               <BarChart buckets={d.weekBuckets} values={h.weekDaily} color="indigo" height={34} grid={false} interactive={false} max={100} format={(v) => `${v}%`} />
             </div>
           </StatCard>
 
-          <StatCard onClick={() => go('finances')} label="Spent">
+          <StatCard onClick={() => go('finances')} label={t('Spent')}>
             <div style={{ ...bigNum, fontSize: d.homeWeekSpend >= 100000 ? 22 : 26 }}>{money0(d.homeWeekSpend)}</div>
             <div style={subLabel}>
-              <span>this week</span>
+              <span>{t('this week')}</span>
               <Delta pct={d.deltas.spend} lowerIsBetter />
             </div>
             <div style={{ marginTop: 10 }}>
               <BarChart buckets={d.weekBuckets} values={d.homeSpendBuckets} color="indigo" height={34} grid={false} interactive={false} format={(v) => moneyShort(v)} />
             </div>
             {d.safe && d.safe.left > 0 && (
-              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 8 }}>{money0(d.safe.perDay)} a day safe to spend</div>
+              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 8 }}>{t('{amount} a day safe to spend', { amount: money0(d.safe.perDay) })}</div>
             )}
           </StatCard>
         </div>
@@ -318,7 +319,7 @@ export function Home() {
 
     milestones: (
       <>
-        <SectionLabel>Counting since</SectionLabel>
+        <SectionLabel>{t('Counting since')}</SectionLabel>
         <div style={listCard}>
           {state!.milestones.map((m) => {
             const e = elapsed(new Date(`${m.since}T12:00:00`).getTime());
@@ -336,8 +337,8 @@ export function Home() {
                   <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</div>
                   <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{formatElapsed(e)}</div>
                 </div>
-                <div style={{ fontSize: 12.5, color: 'var(--text2)', flex: 'none', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>
-                  <span style={{ fontWeight: 700, color: 'var(--text)' }}>{e.totalDays.toLocaleString()}</span> {e.totalDays === 1 ? 'day' : 'days'}
+                <div style={{ fontSize: 12.5, color: 'var(--text2)', flex: 'none', fontVariantNumeric: 'tabular-nums', textAlign: 'end' }}>
+                  {tn(e.totalDays, '{n} day', '{n} days')}
                 </div>
               </div>
             );
@@ -352,10 +353,10 @@ export function Home() {
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--indigo)' }}>
-                {state!.milestones.length ? 'Add a date' : 'Count from a date'}
+                {state!.milestones.length ? t('Add a date') : t('Count from a date')}
               </div>
               {!state!.milestones.length && (
-                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>A quit date, an anniversary, a birthday</div>
+                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('A quit date, an anniversary, a birthday')}</div>
               )}
             </div>
           </div>
@@ -364,7 +365,7 @@ export function Home() {
     ),
     counters: (
       <>
-        <SectionLabel>{state!.counters.length ? `Counters in ${monthName}` : 'Counters'}</SectionLabel>
+        <SectionLabel>{state!.counters.length ? t('Counters in {monthName}', { monthName }) : t('Counters')}</SectionLabel>
         <div role="button" tabIndex={0}
           onClick={() => go('counters')}
           className="press99"
@@ -392,8 +393,8 @@ export function Home() {
                 <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M9 4v10M4 9h10" /></svg>
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--indigo)' }}>Start a counter</div>
-                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Water, pages, pull-ups: anything you count</div>
+                <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--indigo)' }}>{t('Start a counter')}</div>
+                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Water, pages, pull-ups: anything you count')}</div>
               </div>
             </div>
           )}
@@ -427,7 +428,7 @@ export function Home() {
         <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
         </div>
-        <div tabIndex={0} onClick={() => go('search')} className="press96" role="button" aria-label="Search" style={headBtn}>
+        <div tabIndex={0} onClick={() => go('search')} className="press96" role="button" aria-label={t('Search')} style={headBtn}>
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <circle cx="8.5" cy="8.5" r="5.5" />
             <path d="M13 13l3 3" />
@@ -447,7 +448,7 @@ export function Home() {
               <div className="display" style={{ fontSize: 24, lineHeight: 1.1, color: 'var(--text)' }}>{fresh.title}</div>
               <div style={{ fontSize: 13.5, color: 'var(--text2)', marginTop: 6, lineHeight: 1.45 }}>{fresh.body}</div>
             </div>
-            <div tabIndex={0} onClick={dismissFresh} role="button" aria-label="Dismiss" className="press92" style={{ width: 30, height: 30, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 99, color: 'var(--text3)', cursor: 'pointer', marginTop: -4, marginRight: -6 }}>
+            <div tabIndex={0} onClick={dismissFresh} role="button" aria-label={t('Dismiss')} className="press92" style={{ width: 30, height: 30, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 99, color: 'var(--text3)', cursor: 'pointer', marginTop: -4, marginInlineEnd: -6 }}>
               <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' }}>
                 <path d="M3 3l8 8M11 3l-8 8" />
               </svg>
@@ -462,18 +463,18 @@ export function Home() {
       {weekDue && (
         <div tabIndex={0} onClick={() => go('weekreview')} className="press99" role="button" style={{ ...listCard, display: 'flex', alignItems: 'center', gap: 12, padding: '14px 14px 14px 16px', marginBottom: 22, cursor: 'pointer' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>Your week in review</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>A minute to look back, and one thing to aim for next week.</div>
+            <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>{t('Your week in review')}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>{t('A minute to look back, and one thing to aim for next week.')}</div>
           </div>
           <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-            <path d="M7 4l5 5-5 5" />
+            <path className="flip-rtl" d="M7 4l5 5-5 5" />
           </svg>
         </div>
       )}
 
       {intention && !weekDue && (
         <div style={{ ...listCard, padding: '12px 16px', marginBottom: 22 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)' }}>This week</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)' }}>{t('This week')}</div>
           <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)', marginTop: 2 }}>{intention}</div>
         </div>
       )}
@@ -482,24 +483,26 @@ export function Home() {
         <div style={{ ...listCard, display: 'flex', alignItems: 'center', gap: 12, padding: '14px 14px 14px 16px', marginBottom: 22 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>
-              {nudge.missed === 1 ? `Don’t miss ${nudge.name} twice` : `Back to ${nudge.name}?`}
+              {tn(nudge.missed, 'Don’t miss {name} twice', 'Back to {name}?', { name: nudge.name })}
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>
               {nudge.missed === 1
                 ? nudge.why
-                  ? `You said: “${nudge.why}”`
-                  : 'You missed it last time. Today keeps it going.'
-                : `Last done ${nudge.last ? relLabel(new Date(nudge.last + 'T12:00:00').getTime()).replace('Yesterday', 'yesterday') : 'a while ago'}. Start small today: two minutes counts.`}
+                  ? t('You said: “{why}”', { why: nudge.why })
+                  : t('You missed it last time. Today keeps it going.')
+                : nudge.last
+                  ? t('Last done {when}. Start small today: two minutes counts.', { when: relLabel(new Date(nudge.last + 'T12:00:00').getTime()).replace('Yesterday', 'yesterday') })
+                  : t('Last done a while ago. Start small today: two minutes counts.')}
             </div>
           </div>
           <div tabIndex={0}
             onClick={() => toggleHabit(nudge.id)}
             className="press92"
             role="button"
-            aria-label={`Check off ${nudge.name}`}
+            aria-label={t('Check off {name}', { name: nudge.name })}
             style={{ flex: 'none', padding: '9px 15px', borderRadius: 999, background: 'var(--indigo)', color: 'var(--surface)', fontSize: 13.5, fontWeight: 650, cursor: 'pointer' }}
           >
-            Done
+            {t('Done')}
           </div>
         </div>
       )}
@@ -507,8 +510,8 @@ export function Home() {
       {showChecklist && (
         <div style={{ ...listCard, padding: '16px 18px', marginBottom: 22 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-            <span style={{ fontSize: 15, fontWeight: 650, color: 'var(--text)', flex: 1 }}>Getting started</span>
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--indigo)' }}>{stepsDone} of {steps.length}</span>
+            <span style={{ fontSize: 15, fontWeight: 650, color: 'var(--text)', flex: 1 }}>{t('Getting started')}</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--indigo)' }}>{t('{stepsDone} of {n}', { stepsDone, n: steps.length })}</span>
           </div>
           <div style={{ height: 4, borderRadius: 999, background: 'var(--hairline)', overflow: 'hidden', marginBottom: 14 }}>
             <div style={{ width: `${(stepsDone / steps.length) * 100}%`, height: '100%', borderRadius: 999, background: 'var(--indigo)', transition: 'width .4s' }} />

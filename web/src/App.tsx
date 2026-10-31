@@ -28,6 +28,7 @@ import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
 import { updateWidget } from './lib/widget';
 import { syncSms, smsEnabled, ensureLiveSms, onSmsArrived, SMS_CHANGED } from './lib/smsSync';
+import { isRTL, t, tn } from './i18n';
 
 // Screens and sheets that aren't needed to open the app and log something load
 // when first used, so a cold start parses less. A few seconds after launch the
@@ -317,10 +318,10 @@ function TabBar() {
           padding: '0 8px',
         }}
       >
-        {item(screen === 'home', () => go('home'), <path d="M4 11l8-7 8 7M6 9.5V19h4.5v-5h3v5H18V9.5" />, 'Home')}
-        {item(screen === 'analytics', () => go('analytics'), <path d="M4 20V11M10 20V5M16 20v-6M4 20h16" />, 'Analytics')}
+        {item(screen === 'home', () => go('home'), <path d="M4 11l8-7 8 7M6 9.5V19h4.5v-5h3v5H18V9.5" />, t('Home'))}
+        {item(screen === 'analytics', () => go('analytics'), <path d="M4 20V11M10 20V5M16 20v-6M4 20h16" />, t('Analytics'))}
         {/* Add — the primary create action; accented but flat within the bar. */}
-        <div tabIndex={0} onClick={() => open('chooser')} className="press92" role="button" aria-label="Add an entry" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 48 }}>
+        <div tabIndex={0} onClick={() => open('chooser')} className="press92" role="button" aria-label={t('Add an entry')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 48 }}>
           <div style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--bg)', strokeWidth: 2.3, strokeLinecap: 'round' }} aria-hidden><path d="M11 4v14M4 11h14" /></svg>
           </div>
@@ -332,7 +333,7 @@ function TabBar() {
             <circle cx="12" cy="8" r="3.4" />
             <path d="M5.5 19a6.5 6.5 0 0 1 13 0" />
           </>,
-          'Profile'
+          t('Profile')
         )}
       </div>
     </div>
@@ -362,19 +363,19 @@ function PasswordPrompt() {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && value && closePassword(value)}
-          placeholder="Your password"
+          placeholder={t('Your password')}
           style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginTop: 18 }}
         />
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           <div role="button" tabIndex={0} onClick={() => closePassword(null)} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
-            Cancel
+            {t('Cancel')}
           </div>
           <div role="button" tabIndex={0}
             onClick={() => value && closePassword(value)}
             className="press"
             style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', background: value ? 'var(--danger)' : 'color-mix(in srgb,var(--danger) 40%,var(--surface))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: value ? 'pointer' : 'default' }}
           >
-            {passwordState.confirmLabel || 'Confirm'}
+            {passwordState.confirmLabel || t('Confirm')}
           </div>
         </div>
       </div>
@@ -426,24 +427,24 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
           <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#f0f0f3', animation: 'breathe 3.2s ease-in-out infinite' }} />
         </div>
 
-        <div className="display" style={{ fontSize: 44, lineHeight: 1 }}>Orbit</div>
+        <div className="display" style={{ fontSize: 44, lineHeight: 1 }}>{t('Orbit')}</div>
 
         {error ? (
           <div style={{ textAlign: 'center', marginTop: 18 }}>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,.85)', marginBottom: 14, maxWidth: 270, lineHeight: 1.5 }}>
               {!apiBase
-                ? 'This build has no backend address, so it can never reach the server. It needs to be rebuilt with the backend URL.'
+                ? t('This build has no backend address, so it can never reach the server. It needs to be rebuilt with the backend URL.')
                 : offline
-                  ? "You're offline. Orbit needs a connection the first time you open it on a device. After that it works without one."
-                  : "Couldn't reach the server. It sleeps when unused, so the first open of the day can take up to a minute."}
+                  ? t('You\'re offline. Orbit needs a connection the first time you open it on a device. After that it works without one.')
+                  : t('Couldn\'t reach the server. It sleeps when unused, so the first open of the day can take up to a minute.')}
             </div>
             {/* Which backend this build actually points at. Without it, a build
                 configured with the wrong URL — or none at all — is invisible and
                 looks exactly like a server that won't wake up. */}
             <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.6)', marginBottom: 16, maxWidth: 280, wordBreak: 'break-all', lineHeight: 1.45 }}>
-              {apiBase || 'no backend URL configured'}
+              {apiBase || t('no backend URL configured')}
             </div>
-            <div role="button" tabIndex={0} onClick={onRetry} className="press" style={{ display: 'inline-flex', background: '#f0f0f3', color: '#0c0c0f', height: 46, padding: '0 26px', borderRadius: 'calc(14px * var(--sq))', alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px -10px rgba(0,0,0,.4)' }}>Try again</div>
+            <div role="button" tabIndex={0} onClick={onRetry} className="press" style={{ display: 'inline-flex', background: '#f0f0f3', color: '#0c0c0f', height: 46, padding: '0 26px', borderRadius: 'calc(14px * var(--sq))', alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px -10px rgba(0,0,0,.4)' }}>{t('Try again')}</div>
           </div>
         ) : (
           <>
@@ -453,8 +454,8 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
             {slow && (
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,.8)', marginTop: 16, maxWidth: 250, textAlign: 'center', lineHeight: 1.5, animation: 'fadeIn .4s ease' }}>
                 {offline
-                  ? "You're offline. Waiting for a connection."
-                  : 'Waking up the server. This can take about 30 seconds after a quiet spell.'}
+                  ? t('You\'re offline. Waiting for a connection.')
+                  : t('Waking up the server. This can take about 30 seconds after a quiet spell.')}
               </div>
             )}
           </>
@@ -635,7 +636,7 @@ export function App() {
           applyState(r.state);
           if (r.added > 0) {
             track('sms_import');
-            showToast(`${r.added} ${r.added === 1 ? 'payment' : 'payments'} added from your messages`);
+            showToast(tn(r.added, '{n} payment added from your messages', '{n} payments added from your messages'));
           }
         })
         .catch(() => {});
@@ -726,7 +727,7 @@ export function App() {
         mutateOpt(
           (st) => ({ ...st, checkins: [...st.checkins, { habitId, day: today }] }),
           () => api.toggleHabit(habitId, today),
-          'Checked off'
+          t('Checked off')
         ).catch(() => {});
       },
     });
@@ -781,7 +782,8 @@ export function App() {
     if (Math.abs(dx) < 60) return;
     const i = TAB_ORDER.indexOf(screen as (typeof TAB_ORDER)[number]);
     if (i < 0) return;
-    const next = TAB_ORDER[i + (dx < 0 ? 1 : -1)];
+    // The tabs run right to left in Arabic, so the next one is a swipe to the right.
+    const next = TAB_ORDER[i + ((isRTL() ? dx > 0 : dx < 0) ? 1 : -1)];
     if (!next) return;
     setSlide(dx < 0 ? 'l' : 'r');
     go(next);
@@ -868,7 +870,7 @@ export function App() {
       >
         {pull > 0 && (
           <div style={{ height: pull, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', fontSize: 12.5, fontWeight: 600 }}>
-            {refreshing ? 'Refreshing…' : pull > 64 ? 'Release to refresh' : 'Pull to refresh'}
+            {refreshing ? t('Refreshing…') : pull > 64 ? t('Release to refresh') : t('Pull to refresh')}
           </div>
         )}
         {/* Keyed on the screen so a tab change replays the slide-in from the
@@ -893,10 +895,10 @@ export function App() {
             <span tabIndex={0}
               onClick={runUndo}
               role="button"
-              aria-label="Undo"
-              style={{ marginLeft: 4, paddingLeft: 12, borderLeft: '1px solid color-mix(in srgb,var(--bg) 35%,transparent)', fontWeight: 700, color: 'var(--warning)', cursor: 'pointer' }}
+              aria-label={t('Undo')}
+              style={{ marginInlineStart: 4, paddingInlineStart: 12, borderInlineStart: '1px solid color-mix(in srgb,var(--bg) 35%,transparent)', fontWeight: 700, color: 'var(--warning)', cursor: 'pointer' }}
             >
-              Undo
+              {t('Undo')}
             </span>
           )}
         </div>
@@ -924,14 +926,14 @@ export function App() {
         <div style={{ position: 'absolute', inset: 0, zIndex: 98, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
           <div onClick={cancelExit} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.5)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(2px)' }} />
           <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(8,9,14,.35)', animation: 'fadeUp .25s ease', textAlign: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>Exit Orbit?</div>
-            <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>Are you sure you want to close the app?</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>{t('Exit Orbit?')}</div>
+            <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>{t('Are you sure you want to close the app?')}</div>
             <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
               <div role="button" tabIndex={0} onClick={cancelExit} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
-                Stay
+                {t('Stay')}
               </div>
               <div role="button" tabIndex={0} onClick={confirmExit} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', background: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
-                Exit
+                {t('Exit')}
               </div>
             </div>
           </div>
@@ -948,10 +950,10 @@ export function App() {
             )}
             <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
               <div role="button" tabIndex={0} onClick={() => closeConfirm(false)} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
-                Cancel
+                {t('Cancel')}
               </div>
               <div role="button" tabIndex={0} onClick={() => closeConfirm(true)} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', background: confirmState.danger === false ? 'var(--indigo)' : 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
-                {confirmState.confirmLabel || 'Delete'}
+                {confirmState.confirmLabel || t('Delete')}
               </div>
             </div>
           </div>
@@ -1005,8 +1007,8 @@ export function App() {
   return (
     <div className="stage">
       <div style={{ display: 'flex', gap: 4, alignItems: 'center', background: 'rgba(255,255,255,.7)', backdropFilter: 'blur(8px)', borderRadius: 999, padding: 5, boxShadow: '0 2px 12px rgba(20,21,30,.12)' }}>
-        <div role="button" tabIndex={0} aria-pressed={theme === 'light'} onClick={() => setTheme('light')} style={pill(theme === 'light')}>Light</div>
-        <div role="button" tabIndex={0} aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')} style={pill(theme === 'dark')}>Dark</div>
+        <div role="button" tabIndex={0} aria-pressed={theme === 'light'} onClick={() => setTheme('light')} style={pill(theme === 'light')}>{t('Light')}</div>
+        <div role="button" tabIndex={0} aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')} style={pill(theme === 'dark')}>{t('Dark')}</div>
       </div>
 
       <div style={{ width: 414, height: 868, background: '#08080a', borderRadius: 56, padding: 12, boxShadow: '0 60px 120px -30px rgba(15,16,24,.6), 0 0 0 2px rgba(255,255,255,.05) inset', flex: 'none' }}>
@@ -1016,7 +1018,7 @@ export function App() {
       </div>
 
       <div style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, color: '#7c808a', letterSpacing: '.04em' }}>
-        orbit · tap anything, it's live
+        {t('orbit · tap anything, it\'s live')}
       </div>
     </div>
   );

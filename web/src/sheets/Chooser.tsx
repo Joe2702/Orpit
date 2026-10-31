@@ -2,6 +2,7 @@ import React from 'react';
 import { useStore } from '../store';
 import { IconWorkout, IconSleep, IconExpense, IconHabit } from '../icons';
 import { enabled } from '../lib/modules';
+import { t } from '../i18n';
 
 export function Chooser() {
   const { open, go, closeSheet, state } = useStore();
@@ -13,13 +14,13 @@ export function Chooser() {
     go('faddtx');
   };
   const allItems = [
-    { label: 'Workout', desc: 'A run, a lift, a match', icon: <IconWorkout c="var(--text)" size={22} />, sheet: 'workout' as const },
-    { label: 'Sleep', desc: 'When you went to bed and woke up', icon: <IconSleep c="var(--text)" size={22} />, sheet: 'sleep' as const },
-    { label: 'Money', desc: 'Something you spent or earned', icon: <IconExpense c="var(--text)" size={22} />, sheet: null, action: addTxn },
-    { label: 'Habit', desc: 'Something to do regularly', icon: <IconHabit c="var(--text)" size={22} />, sheet: 'habit' as const },
+    { label: t('Workout'), desc: t('A run, a lift, a match'), icon: <IconWorkout c="var(--text)" size={22} />, sheet: 'workout' as const },
+    { label: t('Sleep'), desc: t('When you went to bed and woke up'), icon: <IconSleep c="var(--text)" size={22} />, sheet: 'sleep' as const },
+    { label: t('Money'), desc: t('Something you spent or earned'), icon: <IconExpense c="var(--text)" size={22} />, sheet: null, action: addTxn },
+    { label: t('Habit'), desc: t('Something to do regularly'), icon: <IconHabit c="var(--text)" size={22} />, sheet: 'habit' as const },
     {
-      label: 'Counter',
-      desc: 'Reps, pages, glasses of water',
+      label: t('Counter'),
+      desc: t('Reps, pages, glasses of water'),
       sheet: 'countpick' as const,
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
@@ -33,7 +34,7 @@ export function Chooser() {
   const items = allItems.filter((it) => enabled(state!, modKey[it.label]));
   return (
     <div style={{ padding: '8px 20px 34px' }}>
-      <div className="display" style={{ fontSize: 30, lineHeight: 1.1, color: 'var(--text)', margin: '6px 2px 16px' }}>Log something</div>
+      <div className="display" style={{ fontSize: 30, lineHeight: 1.1, color: 'var(--text)', margin: '6px 2px 16px' }}>{t('Log something')}</div>
       {/* A list rather than a grid of tinted tiles: five rows are quicker to
           scan, and the choice is the label, not the colour. */}
       <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', overflow: 'hidden' }}>
@@ -51,7 +52,7 @@ export function Chooser() {
               <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{it.desc}</div>
             </div>
             <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-              <path d="M7 4l5 5-5 5" />
+              <path className="flip-rtl" d="M7 4l5 5-5 5" />
             </svg>
           </div>
         ))}
