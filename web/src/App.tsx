@@ -24,6 +24,7 @@ import { EditSheet } from './sheets/EditSheet';
 import { ReminderOnboarding } from './ReminderOnboarding';
 import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily, scheduleBriefs } from './lib/notify';
 import { briefSchedule } from './lib/brief';
+import { OrbitMark } from './OrbitMark';
 import { connectivity, subscribe as subscribeConnectivity } from './lib/offline';
 import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
@@ -421,16 +422,8 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', animation: 'fadeUp .6s ease' }}>
-        {/* Orbit mark: soft glow, a breathing pale planet, one dot circling the ring. */}
-        <div style={{ position: 'relative', width: 120, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 30 }}>
-          <div style={{ position: 'absolute', width: 132, height: 132, animation: 'orbitSpin 3.6s linear infinite' }}>
-            <svg width="132" height="132" style={{ overflow: 'visible' }}>
-              <ellipse cx="66" cy="66" rx="58" ry="23" transform="rotate(-26 66 66)" style={{ fill: 'none', stroke: 'rgba(240,240,243,.45)', strokeWidth: 2 }} />
-              <circle cx="115" cy="41" r="6" style={{ fill: '#f0f0f3' }} />
-            </svg>
-          </div>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#f0f0f3', animation: 'breathe 3.2s ease-in-out infinite' }} />
-        </div>
+        {/* The mark from the launcher icon, its sun going round while it loads. */}
+        <OrbitMark size={96} spin={!error} style={{ marginBottom: 30 }} />
 
         <div className="display" style={{ fontSize: 44, lineHeight: 1 }}>{t('Orbit')}</div>
 

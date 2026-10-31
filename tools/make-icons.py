@@ -1,215 +1,184 @@
 #!/usr/bin/env python3
 """
-Generate Orbit's launcher icons and splash screens.
+Generate Orbit's launcher icons, splash screens and store icon.
 
-The app shipped with Capacitor's default placeholder art — a blue "X" that
-belongs to the tooling, not to Orbit. This draws the mark the splash screen
-already animates (a pale planet, a tilted orbit ring, one bright dot on it) at
-every density Android and the web need, so the icon, the splash and the loading
-animation are finally the same object.
+The mark: one orbit, seen from above. A faint full ring is the path; a bright
+trail sweeps most of the way round it and ends in a warm dot, the sun coming
+up on the day. It reads as an orbit at any size (the faint ring closes the
+circle, so it's never a letter C) and as a day coming full circle, which is
+what Orbit is for.
+
+Everything is drawn per pixel with numpy at 4x and shrunk, so the trail's fade
+is smooth and every edge is clean.
 
 Run from the repo root:  python3 tools/make-icons.py
-Requires pillow.
+Set ORBIT_ICON_OUT=dir to write a preview set there instead of into the app.
+Requires pillow and numpy.
 """
 import math
 import os
-from PIL import Image, ImageDraw, ImageFilter
+
+import numpy as np
+from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RES = os.path.join(ROOT, 'web/android/app/src/main/res')
-PUBLIC = os.path.join(ROOT, 'web/public')
-STORE = os.path.join(ROOT, 'store')
+PREVIEW = os.environ.get('ORBIT_ICON_OUT')
+RES = os.path.join(PREVIEW or ROOT, 'web/android/app/src/main/res')
+PUBLIC = os.path.join(PREVIEW or ROOT, 'web/public')
+STORE = os.path.join(PREVIEW or ROOT, 'store')
+SS = 4  # supersampling
 
-# The splash gradient, verbatim: radial-gradient(125% 85% at 50% 32%, ...)
-STOPS = [(0.00, (0x60, 0x5a, 0xc9)), (0.46, (0x4a, 0x45, 0xa6)), (1.00, (0x3b, 0x37, 0x89))]
-SS = 4  # supersample factor; everything is drawn big and shrunk for clean edges
+# Colours. The indigo matches the app's accent family; the dot is the one warm
+# thing in it.
+BG_TOP = np.array([0x55, 0x57, 0xEA], float)
+BG_MID = np.array([0x2F, 0x2C, 0x92], float)
+BG_END = np.array([0x1A, 0x17, 0x5A], float)
+DAWN = np.array([0xFF, 0xB0, 0x5E], float)
+SUN = (0xFF, 0xD2, 0x8F)
+WHITE = np.array([255, 255, 255], float)
 
-
-def lerp(a, b, t):
-    return tuple(round(x + (y - x) * t) for x, y in zip(a, b))
-
-
-def gradient(size):
-    """The brand backdrop, matching the splash screen's CSS radial gradient."""
-    w = h = size
-    img = Image.new('RGB', (w, h))
-    px = img.load()
-    cx, cy = 0.5, 0.32
-    rx, ry = 0.625, 0.425  # CSS gives the ending shape as 125% x 85% of the box
-    for y in range(h):
-        fy = (y + 0.5) / h
-        for x in range(w):
-            fx = (x + 0.5) / w
-            d = math.hypot((fx - cx) / rx, (fy - cy) / ry)
-            d = min(1.0, d)
-            for i in range(len(STOPS) - 1):
-                p0, c0 = STOPS[i]
-                p1, c1 = STOPS[i + 1]
-                if d <= p1 or i == len(STOPS) - 2:
-                    px[x, y] = lerp(c0, c1, (d - p0) / (p1 - p0) if p1 > p0 else 0)
-                    break
-    return img
+# Geometry, in the 108-unit adaptive-icon canvas.
+R = 21.0          # orbit radius: with the sun, inside the 66-unit safe circle
+W = 6.6           # trail width
+HEAD = -58.0      # where the dot is, degrees (0 = right, y down)
+SPAN = 300.0      # how far round the trail reaches behind it
+DOT = 5.8         # dot radius
+BASE = 0.17       # the faint ring's opacity
 
 
-def mark(size, safe_frac=0.53, mono=False, glow=True):
-    """
-    The Orbit mark on a transparent square.
+def ss_for(n):
+    # Big images need less supersampling, and 4x of a 1920 splash is slow.
+    return SS if n <= 512 else 2
 
-    `safe_frac` is the *orbit's* width as a fraction of the canvas. Adaptive
-    icons only guarantee the middle 72 of 108dp survives masking, and the dot
-    rides beyond the end of the ring — so the budget is the ring plus the dot
-    plus half the stroke, not the ring alone. At 0.53 the whole mark clears a
-    circular mask; sized off the ring alone, the dot was sliced clean off.
-    """
-    S = size * SS
-    img = Image.new('RGBA', (S, S), (0, 0, 0, 0))
-    c = S / 2
-    a = S * safe_frac / 2          # orbit semi-major axis
-    b = a * (23 / 58)              # semi-minor, from the splash's ellipse
-    planet_r = a * (31 / 58)
-    dot_r = a * (8.2 / 58)
-    stroke = max(SS, a * (4.6 / 58))
-    tilt = math.radians(-26)
 
-    white = (255, 255, 255, 255)
+def grid(n, ss=None):
+    ss = ss or ss_for(n)
+    s = n * ss
+    y, x = np.mgrid[0:s, 0:s].astype(float)
+    k = 108.0 / s
+    return (x + 0.5) * k, (y + 0.5) * k, k
 
-    if glow and not mono:
-        # A soft halo, as on the splash. Drawn on its own layer so the blur
-        # can't bleed into the crisp shapes above it.
-        g = Image.new('RGBA', (S, S), (0, 0, 0, 0))
-        gd = ImageDraw.Draw(g)
-        steps = 26
-        for i in range(steps):
-            t = i / (steps - 1)
-            r = planet_r * (1.15 + 1.5 * t)
-            alpha = int(52 * (1 - t) ** 2)
-            gd.ellipse([c - r, c - r, c + r, c + r], fill=(255, 255, 255, alpha))
-        g = g.filter(ImageFilter.GaussianBlur(S / 42))
-        img = Image.alpha_composite(img, g)
 
-    # The orbit ring: an ellipse tilted -26°. PIL can't rotate an ellipse and
-    # its thick polylines come out serrated, so the band is filled as one
-    # polygon — the outer rim followed by the inner rim in reverse.
-    def rim(scale_a, scale_b, reverse=False):
-        pts = []
-        for i in range(721):
-            t = i * math.pi / 360
-            x, y = scale_a * math.cos(t), scale_b * math.sin(t)
-            pts.append((c + x * math.cos(tilt) - y * math.sin(tilt),
-                        c + x * math.sin(tilt) + y * math.cos(tilt)))
-        return pts[::-1] if reverse else pts
+def background(n, dawn=True):
+    """Indigo, lit from the top left, with a warm dawn where the sun is."""
+    # A smooth gradient needs no supersampling.
+    X, Y, _ = grid(n, 1)
+    t = np.clip((X + Y) / 216.0, 0, 1)[..., None]
+    col = np.where(t < 0.55, BG_TOP + (BG_MID - BG_TOP) * (t / 0.55), BG_MID + (BG_END - BG_MID) * ((t - 0.55) / 0.45))
+    # A soft sheen top left.
+    d = np.hypot((X - 26) / 70, (Y - 14) / 70)[..., None]
+    col = col + (WHITE - col) * (0.16 * np.clip(1 - d, 0, 1) ** 2)
+    if not dawn:
+        img = Image.fromarray(np.clip(col, 0, 255).astype(np.uint8), 'RGB').convert('RGBA')
+        return img
+    # Dawn behind the sun.
+    hx, hy = 54 + R * math.cos(math.radians(HEAD)), 54 + R * math.sin(math.radians(HEAD))
+    d = np.hypot(X - hx, Y - hy)[..., None] / 46.0
+    col = col + (DAWN - col) * (0.30 * np.clip(1 - d, 0, 1) ** 2)
+    return Image.fromarray(np.clip(col, 0, 255).astype(np.uint8), 'RGB').convert('RGBA')
 
-    ring = Image.new('RGBA', (S, S), (0, 0, 0, 0))
-    ImageDraw.Draw(ring).polygon(
-        rim(a + stroke / 2, b + stroke / 2) + rim(a - stroke / 2, b - stroke / 2, reverse=True),
-        fill=white if mono else (255, 255, 255, 175))
-    img = Image.alpha_composite(img, ring)
 
-    # The planet sits on top, so the ring passes behind it — same as the splash.
-    pl = Image.new('RGBA', (S, S), (0, 0, 0, 0))
-    pd = ImageDraw.Draw(pl)
-    if mono:
-        pd.ellipse([c - planet_r, c - planet_r, c + planet_r, c + planet_r], fill=white)
-    else:
-        # A vertical wash from white to the pale lavender the splash uses.
-        for i in range(int(planet_r * 2)):
-            t = i / max(1, planet_r * 2 - 1)
-            col = lerp((255, 255, 255), (0xdc, 0xd9, 0xf5), t ** 1.25)
-            half = math.sqrt(max(0.0, planet_r ** 2 - (i - planet_r) ** 2))
-            pd.line([(c - half, c - planet_r + i), (c + half, c - planet_r + i)],
-                    fill=col + (255,), width=1)
-    img = Image.alpha_composite(img, pl)
+def mark(n, scale=1.0, mono=False):
+    """The ring, the trail and the sun on a transparent square."""
+    X, Y, k = grid(n)
+    # Scaling about the centre lets splash screens and legacy icons size it.
+    X = 54 + (X - 54) / scale
+    Y = 54 + (Y - 54) / scale
+    px = k / scale  # one output pixel at supersample, in canvas units
+    r = np.hypot(X - 54, Y - 54)
+    band = np.clip((W / 2 - np.abs(r - R)) / px + 0.5, 0, 1)
 
-    # One bright dot riding the ring, at the end of the semi-major axis —
-    # exactly where the splash parks it.
-    dx = a * math.cos(tilt)
-    dy = a * math.sin(tilt)
-    dot = Image.new('RGBA', (S, S), (0, 0, 0, 0))
-    dd = ImageDraw.Draw(dot)
+    ang = np.degrees(np.arctan2(Y - 54, X - 54))
+    behind = np.mod(HEAD - ang, 360.0)  # degrees behind the sun, going back round
+    fade = np.clip(1 - behind / SPAN, 0, 1) ** 1.35
+    alpha = band * np.maximum(BASE if not mono else 0.32, fade)
+
+    hx, hy = 54 + R * math.cos(math.radians(HEAD)), 54 + R * math.sin(math.radians(HEAD))
+    dr = np.hypot(X - hx, Y - hy)
+    sun = np.clip((DOT - dr) / px + 0.5, 0, 1)
+
+    out = np.zeros(X.shape + (4,), float)
+    out[..., :3] = 255
+    out[..., 3] = alpha
     if not mono:
-        for i in range(14):
-            t = i / 13
-            r = dot_r * (1 + 2.2 * t)
-            dd.ellipse([c + dx - r, c + dy - r, c + dx + r, c + dy + r],
-                       fill=(255, 255, 255, int(38 * (1 - t) ** 2)))
-        dot = dot.filter(ImageFilter.GaussianBlur(S / 150))
-        dd = ImageDraw.Draw(dot)
-    dd.ellipse([c + dx - dot_r, c + dy - dot_r, c + dx + dot_r, c + dy + dot_r], fill=white)
-    img = Image.alpha_composite(img, dot)
+        # A glow round the sun, under it.
+        glow = 0.55 * np.clip(1 - dr / (DOT * 2.6), 0, 1) ** 2
+        g_rgb = np.array(SUN, float)
+        a_new = glow + out[..., 3] * (1 - glow)
+        rgb = (g_rgb * glow[..., None] + out[..., :3] * (out[..., 3] * (1 - glow))[..., None]) / np.maximum(a_new, 1e-6)[..., None]
+        out[..., :3], out[..., 3] = rgb, a_new
+        sun_rgb = np.array(SUN, float)
+    else:
+        sun_rgb = WHITE
+    a_new = sun + out[..., 3] * (1 - sun)
+    rgb = (sun_rgb * sun[..., None] + out[..., :3] * (out[..., 3] * (1 - sun))[..., None]) / np.maximum(a_new, 1e-6)[..., None]
+    out[..., :3], out[..., 3] = rgb, a_new
 
-    return img.resize((size, size), Image.LANCZOS)
-
-
-def rounded_mask(size, radius_frac):
-    m = Image.new('L', (size * SS, size * SS), 0)
-    ImageDraw.Draw(m).rounded_rectangle(
-        [0, 0, size * SS - 1, size * SS - 1], radius=int(size * SS * radius_frac), fill=255)
-    return m.resize((size, size), Image.LANCZOS)
+    out[..., 3] *= 255
+    img = Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), 'RGBA')
+    return img.resize((n, n), Image.LANCZOS)
 
 
-def circle_mask(size):
-    m = Image.new('L', (size * SS, size * SS), 0)
-    ImageDraw.Draw(m).ellipse([0, 0, size * SS - 1, size * SS - 1], fill=255)
-    return m.resize((size, size), Image.LANCZOS)
+def full_icon(n, scale=1.0):
+    return Image.alpha_composite(background(n), mark(n, scale))
 
 
-def full_icon(size, mark_frac=0.58):
-    """Background + mark, filling the whole square."""
-    bg = gradient(size).convert('RGBA')
-    return Image.alpha_composite(bg, mark(size, safe_frac=mark_frac))
+def mask(n, kind):
+    m = Image.new('L', (n * SS, n * SS), 0)
+    from PIL import ImageDraw
+    d = ImageDraw.Draw(m)
+    if kind == 'circle':
+        d.ellipse([0, 0, n * SS - 1, n * SS - 1], fill=255)
+    else:
+        d.rounded_rectangle([0, 0, n * SS - 1, n * SS - 1], radius=int(n * SS * 0.22), fill=255)
+    return m.resize((n, n), Image.LANCZOS)
 
 
 def save(img, path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     img.save(path)
-    print('  ', os.path.relpath(path, ROOT), f'{img.size[0]}x{img.size[1]}')
+    print('  ', os.path.relpath(path, PREVIEW or ROOT), f'{img.size[0]}x{img.size[1]}')
 
 
-DENSITIES = {'mdpi': 1, 'hdpi': 1.5, 'xhdpi': 2, 'xxhdpi': 3, 'xxxhdpi': 4}
+if __name__ == '__main__':
+    DENS = {'mdpi': 1, 'hdpi': 1.5, 'xhdpi': 2, 'xxhdpi': 3, 'xxxhdpi': 4}
 
-print('Adaptive icon layers (108dp canvas):')
-for d, s in DENSITIES.items():
-    n = int(108 * s)
-    save(gradient(n).convert('RGBA'), f'{RES}/mipmap-{d}/ic_launcher_background.png')
-    save(mark(n), f'{RES}/mipmap-{d}/ic_launcher_foreground.png')
-    # Android 13+ themed icons: a flat silhouette the system recolours itself.
-    save(mark(n, mono=True, glow=False), f'{RES}/drawable-{d}/ic_launcher_monochrome.png')
+    print('Adaptive icon layers (108dp):')
+    for d, s in DENS.items():
+        n = int(108 * s)
+        save(background(n), f'{RES}/mipmap-{d}/ic_launcher_background.png')
+        save(mark(n), f'{RES}/mipmap-{d}/ic_launcher_foreground.png')
+        # Android 13+ themed icons recolour this silhouette themselves.
+        save(mark(n, mono=True), f'{RES}/drawable-{d}/ic_launcher_monochrome.png')
 
-print('Legacy launcher icons:')
-for d, s in DENSITIES.items():
-    n = int(48 * s)
-    icon = full_icon(n)
-    sq = icon.copy()
-    sq.putalpha(rounded_mask(n, 0.22))
-    save(sq, f'{RES}/mipmap-{d}/ic_launcher.png')
-    rd = icon.copy()
-    rd.putalpha(circle_mask(n))
-    save(rd, f'{RES}/mipmap-{d}/ic_launcher_round.png')
+    print('Legacy launcher icons (48dp):')
+    for d, s in DENS.items():
+        n = int(48 * s)
+        icon = full_icon(n, scale=1.28)
+        sq = icon.copy()
+        sq.putalpha(mask(n, 'square'))
+        save(sq, f'{RES}/mipmap-{d}/ic_launcher.png')
+        rd = icon.copy()
+        rd.putalpha(mask(n, 'circle'))
+        save(rd, f'{RES}/mipmap-{d}/ic_launcher_round.png')
 
-print('Splash screens:')
-SPLASH = {'mdpi': (320, 480), 'hdpi': (480, 800), 'xhdpi': (720, 1280),
-          'xxhdpi': (960, 1600), 'xxxhdpi': (1280, 1920)}
-for d, (w, h) in SPLASH.items():
-    for orient, (ow, oh) in (('port', (w, h)), ('land', (h, w))):
-        # One square gradient cropped to the screen, so the light source stays
-        # put whichever way the phone is held.
-        side = max(ow, oh)
-        bg = gradient(side).resize((side, side), Image.LANCZOS)
-        canvas = bg.crop(((side - ow) // 2, (side - oh) // 2,
-                          (side - ow) // 2 + ow, (side - oh) // 2 + oh)).convert('RGBA')
-        m = mark(int(min(ow, oh) * 0.30))
-        canvas.alpha_composite(m, ((ow - m.size[0]) // 2, (oh - m.size[1]) // 2))
-        save(canvas.convert('RGB'), f'{RES}/drawable-{orient}-{d}/splash.png')
-# The density-less default, used before Android picks a bucket.
-base = Image.open(f'{RES}/drawable-land-mdpi/splash.png')
-save(base, f'{RES}/drawable/splash.png')
+    print('Splash screens:')
+    SPLASH = {'mdpi': (320, 480), 'hdpi': (480, 800), 'xhdpi': (720, 1280), 'xxhdpi': (960, 1600), 'xxxhdpi': (1280, 1920)}
+    for d, (w, h) in SPLASH.items():
+        for orient, (ow, oh) in (('port', (w, h)), ('land', (h, w))):
+            side = max(ow, oh)
+            bg = background(side, dawn=False)
+            canvas = bg.crop(((side - ow) // 2, (side - oh) // 2, (side - ow) // 2 + ow, (side - oh) // 2 + oh))
+            m = mark(int(min(ow, oh) * 0.62))
+            canvas.alpha_composite(m, ((ow - m.size[0]) // 2, (oh - m.size[1]) // 2))
+            save(canvas.convert('RGB'), f'{RES}/drawable-{orient}-{d}/splash.png')
+    save(Image.open(f'{RES}/drawable-land-mdpi/splash.png'), f'{RES}/drawable/splash.png')
 
-print('Web / PWA icons:')
-save(full_icon(192), f'{PUBLIC}/icon-192.png')
-save(full_icon(512), f'{PUBLIC}/icon-512.png')
-save(full_icon(180), f'{PUBLIC}/apple-touch-icon.png')
+    print('Web icons:')
+    save(full_icon(192, 1.28), f'{PUBLIC}/icon-192.png')
+    save(full_icon(512, 1.28), f'{PUBLIC}/icon-512.png')
+    save(full_icon(180, 1.28), f'{PUBLIC}/apple-touch-icon.png')
 
-print('Play Store listing icon (512, no transparency):')
-save(full_icon(512).convert('RGB'), f'{STORE}/play-icon-512.png')
-
-print('\nDone.')
+    print('Play Store icon (512, opaque; Play rounds the corners itself):')
+    save(full_icon(512, 1.28).convert('RGB'), f'{STORE}/icon-512.png')
+    print('\nDone.')

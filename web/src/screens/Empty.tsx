@@ -1,4 +1,5 @@
 import React from 'react';
+import { OrbitMark } from '../OrbitMark';
 import { useStore } from '../store';
 import { avatarInitial, BackButton } from '../ui';
 import { IconWorkout, IconSleep, IconExpense, IconHabit, IconPlus } from '../icons';
@@ -26,10 +27,7 @@ export function HomeEmpty() {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '34px 10px 30px', gap: 16 }}>
         <div style={{ width: 104, height: 104, borderRadius: '50%', border: '2px dashed color-mix(in srgb,var(--indigo) 38%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb,var(--indigo) 7%,transparent)' }}>
-          <svg width="44" height="44" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-            <ellipse cx="22" cy="22" rx="19" ry="8" transform="rotate(-28 22 22)" />
-            <circle cx="22" cy="22" r="4.5" style={{ fill: 'var(--indigo)', stroke: 'none' }} />
-          </svg>
+          <OrbitMark size={50} tone="accent" />
         </div>
         <div>
           <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)' }}>{t('Your day starts here')}</div>
