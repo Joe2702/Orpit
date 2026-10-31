@@ -8,6 +8,8 @@
 // like the app does.
 
 import { spawn, type ChildProcess } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { analyseSms, type SmsMessage } from '../../web/src/lib/smsParse';
@@ -18,18 +20,28 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /** The test server's admin password, for the admin endpoints. */
 export const ADMIN = 'test-admin';
 
+export interface Mail {
+  tag: string;
+  to: string;
+  subject: string;
+  html: string;
+}
+
 export interface Server {
   base: string;
   stop: () => void;
+  /** Every email the server "sent", oldest first. */
+  outbox: () => Mail[];
 }
 
 export async function startServer(): Promise<Server> {
   const db = process.env.TEST_DATABASE_URL;
   if (!db) throw new Error('Set TEST_DATABASE_URL to a throwaway Postgres database to run the server tests.');
   const port = 4800 + Math.floor(Math.random() * 900);
+  const outboxFile = join(mkdtempSync(join(tmpdir(), 'orbit-mail-')), 'outbox.jsonl');
   const child: ChildProcess = spawn(process.execPath, ['--import', 'tsx', 'src/index.ts'], {
     cwd: ROOT,
-    env: { ...process.env, DATABASE_URL: db, JWT_SECRET: 'test-secret', PORT: String(port), ADMIN_PASSWORD: ADMIN },
+    env: { ...process.env, DATABASE_URL: db, JWT_SECRET: 'test-secret', PORT: String(port), ADMIN_PASSWORD: ADMIN, MAIL_OUTBOX: outboxFile },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let log = '';
@@ -53,11 +65,19 @@ export async function startServer(): Promise<Server> {
     }
     await new Promise((r) => setTimeout(r, 250));
   }
-  return { base, stop: () => child.kill() };
+  const outbox = () =>
+    existsSync(outboxFile)
+      ? readFileSync(outboxFile, 'utf8')
+          .split('\n')
+          .filter(Boolean)
+          .map((l) => JSON.parse(l) as Mail)
+      : [];
+  return { base, stop: () => child.kill(), outbox };
 }
 
 export class Client {
   token = '';
+  email = '';
   state!: AppState;
   constructor(private base: string) {}
 
@@ -78,6 +98,7 @@ export class Client {
     const email = `t${Date.now()}${Math.random().toString(36).slice(2, 8)}@test.dev`;
     const r = await this.call<{ token: string; state: AppState }>('/api/auth/signup', 'POST', { email, password: 'long-enough-password', name });
     this.token = r.token;
+    this.email = email;
     this.state = r.state;
     return this;
   }

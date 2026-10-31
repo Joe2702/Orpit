@@ -1,14 +1,9 @@
 # Orbit — Privacy Policy
 
-_Last updated: 28 October 2026_
+_Last updated: 31 October 2026_
 
 Orbit is a personal life-tracking app. This policy explains, in plain language,
 what the app stores, why, and what control you have over it.
-
-**This is a plain-English policy written for a small, self-hosted app. If you
-publish Orbit commercially, have a lawyer review it against the rules that apply
-where your users live (GDPR, CCPA, and the Google Play / Apple App Store data
-disclosure requirements).**
 
 ## Who runs Orbit
 
@@ -129,7 +124,9 @@ routine backups for a short period before being overwritten.
 - **Export**: Profile → Data → Export data gives you everything as a JSON file.
 - **Erase your entries**: Profile → Data → Reset all data.
 - **Delete your account**: Profile → Delete my account. This permanently removes
-  your account and all associated data.
+  your account and all associated data. Without the app, request it at
+  https://orbit-x3z7.onrender.com/delete-account: you get an email with a link,
+  and the account is deleted when you confirm.
 - **Turn off reminders**: Profile → Preferences → Daily reminders.
 - **End a partnership**: Profile → Accountability partner → End partnership. All
   sharing stops immediately and you will not be matched with that person again.

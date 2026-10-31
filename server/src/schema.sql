@@ -32,6 +32,15 @@ CREATE TABLE IF NOT EXISTS password_resets (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Deleting an account from the web, for someone without the app: proven like a
+-- password reset, by a link sent to the account's email.
+CREATE TABLE IF NOT EXISTS deletion_requests (
+  token_hash TEXT PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS habits (
   id         BIGSERIAL PRIMARY KEY,
   user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
