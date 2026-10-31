@@ -115,7 +115,7 @@ export function Workouts() {
                   {w.sets && w.sets.length > 0 && (
                     <div style={{ fontSize: 12, fontWeight: 600, color: `var(--${cc})`, marginTop: 3 }}>
                       {tn(w.sets.length, '{n} set', '{n} sets')}
-                      {volume(w.sets) > 0 && t(' · {n} total volume', { n: Math.round(volume(w.sets)).toLocaleString() })}
+                      {volume(w.sets) > 0 && t(' · {n} total volume', { n: Math.round(volume(w.sets)) })}
                     </div>
                   )}
                 </div>

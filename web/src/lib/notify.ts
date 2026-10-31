@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import type { LocalNotificationsPlugin } from '@capacitor/local-notifications';
 import { enablePush as enableWebPush, pushSupported } from './push';
 import { api } from '../api';
-import { t, tn } from '../i18n';
+import { date, t, tn } from '../i18n';
 
 // Unified reminder/notification layer.
 //
@@ -451,7 +451,7 @@ export async function diagnose(): Promise<NotifyDiagnostics> {
         .map((n) => (n.schedule?.at ? new Date(n.schedule.at).getTime() : 0))
         .filter((t) => t > 0)
         .sort((a, b) => a - b);
-      if (times.length) out.nextAt = new Date(times[0]).toLocaleString();
+      if (times.length) out.nextAt = date(times[0], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
     } catch {
       /* ignore */
     }

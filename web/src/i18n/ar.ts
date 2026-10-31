@@ -9,6 +9,7 @@ import type { Dict } from './index';
 // Grouped by the file each phrase first appears in.
 
 export const AR: Dict = {
+  "imported": "مستوردة",
   "Unlock Orbit": "فتح قفل Orbit",
   "Your money and habits are behind this.": "أموالك وعاداتك خلف هذا القفل.",
   "m": "د",

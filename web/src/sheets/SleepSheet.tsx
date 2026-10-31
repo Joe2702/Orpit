@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import { api } from '../api';
 import { parseClock } from '../lib/format';
 import { SleepDial, fmtClock } from '../SleepDial';
-import { t } from '../i18n';
+import { date, t } from '../i18n';
 
 // Local YYYY-MM-DD (not UTC) for the date input's default.
 function todayISO(): string {
@@ -68,7 +68,7 @@ export function SleepSheet() {
             <rect x="2" y="3" width="11" height="10" rx="2" />
             <path d="M2 6h11M5 1.5v3M10 1.5v3" />
           </svg>
-          {day === todayISO() ? t('Today') : new Date(`${day}T00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          {day === todayISO() ? t('Today') : date(new Date(`${day}T00:00`), { month: 'short', day: 'numeric' })}
           <input
             type="date"
             value={day}

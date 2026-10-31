@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
 import { api } from '../api';
-import { ago, money, fmtDate, relLabel, moneySymbol, listSep } from '../lib/format';
+import { ago, money, fmtDate, relLabel, moneySymbol, listSep, fmtClock } from '../lib/format';
 import { FinIcon } from '../lib/iconPaths';
 import { Ring } from '../lib/charts';
 import { BackButton, chip } from '../ui';
@@ -111,7 +111,7 @@ export function FAddTx() {
       if (seen) {
         const ok = await confirm({
           title: t('Already added from your bank?'),
-          message: t('{name} · {amount} · {n} at {v} came in from your bank messages today. Add this one as well?', { name: seen.name, amount: money(seen.amount), n: state!.accounts.find((a) => a.id === seen.accId)?.name || 'imported', v: new Date(seen.ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) }),
+          message: t('{name} · {amount} · {n} at {v} came in from your bank messages today. Add this one as well?', { name: seen.name, amount: money(seen.amount), n: state!.accounts.find((a) => a.id === seen.accId)?.name || t('imported'), v: fmtClock(new Date(seen.ts).getHours() + new Date(seen.ts).getMinutes() / 60) }),
           confirmLabel: t('Add anyway'),
         });
         if (!ok) return;

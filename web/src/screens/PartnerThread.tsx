@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import { api } from '../api';
 import { BackButton } from '../ui';
 import type { PartnerState, PartnerNote } from '../types';
-import { t, tk } from '../i18n';
+import { date, t, tk } from '../i18n';
 
 // The conversation with an accountability partner.
 //
@@ -189,7 +189,7 @@ function Bubble({ n, mine }: { n: PartnerNote; mine: boolean }) {
         )}
         <div style={{ fontSize: 14.5, lineHeight: 1.45, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{n.body}</div>
         <div style={{ fontSize: 10.5, opacity: mine ? 0.7 : 0.55, marginTop: 4, textAlign: 'end' }}>
-          {new Date(n.ts).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+          {date(n.ts, { hour: 'numeric', minute: '2-digit' })}
         </div>
       </div>
     </div>

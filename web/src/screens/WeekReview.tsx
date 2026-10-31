@@ -5,9 +5,9 @@ import { useData } from '../hooks';
 import { BackButton, Card, chip } from '../ui';
 import { money0, listSep } from '../lib/format';
 import { summariseWeek, finishReview } from '../lib/weekReview';
-import { t, tData, tn } from '../i18n';
+import { date, t, tData, tn } from '../i18n';
 
-const fmt = (ts: number) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const fmt = (ts: number) => date(ts, { month: 'short', day: 'numeric' });
 
 /**
  * A minute at the end of the week: what happened, anything to settle, and one

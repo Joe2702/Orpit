@@ -10,7 +10,7 @@ import { Reorderable } from '../Reorderable';
 import { RangeSeg, SectionLabel } from '../ui';
 import { enabled } from '../lib/modules';
 import { Glyph, type GlyphName } from '../lib/appIcons';
-import { t, tData, tn, yearStr } from '../i18n';
+import { date, t, tData, tn, yearStr } from '../i18n';
 
 function Arrow() {
   return (
@@ -157,7 +157,7 @@ export function Analytics() {
 
   // Reports name the period they cover, so "Last month" says which month.
   const now = new Date();
-  const lastMonthName = new Date(now.getFullYear(), now.getMonth() - 1, 1).toLocaleDateString('en-US', { month: 'long' });
+  const lastMonthName = date(new Date(now.getFullYear(), now.getMonth() - 1, 1), { month: 'long' });
   const lastWeek = period('Week', 1);
   const reports: { label: string; note: string; icon: GlyphName; run: () => void }[] = [
     { label: t('This week so far'), note: period('Week', 0).caption, icon: 'calendar', run: () => openReport('week', 0) },

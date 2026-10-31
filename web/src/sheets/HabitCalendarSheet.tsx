@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { api } from '../api';
 import { dayKey } from '../lib/format';
-import { t } from '../i18n';
+import { date, t } from '../i18n';
 
 const WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -24,7 +24,7 @@ export function HabitCalendarSheet() {
   const daysInMonth = new Date(year, mo + 1, 0).getDate();
   const firstWd = new Date(year, mo, 1).getDay();
   const cells: (number | null)[] = [...Array(firstWd).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
-  const monthLabel = month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const monthLabel = date(month, { month: 'long', year: 'numeric' });
   const todayStr = dayKey();
 
   let count = 0;

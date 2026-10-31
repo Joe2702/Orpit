@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import { api } from '../api';
 import { chip } from '../ui';
 import { moneySymbol } from '../lib/format';
-import { t, tData } from '../i18n';
+import { date, t, tData } from '../i18n';
 
 const EXPENSE_CATS = ['Food', 'Transport', 'Housing', 'Fun', 'Health', 'Other'];
 const INCOME_CATS = ['Salary', 'Freelance', 'Investment', 'Gift', 'Refund', 'Other'];
@@ -77,7 +77,7 @@ export function ExpenseSheet() {
             <rect x="2" y="3" width="11" height="10" rx="2" />
             <path d="M2 6h11M5 1.5v3M10 1.5v3" />
           </svg>
-          {day === todayISO() ? t('Today') : new Date(`${day}T00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          {day === todayISO() ? t('Today') : date(new Date(`${day}T00:00`), { month: 'short', day: 'numeric' })}
           <input
             type="date"
             value={day}

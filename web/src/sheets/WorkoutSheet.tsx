@@ -5,7 +5,7 @@ import { chip } from '../ui';
 import { SetsEditor } from '../SetsEditor';
 import type { WorkoutSet } from '../types';
 import { StickySave } from '../StickySave';
-import { t, tData } from '../i18n';
+import { date, t, tData } from '../i18n';
 
 // Local YYYY-MM-DD (not UTC) for the date input's default.
 function todayISO(): string {
@@ -82,7 +82,7 @@ export function WorkoutSheet() {
             <rect x="2" y="3" width="11" height="10" rx="2" />
             <path d="M2 6h11M5 1.5v3M10 1.5v3" />
           </svg>
-          {day === todayISO() ? t('Today') : new Date(`${day}T00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          {day === todayISO() ? t('Today') : date(new Date(`${day}T00:00`), { month: 'short', day: 'numeric' })}
           <input
             type="date"
             value={day}

@@ -164,7 +164,7 @@ export function Partner() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>{p.name}</div>
           <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2 }}>
-            {t('Partners since {v}', { v: new Date(p.since).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) })}
+            {t('Partners since {v}', { v: date(p.since, { day: 'numeric', month: 'short' }) })}
           </div>
         </div>
       </div>
@@ -288,7 +288,7 @@ function weekLetters(): string[] {
   const now = new Date();
   for (let i = 6; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-    out.push(d.toLocaleDateString(undefined, { weekday: 'narrow' }));
+    out.push(date(d, { weekday: 'narrow' }));
   }
   return out;
 }

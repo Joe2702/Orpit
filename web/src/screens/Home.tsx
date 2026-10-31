@@ -14,7 +14,7 @@ import { Avatar, SectionLabel } from '../ui';
 import { enabled } from '../lib/modules';
 import { CIcon } from '../lib/iconPaths';
 import { elapsed, formatElapsed } from '../lib/since';
-import { t, tData, tn } from '../i18n';
+import { date, getLang, t, tData, tn } from '../i18n';
 
 
 /** ↑/↓ vs the previous week. `lowerIsBetter` flips the colour (e.g. spending). */
@@ -94,7 +94,7 @@ export function Home() {
   const profile = state!.profile;
   const firstName = (profile.name || '').trim().split(/\s+/)[0] || '';
   const weekCaption = period('Week', 0).caption;
-  const monthName = new Date().toLocaleDateString('en-US', { month: 'long' });
+  const monthName = date(Date.now(), { month: 'long' });
   // Only show habits scheduled for today's weekday (Sun=0 … Sat=6).
   const dow = new Date().getDay();
   const todaysHabits = h.habits.filter((hb) => !hb.paused && (hb.days || '1111111')[dow] === '1');
@@ -426,7 +426,7 @@ export function Home() {
           header asked for attention every time the app opened. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
         <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          {date(Date.now(), { weekday: 'long', month: 'long', day: 'numeric' })}
         </div>
         <div tabIndex={0} onClick={() => go('search')} className="press96" role="button" aria-label={t('Search')} style={headBtn}>
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
@@ -438,7 +438,7 @@ export function Home() {
       </div>
       <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--text)', marginBottom: 22 }}>
         {greeting()}
-        {firstName ? `, ${firstName}` : ''}
+        {firstName ? `${getLang() === 'ar' ? '،' : ','} ${firstName}` : ''}
       </div>
 
       {fresh && (
