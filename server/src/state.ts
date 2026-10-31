@@ -103,6 +103,22 @@ export async function buildState(userId: number) {
     [userId]
   );
 
+  // To-do lists, every open task, and what was finished in the last 30 days:
+  // enough for a list's "Done" section without shipping years of ticked boxes.
+  const todoListsQ = query(
+    `SELECT id::text, name, color, icon FROM todo_lists WHERE user_id = $1 ORDER BY sort, id`,
+    [userId]
+  );
+  const todosQ = query(
+    `SELECT id::text, list_id::text AS "listId", title, note, to_char(due, 'YYYY-MM-DD') AS due,
+            CASE WHEN done_at IS NULL THEN NULL ELSE (EXTRACT(EPOCH FROM done_at) * 1000)::float8 END AS "doneTs",
+            sort, ${TS('created_at')}
+     FROM todos
+     WHERE user_id = $1 AND (done_at IS NULL OR done_at > now() - interval '30 days')
+     ORDER BY sort, id`,
+    [userId]
+  );
+
   const countLogsQ = query(
     `SELECT id::text, counter_id::text AS "counterId", amount, ${TS('ts')}
      FROM count_logs WHERE user_id = $1 AND ts > now() - interval '400 days' ORDER BY ts DESC`,
@@ -206,6 +222,8 @@ export async function buildState(userId: number) {
     wTemplates,
     archiveRow,
     accSumRows,
+    todoLists,
+    todos,
   ] = await Promise.all([
     profileQ,
     habitsQ,
@@ -225,6 +243,8 @@ export async function buildState(userId: number) {
     wTemplatesQ,
     archiveRowQ,
     accSumRowsQ,
+    todoListsQ,
+    todosQ,
   ]);
 
   // claimed_badges is stored as a JSON string; hand the client a real array.
@@ -285,6 +305,8 @@ export async function buildState(userId: number) {
     counters,
     milestones,
     countLogs,
+    todoLists,
+    todos,
     archive,
   };
 }

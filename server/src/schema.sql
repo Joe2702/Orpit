@@ -535,3 +535,32 @@ CREATE TABLE IF NOT EXISTS partner_reports (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   handled     BOOLEAN NOT NULL DEFAULT FALSE
 );
+
+-- ===== To-do lists =====
+-- Lists for different parts of life ("Uni", "Training"), each holding tasks.
+-- A task is done when done_at is set, so "done" and "when" are one fact. `due`
+-- is a bare DATE like a milestone's: a task is due on a day, not at an instant
+-- that a timezone could shift. Deleting a list deletes its tasks.
+CREATE TABLE IF NOT EXISTS todo_lists (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  color      TEXT NOT NULL DEFAULT 'indigo',
+  icon       TEXT NOT NULL DEFAULT 'check',
+  sort       INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS todo_lists_user ON todo_lists(user_id);
+CREATE TABLE IF NOT EXISTS todos (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  list_id    BIGINT NOT NULL REFERENCES todo_lists(id) ON DELETE CASCADE,
+  title      TEXT NOT NULL,
+  note       TEXT,
+  due        DATE,
+  done_at    TIMESTAMPTZ,
+  sort       INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS todos_user ON todos(user_id);
+CREATE INDEX IF NOT EXISTS todos_list ON todos(list_id);

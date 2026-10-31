@@ -436,7 +436,7 @@ app.get(
   requireAuth,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    const [profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs] =
+    const [profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs, todoLists, todos] =
       await Promise.all([
         one('SELECT name, email, (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt" FROM users WHERE id = $1', [uid]),
         query('SELECT id::text, name, color, target, days, why, paused, archived FROM habits WHERE user_id = $1 ORDER BY sort, id', [uid]),
@@ -449,9 +449,16 @@ app.get(
         query('SELECT id::text, name, icon, color, kind FROM fcats WHERE user_id = $1 ORDER BY sort, id', [uid]),
         query('SELECT id::text, name, unit, color, icon, step FROM counters WHERE user_id = $1 ORDER BY sort, id', [uid]),
         query(`SELECT id::text, counter_id::text AS "counterId", amount, ${TS('ts')} FROM count_logs WHERE user_id = $1 ORDER BY ts`, [uid]),
+        query('SELECT id::text, name, color, icon FROM todo_lists WHERE user_id = $1 ORDER BY sort, id', [uid]),
+        query(
+          `SELECT id::text, list_id::text AS "listId", title, note, to_char(due, 'YYYY-MM-DD') AS due,
+                  to_char(done_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "doneAt", ${TS('created_at')}
+           FROM todos WHERE user_id = $1 ORDER BY list_id, sort, id`,
+          [uid]
+        ),
       ]);
     res.json({
-      profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs,
+      profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs, todoLists, todos,
       exportedAt: new Date().toISOString(),
     });
   })
@@ -2067,6 +2074,202 @@ app.delete(
   })
 );
 
+// ---------------- To-do lists ----------------
+// Lists ("Uni", "Training") and the tasks in them. Adding, ticking, editing
+// and deleting a task are idempotent like any log, so they can wait in the
+// offline queue and replay safely; setting up lists needs a connection.
+
+const MAX_LISTS = 50;
+const MAX_TODOS = 5000;
+const idList = (v: unknown): string[] => (Array.isArray(v) ? v.map(String).filter((x) => /^\d+$/.test(x)).slice(0, 2000) : []);
+const listBody = (b: any) => ({
+  name: String(b.name || '').trim().slice(0, 40),
+  color: String(b.color || 'indigo').slice(0, 20),
+  icon: String(b.icon || 'check').slice(0, 20),
+});
+const ownsList = (uid: number, id: unknown) =>
+  /^\d+$/.test(String(id)) ? one('SELECT id FROM todo_lists WHERE id = $1 AND user_id = $2', [String(id), uid]) : Promise.resolve(null);
+
+app.post(
+  '/api/todo-lists',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const b = listBody(req.body);
+    if (!b.name) return res.status(400).json({ error: 'Name the list' });
+    const n = await one<{ n: number; m: number }>(
+      'SELECT COUNT(*)::int AS n, COALESCE(MAX(sort), -1) + 1 AS m FROM todo_lists WHERE user_id = $1',
+      [uid]
+    );
+    if (n!.n >= MAX_LISTS) return res.status(400).json({ error: 'That’s as many lists as Orbit keeps' });
+    await query('INSERT INTO todo_lists (user_id, name, color, icon, sort) VALUES ($1,$2,$3,$4,$5)', [uid, b.name, b.color, b.icon, n!.m]);
+    res.json(await buildState(uid));
+  })
+);
+
+app.patch(
+  '/api/todo-lists/order',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const order = idList(req.body.ids);
+    await tx(async (c) => {
+      for (let i = 0; i < order.length; i++) {
+        await c.query('UPDATE todo_lists SET sort = $1 WHERE id = $2 AND user_id = $3', [i, order[i], uid]);
+      }
+    });
+    res.json(await buildState(uid));
+  })
+);
+
+app.patch(
+  '/api/todo-lists/:id',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const b = listBody(req.body);
+    if (!b.name) return res.status(400).json({ error: 'Name the list' });
+    await query('UPDATE todo_lists SET name=$1, color=$2, icon=$3 WHERE id=$4 AND user_id=$5', [b.name, b.color, b.icon, req.params.id, uid]);
+    res.json(await buildState(uid));
+  })
+);
+
+// Clear a list's finished tasks.
+app.delete(
+  '/api/todo-lists/:id/done',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    await query('DELETE FROM todos WHERE list_id = $1 AND user_id = $2 AND done_at IS NOT NULL', [req.params.id, uid]);
+    res.json(await buildState(uid));
+  })
+);
+
+app.delete(
+  '/api/todo-lists/:id',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    await query('DELETE FROM todo_lists WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    res.json(await buildState(uid));
+  })
+);
+
+app.post(
+  '/api/todos',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const title = String(req.body.title || '').trim().slice(0, 200);
+    if (!title) return res.status(400).json({ error: 'Write the task' });
+    if (!(await ownsList(uid, req.body.listId))) return res.status(404).json({ error: 'List not found' });
+    const due = req.body.due == null || req.body.due === '' ? null : String(req.body.due);
+    if (due && !DATE_ONLY.test(due)) return res.status(400).json({ error: 'Pick a date' });
+    const note = req.body.note ? String(req.body.note).trim().slice(0, 1000) || null : null;
+    const n = await one<{ n: number; m: number }>(
+      `SELECT (SELECT COUNT(*)::int FROM todos WHERE user_id = $1) AS n,
+              (SELECT COALESCE(MAX(sort), -1) + 1 FROM todos WHERE list_id = $2) AS m`,
+      [uid, String(req.body.listId)]
+    );
+    if (n!.n >= MAX_TODOS) return res.status(400).json({ error: 'Clear some finished tasks first' });
+    await query('INSERT INTO todos (user_id, list_id, title, note, due, sort) VALUES ($1,$2,$3,$4,$5,$6)', [
+      uid,
+      String(req.body.listId),
+      title,
+      note,
+      due,
+      n!.m,
+    ]);
+    res.json(await buildState(uid));
+  })
+);
+
+// Drag to reorder a list's tasks.
+app.patch(
+  '/api/todos/order',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const order = idList(req.body.ids);
+    await tx(async (c) => {
+      for (let i = 0; i < order.length; i++) {
+        await c.query('UPDATE todos SET sort = $1 WHERE id = $2 AND user_id = $3', [i, order[i], uid]);
+      }
+    });
+    res.json(await buildState(uid));
+  })
+);
+
+// Edit a task: only the fields sent change. Moving it to another list puts it
+// at the end of that list.
+app.patch(
+  '/api/todos/:id',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const cur = await one<{ list_id: string }>('SELECT list_id::text FROM todos WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    if (!cur) return res.status(404).json({ error: 'Task not found' });
+    const sets: string[] = [];
+    const vals: unknown[] = [];
+    const set = (col: string, v: unknown) => {
+      vals.push(v);
+      sets.push(`${col} = $${vals.length}`);
+    };
+    if ('title' in req.body) {
+      const title = String(req.body.title || '').trim().slice(0, 200);
+      if (!title) return res.status(400).json({ error: 'Write the task' });
+      set('title', title);
+    }
+    if ('note' in req.body) set('note', req.body.note ? String(req.body.note).trim().slice(0, 1000) || null : null);
+    if ('due' in req.body) {
+      const due = req.body.due == null || req.body.due === '' ? null : String(req.body.due);
+      if (due && !DATE_ONLY.test(due)) return res.status(400).json({ error: 'Pick a date' });
+      set('due', due);
+    }
+    if ('listId' in req.body && String(req.body.listId) !== cur.list_id) {
+      if (!(await ownsList(uid, req.body.listId))) return res.status(404).json({ error: 'List not found' });
+      set('list_id', String(req.body.listId));
+      const m = await one<{ m: number }>('SELECT COALESCE(MAX(sort), -1) + 1 AS m FROM todos WHERE list_id = $1', [String(req.body.listId)]);
+      set('sort', m!.m);
+    }
+    if (sets.length) {
+      vals.push(req.params.id, uid);
+      await query(`UPDATE todos SET ${sets.join(', ')} WHERE id = $${vals.length - 1} AND user_id = $${vals.length}`, vals);
+    }
+    res.json(await buildState(uid));
+  })
+);
+
+// Done or not, said outright rather than flipped, so a replay can't undo it.
+app.post(
+  '/api/todos/:id/done',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const done = req.body.done !== false;
+    const r = await pool.query(
+      `UPDATE todos SET done_at = CASE WHEN $1 THEN COALESCE(done_at, now()) ELSE NULL END WHERE id = $2 AND user_id = $3`,
+      [done, req.params.id, uid]
+    );
+    if (!r.rowCount) return res.status(404).json({ error: 'Task not found' });
+    res.json(await buildState(uid));
+  })
+);
+
+app.delete(
+  '/api/todos/:id',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    await query('DELETE FROM todos WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    res.json(await buildState(uid));
+  })
+);
+
 app.post(
   '/api/counters',
   requireAuth,
@@ -2152,6 +2355,8 @@ app.post(
       await c.query('DELETE FROM txns WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM sms_ignored WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM milestones WHERE user_id = $1', [uid]);
+      await c.query('DELETE FROM todos WHERE user_id = $1', [uid]);
+      await c.query('DELETE FROM todo_lists WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM habit_checkins WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM count_logs WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM counters WHERE user_id = $1', [uid]);
