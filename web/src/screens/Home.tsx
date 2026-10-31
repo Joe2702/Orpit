@@ -5,6 +5,7 @@ import { api } from '../api';
 import { greeting, minutes, hm, money0, moneyShort, cNum, counterTotals, dayKey, relLabel } from '../lib/format';
 import { missedRun } from '../lib/comeback';
 import { reviewDue, currentIntention } from '../lib/weekReview';
+import { briefDue, hasBriefData } from '../lib/brief';
 import { period } from '../lib/period';
 import { freshStart } from '../lib/freshStart';
 import { parseLayout, reconcile } from '../lib/layout';
@@ -132,6 +133,8 @@ export function Home() {
 
   // ---- The weekly review, and the one thing chosen in it ----
   const weekDue = reviewDue() && (state!.txns.length > 0 || state!.checkins.length > 0);
+  // The morning brief, offered until it's read or the morning is over.
+  const briefOpen = briefDue() && hasBriefData(state!);
   const intention = currentIntention();
 
   // ---- Never miss twice, and coming back ----
@@ -457,6 +460,23 @@ export function Home() {
           <div tabIndex={0} onClick={fresh.run} role="button" style={{ display: 'inline-block', marginTop: 12, fontSize: 14, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
             {fresh.cta}
           </div>
+        </div>
+      )}
+
+      {briefOpen && (
+        <div tabIndex={0} onClick={() => go('brief')} className="press99" role="button" style={{ ...listCard, display: 'flex', alignItems: 'center', gap: 13, padding: '14px 14px 14px 14px', marginBottom: 22, cursor: 'pointer' }}>
+          <span style={{ width: 40, height: 40, flex: 'none', borderRadius: 'calc(12px * var(--sq))', background: 'var(--indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden style={{ fill: 'none', stroke: 'var(--on-accent)', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+              <path d="M3 15.5h16M6 15.5a5 5 0 0 1 10 0M11 4.5v2.2M4.6 8.1l1.5 1.5M17.4 8.1l-1.5 1.5M7 18.5h8" />
+            </svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>{t('Your morning brief')}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>{t('Last night, today’s plan and your money, in a minute.')}</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+            <path className="flip-rtl" d="M7 4l5 5-5 5" />
+          </svg>
         </div>
       )}
 
