@@ -46,7 +46,7 @@ export async function buildState(userId: number) {
   );
 
   const workoutsQ = query(
-    `SELECT id::text, name, category_id::text AS "catId", dur, dist, kcal, intensity, note, sets,
+    `SELECT id::text, name, category_id::text AS "catId", dur, dist, kcal, intensity, note, sets, source,
             ${TS('ts')}
      FROM workouts WHERE user_id = $1 AND ts > now() - interval '400 days' ORDER BY ts DESC`,
     [userId]
@@ -126,7 +126,7 @@ export async function buildState(userId: number) {
   );
 
   const nightsQ = query(
-    `SELECT id::text, hours, quality, bed_h AS "bedH", wake_h AS "wakeH", note,
+    `SELECT id::text, hours, quality, bed_h AS "bedH", wake_h AS "wakeH", note, source,
             ${TS('ts')}
      FROM nights WHERE user_id = $1 AND ts > now() - interval '400 days' ORDER BY ts DESC`,
     [userId]

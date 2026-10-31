@@ -889,7 +889,8 @@ app.delete(
   idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    await query('DELETE FROM workouts WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    const gone = await one<{ ext_id: string | null }>('DELETE FROM workouts WHERE id = $1 AND user_id = $2 RETURNING ext_id', [req.params.id, uid]);
+    if (gone?.ext_id) await query('INSERT INTO health_ignored (user_id, ext_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [uid, gone.ext_id]);
     res.json(await buildState(uid));
   })
 );
@@ -929,7 +930,8 @@ app.delete(
   idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    await query('DELETE FROM nights WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    const gone = await one<{ ext_id: string | null }>('DELETE FROM nights WHERE id = $1 AND user_id = $2 RETURNING ext_id', [req.params.id, uid]);
+    if (gone?.ext_id) await query('INSERT INTO health_ignored (user_id, ext_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [uid, gone.ext_id]);
     res.json(await buildState(uid));
   })
 );
@@ -2074,6 +2076,88 @@ app.delete(
   })
 );
 
+// ---------------- Sleep and workouts from Health Connect ----------------
+// The phone reads what Fitbit (or another app) saved to Health Connect and
+// sends it here, already shaped as Orbit entries. Each keeps its Health
+// Connect id, so syncing the same week again adds nothing. What someone
+// logged by hand for the same night or the same hour wins over an import,
+// and an import they deleted stays deleted.
+
+const extOk = (s: unknown): s is string => typeof s === 'string' && s.length > 0 && s.length <= 200;
+const at = (ms: number) => new Date(ms).toISOString();
+
+app.post(
+  '/api/health/import',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const nights: any[] = Array.isArray(req.body.nights) ? req.body.nights.slice(0, 400) : [];
+    const workouts: any[] = Array.isArray(req.body.workouts) ? req.body.workouts.slice(0, 400) : [];
+    const ignored = new Set((await query<{ ext_id: string }>('SELECT ext_id FROM health_ignored WHERE user_id = $1', [uid])).map((r) => r.ext_id));
+    const cats = new Set((await query<{ id: string }>('SELECT id::text FROM workout_categories WHERE user_id = $1', [uid])).map((r) => r.id));
+    const out = { nights: 0, workouts: 0, skipped: 0 };
+    const source = (s: unknown) => String(s || 'Health Connect').slice(0, 40);
+
+    for (const n of nights) {
+      const ts = Number(n.ts);
+      const hours = Number(n.hours);
+      const quality = Math.round(Number(n.quality));
+      const hour = (v: unknown) => (v == null || !Number.isFinite(Number(v)) ? null : ((Number(v) % 24) + 24) % 24);
+      if (!extOk(n.extId) || ignored.has(n.extId) || !Number.isFinite(ts) || !(hours > 0 && hours < 24) || !(quality >= 1 && quality <= 10)) {
+        out.skipped++;
+        continue;
+      }
+      // Any other night ending within four hours of this one is the same night.
+      const clash = await one(
+        `SELECT id FROM nights WHERE user_id = $1 AND ext_id IS DISTINCT FROM $2
+           AND ts BETWEEN $3::timestamptz - interval '4 hours' AND $3::timestamptz + interval '4 hours'`,
+        [uid, n.extId, at(ts)]
+      );
+      if (clash) {
+        out.skipped++;
+        continue;
+      }
+      const r = await pool.query(
+        `INSERT INTO nights (user_id, hours, quality, bed_h, wake_h, ts, source, ext_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         ON CONFLICT (user_id, ext_id) WHERE ext_id IS NOT NULL DO NOTHING`,
+        [uid, Math.round(hours * 100) / 100, quality, hour(n.bedH), hour(n.wakeH), at(ts), source(n.source), n.extId]
+      );
+      out.nights += r.rowCount || 0;
+    }
+
+    for (const w of workouts) {
+      const ts = Number(w.ts);
+      const dur = Math.round(Number(w.dur));
+      const name = String(w.name || '').trim().slice(0, 60);
+      if (!extOk(w.extId) || ignored.has(w.extId) || !Number.isFinite(ts) || !(dur >= 1 && dur <= 1440) || !name) {
+        out.skipped++;
+        continue;
+      }
+      // A workout logged by hand around the same time is the same session.
+      const clash = await one(
+        `SELECT id FROM workouts WHERE user_id = $1 AND ext_id IS DISTINCT FROM $2
+           AND ts BETWEEN $3::timestamptz - interval '45 minutes' AND $3::timestamptz + make_interval(mins => $4 + 45)`,
+        [uid, w.extId, at(ts), dur]
+      );
+      if (clash) {
+        out.skipped++;
+        continue;
+      }
+      const kcal = w.kcal == null || !Number.isFinite(Number(w.kcal)) ? null : Math.max(0, Math.min(20000, Math.round(Number(w.kcal))));
+      const dist = w.dist ? String(w.dist).slice(0, 20) : null;
+      const catId = w.catId != null && cats.has(String(w.catId)) ? String(w.catId) : null;
+      const r = await pool.query(
+        `INSERT INTO workouts (user_id, category_id, name, dur, dist, kcal, ts, source, ext_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+         ON CONFLICT (user_id, ext_id) WHERE ext_id IS NOT NULL DO NOTHING`,
+        [uid, catId, name, dur, dist, kcal, at(ts), source(w.source), w.extId]
+      );
+      out.workouts += r.rowCount || 0;
+    }
+
+    res.json({ ...(await buildState(uid)), imported: out });
+  })
+);
+
 // ---------------- To-do lists ----------------
 // Lists ("Uni", "Training") and the tasks in them. Adding, ticking, editing
 // and deleting a task are idempotent like any log, so they can wait in the
@@ -2356,6 +2440,7 @@ app.post(
       await c.query('DELETE FROM sms_ignored WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM milestones WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM todos WHERE user_id = $1', [uid]);
+      await c.query('DELETE FROM health_ignored WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM todo_lists WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM habit_checkins WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM count_logs WHERE user_id = $1', [uid]);

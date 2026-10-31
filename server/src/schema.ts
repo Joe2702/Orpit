@@ -566,4 +566,20 @@ CREATE TABLE IF NOT EXISTS todos (
 );
 CREATE INDEX IF NOT EXISTS todos_user ON todos(user_id);
 CREATE INDEX IF NOT EXISTS todos_list ON todos(list_id);
+
+-- ===== Sleep and workouts from Health Connect (Fitbit and others) =====
+-- An imported entry keeps where it came from and the record's own id there,
+-- so a re-sync never adds it twice. Deleting one leaves its id behind in
+-- health_ignored, so the next sync doesn't bring it straight back.
+ALTER TABLE workouts ADD COLUMN IF NOT EXISTS source TEXT;
+ALTER TABLE workouts ADD COLUMN IF NOT EXISTS ext_id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS workouts_ext ON workouts(user_id, ext_id) WHERE ext_id IS NOT NULL;
+ALTER TABLE nights ADD COLUMN IF NOT EXISTS source TEXT;
+ALTER TABLE nights ADD COLUMN IF NOT EXISTS ext_id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS nights_ext ON nights(user_id, ext_id) WHERE ext_id IS NOT NULL;
+CREATE TABLE IF NOT EXISTS health_ignored (
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ext_id  TEXT NOT NULL,
+  PRIMARY KEY (user_id, ext_id)
+);
 `;
