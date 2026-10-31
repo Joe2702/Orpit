@@ -31,6 +31,7 @@ export const MODULE_OPTS = [
   { key: 'sleep', label: t('Sleep'), icon: 'bed' as const, color: 'blue' },
   { key: 'finances', label: t('Finances'), icon: 'wallet' as const, color: 'emerald' },
   { key: 'counters', label: t('Counters'), icon: 'tally' as const, color: 'indigo' },
+  { key: 'todos', label: t('To-do lists'), icon: 'check' as const, color: 'indigo' },
 ];
 
 

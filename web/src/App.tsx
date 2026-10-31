@@ -23,7 +23,7 @@ import { HabitSheet } from './sheets/HabitSheet';
 import { EditSheet } from './sheets/EditSheet';
 import { ReminderOnboarding } from './ReminderOnboarding';
 import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily, scheduleBriefs } from './lib/notify';
-import { briefSchedule } from './lib/brief';
+import { briefSchedule, hasBriefData } from './lib/brief';
 import { OrbitMark } from './OrbitMark';
 import { connectivity, subscribe as subscribeConnectivity } from './lib/offline';
 import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
@@ -63,6 +63,9 @@ const LOAD = {
   FinanceSheets: () => import('./sheets/FinanceSheets'),
   HabitCalendarSheet: () => import('./sheets/HabitCalendarSheet'),
   MilestoneSheet: () => import('./sheets/MilestoneSheet'),
+  TodoSheets: () => import('./sheets/TodoSheets'),
+  Todos: () => import('./screens/Todos'),
+  TodoList: () => import('./screens/TodoList'),
   PartnerReportSheet: () => import('./sheets/PartnerReportSheet'),
   ProfileSheet: () => import('./sheets/ProfileSheet'),
   SmsFoundSheet: () => import('./sheets/SmsFoundSheet'),
@@ -102,6 +105,10 @@ const CounterSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m.C
 const CountLogSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m.CountLogSheet })));
 const CountPickSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m.CountPickSheet })));
 const MilestoneSheet = lazy(() => LOAD.MilestoneSheet().then((m) => ({ default: m.MilestoneSheet })));
+const TodoSheet = lazy(() => LOAD.TodoSheets().then((m) => ({ default: m.TodoSheet })));
+const TodoListSheet = lazy(() => LOAD.TodoSheets().then((m) => ({ default: m.TodoListSheet })));
+const Todos = lazy(() => LOAD.Todos().then((m) => ({ default: m.Todos })));
+const TodoList = lazy(() => LOAD.TodoList().then((m) => ({ default: m.TodoList })));
 const AccountSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.AccountSheet })));
 const FcatSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.FcatSheet })));
 const BudgetSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.BudgetSheet })));
@@ -172,6 +179,10 @@ function CurrentScreen() {
       return <WeekReview />;
     case 'brief':
       return <Brief />;
+    case 'todos':
+      return <Todos />;
+    case 'todolist':
+      return <TodoList />;
     case 'feedbackInbox':
       return <FeedbackInbox />;
     case 'privacy':
@@ -224,6 +235,10 @@ function SheetBody() {
       return <CounterSheet />;
     case 'milestone':
       return <MilestoneSheet />;
+    case 'todo':
+      return <TodoSheet />;
+    case 'todolistEdit':
+      return <TodoListSheet />;
     case 'countlog':
       return <CountLogSheet />;
     case 'countpick':
@@ -513,11 +528,12 @@ export function App() {
 
   // The morning brief's notifications, written again whenever what they'd say
   // could have changed. Its own setting, independent of the evening reminder.
-  const hasData = !!state && (state.checkins.length > 0 || state.txns.length > 0 || state.nights.length > 0 || state.workouts.length > 0);
+  const hasData = !!state && hasBriefData(state);
+  const tasksKey = state ? state.todos.filter((x) => x.doneTs == null && x.due).map((x) => x.due).join(',') : '';
   useEffect(() => {
     if (authed && state) scheduleBriefs(briefSchedule(state));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authed, habitsKey, billsKey, hasData, state?.profile.modules]);
+  }, [authed, habitsKey, billsKey, tasksKey, hasData, state?.profile.modules]);
 
   // The chosen accent replaces the app's primary colour everywhere by remapping
   // the --indigo token the UI already uses.

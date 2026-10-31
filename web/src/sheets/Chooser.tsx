@@ -14,11 +14,24 @@ export function Chooser() {
     go('faddtx');
   };
   const allItems = [
-    { label: t('Workout'), desc: t('A run, a lift, a match'), icon: <IconWorkout c="var(--text)" size={22} />, sheet: 'workout' as const },
-    { label: t('Sleep'), desc: t('When you went to bed and woke up'), icon: <IconSleep c="var(--text)" size={22} />, sheet: 'sleep' as const },
-    { label: t('Money'), desc: t('Something you spent or earned'), icon: <IconExpense c="var(--text)" size={22} />, sheet: null, action: addTxn },
-    { label: t('Habit'), desc: t('Something to do regularly'), icon: <IconHabit c="var(--text)" size={22} />, sheet: 'habit' as const },
+    { mod: 'workouts', label: t('Workout'), desc: t('A run, a lift, a match'), icon: <IconWorkout c="var(--text)" size={22} />, sheet: 'workout' as const },
+    { mod: 'sleep', label: t('Sleep'), desc: t('When you went to bed and woke up'), icon: <IconSleep c="var(--text)" size={22} />, sheet: 'sleep' as const },
+    { mod: 'finances', label: t('Money'), desc: t('Something you spent or earned'), icon: <IconExpense c="var(--text)" size={22} />, sheet: null, action: addTxn },
     {
+      mod: 'todos',
+      label: t('Task'),
+      desc: t('Something to get done, in one of your lists'),
+      sheet: 'todo' as const,
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+          <rect x="4" y="4" width="16" height="16" rx="4.5" />
+          <path d="M8.5 12.2l2.4 2.4 4.6-5" />
+        </svg>
+      ),
+    },
+    { mod: 'habits', label: t('Habit'), desc: t('Something to do regularly'), icon: <IconHabit c="var(--text)" size={22} />, sheet: 'habit' as const },
+    {
+      mod: 'counters',
       label: t('Counter'),
       desc: t('Reps, pages, glasses of water'),
       sheet: 'countpick' as const,
@@ -29,9 +42,9 @@ export function Chooser() {
       ),
     },
   ];
-  // Only offer what the user chose to track.
-  const modKey: Record<string, string> = { Workout: 'workouts', Sleep: 'sleep', Money: 'finances', Habit: 'habits', Counter: 'counters' };
-  const items = allItems.filter((it) => enabled(state!, modKey[it.label]));
+  // Only offer what the user chose to track. Keyed by module, not by label:
+  // the labels are translated, and matching English ones hid everything in Arabic.
+  const items = allItems.filter((it) => enabled(state!, it.mod));
   return (
     <div style={{ padding: '8px 20px 34px' }}>
       <div className="display" style={{ fontSize: 30, lineHeight: 1.1, color: 'var(--text)', margin: '6px 2px 16px' }}>{t('Log something')}</div>

@@ -7,6 +7,8 @@ import { merchantKey, isGenericName } from './merchants';
 import { currentIntention } from './weekReview';
 import { buildInsights } from './insights';
 import { enabled } from './modules';
+import { dueNow } from './todos';
+import type { Todo } from '../types';
 import { t, tn } from '../i18n';
 
 // The morning brief.
@@ -44,6 +46,8 @@ export interface Brief {
   toReview: number;
   training: { lastName: string; daysSince: number; lastWeek: number; usual: number | null } | null;
   intention: string | null;
+  /** Tasks due today or already late, across every list. */
+  tasks: Todo[];
   insight: { title: string; detail: string } | null;
 }
 
@@ -151,13 +155,14 @@ export function buildBrief(state: AppState, money: BriefMoney, now: number = Dat
     toReview: fin ? money.reviewCount : 0,
     training,
     intention: currentIntention(now),
+    tasks: on('todos') && state.todos && state.todoLists ? dueNow(state, now) : [],
     insight,
   };
 }
 
 /** Whether there's anything at all to brief on. A new account has nothing yet. */
 export function hasBriefData(state: AppState): boolean {
-  return state.checkins.length > 0 || state.txns.length > 0 || state.nights.length > 0 || state.workouts.length > 0;
+  return state.checkins.length > 0 || state.txns.length > 0 || state.nights.length > 0 || state.workouts.length > 0 || (state.todos?.length ?? 0) > 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -165,7 +170,7 @@ export function hasBriefData(state: AppState): boolean {
 // known the night before goes in it: the habits planned that day and a bill
 // due that day. Sleep and spending are the brief's job.
 
-export function briefTeaser(state: AppState, morning: number): { bill: string | null; habits: number } {
+export function briefTeaser(state: AppState, morning: number): { bill: string | null; habits: number; tasks: number } {
   const start = startOfDay(morning);
   const bill = enabled(state, 'finances')
     ? state.recurring.find((r) => !r.income && r.nextTs && r.nextTs >= start && r.nextTs < start + D)?.name ?? null
@@ -173,13 +178,17 @@ export function briefTeaser(state: AppState, morning: number): { bill: string | 
   const habits = enabled(state, 'habits')
     ? state.habits.filter((h) => !h.paused && !h.archived && due(h.days, morning)).length
     : 0;
-  return { bill, habits };
+  // Tasks due that day, or due before it and still open now.
+  const day = dayKey(morning);
+  const tasks = enabled(state, 'todos') ? (state.todos ?? []).filter((x) => x.doneTs == null && x.due != null && x.due <= day).length : 0;
+  return { bill, habits, tasks };
 }
 
 /** The notification's words for one morning. */
 export function teaserLine(state: AppState, morning: number): string {
   const x = briefTeaser(state, morning);
   if (x.bill) return t('{name} is due today. Your brief has the rest.', { name: x.bill });
+  if (x.tasks) return tn(x.tasks, 'One task due today, plus last night and your money.', '{n} tasks due today, plus last night and your money.');
   if (x.habits) return tn(x.habits, 'One habit on today’s list, plus last night and your money.', '{n} habits on today’s list, plus last night and your money.');
   return t('Last night, today’s plan and your money, in a minute.');
 }

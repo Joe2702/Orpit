@@ -7,6 +7,7 @@ import { dayKey, fmtClock, greeting, hm, listSep, minutes, money0, moneyShort } 
 import { briefSchedule, buildBrief, hasBriefData, markBriefRead } from '../lib/brief';
 import { scheduleBriefs } from '../lib/notify';
 import { track } from '../lib/usage';
+import { TodoRow } from '../TodoRow';
 import { date, getLang, t, tData, tn } from '../i18n';
 
 /**
@@ -47,6 +48,10 @@ export function Brief() {
   };
 
   const left = b.habits.filter((h) => !h.done).length;
+  // The tasks the brief opened with stay on it once ticked, shown done, rather
+  // than vanishing from under the finger.
+  const [taskIds] = React.useState(() => b.tasks.map((x) => x.id));
+  const shownTasks = state!.todos.filter((x) => taskIds.includes(x.id));
   const label = (s: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', margin: '0 2px 9px' }}>{s}</div>;
   const line: React.CSSProperties = { fontSize: 15, color: 'var(--text)', lineHeight: 1.45 };
   const sub: React.CSSProperties = { fontSize: 13, color: 'var(--text2)', lineHeight: 1.45, marginTop: 2 };
@@ -129,7 +134,7 @@ export function Brief() {
         </>
       )}
 
-      {(b.habits.length > 0 || b.intention) && (
+      {(b.habits.length > 0 || b.intention || b.tasks.length > 0) && (
         <>
           {label(t('Today'))}
           <Card style={{ padding: '6px 0', marginBottom: 20 }}>
@@ -182,6 +187,14 @@ export function Brief() {
                 </div>
               </div>
             ))}
+            {shownTasks.length > 0 && (
+              <div style={{ borderTop: b.habits.length || b.intention || b.slip ? '1px solid var(--hairline)' : 'none' }}>
+                {shownTasks.map((x, i) => {
+                  const l = state!.todoLists.find((y) => y.id === x.listId);
+                  return <TodoRow key={x.id} x={x} color={l?.color} list={l ? { name: l.name, color: l.color } : undefined} onOpen={() => open('todo', { id: x.id })} border={i < shownTasks.length - 1} />;
+                })}
+              </div>
+            )}
           </Card>
         </>
       )}

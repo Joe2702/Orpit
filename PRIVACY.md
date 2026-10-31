@@ -21,7 +21,7 @@ contact: **youssif_mohammed@aucegypt.edu**
 
 **The data you enter**
 - Habits, check-ins, workouts, sleep entries, transactions, accounts, budgets,
-  goals, recurring items, counters and their logs.
+  goals, recurring items, counters and their logs, and your to-do lists and tasks.
 - Your preferences: theme, currency, reminder time, timezone and dashboard layout.
 
 **Technical information**
