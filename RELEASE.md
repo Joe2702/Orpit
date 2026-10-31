@@ -1,5 +1,8 @@
 # Shipping Orbit to the Google Play Store
 
+> The whole launch, step by step and in order, is in
+> [`PLAY_LAUNCH.md`](PLAY_LAUNCH.md). This file is the detail on keys and builds.
+
 The APK your testers install is signed with a **debug** key that lives in this
 repo. That's fine for sharing with friends, but Google Play needs a **release**
 key that only you control.
@@ -70,9 +73,9 @@ is skipped, so nothing breaks in the meantime.)
    [play.google.com/console](https://play.google.com/console).
 2. Create the app, fill in the store listing (name, description, screenshots,
    icon).
-3. **Data safety form** — declare what you collect. Use [`PRIVACY.md`](PRIVACY.md)
-   as the source of truth: account info (email, name), the entries the user
-   creates, and crash diagnostics; no ads, no tracking, no data sold.
+3. **Data safety form** — answer it row by row from
+   [`PLAY_SMS.md` §5](PLAY_SMS.md#5-data-safety-form), which matches
+   [`PRIVACY.md`](PRIVACY.md): no ads, no tracking, no data sold.
 4. Paste the two required URLs. The server publishes both as plain pages that
    work with no account and no JavaScript, so a reviewer can always read them:
 

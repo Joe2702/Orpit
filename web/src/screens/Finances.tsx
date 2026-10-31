@@ -134,7 +134,9 @@ export function Finances() {
             </span>
             {d.safe.left > 0 && (
               <span style={{ fontSize: 14, color: 'var(--text2)' }}>
-                {t('about {amount} a day for {days}', { amount: money0(d.safe.perDay), days: tn(d.safe.daysLeft, '{n} day', '{n} days') })}
+                {d.safe.daysLeft === 1
+                  ? t('left for today')
+                  : t('about {amount} a day for {days}', { amount: money0(d.safe.perDay), days: tn(d.safe.daysLeft, '{n} day', '{n} days') })}
               </span>
             )}
           </div>

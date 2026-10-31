@@ -92,14 +92,26 @@ review screen.
 | Question | Answer |
 | --- | --- |
 | Does the app collect or share user data? | Collects; does not share. |
-| **Messages → SMS or MMS** | Not collected. Read on the device only; the text is never transmitted. (Data processed only on the device doesn't count as collected.) |
+| **Messages → SMS or MMS** | Collected. **Optional**, user-initiated. Bank messages are read on the device and their text is never sent, *except* when the person taps "Help Orbit read this bank" and confirms a masked copy (every digit replaced, names removed). Purpose: App functionality. Not shared. Declaring it is the honest answer; leaving it out is what gets apps pulled. |
+| Messages → Other in-app messages | Collected. Optional (accountability-partner chat, and feedback). App functionality. |
 | **Financial info → Purchase history** | Collected. Optional (only if the user turns on bank messages or enters transactions). Purpose: App functionality. |
 | **Financial info → Other financial info** (account names, last four digits, balances) | Collected. Optional. App functionality. |
 | Personal info → Name, Email | Collected. Required for an account. App functionality, Account management. |
+| Personal info → Other info (date of birth, gender) | Collected. Optional (only for the partner feature, to check 18+ and match preferences). App functionality. |
+| Photos and videos → Photos | Collected. Optional (a profile photo). App functionality. |
+| Health and fitness → Fitness info | Collected. Optional (workouts). App functionality. |
+| Health and fitness → Health info | Collected. Optional (sleep logs). App functionality. |
+| App activity → Other user-generated content | Collected. Optional (habits, counters, milestones, notes). App functionality. |
 | App activity / App info and performance → Crash logs | Collected. Optional. Analytics (crash fixing). |
 | App activity → App interactions (feature usage counts) | Collected. Optional (Profile → Data → Share usage counts). Analytics. |
 | Encrypted in transit | Yes (HTTPS). |
 | Users can request deletion | Yes: Profile → Delete my account, and `https://orbit-x3z7.onrender.com/delete-account`. |
+| Is all collected data required? | No. Only name and email are; everything else is optional. |
+
+Partners seeing what someone chose to share with them is not "sharing" in
+Play's sense: it's an action the person takes on purpose, expecting exactly
+that. Nothing goes to another company apart from the service providers in the
+privacy policy, which Play also doesn't count as sharing.
 
 ## 6. If the declaration is refused
 

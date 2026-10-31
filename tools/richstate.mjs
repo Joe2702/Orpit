@@ -79,7 +79,7 @@ for (let i = SPAN; i >= 0; i--) {
   if (rnd() < 0.18) txns.push({ id: `te${i}`, name: pick(['Dinner with friends', 'Talabat', 'Cinema', 'Brunch']), cat: 'Eating out', amount: -(350 + Math.round(rnd() * 900)), income: false, accId: 'a1', toAccId: null, adjust: false, note: null, photo: false, ts: at(i, 21) });
   if (rnd() < 0.03) txns.push({ id: `ts${i}`, name: pick(['Zara', 'Noon order', 'Amazon']), cat: 'Shopping', amount: -(1200 + Math.round(rnd() * 3500)), income: false, accId: 'a1', toAccId: null, adjust: false, note: null, photo: false, ts: at(i, 16) });
   if (new Date(NOW - i * DAY).getDate() === 1) {
-    txns.push({ id: `ti${i}`, name: 'Salary', cat: 'Salary', amount: 32000, income: true, accId: 'a1', toAccId: null, adjust: false, note: null, photo: false, ts: at(i, 10), sms: true });
+    txns.push({ id: `ti${i}`, name: 'Salary', cat: 'Salary', amount: 42000, income: true, accId: 'a1', toAccId: null, adjust: false, note: null, photo: false, ts: at(i, 10), sms: true });
     txns.push({ id: `tr${i}`, name: 'Rent', cat: 'Housing', amount: -9500, income: false, accId: 'a1', toAccId: null, adjust: false, note: null, photo: false, ts: at(i, 11) });
     txns.push({ id: `tx${i}`, name: 'Main Bank → Savings', cat: 'Transfer', amount: -4000, income: false, accId: 'a1', toAccId: 'a2', adjust: false, note: null, photo: false, ts: at(i, 12) });
   }
@@ -168,7 +168,7 @@ export const state = {
   recurring: [
     { id: 'r1', name: 'Rent', cat: 'Housing', accId: 'a1', amount: 9500, freq: 'Monthly', income: false, nextTs: NOW + 9 * DAY },
     { id: 'r2', name: 'Netflix', cat: 'Subscriptions', accId: 'a1', amount: 240, freq: 'Monthly', income: false, nextTs: NOW + 3 * DAY },
-    { id: 'r3', name: 'Salary', cat: 'Salary', accId: 'a1', amount: 32000, freq: 'Monthly', income: true, nextTs: NOW + 10 * DAY },
+    { id: 'r3', name: 'Salary', cat: 'Salary', accId: 'a1', amount: 42000, freq: 'Monthly', income: true, nextTs: NOW + 10 * DAY },
   ],
   counters: [
     { id: 'c1', name: 'Pages read', unit: 'pages', color: 'teal', icon: 'book', step: 5 },

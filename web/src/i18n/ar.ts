@@ -626,6 +626,7 @@ export const AR: Dict = {
   "over 6 months": "خلال 6 أشهر",
   "Safe to spend this month": "المتاح للإنفاق هذا الشهر",
   "about {amount} a day for {days}": "نحو {amount} في اليوم لمدة {days}",
+  "left for today": "متبقٍ لليوم",
   "Over what this month allows.": "تجاوزت ما يسمح به هذا الشهر.",
   "After {amount} in bills still due.": "بعد {amount} من الفواتير المستحقة.",
   "From this month’s income, after what’s been spent.": "من دخل هذا الشهر، بعد ما أُنفق.",
