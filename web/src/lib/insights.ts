@@ -1,7 +1,9 @@
 import { isSpend } from './money';
 import type { GlyphName } from './appIcons';
 import type { AppState } from '../types';
-import { dayKey, money, hm } from './format';
+import { dayKey, fmtDate, money, hm } from './format';
+import { dayName } from './period';
+import { t } from '../i18n';
 
 // Cross-tracker insights — the thing no single-purpose tracker can do.
 // Every insight is derived from data the user already logged, and each one
@@ -17,7 +19,6 @@ export interface Insight {
 }
 
 const D = 86400000;
-const WD = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 const pct = (a: number, b: number) => (b === 0 ? 0 : Math.round(((a - b) / b) * 100));
@@ -66,9 +67,9 @@ export function buildInsights(s: AppState): Insight[] {
           kind: 'link',
           title:
             diffMin > 0
-              ? `You sleep ${diffMin} min more on days you train.`
-              : `You sleep ${Math.abs(diffMin)} min less on days you train.`,
-          detail: `${trained.length} nights after training vs ${rested.length} rest nights.`,
+              ? t('You sleep {diffMin} min more on days you train.', { diffMin })
+              : t('You sleep {v} min less on days you train.', { v: Math.abs(diffMin) }),
+          detail: t('{n} nights after training vs {n2} rest nights.', { n: trained.length, n2: rested.length }),
         });
       }
     }
@@ -96,9 +97,9 @@ export function buildInsights(s: AppState): Insight[] {
           kind: 'link',
           title:
             change > 0
-              ? `You spend ${change}% more after a short night.`
-              : `You spend ${Math.abs(change)}% less after a short night.`,
-          detail: `${money(a)} vs ${money(b)} per day, across ${afterShort.length} short nights.`,
+              ? t('You spend {change}% more after a short night.', { change })
+              : t('You spend {v}% less after a short night.', { v: Math.abs(change) }),
+          detail: t('{amount} vs {amount2} per day, across {n} short nights.', { amount: money(a), amount2: money(b), n: afterShort.length }),
         });
       }
     }
@@ -126,9 +127,9 @@ export function buildInsights(s: AppState): Insight[] {
           kind: 'link',
           title:
             change > 0
-              ? `You complete ${change}% more habits on days you train.`
-              : `Your habits dip ${Math.abs(change)}% on days you train.`,
-          detail: `Across ${withW.length} training days and ${without.length} others.`,
+              ? t('You complete {change}% more habits on days you train.', { change })
+              : t('Your habits dip {v}% on days you train.', { v: Math.abs(change) }),
+          detail: t('Across {n} training days and {n2} others.', { n: withW.length, n2: without.length }),
         });
       }
     }
@@ -163,8 +164,8 @@ export function buildInsights(s: AppState): Insight[] {
           icon: 'calendar' as GlyphName,
           color: 'indigo',
           kind: 'pattern',
-          title: `${WD[worst.i]}s are your weak spot.`,
-          detail: `${Math.round(best.r * 100)}% done on ${WD[best.i]}s vs ${Math.round(worst.r * 100)}% on ${WD[worst.i]}s.`,
+          title: t('{day}s are your weak spot.', { day: dayName(worst.i) }),
+          detail: t('{n}% done on {day}s vs {n2}% on {day2}s.', { n: Math.round(best.r * 100), day: dayName(best.i), n2: Math.round(worst.r * 100), day2: dayName(worst.i) }),
         });
       }
     }
@@ -196,8 +197,8 @@ export function buildInsights(s: AppState): Insight[] {
           icon: 'alert' as GlyphName,
           color: 'warning',
           kind: 'alert',
-          title: `${c} is ${(thisWeek / base).toFixed(1)}× your usual over the last 7 days.`,
-          detail: `${money(thisWeek)} vs a typical ${money(base)}.`,
+          title: t('{c} is {v}× your usual over the last 7 days.', { c, v: (thisWeek / base).toFixed(1) }),
+          detail: t('{amount} vs a typical {amount2}.', { amount: money(thisWeek), amount2: money(base) }),
         });
       }
     });
@@ -212,8 +213,8 @@ export function buildInsights(s: AppState): Insight[] {
         icon: 'trophy' as GlyphName,
         color: 'coral',
         kind: 'record',
-        title: `Longest session: ${longest.dur} min.`,
-        detail: `${longest.name} · ${new Date(longest.ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+        title: t('Longest session: {dur} min.', { dur: longest.dur }),
+        detail: `${longest.name} · ${fmtDate(longest.ts)}`,
       });
     }
     if (s.nights.length >= 3) {
@@ -223,8 +224,8 @@ export function buildInsights(s: AppState): Insight[] {
         icon: 'moon' as GlyphName,
         color: 'blue',
         kind: 'record',
-        title: `Best night: ${hm(best.hours)}.`,
-        detail: new Date(best.ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        title: t('Best night: {time}.', { time: hm(best.hours) }),
+        detail: fmtDate(best.ts),
       });
     }
     // Best habit week in the last 12.
@@ -245,8 +246,8 @@ export function buildInsights(s: AppState): Insight[] {
           icon: 'sprout' as GlyphName,
           color: 'teal',
           kind: 'record',
-          title: `Best habit week: ${bestWeek} check-ins.`,
-          detail: 'Your highest weekly total in the last 12 weeks.',
+          title: t('Best habit week: {bestWeek} check-ins.', { bestWeek }),
+          detail: t('Your highest weekly total in the last 12 weeks.'),
         });
       }
     }
@@ -263,8 +264,8 @@ export function buildInsights(s: AppState): Insight[] {
           icon: 'bed' as GlyphName,
           color: 'danger',
           kind: 'alert',
-          title: `You're ${hm(debt)} short on sleep over the last 7 days.`,
-          detail: `Against 8h a night across ${recent.length} logged nights.`,
+          title: t('You\'re {time} short on sleep over the last 7 days.', { time: hm(debt) }),
+          detail: t('Against 8h a night across {n} logged nights.', { n: recent.length }),
         });
       } else if (debt <= -2) {
         out.push({
@@ -272,8 +273,8 @@ export function buildInsights(s: AppState): Insight[] {
           icon: 'sparkle' as GlyphName,
           color: 'success',
           kind: 'pattern',
-          title: `You're ${hm(-debt)} ahead on sleep over the last 7 days.`,
-          detail: `Against 8h a night across ${recent.length} logged nights.`,
+          title: t('You\'re {time} ahead on sleep over the last 7 days.', { time: hm(-debt) }),
+          detail: t('Against 8h a night across {n} logged nights.', { n: recent.length }),
         });
       }
     }
@@ -323,8 +324,8 @@ export function buildInsights(s: AppState): Insight[] {
           icon: 'link' as GlyphName,
           color: 'indigo',
           kind: 'link',
-          title: `"${b.name}" is your keystone habit.`,
-          detail: `On days you do it you get ${(b.on / b.off).toFixed(1)}× more done elsewhere, across ${b.days} days.`,
+          title: t('"{name}" is your keystone habit.', { name: b.name }),
+          detail: t('On days you do it you get {v}× more done elsewhere, across {days} days.', { v: (b.on / b.off).toFixed(1), days: b.days }),
         });
       }
     }
@@ -351,8 +352,8 @@ export function buildInsights(s: AppState): Insight[] {
             icon: 'moon' as GlyphName,
             color: 'blue',
             kind: 'link',
-            title: `A steady bedtime is worth ${(qs - qe).toFixed(1)} points of sleep quality.`,
-            detail: `${qs.toFixed(1)}/10 on your usual schedule vs ${qe.toFixed(1)}/10 when it drifts over an hour.`,
+            title: t('A steady bedtime is worth {v} points of sleep quality.', { v: (qs - qe).toFixed(1) }),
+            detail: t('{v}/10 on your usual schedule vs {v2}/10 when it drifts over an hour.', { v: qs.toFixed(1), v2: qe.toFixed(1) }),
           });
         }
       }
@@ -375,16 +376,16 @@ export function buildInsights(s: AppState): Insight[] {
 
     const wNow = inRange(s.workouts, m0, now).length;
     const wPrev = inRange(s.workouts, m1, m0).length;
-    if (wPrev >= 3) moves.push({ label: 'Training', delta: pct(wNow, wPrev), better: wNow >= wPrev, detail: `${wNow} sessions vs ${wPrev} in the 30 days before.` });
+    if (wPrev >= 3) moves.push({ label: t('Training'), delta: pct(wNow, wPrev), better: wNow >= wPrev, detail: t('{wNow} sessions vs {wPrev} in the 30 days before.', { wNow, wPrev }) });
 
     const sNow = avg(inRange(s.nights, m0, now).map((n) => n.hours));
     const sPrev = avg(inRange(s.nights, m1, m0).map((n) => n.hours));
     if (sPrev > 0 && inRange(s.nights, m1, m0).length >= 5)
-      moves.push({ label: 'Sleep', delta: pct(sNow, sPrev), better: sNow >= sPrev, detail: `${hm(sNow)} a night vs ${hm(sPrev)}.` });
+      moves.push({ label: t('Sleep'), delta: pct(sNow, sPrev), better: sNow >= sPrev, detail: t('{time} a night vs {time2}.', { time: hm(sNow), time2: hm(sPrev) }) });
 
     const spNow = inRange(spendTxns, m0, now).filter((t) => isSpend(t)).reduce((a, t) => a - t.amount, 0);
     const spPrev = inRange(spendTxns, m1, m0).filter((t) => isSpend(t)).reduce((a, t) => a - t.amount, 0);
-    if (spPrev > 0) moves.push({ label: 'Spending', delta: pct(spNow, spPrev), better: spNow <= spPrev, detail: `${money(spNow)} vs ${money(spPrev)}.` });
+    if (spPrev > 0) moves.push({ label: t('Spending'), delta: pct(spNow, spPrev), better: spNow <= spPrev, detail: t('{amount} vs {amount2}.', { amount: money(spNow), amount2: money(spPrev) }) });
 
     const biggest = moves.filter((m) => Math.abs(m.delta) >= 15).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))[0];
     if (biggest) {
@@ -393,7 +394,7 @@ export function buildInsights(s: AppState): Insight[] {
         icon: biggest.better ? 'trendUp' : 'alert',
         color: biggest.better ? 'success' : 'warning',
         kind: 'pattern',
-        title: `${biggest.label} is ${biggest.delta > 0 ? 'up' : 'down'} ${Math.abs(biggest.delta)}% over the last 30 days.`,
+        title: biggest.delta > 0 ? t('{label} is up {n}% over the last 30 days.', { label: biggest.label, n: Math.abs(biggest.delta) }) : t('{label} is down {n}% over the last 30 days.', { label: biggest.label, n: Math.abs(biggest.delta) }),
         detail: biggest.detail,
       });
     }

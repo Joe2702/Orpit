@@ -9,6 +9,7 @@
 // @ts-expect-error plain-JS demo data shared with the screenshot tour
 import { state as seed } from '../../tools/richstate.mjs';
 import type { AppState } from './types';
+import { t } from './i18n';
 
 let db: AppState = JSON.parse(JSON.stringify(seed));
 let nextId = 1;
@@ -246,7 +247,7 @@ export function installDemo(): void {
 
   // Say plainly that this is a demo, once, and get out of the way.
   const tag = document.createElement('div');
-  tag.textContent = 'Demo account · changes reset when you reload';
+  tag.textContent = t('Demo account · changes reset when you reload');
   tag.setAttribute('role', 'status');
   Object.assign(tag.style, {
     position: 'fixed',

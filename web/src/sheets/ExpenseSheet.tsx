@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import { api } from '../api';
 import { chip } from '../ui';
 import { moneySymbol } from '../lib/format';
+import { date, t, tData } from '../i18n';
 
 const EXPENSE_CATS = ['Food', 'Transport', 'Housing', 'Fun', 'Health', 'Other'];
 const INCOME_CATS = ['Salary', 'Freelance', 'Investment', 'Gift', 'Refund', 'Other'];
@@ -48,7 +49,7 @@ export function ExpenseSheet() {
     mutateOpt(
       (s) => ({ ...s, txns: [...s.txns, { id: tempId, name: cat, cat, amount: income ? amt : -amt, income, accId, toAccId: null, adjust: false, note: null, photo: false, ts }] }),
       () => api.addTxn({ name: cat, cat, amount: amt, income, accId, ts }),
-      income ? 'Income logged' : 'Expense logged'
+      income ? t('Income logged') : t('Expense logged')
     ).catch(() => {});
     closeSheet();
   };
@@ -70,13 +71,13 @@ export function ExpenseSheet() {
   return (
     <div style={{ padding: '4px 20px 28px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '6px 0 18px' }}>
-        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>Log transaction</div>
+        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{t('Log transaction')}</div>
         <label style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 7, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
           <svg width="15" height="15" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <rect x="2" y="3" width="11" height="10" rx="2" />
             <path d="M2 6h11M5 1.5v3M10 1.5v3" />
           </svg>
-          {day === todayISO() ? 'Today' : new Date(`${day}T00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          {day === todayISO() ? t('Today') : date(new Date(`${day}T00:00`), { month: 'short', day: 'numeric' })}
           <input
             type="date"
             value={day}
@@ -88,8 +89,8 @@ export function ExpenseSheet() {
       </div>
 
       <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 18 }}>
-        <div role="button" tabIndex={0} onClick={() => setKind('expense')} style={tab(!income, 'var(--text)')}>Expense</div>
-        <div role="button" tabIndex={0} onClick={() => setKind('income')} style={tab(income, 'var(--indigo)')}>Income</div>
+        <div role="button" tabIndex={0} onClick={() => setKind('expense')} style={tab(!income, 'var(--text)')}>{t('Expense')}</div>
+        <div role="button" tabIndex={0} onClick={() => setKind('income')} style={tab(income, 'var(--indigo)')}>{t('Income')}</div>
       </div>
 
       <div style={{ textAlign: 'center', marginBottom: 18 }}>
@@ -102,14 +103,14 @@ export function ExpenseSheet() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, justifyContent: 'center', marginBottom: 18 }}>
         {(income ? INCOME_CATS : EXPENSE_CATS).map((c) => (
           <div role="button" tabIndex={0} aria-pressed={cat === c} key={c} onClick={() => (income ? setIncCat(c) : setExCat(c))} style={chip(cat === c, 'var(--indigo)')}>
-            {c}
+            {tData(c)}
           </div>
         ))}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 18 }}>
         {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'].map((k) => (
-          <div role="button" tabIndex={0} aria-label={k === 'del' ? 'Delete digit' : k === '.' ? 'Decimal point' : k} key={k} onClick={() => press(k)} style={{ height: 52, borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', background: 'var(--bg)' }}>
+          <div role="button" tabIndex={0} aria-label={k === 'del' ? t('Delete digit') : k === '.' ? t('Decimal point') : k} key={k} onClick={() => press(k)} style={{ height: 52, borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', background: 'var(--bg)' }}>
             {k === 'del' ? (
               <svg width="24" height="24" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
                 <path d="M9 5h10v14H9l-6-7 6-7ZM13 9.5l4 5M17 9.5l-4 5" />
@@ -122,7 +123,7 @@ export function ExpenseSheet() {
       </div>
 
       <div role="button" tabIndex={0} onClick={save} className="press" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>
-        Save
+        {t('Save')}
       </div>
     </div>
   );

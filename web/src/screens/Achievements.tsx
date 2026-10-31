@@ -4,6 +4,7 @@ import { Ring } from '../lib/charts';
 import { BackButton } from '../ui';
 import { computeBadges, type Badge } from '../lib/badges';
 import { Glyph } from '../lib/appIcons';
+import { t, tn } from '../i18n';
 
 export function Achievements() {
   const { state, go, claimedBadges, claimBadge, haptic } = useStore();
@@ -32,7 +33,7 @@ export function Achievements() {
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <BackButton onClick={() => go('home')} />
       <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--text)', margin: '4px 0 18px' }}>
-        Achievements
+        {t('Achievements')}
       </div>
 
       {/* Summary */}
@@ -43,16 +44,15 @@ export function Achievements() {
             <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.02em' }}>
               {unlocked.length}<span style={{ fontSize: 15, color: 'var(--text2)' }}>/{total}</span>
             </div>
-            <div style={{ fontSize: 10.5, color: 'var(--text2)', marginTop: -1 }}>badges</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text2)', marginTop: -1 }}>{t('badges')}</div>
           </div>
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
-            {unlocked.length === 0 ? 'Start earning badges' : unlocked.length === total ? 'You collected them all' : 'Keep it going'}
+            {unlocked.length === 0 ? t('Start earning badges') : unlocked.length === total ? t('You collected them all') : t('Keep it going')}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4, lineHeight: 1.5 }}>
-            {unlocked.length} of {total} unlocked. Log your day to reveal more.
-          </div>
+            {t('{n} of {total} unlocked. Log your day to reveal more.', { n: unlocked.length, total })}</div>
         </div>
       </div>
 
@@ -60,7 +60,7 @@ export function Achievements() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '13px 15px', marginBottom: 22 }}>
           <Glyph name="gift" size={22} color="var(--indigo)" />
           <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>
-            {claimable.length} new {claimable.length === 1 ? 'badge' : 'badges'} to reveal. Tap the outlined ones below.
+            {tn(claimable.length, '{n} new badge to reveal. Tap the outlined one below.', '{n} new badges to reveal. Tap the outlined ones below.')}
           </div>
         </div>
       )}
@@ -68,7 +68,7 @@ export function Achievements() {
       {almost.length > 0 && (
         <>
           <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', margin: '2px 0 12px' }}>
-            Almost there
+            {t('Almost there')}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
             {almost.map((b) => (
@@ -89,7 +89,7 @@ export function Achievements() {
       )}
 
       <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', margin: '2px 0 12px' }}>
-        All badges
+        {t('All badges')}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {badges.map((b) => (
@@ -128,7 +128,7 @@ function BadgeTile({
         <div style={{ position: 'relative', width: 52, height: 52, borderRadius: '50%', background: 'color-mix(in srgb,var(--indigo) 12%,var(--surface))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Glyph name="gift" size={24} color="var(--indigo)" />
         </div>
-        <div style={{ position: 'relative', fontSize: 13, fontWeight: 650, color: 'var(--indigo)' }}>Tap to reveal</div>
+        <div style={{ position: 'relative', fontSize: 13, fontWeight: 650, color: 'var(--indigo)' }}>{t('Tap to reveal')}</div>
       </div>
     );
   }

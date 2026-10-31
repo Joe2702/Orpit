@@ -1,6 +1,7 @@
 import { derive, deriveHabits } from './derive';
 import { money, dayKey, minutes } from './format';
 import type { AppState } from '../types';
+import { t, tn } from '../i18n';
 
 // What the home-screen analytics widgets show.
 //
@@ -77,37 +78,37 @@ function todayHabits(s: AppState, now: number): { done: number; due: number } {
 export function buildPanels(s: AppState, now: number = Date.now()): Record<string, WidgetPanel> {
   const d = derive(s, 'Week', 0, now);
   const h = deriveHabits(s, 'Week', 0, now);
-  const t = todayHabits(s, now);
+  const tx = todayHabits(s, now);
 
   const habits: WidgetPanel = {
-    title: 'Habits',
-    value: t.due ? `${t.done}/${t.due}` : '—',
-    caption: t.due ? 'done today' : 'none scheduled today',
+    title: t('Habits'),
+    value: tx.due ? `${tx.done}/${tx.due}` : '—',
+    caption: tx.due ? t('done today') : t('none scheduled today'),
     rows: [
-      ['This week', `${h.habitPct}%`],
-      ['Longest streak', h.longestStreak ? `${h.longestStreak} ${h.longestStreak === 1 ? 'day' : 'days'}` : '—'],
+      [t('This week'), `${h.habitPct}%`],
+      [t('Longest streak'), h.longestStreak ? tn(h.longestStreak, '{n} day', '{n} days') : '—'],
     ],
   };
 
   const workouts: WidgetPanel = {
-    title: 'Workouts',
+    title: t('Workouts'),
     value: String(d.homeWorkoutCount),
-    caption: d.homeWorkoutCount === 1 ? 'session this week' : 'sessions this week',
+    caption: tn(d.homeWorkoutCount, 'session this week', 'sessions this week'),
     rows: [
-      ['Total time', d.wTotalMin ? minutes(d.wTotalMin) : '—'],
-      ['Avg session', d.wAvg ? minutes(d.wAvg) : '—'],
+      [t('Total time'), d.wTotalMin ? minutes(d.wTotalMin) : '—'],
+      [t('Avg session'), d.wAvg ? minutes(d.wAvg) : '—'],
     ],
   };
 
   const sleep: WidgetPanel = {
-    title: 'Sleep',
+    title: t('Sleep'),
     value: hm(d.slAvg),
-    caption: 'average this week',
+    caption: t('average this week'),
     rows: [
       // Quality is scored out of 10 everywhere else; "/5" here made a good
       // night look perfect and an average one look great.
-      ['Quality', d.slAvgQ ? `${d.slAvgQ.toFixed(1)}/10` : '—'],
-      ['Usual bedtime', clock(d.avgBed)],
+      [t('Quality'), d.slAvgQ ? `${d.slAvgQ.toFixed(1)}/10` : '—'],
+      [t('Usual bedtime'), clock(d.avgBed)],
     ],
   };
 
@@ -119,25 +120,25 @@ export function buildPanels(s: AppState, now: number = Date.now()): Record<strin
     d.budgetTotal > 0 ? Math.round((d.budgetSpent / d.budgetTotal) * 100) : null;
 
   const finance: WidgetPanel = {
-    title: 'Finances',
+    title: t('Finances'),
     value: money(d.spentThisMonth),
-    caption: 'spent this month',
+    caption: t('spent this month'),
     rows: [
-      ['Income', money(d.incThisMonth)],
+      [t('Income'), money(d.incThisMonth)],
       budgetPct != null
-        ? (['Budget used', `${budgetPct}%`] as [string, string])
-        : (['Saved', savedPct != null ? `${savedPct}%` : '—'] as [string, string]),
+        ? ([t('Budget used'), `${budgetPct}%`] as [string, string])
+        : ([t('Saved'), savedPct != null ? `${savedPct}%` : '—'] as [string, string]),
     ],
   };
 
   const summary: WidgetPanel = {
-    title: 'Orbit',
-    value: t.due ? `${t.done}/${t.due}` : '—',
-    caption: t.due ? 'habits done today' : 'no habits due today',
+    title: t('Orbit'),
+    value: tx.due ? `${tx.done}/${tx.due}` : '—',
+    caption: tx.due ? t('habits done today') : t('no habits due today'),
     rows: [
-      ['Slept', hm(d.slAvg)],
-      ['Workouts', `${d.homeWorkoutCount} this week`],
-      ['Spent', money(d.spentThisMonth)],
+      [t('Slept'), hm(d.slAvg)],
+      [t('Workouts'), t('{n} this week', { n: d.homeWorkoutCount })],
+      [t('Spent'), money(d.spentThisMonth)],
     ],
   };
 

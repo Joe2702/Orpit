@@ -2,22 +2,23 @@ import React, { useRef, useState } from 'react';
 import { useStore } from '../store';
 import { api } from '../api';
 import { Avatar } from '../ui';
+import { t } from '../i18n';
 
 // Shrink whatever the user picks down to a small square so it stores/loads fast.
 function fileToAvatar(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Could not read image'));
+    reader.onerror = () => reject(new Error(t('Could not read image')));
     reader.onload = () => {
       const img = new Image();
-      img.onerror = () => reject(new Error('That file is not an image'));
+      img.onerror = () => reject(new Error(t('That file is not an image')));
       img.onload = () => {
         const size = 256;
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('Image not supported'));
+        if (!ctx) return reject(new Error(t('Image not supported')));
         // Cover-crop to a centered square.
         const min = Math.min(img.width, img.height);
         const sx = (img.width - min) / 2;
@@ -50,7 +51,7 @@ export function ProfileSheet() {
       setAvatar(data);
       haptic();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Could not use that image');
+      showToast(err instanceof Error ? err.message : t('Could not use that image'));
     } finally {
       setBusy(false);
     }
@@ -61,7 +62,7 @@ export function ProfileSheet() {
     haptic();
     await mutate(
       () => api.updateMe({ name: name.trim(), email: email.trim(), avatar }),
-      'Profile updated'
+      t('Profile updated')
     );
     closeSheet();
   };
@@ -81,13 +82,13 @@ export function ProfileSheet() {
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 20px' }}>Edit profile</div>
+      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 20px' }}>{t('Edit profile')}</div>
 
       <input ref={fileRef} type="file" accept="image/*" onChange={pickPhoto} style={{ display: 'none' }} />
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
-        <div role="button" tabIndex={0} aria-label="Change photo" style={{ position: 'relative' }} onClick={() => !busy && fileRef.current?.click()}>
+        <div role="button" tabIndex={0} aria-label={t('Change photo')} style={{ position: 'relative' }} onClick={() => !busy && fileRef.current?.click()}>
           <Avatar name={name} src={avatar} size={84} />
-          <div style={{ position: 'absolute', right: -2, bottom: -2, width: 30, height: 30, borderRadius: '50%', background: 'var(--indigo)', border: '3px solid var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <div style={{ position: 'absolute', insetInlineEnd: -2, bottom: -2, width: 30, height: 30, borderRadius: '50%', background: 'var(--indigo)', border: '3px solid var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <svg width="15" height="15" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M2 5.5h2.2l1-1.5h3.6l1 1.5H13v6.5H2Z" />
               <circle cx="7.5" cy="8.3" r="2.1" />
@@ -98,24 +99,24 @@ export function ProfileSheet() {
           onClick={() => !busy && fileRef.current?.click()}
           style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', marginTop: 12, cursor: 'pointer' }}
         >
-          {busy ? 'Processing…' : avatar ? 'Change photo' : 'Add a photo'}
+          {busy ? t('Processing…') : avatar ? t('Change photo') : t('Add a photo')}
         </div>
         {avatar && !busy && (
           <div role="button" tabIndex={0} onClick={() => setAvatar(null)} style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)', marginTop: 6, cursor: 'pointer' }}>
-            Remove photo
+            {t('Remove photo')}
           </div>
         )}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Name</div>
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" style={input} />
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Email</div>
-      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" style={{ ...input, marginBottom: 24 }} />
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('Name')}</div>
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Your name')} style={input} />
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('Email')}</div>
+      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('you@example.com')} style={{ ...input, marginBottom: 24 }} />
       <div role="button" tabIndex={0}
         onClick={save}
         style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default', letterSpacing: '-.01em' }}
       >
-        Save profile
+        {t('Save profile')}
       </div>
     </div>
   );

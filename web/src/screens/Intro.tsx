@@ -4,29 +4,30 @@ import { api } from '../api';
 import { Glyph } from '../lib/appIcons';
 import { smsSupported } from '../lib/smsSync';
 import { useStartBankTracking } from '../lib/bankTracking';
+import { t } from '../i18n';
 
 // A short, skippable first-run tour. Without it, a new user lands on an empty
 // Home screen with no idea what the + button or the tabs do.
 const SLIDES = [
   {
     icon: 'planet' as const,
-    title: 'Welcome to Orbit',
-    body: 'Your habits, training, sleep and money in one place, so you can see how each one affects the others.',
+    title: t('Welcome to Orbit'),
+    body: t('Your habits, training, sleep and money in one place, so you can see how each one affects the others.'),
   },
   {
     icon: 'plus' as const,
-    title: 'Log with one tap',
-    body: 'The + in the bar at the bottom adds anything: a workout, a night’s sleep, a payment or a new habit.',
+    title: t('Log with one tap'),
+    body: t('The + in the bar at the bottom adds anything: a workout, a night’s sleep, a payment or a new habit.'),
   },
   {
     icon: 'check' as const,
-    title: 'Check off your habits',
-    body: 'Today’s habits are on the Home screen. Tap one when it’s done. Add when and where you’ll do it, and you’re far more likely to.',
+    title: t('Check off your habits'),
+    body: t('Today’s habits are on the Home screen. Tap one when it’s done. Add when and where you’ll do it, and you’re far more likely to.'),
   },
   {
     icon: 'chart' as const,
-    title: 'Watch it add up',
-    body: 'Analytics turns your entries into trends, and each week and month gets a short report.',
+    title: t('Watch it add up'),
+    body: t('Analytics turns your entries into trends, and each week and month gets a short report.'),
   },
 ];
 
@@ -36,10 +37,10 @@ const SLIDES = [
 // is the full disclosure, so "Turn on" goes straight to Android's prompt.
 const BANK_SLIDE = {
   icon: 'cash' as const,
-  title: 'Spending, tracked for you',
-  body:
-    'Orbit can read payment alerts from your bank and wallet and keep your accounts, balances and budgets up to date by itself. ' +
-    'Only messages from banks and wallets are read, never ones from phone numbers. The text stays on your phone; only the amount, shop, date, bank and balance are saved.',
+  title: t('Spending, tracked for you'),
+  body: t(
+    'Orbit can read payment alerts from your bank and wallet and keep your accounts, balances and budgets up to date by itself. Only messages from banks and wallets are read, never ones from phone numbers. The text stays on your phone; only the amount, shop, date, bank and balance are saved.'
+  ),
 };
 
 export function Intro() {
@@ -75,7 +76,7 @@ export function Intro() {
     >
       <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 14 }}>
         <span tabIndex={0} onClick={finish} role="button" style={{ fontSize: 14, fontWeight: 600, color: 'rgba(240,240,243,.7)', padding: 10, cursor: 'pointer' }}>
-          Skip
+          {t('Skip')}
         </span>
       </div>
 
@@ -104,11 +105,11 @@ export function Intro() {
         role="button"
         style={{ background: '#f0f0f3', color: '#0c0c0f', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: 'pointer', marginBottom: bank ? 4 : 26, boxShadow: '0 12px 26px -12px rgba(0,0,0,.5)' }}
       >
-        {bank ? 'Turn on' : last ? 'Start' : 'Next'}
+        {bank ? t('Turn on') : last ? t('Start') : t('Next')}
       </div>
       {bank && (
         <div tabIndex={0} onClick={finish} role="button" style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: 'rgba(240,240,243,.7)', padding: '14px 0 18px', cursor: 'pointer' }}>
-          Not now
+          {t('Not now')}
         </div>
       )}
     </div>

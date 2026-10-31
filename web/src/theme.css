@@ -8,7 +8,7 @@
 
 html,
 body {
-  font-family: 'Geist Variable', 'Geist', system-ui, -apple-system, sans-serif;
+  font-family: 'Geist Variable', 'Geist', 'Noto Sans Arabic Variable', system-ui, -apple-system, sans-serif;
   /* No browser pull-to-refresh / rubber-band bounce — behave like a native app. */
   overscroll-behavior: none;
   /* Native-app feel: no blue tap flash, no long-press callout menus,
@@ -103,8 +103,8 @@ body {
   --scrim: rgba(12, 12, 10, 0.42);
   /* Text and icons sitting on an accent fill. */
   --on-accent: #ffffff;
-  --font-ui: 'Geist Variable', 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  --font-ui: 'Geist Variable', 'Geist', 'Noto Sans Arabic Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Instrument Serif', 'Noto Naskh Arabic Variable', 'Iowan Old Style', Georgia, serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   font-family: var(--font-ui);
   font-variant-numeric: tabular-nums;
@@ -166,10 +166,39 @@ body {
    what separates a crafted app from a component-library one at a glance;
    everything you read and tap stays in the UI sans. */
 .display {
-  font-family: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  font-family: 'Instrument Serif', 'Noto Naskh Arabic Variable', 'Iowan Old Style', Georgia, serif;
   font-weight: 400;
   letter-spacing: -0.01em;
   font-variant-numeric: lining-nums proportional-nums;
+}
+
+/* ---- Arabic ----
+   Arabic letters join; spacing them out, even by a hair, breaks the joins, so
+   every tracking value the English design uses is cancelled. Naskh has tall
+   ascenders and deep descenders: the tight leading of the Latin serif would
+   clip them. */
+html[lang='ar'] .orbit,
+html[lang='ar'] .orbit * {
+  letter-spacing: 0 !important;
+}
+html[lang='ar'] .display {
+  line-height: 1.4 !important;
+}
+/* A field follows what's typed in it: an email stays left to right inside an
+   Arabic form, a note in Arabic runs right to left in an English one. */
+.orbit input,
+.orbit textarea {
+  unicode-bidi: plaintext;
+}
+/* Arrows and chevrons that mean "forward" or "back" point the other way. */
+[dir='rtl'] .flip-rtl {
+  transform: scaleX(-1);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+/* Charts drawn over time run right to left, like the bar charts beside them. */
+[dir='rtl'] .mirror-rtl {
+  transform: scaleX(-1);
 }
 
 .orbit *::-webkit-scrollbar {

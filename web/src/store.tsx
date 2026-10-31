@@ -17,6 +17,7 @@ import {
 import { setCurrency } from './lib/format';
 import { reportError } from './lib/crash';
 import type { AppState, Range } from './types';
+import { t, tn } from './i18n';
 
 export type Screen =
   | 'welcome'
@@ -500,12 +501,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         cacheState(r.state);
       }
       if (r.synced > 0) {
-        showToast(r.failed ? `Synced ${r.synced} · ${r.failed} couldn't be saved` : `Synced ${r.synced} ${r.synced === 1 ? 'entry' : 'entries'}`);
+        showToast(r.failed ? t('Synced {synced} · {failed} couldn\'t be saved', { synced: r.synced, failed: r.failed }) : tn(r.synced, 'Synced {n} entry', 'Synced {n} entries'));
       } else if (r.failed > 0) {
         // Nothing went through and something was abandoned — say so, because
         // the alternative is entries disappearing without a word, and because
         // the previous behaviour here was a queue that sat there for days.
-        showToast(`${r.failed} ${r.failed === 1 ? 'entry' : 'entries'} couldn't be saved and ${r.failed === 1 ? 'was' : 'were'} discarded`);
+        showToast(tn(r.failed, "{n} entry couldn't be saved and was discarded", "{n} entries couldn't be saved and were discarded"));
       }
       // Report what beat the queue, so a stuck sync leaves a trail instead of
       // needing a screenshot to diagnose.
@@ -632,7 +633,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           showToast(queuedMessage());
           throw e;
         }
-        showToast(e instanceof Error ? e.message : 'Something went wrong');
+        showToast(e instanceof Error ? e.message : t('Something went wrong'));
         throw e;
       }
     },
@@ -666,12 +667,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           });
           // The pill under the header carries the detail; the toast should
           // still read as the success it is.
-          showToast(toastMsg ? `${toastMsg} · syncing ${connectivity() === 'offline' ? 'when online' : 'shortly'}` : queuedMessage());
+          showToast(toastMsg ? `${toastMsg} · ${connectivity() === 'offline' ? t('syncing when online') : t('syncing shortly')}` : queuedMessage());
           throw e;
         }
         // Roll back to the pre-mutation state, unless something newer supersedes.
         setState((cur) => (seqRef.current === mySeq ? prev : cur));
-        showToast(e instanceof Error ? e.message : 'Something went wrong');
+        showToast(e instanceof Error ? e.message : t('Something went wrong'));
         throw e;
       }
     },

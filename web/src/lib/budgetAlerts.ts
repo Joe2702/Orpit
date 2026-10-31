@@ -1,4 +1,5 @@
 import { money0 } from './format';
+import { t, tData } from '../i18n';
 
 // When to say something about a budget.
 //
@@ -51,23 +52,23 @@ export function budgetAlerts(budgets: BudgetForAlert[], now: number, sent: Set<s
       alert = {
         key: keys.over,
         settles: [keys.over, keys.high, keys.pace],
-        title: `Over your ${b.cat} budget`,
-        body: `${money0(b.spent)} spent of ${money0(b.effLimit)} this month.`,
+        title: t('Over your {cat} budget', { cat: tData(b.cat) }),
+        body: t('{amount} spent of {amount2} this month.', { amount: money0(b.spent), amount2: money0(b.effLimit) }),
       };
     } else if (b.pct >= 80) {
       const left = b.effLimit - b.spent;
       alert = {
         key: keys.high,
         settles: [keys.high, keys.pace],
-        title: `${b.cat}: ${b.pct}% used`,
-        body: `${money0(left)} left for the rest of the month, about ${money0(left / daysLeft)} a day.`,
+        title: t('{cat}: {pct}% used', { cat: tData(b.cat), pct: b.pct }),
+        body: t('{amount} left for the rest of the month, about {amount2} a day.', { amount: money0(left), amount2: money0(left / daysLeft) }),
       };
     } else if (b.willExceed && b.projected != null && d.getDate() >= 5) {
       alert = {
         key: keys.pace,
         settles: [keys.pace],
-        title: `${b.cat} is running fast`,
-        body: `At this pace it reaches ${money0(b.projected)} by the end of the month, ${money0(b.projected - b.effLimit)} over.`,
+        title: t('{cat} is running fast', { cat: tData(b.cat) }),
+        body: t('At this pace it reaches {amount} by the end of the month, {amount2} over.', { amount: money0(b.projected), amount2: money0(b.projected - b.effLimit) }),
       };
     }
     if (alert && !sent.has(alert.key)) out.push(alert);

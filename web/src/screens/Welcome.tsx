@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStore } from '../store';
+import { getLang, setLangPref, t } from '../i18n';
 
 // The first screen anyone sees. Deliberately plain: the mark, the name set in
 // the display serif, one sentence, two buttons. A gradient backdrop and a row
@@ -24,6 +25,19 @@ export function Welcome() {
         animation: 'fadeIn .5s ease',
       }}
     >
+      {/* The language is chosen before anything else is read, so it's offered
+          here in the other language's own words. */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 'max(18px, env(safe-area-inset-top))' }}>
+        <div
+          role="button"
+          tabIndex={0}
+          lang={getLang() === 'ar' ? 'en' : 'ar'}
+          onClick={() => setLangPref(getLang() === 'ar' ? 'en' : 'ar')}
+          style={{ fontSize: 14.5, fontWeight: 600, color: 'rgba(240,240,243,.75)', padding: '10px 4px', cursor: 'pointer' }}
+        >
+          {getLang() === 'ar' ? 'English' : 'العربية'}
+        </div>
+      </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 48 }}>
         <svg width="52" height="52" viewBox="0 0 96 96" aria-hidden style={{ overflow: 'visible', marginBottom: 26 }}>
           <circle cx="48" cy="48" r="44" style={{ fill: 'none', stroke: 'rgba(240,240,243,.18)', strokeWidth: 2 }} />
@@ -31,9 +45,9 @@ export function Welcome() {
           <circle cx="84" cy="30" r="5.5" style={{ fill: '#f0f0f3' }} />
           <circle cx="48" cy="48" r="12" style={{ fill: '#f0f0f3' }} />
         </svg>
-        <div className="display" style={{ fontSize: 64, lineHeight: 0.95 }}>Orbit</div>
+        <div className="display" style={{ fontSize: 64, lineHeight: 0.95 }}>{t('Orbit')}</div>
         <div style={{ fontSize: 18, lineHeight: 1.5, marginTop: 14, color: 'rgba(240,240,243,.72)', maxWidth: 300 }}>
-          Habits, training, sleep and money, kept in one place.
+          {t('Habits, training, sleep and money, kept in one place.')}
         </div>
       </div>
       <div style={{ paddingBottom: 'max(30px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -43,14 +57,14 @@ export function Welcome() {
           role="button"
           style={{ background: '#f0f0f3', color: '#0c0c0f', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 650, cursor: 'pointer' }}
         >
-          Create an account
+          {t('Create an account')}
         </div>
         <div tabIndex={0}
           onClick={() => open('signin')}
           role="button"
           style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: 'rgba(240,240,243,.75)', padding: 15, cursor: 'pointer' }}
         >
-          I already have one
+          {t('I already have one')}
         </div>
       </div>
     </div>

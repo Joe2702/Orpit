@@ -94,6 +94,7 @@ public class OrbitSms extends Plugin {
             .putString(SmsReceiver.KEY_SYMBOL, call.getString("symbol", ""))
             .putFloat(SmsReceiver.KEY_SPENT, call.getFloat("spent", 0f))
             .putFloat(SmsReceiver.KEY_BUDGET, call.getFloat("budget", 0f))
+            .putString(SmsReceiver.KEY_LANG, call.getString("lang", "en"))
             .apply();
         call.resolve();
     }

@@ -3,6 +3,7 @@ import type { GlyphName } from './appIcons';
 import type { AppState } from '../types';
 import { money0, minutes, dayKey } from './format';
 import { addDays, period } from './period';
+import { t, tn, yearStr } from '../i18n';
 
 export interface ReportSlide {
   key: string;
@@ -93,7 +94,7 @@ export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset
     key: 'intro',
     color: 'indigo',
     icon: (kind === 'week' ? 'calendar' : kind === 'year' ? 'sparkle' : 'moon') as GlyphName,
-    headline: kind === 'week' ? (P.isCurrent ? 'Your week so far' : 'Your week') : kind === 'year' ? `${start.getFullYear()} in review` : P.isCurrent ? 'Your month so far' : 'Your month',
+    headline: kind === 'week' ? (P.isCurrent ? t('Your week so far') : t('Your week')) : kind === 'year' ? t('{year} in review', { year: yearStr(start.getFullYear()) }) : P.isCurrent ? t('Your month so far') : t('Your month'),
     value: '',
     caption: range,
   });
@@ -102,43 +103,43 @@ export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset
     key: 'workouts',
     color: 'coral',
     icon: 'dumbbell' as GlyphName,
-    headline: 'Workouts',
+    headline: t('Workouts'),
     value: String(workouts.length),
-    caption: workouts.length ? `${minutes(wMin)} of training · ${wActiveDays} active ${wActiveDays === 1 ? 'day' : 'days'}` : `No workouts logged ${label}`,
+    caption: workouts.length ? `${t('{time} of training', { time: minutes(wMin) })} · ${tn(wActiveDays, '{n} active day', '{n} active days')}` : t('No workouts logged {label}', { label }),
   });
   if (deep && topWCat) {
-    slides.push({ key: 'wcat', color: 'coral', icon: 'trophy' as GlyphName, headline: 'Top workout', value: topWCat, caption: `your most-logged category (${topWCatN}×)` });
+    slides.push({ key: 'wcat', color: 'coral', icon: 'trophy' as GlyphName, headline: t('Top workout'), value: topWCat, caption: t('your most-logged category ({topWCatN}×)', { topWCatN }) });
   }
 
   slides.push({
     key: 'sleep',
     color: 'blue',
     icon: 'bed' as GlyphName,
-    headline: 'Sleep',
+    headline: t('Sleep'),
     value: nights.length ? fmtDur(slAvg) : '—',
-    caption: nights.length ? `a night, on average, across ${nights.length} ${nights.length === 1 ? 'night' : 'nights'}` : `No nights logged ${label}`,
+    caption: nights.length ? tn(nights.length, 'a night, on average, across {n} night', 'a night, on average, across {n} nights') : t('No nights logged {label}', { label }),
   });
   if (deep && nights.length) {
-    slides.push({ key: 'sleepbest', color: 'blue', icon: 'star' as GlyphName, headline: 'Best night', value: fmtDur(slBest), caption: `your longest sleep ${label}` });
+    slides.push({ key: 'sleepbest', color: 'blue', icon: 'star' as GlyphName, headline: t('Best night'), value: fmtDur(slBest), caption: t('your longest sleep {label}', { label }) });
   }
 
   slides.push({
     key: 'habits',
     color: 'teal',
     icon: 'sprout' as GlyphName,
-    headline: 'Habit check-ins',
+    headline: t('Habit check-ins'),
     value: String(habitChecks),
-    caption: habitChecks ? `completed ${label}` : `No check-ins ${label} yet`,
+    caption: habitChecks ? t('completed {label}', { label }) : t('No check-ins {label} yet', { label }),
   });
   if (bestHabit) {
-    slides.push({ key: 'besthabit', color: 'teal', icon: 'flame' as GlyphName, headline: 'Most consistent', value: bestHabit, caption: `${bestHabitN}× ${label}` });
+    slides.push({ key: 'besthabit', color: 'teal', icon: 'flame' as GlyphName, headline: t('Most consistent'), value: bestHabit, caption: `${bestHabitN}× ${label}` });
   }
 
   if (txns.length) {
-    slides.push({ key: 'spent', color: 'emerald', icon: 'cash' as GlyphName, headline: 'Spent', value: money0(spent), caption: `across ${txns.filter((t) => isSpend(t)).length} expenses ${label}` });
+    slides.push({ key: 'spent', color: 'emerald', icon: 'cash' as GlyphName, headline: t('Spent'), value: money0(spent), caption: t('across {n} expenses {label}', { n: txns.filter((t) => isSpend(t)).length, label }) });
     if (deep) {
-      if (topCat) slides.push({ key: 'topcat', color: 'emerald', icon: 'receipt' as GlyphName, headline: 'Top category', value: topCat, caption: `${money0(topCatV)} spent here` });
-      slides.push({ key: 'saved', color: 'emerald', icon: 'trendUp' as GlyphName, headline: 'Net saved', value: (net < 0 ? '−' : '') + money0(net), caption: income > 0 ? `${savingsRate}% of income kept` : 'income minus spending' });
+      if (topCat) slides.push({ key: 'topcat', color: 'emerald', icon: 'receipt' as GlyphName, headline: t('Top category'), value: topCat, caption: t('{amount} spent here', { amount: money0(topCatV) }) });
+      slides.push({ key: 'saved', color: 'emerald', icon: 'trendUp' as GlyphName, headline: t('Net saved'), value: (net < 0 ? '−' : '') + money0(net), caption: income > 0 ? t('{savingsRate}% of income kept', { savingsRate }) : t('income minus spending') });
     }
   }
 
@@ -146,9 +147,9 @@ export function buildReport(s: AppState, kind: 'week' | 'month' | 'year', offset
     key: 'outro',
     color: 'indigo',
     icon: 'sparkle' as GlyphName,
-    headline: kind === 'week' ? 'Onto next week' : kind === 'year' ? 'Onto the next one' : 'Onto next month',
+    headline: kind === 'week' ? t('Onto next week') : kind === 'year' ? t('Onto the next one') : t('Onto next month'),
     value: '',
-    caption: 'See you next time.',
+    caption: t('See you next time.'),
   });
 
   return slides;

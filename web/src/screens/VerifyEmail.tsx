@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { api, getToken } from '../api';
+import { t } from '../i18n';
 
 // Landing page for the /verify?token=… link from the confirmation email.
 //
@@ -22,7 +23,7 @@ export function VerifyEmail() {
       .confirmEmail(token)
       .then(() => setStatus('ok'))
       .catch((e) => {
-        setError(e instanceof Error ? e.message : 'That link could not be used');
+        setError(e instanceof Error ? e.message : t('That link could not be used'));
         setStatus('bad');
       });
   }, [token]);
@@ -58,18 +59,18 @@ export function VerifyEmail() {
         {icon}
       </div>
       <div style={{ fontSize: 23, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', marginBottom: 10 }}>
-        {status === 'working' ? 'Confirming…' : status === 'ok' ? 'Email confirmed' : "That link didn't work"}
+        {status === 'working' ? t('Confirming…') : status === 'ok' ? t('Email confirmed') : t('That link didn\'t work')}
       </div>
       <div style={{ fontSize: 14.5, color: 'var(--text2)', lineHeight: 1.55, maxWidth: 300, margin: '0 auto 28px' }}>
         {status === 'working'
-          ? 'One moment.'
+          ? t('One moment.')
           : status === 'ok'
-          ? 'You can now reset your password by email if you ever need to.'
-          : error || 'The link may have expired. Open Orbit and send yourself a fresh one.'}
+          ? t('You can now reset your password by email if you ever need to.')
+          : error || t('The link may have expired. Open Orbit and send yourself a fresh one.')}
       </div>
       {status !== 'working' && (
         <div tabIndex={0} onClick={done} className="press" role="button" style={{ display: 'inline-flex', alignItems: 'center', height: 52, padding: '0 30px', borderRadius: 'calc(16px * var(--sq))', background: 'var(--indigo)', color: 'var(--on-accent)', fontSize: 15.5, fontWeight: 700, cursor: 'pointer' }}>
-          Open Orbit
+          {t('Open Orbit')}
         </div>
       )}
     </div>

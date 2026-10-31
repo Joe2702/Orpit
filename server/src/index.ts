@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import 'dotenv/config';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { existsSync } from 'node:fs';
+import { appendFileSync, existsSync } from 'node:fs';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import webpush from 'web-push';
 
@@ -16,7 +16,7 @@ import { seedUser } from './seed.js';
 import { buildState } from './state.js';
 import { fetchRates } from './fx.js';
 import { SCHEMA_SQL } from './schema.js';
-import { legalRouter } from './legal.js';
+import { deletionPages, legalPage, legalRouter, pickLang } from './legal.js';
 import { partnerRouter, listReports } from './partner.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -297,6 +297,12 @@ const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 // Send transactional mail via Brevo (if configured). Returns false if not set up,
 // so callers can degrade gracefully rather than fail the whole request.
 async function sendMail(tag: string, to: string, subject: string, htmlContent: string): Promise<boolean> {
+  // Tests read mail from a file instead of sending it.
+  const outbox = process.env.MAIL_OUTBOX;
+  if (outbox) {
+    appendFileSync(outbox, JSON.stringify({ tag, to, subject, html: htmlContent }) + '\n');
+    return true;
+  }
   const key = process.env.BREVO_API_KEY;
   const from = process.env.MAIL_FROM;
   if (!key || !from) {
@@ -327,21 +333,39 @@ async function sendMail(tag: string, to: string, subject: string, htmlContent: s
   }
 }
 
-const mailButton = (link: string, label: string) =>
+const mailButton = (link: string, label: string, ar = false) =>
   `<p><a href="${link}" style="display:inline-block;background:#5c57c9;color:#fff;padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:600">${label}</a></p>
-   <p style="color:#807a70;font-size:13px">Or paste this link: ${link}</p>`;
+   <p style="color:#807a70;font-size:13px">${ar ? 'أو الصق هذا الرابط:' : 'Or paste this link:'} <span dir="ltr">${link}</span></p>`;
 
-const sendResetEmail = (to: string, link: string) =>
-  sendMail(
-    'reset',
-    to,
-    'Reset your Orbit password',
-    `<div style="font-family:sans-serif;font-size:15px;color:#211f1b">
-      <p>Tap the button to set a new password. This link expires in 1 hour.</p>
+/** The app sends its language with each request, so its emails can match it. */
+const wantsArabic = (req: express.Request) => req.get('x-orbit-lang') === 'ar';
+const mailWrap = (ar: boolean, inner: string) =>
+  `<div dir="${ar ? 'rtl' : 'ltr'}" style="font-family:sans-serif;font-size:15px;color:#211f1b">${inner}</div>`;
+
+const sendResetEmail = (to: string, link: string, ar = false) =>
+  ar
+    ? sendMail(
+        'reset',
+        to,
+        'إعادة تعيين كلمة مرور Orbit',
+        mailWrap(
+          true,
+          `<p>اضغط الزر لتعيين كلمة مرور جديدة. ينتهي هذا الرابط خلال ساعة.</p>
+      ${mailButton(link, 'إعادة تعيين كلمة المرور', true)}
+      <p style="color:#807a70;font-size:13px">إن لم تطلب ذلك، يمكنك تجاهل هذه الرسالة.</p>`
+        )
+      )
+    : sendMail(
+        'reset',
+        to,
+        'Reset your Orbit password',
+        mailWrap(
+          false,
+          `<p>Tap the button to set a new password. This link expires in 1 hour.</p>
       ${mailButton(link, 'Reset password')}
-      <p style="color:#807a70;font-size:13px">If you didn't request this, you can ignore this email.</p>
-    </div>`
-  );
+      <p style="color:#807a70;font-size:13px">If you didn't request this, you can ignore this email.</p>`
+        )
+      );
 
 // Request a reset link (always responds ok, so it can't be used to probe emails).
 app.post(
@@ -368,7 +392,7 @@ app.post(
           [sha256(token), u.id, expires]
         );
         const base = process.env.APP_URL || `https://${req.headers.host}`;
-        await sendResetEmail(email, `${base}/reset?token=${token}`);
+        await sendResetEmail(email, `${base}/reset?token=${token}`, wantsArabic(req));
       }
     } else {
       console.log('[reset] rejected malformed email:', JSON.stringify(req.body.email));
@@ -459,15 +483,25 @@ app.post(
       [sha256(token), uid, u.email, new Date(Date.now() + 24 * 60 * 60 * 1000)]
     );
     const base = process.env.APP_URL || `https://${req.headers.host}`;
+    const link = `${base}/verify?token=${token}`;
+    const ar = wantsArabic(req);
     const sent = await sendMail(
       'verify',
       u.email,
-      'Confirm your email for Orbit',
-      `<div style="font-family:sans-serif;font-size:15px;color:#211f1b">
-        <p>Confirm this address so you can recover your account if you ever forget your password.</p>
-        ${mailButton(`${base}/verify?token=${token}`, 'Confirm email')}
-        <p style="color:#807a70;font-size:13px">This link expires in 24 hours. If you didn't sign up for Orbit, you can ignore this email.</p>
-      </div>`
+      ar ? 'أكّد بريدك الإلكتروني في Orbit' : 'Confirm your email for Orbit',
+      ar
+        ? mailWrap(
+            true,
+            `<p>أكّد هذا العنوان لتتمكن من استعادة حسابك إن نسيت كلمة المرور.</p>
+        ${mailButton(link, 'تأكيد البريد', true)}
+        <p style="color:#807a70;font-size:13px">ينتهي هذا الرابط خلال 24 ساعة. إن لم تسجّل في Orbit، يمكنك تجاهل هذه الرسالة.</p>`
+          )
+        : mailWrap(
+            false,
+            `<p>Confirm this address so you can recover your account if you ever forget your password.</p>
+        ${mailButton(link, 'Confirm email')}
+        <p style="color:#807a70;font-size:13px">This link expires in 24 hours. If you didn't sign up for Orbit, you can ignore this email.</p>`
+          )
     );
     if (!sent) return res.status(503).json({ error: "Email isn't set up on the server yet" });
     res.json({ ok: true });
@@ -2752,6 +2786,99 @@ app.use(partnerRouter);
 // both to be reachable that way; the in-app privacy screen sits behind auth and
 // does not qualify.
 app.use(legalRouter);
+
+// ---------------- Deleting an account without the app ----------------
+// Play wants a way to delete an account that works for someone who has already
+// uninstalled the app. Proving the account is theirs works like a password
+// reset: a link sent to its email. The link opens a page with a button rather
+// than deleting on arrival, because mail scanners follow links.
+const formBody = express.urlencoded({ extended: false, limit: '4kb' });
+const DELETION_TTL = 60 * 60 * 1000;
+
+const sendDeletionEmail = (to: string, link: string, ar: boolean) =>
+  sendMail(
+    'delete',
+    to,
+    ar ? 'تأكيد حذف حسابك في Orbit' : 'Confirm deleting your Orbit account',
+    mailWrap(
+      ar,
+      ar
+        ? `<p>طلب أحدهم حذف حساب Orbit المرتبط بهذا البريد. إن كنت أنت، اضغط الزر وأكّد. ينتهي الرابط خلال ساعة.</p>
+      ${mailButton(link, 'تأكيد حذف الحساب', true)}
+      <p style="color:#807a70;font-size:13px">إن لم تطلب ذلك، تجاهل هذه الرسالة وسيبقى حسابك كما هو.</p>`
+        : `<p>Someone asked to delete the Orbit account for this address. If it was you, tap the button and confirm. The link expires in 1 hour.</p>
+      ${mailButton(link, 'Delete my account')}
+      <p style="color:#807a70;font-size:13px">If you didn't ask for this, ignore this email and your account stays as it is.</p>`
+    )
+  );
+
+/** The user a deletion link belongs to, while it's still valid. */
+async function deletionFor(token: string) {
+  if (!/^[0-9a-f]{64}$/.test(token)) return null;
+  return one<{ user_id: number; email: string }>(
+    `SELECT d.user_id, u.email FROM deletion_requests d JOIN users u ON u.id = d.user_id
+     WHERE d.token_hash = $1 AND d.expires_at > now()`,
+    [sha256(token)]
+  );
+}
+
+const deletionTitle = (lang: 'en' | 'ar') => (lang === 'ar' ? 'حذف حسابك' : 'Delete your account');
+
+app.post(
+  '/delete-account/request',
+  rateLimit('delete-request', 5, 60 * 60 * 1000),
+  formBody,
+  wrap(async (req, res) => {
+    const lang = pickLang(req);
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (emailOk(email)) {
+      const u = await one<{ id: number }>('SELECT id FROM users WHERE email = $1', [email]);
+      if (u) {
+        const token = randomBytes(32).toString('hex');
+        await query('DELETE FROM deletion_requests WHERE user_id = $1', [u.id]);
+        await query('INSERT INTO deletion_requests (token_hash, user_id, expires_at) VALUES ($1,$2,$3)', [
+          sha256(token),
+          u.id,
+          new Date(Date.now() + DELETION_TTL),
+        ]);
+        const base = process.env.APP_URL || `https://${req.headers.host}`;
+        await sendDeletionEmail(email, `${base}/delete-account/confirm?token=${token}${lang === 'ar' ? '&lang=ar' : ''}`, lang === 'ar');
+      }
+    }
+    // The same answer either way, so the page can't be used to find out who has an account.
+    res.type('html').send(legalPage(lang, deletionTitle(lang), deletionPages(lang).sent));
+  })
+);
+
+app.get(
+  '/delete-account/confirm',
+  rateLimit('delete-confirm', 30, 60 * 60 * 1000),
+  wrap(async (req, res) => {
+    const lang = pickLang(req);
+    const token = String(req.query.token || '');
+    const row = await deletionFor(token);
+    res.set('Cache-Control', 'no-store');
+    res
+      .type('html')
+      .send(legalPage(lang, deletionTitle(lang), row ? deletionPages(lang).confirm(row.email, token) : deletionPages(lang).invalid));
+  })
+);
+
+app.post(
+  '/delete-account/confirm',
+  rateLimit('delete-confirm', 30, 60 * 60 * 1000),
+  formBody,
+  wrap(async (req, res) => {
+    const lang = pickLang(req);
+    const row = await deletionFor(String(req.body?.token || ''));
+    if (!row) return res.status(400).type('html').send(legalPage(lang, deletionTitle(lang), deletionPages(lang).invalid));
+    // Every table references users(id) ON DELETE CASCADE, the request included.
+    await query('DELETE FROM users WHERE id = $1', [row.user_id]);
+    console.log('[delete] account deleted from the web');
+    res.set('Cache-Control', 'no-store');
+    res.type('html').send(legalPage(lang, deletionTitle(lang), deletionPages(lang).done));
+  })
+);
 
 // ---------------- Serve the built frontend (production) ----------------
 // The compiled server lives at server/dist; the web build is at web/dist.

@@ -4,6 +4,7 @@ import { useStore } from './store';
 import { api } from './api';
 import { isUnsynced, unsyncedMessage } from './lib/offline';
 import type { Txn } from './types';
+import { t } from './i18n';
 
 // Receipt photos.
 //
@@ -21,7 +22,7 @@ export async function compressFromSrc(url: string): Promise<string> {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const i = new Image();
       i.onload = () => resolve(i);
-      i.onerror = () => reject(new Error('Could not read that image'));
+      i.onerror = () => reject(new Error(t('Could not read that image')));
       i.src = url;
     });
     const scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height));
@@ -29,7 +30,7 @@ export async function compressFromSrc(url: string): Promise<string> {
     canvas.width = Math.max(1, Math.round(img.width * scale));
     canvas.height = Math.max(1, Math.round(img.height * scale));
     const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Could not process that image');
+    if (!ctx) throw new Error(t('Could not process that image'));
     // White underneath: transparent PNGs would otherwise flatten to black.
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -39,7 +40,7 @@ export async function compressFromSrc(url: string): Promise<string> {
       const out = canvas.toDataURL('image/jpeg', q);
       if (out.length <= MAX_BYTES) return out;
     }
-    throw new Error('That photo is too large. Try a closer crop.');
+    throw new Error(t('That photo is too large. Try a closer crop.'));
   }
 }
 
@@ -73,9 +74,9 @@ export async function pickReceipt(): Promise<string | null> {
     quality: 70,
     width: 1400,
     correctOrientation: true,
-    promptLabelHeader: 'Receipt',
-    promptLabelPhoto: 'Choose from photos',
-    promptLabelPicture: 'Take a photo',
+    promptLabelHeader: t('Receipt'),
+    promptLabelPhoto: t('Choose from photos'),
+    promptLabelPicture: t('Take a photo'),
   });
   if (!photo?.dataUrl) return null;
   return compressFromSrc(photo.dataUrl);
@@ -114,7 +115,7 @@ export function ReceiptPicker({ value, onChange }: { value: string | null; onCha
       onChange(await compressImage(file));
       haptic();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Could not read that photo');
+      showToast(err instanceof Error ? err.message : t('Could not read that photo'));
     } finally {
       setBusy(false);
     }
@@ -150,11 +151,11 @@ export function ReceiptPicker({ value, onChange }: { value: string | null; onCha
       {value ? (
         <div>
           <div style={{ borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', border: '1px solid var(--border)', marginBottom: 10, background: 'var(--bg)' }}>
-            <img src={value} alt="Receipt" style={{ display: 'block', width: '100%', maxHeight: 200, objectFit: 'cover' }} />
+            <img src={value} alt={t('Receipt')} style={{ display: 'block', width: '100%', maxHeight: 200, objectFit: 'cover' }} />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <div tabIndex={0} onClick={choose} className="press99" role="button" style={{ ...pickerBox, flex: 1 }}>Replace</div>
-            <div tabIndex={0} onClick={() => onChange(null)} className="press99" role="button" style={{ ...pickerBox, flex: 1, color: 'var(--danger)', borderColor: 'color-mix(in srgb,var(--danger) 35%,var(--border))' }}>Remove</div>
+            <div tabIndex={0} onClick={choose} className="press99" role="button" style={{ ...pickerBox, flex: 1 }}>{t('Replace')}</div>
+            <div tabIndex={0} onClick={() => onChange(null)} className="press99" role="button" style={{ ...pickerBox, flex: 1, color: 'var(--danger)', borderColor: 'color-mix(in srgb,var(--danger) 35%,var(--border))' }}>{t('Remove')}</div>
           </div>
         </div>
       ) : (
@@ -163,7 +164,7 @@ export function ReceiptPicker({ value, onChange }: { value: string | null; onCha
             <path d="M2.5 6.5h3l1.5-2h5l1.5 2h3v9h-14z" />
             <circle cx="9.5" cy="11" r="3" />
           </svg>
-          {busy ? 'Processing…' : 'Attach a receipt'}
+          {busy ? t('Processing…') : t('Attach a receipt')}
         </div>
       )}
     </>
@@ -211,10 +212,10 @@ export function ReceiptField({ txn }: { txn: Txn }) {
       const data = await compressImage(file);
       setPhoto(data); // show it straight away, before the round trip
       haptic();
-      await mutate(() => api.setTxnPhoto(txn.id, data), 'Receipt saved');
+      await mutate(() => api.setTxnPhoto(txn.id, data), t('Receipt saved'));
     } catch (err) {
       setPhoto(null);
-      showToast(err instanceof Error ? err.message : 'Could not save that photo');
+      showToast(err instanceof Error ? err.message : t('Could not save that photo'));
     } finally {
       setLoading(false);
     }
@@ -237,7 +238,7 @@ export function ReceiptField({ txn }: { txn: Txn }) {
       if (data) {
         setPhoto(data);
         haptic();
-        await mutate(() => api.setTxnPhoto(txn.id, data), 'Receipt saved');
+        await mutate(() => api.setTxnPhoto(txn.id, data), t('Receipt saved'));
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
@@ -248,10 +249,10 @@ export function ReceiptField({ txn }: { txn: Txn }) {
   };
 
   const removePhoto = async () => {
-    if (!(await confirm({ title: 'Remove this receipt?', message: 'The transaction itself stays.' }))) return;
+    if (!(await confirm({ title: t('Remove this receipt?'), message: t('The transaction itself stays.') }))) return;
     haptic();
     setPhoto(null);
-    mutate(() => api.setTxnPhoto(txn.id, null), 'Receipt removed').catch(() => {});
+    mutate(() => api.setTxnPhoto(txn.id, null), t('Receipt removed')).catch(() => {});
   };
 
   const box: React.CSSProperties = {
@@ -275,15 +276,15 @@ export function ReceiptField({ txn }: { txn: Txn }) {
 
       {photo ? (
         <div>
-          <div tabIndex={0} onClick={() => setFull(true)} className="press99" role="button" aria-label="View receipt full size" style={{ borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', border: '1px solid var(--border)', cursor: 'pointer', marginBottom: 10, background: 'var(--bg)' }}>
-            <img src={photo} alt="Receipt" style={{ display: 'block', width: '100%', maxHeight: 220, objectFit: 'cover' }} />
+          <div tabIndex={0} onClick={() => setFull(true)} className="press99" role="button" aria-label={t('View receipt full size')} style={{ borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', border: '1px solid var(--border)', cursor: 'pointer', marginBottom: 10, background: 'var(--bg)' }}>
+            <img src={photo} alt={t('Receipt')} style={{ display: 'block', width: '100%', maxHeight: 220, objectFit: 'cover' }} />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <div tabIndex={0} onClick={choose} className="press99" role="button" style={{ ...box, flex: 1 }}>
-              Replace
+              {t('Replace')}
             </div>
             <div tabIndex={0} onClick={removePhoto} className="press99" role="button" style={{ ...box, flex: 1, color: 'var(--danger)', borderColor: 'color-mix(in srgb,var(--danger) 35%,var(--border))' }}>
-              Remove
+              {t('Remove')}
             </div>
           </div>
         </div>
@@ -293,17 +294,17 @@ export function ReceiptField({ txn }: { txn: Txn }) {
             <path d="M2.5 6.5h3l1.5-2h5l1.5 2h3v9h-14z" />
             <circle cx="9.5" cy="11" r="3" />
           </svg>
-          {loading ? 'Processing…' : 'Attach a receipt'}
+          {loading ? t('Processing…') : t('Attach a receipt')}
         </div>
       )}
 
       {/* Full-screen view — receipts are only useful if you can read them. */}
       {full && photo && (
-        <div role="button" tabIndex={0} aria-label="Close receipt"
+        <div role="button" tabIndex={0} aria-label={t('Close receipt')}
           onClick={() => setFull(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(8,9,14,.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, animation: 'fadeIn .2s ease' }}
         >
-          <img src={photo} alt="Receipt" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 'calc(12px * var(--sq))' }} />
+          <img src={photo} alt={t('Receipt')} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 'calc(12px * var(--sq))' }} />
         </div>
       )}
     </>

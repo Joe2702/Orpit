@@ -5,9 +5,10 @@ import { chip } from '../ui';
 import { IconTrash } from '../icons';
 import { CIcon, CTR_ICONS } from '../lib/iconPaths';
 import { elapsed, formatElapsed } from '../lib/since';
+import { t } from '../i18n';
 
-const label = (t: string) => (
-  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t}</div>
+const label = (text: string) => (
+  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{text}</div>
 );
 const input: React.CSSProperties = {
   width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)',
@@ -28,12 +29,12 @@ function todayISO(): string {
 // A few starting points, because the blank form doesn't suggest what this is
 // for. "Since born" is the one that makes the feature click.
 const SUGGESTIONS: { name: string; icon: string; color: string }[] = [
-  { name: 'No sugar', icon: 'drop', color: 'teal' },
-  { name: 'Vegan', icon: 'flame', color: 'emerald' },
-  { name: 'Together', icon: 'heart', color: 'coral' },
-  { name: 'Since born', icon: 'star', color: 'indigo' },
-  { name: 'Sober', icon: 'target', color: 'blue' },
-  { name: 'Quit smoking', icon: 'bolt', color: 'warning' },
+  { name: t('No sugar'), icon: 'drop', color: 'teal' },
+  { name: t('Vegan'), icon: 'flame', color: 'emerald' },
+  { name: t('Together'), icon: 'heart', color: 'coral' },
+  { name: t('Since born'), icon: 'star', color: 'indigo' },
+  { name: t('Sober'), icon: 'target', color: 'blue' },
+  { name: t('Quit smoking'), icon: 'bolt', color: 'warning' },
 ];
 
 export function MilestoneSheet() {
@@ -54,7 +55,7 @@ export function MilestoneSheet() {
     const body = { name: name.trim(), since, color, icon };
     mutate(
       () => (editId ? api.editMilestone(editId, body) : api.addMilestone(body)),
-      editId ? 'Milestone updated' : 'Milestone added'
+      editId ? t('Milestone updated') : t('Milestone added')
     ).catch(() => {});
     closeSheet();
   };
@@ -62,19 +63,19 @@ export function MilestoneSheet() {
   const del = () => {
     if (!editId) return;
     haptic();
-    mutate(() => api.deleteMilestone(editId), 'Milestone removed').catch(() => {});
+    mutate(() => api.deleteMilestone(editId), t('Milestone removed')).catch(() => {});
     closeSheet();
   };
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
       <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 20px' }}>
-        {editId ? 'Edit milestone' : 'Counting since'}
+        {editId ? t('Edit milestone') : t('Counting since')}
       </div>
 
       {!editId && (
         <>
-          {label('Suggestions')}
+          {label(t('Suggestions'))}
           <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 20 }}>
             {SUGGESTIONS.map((s) => (
               <div role="button" tabIndex={0}
@@ -89,16 +90,16 @@ export function MilestoneSheet() {
         </>
       )}
 
-      {label('What are you counting?')}
+      {label(t('What are you counting?'))}
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="e.g. No sugar"
+        placeholder={t('e.g. No sugar')}
         maxLength={60}
         style={{ ...input, marginBottom: 20 }}
       />
 
-      {label('Since')}
+      {label(t('Since'))}
       {/* No `max` on the date: the whole point is entering something long past,
           and a birth date is decades back. A future date is caught on save. */}
       <input
@@ -111,14 +112,14 @@ export function MilestoneSheet() {
         {preview}
       </div>
 
-      {label('Colour')}
-      <div style={{ display: 'flex', gap: 14, marginBottom: 20, paddingLeft: 2 }}>
+      {label(t('Colour'))}
+      <div style={{ display: 'flex', gap: 14, marginBottom: 20, paddingInlineStart: 2 }}>
         {['indigo', 'teal', 'coral', 'blue', 'emerald', 'warning'].map((c) => (
           <div role="button" tabIndex={0} aria-pressed={color === c} aria-label={c} key={c} onClick={() => setColor(c)} style={{ ...swatch(c, color === c), width: 34, height: 34 }} />
         ))}
       </div>
 
-      {label('Icon')}
+      {label(t('Icon'))}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 9, marginBottom: 24 }}>
         {CTR_ICONS.map((ic) => (
           <div role="button" tabIndex={0} aria-label={ic} aria-pressed={icon === ic}
@@ -145,7 +146,7 @@ export function MilestoneSheet() {
           justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default',
         }}
       >
-        {editId ? 'Save changes' : 'Start counting'}
+        {editId ? t('Save changes') : t('Start counting')}
       </div>
       {editId && (
         <div role="button" tabIndex={0}
@@ -157,7 +158,7 @@ export function MilestoneSheet() {
             fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10,
           }}
         >
-          <IconTrash />Remove
+          <IconTrash />{t('Remove')}
         </div>
       )}
     </div>

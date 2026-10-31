@@ -3,16 +3,16 @@ import { useStore } from '../store';
 import { useData } from '../hooks';
 import { Ring, Heat } from '../lib/charts';
 import { Card, DetailHeader, RangeSeg, SectionLabel } from '../ui';
-import { DAY_LETTERS } from '../lib/period';
+import { dayLetter, dayName } from '../lib/period';
 import { daysLabel } from '../lib/format';
 import { IconPencil } from '../icons';
 import { Reorderable } from '../Reorderable';
 import { api } from '../api';
 import { Glyph } from '../lib/appIcons';
+import { t, tData, tn } from '../i18n';
 
 /** Repetitions to automaticity, on average (Lally et al., 2010: median 66 days). */
 const FORMED = 66;
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export function Habits() {
   const { open, mutate } = useStore();
@@ -38,8 +38,8 @@ export function Habits() {
           <span style={{ width: 8, height: 8, borderRadius: '50%', flex: 'none', background: `var(--${hb.color})` }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
-              {hb.name}
-              {hb.paused && <span style={{ fontSize: 11, color: 'var(--warning)', fontWeight: 650, marginLeft: 8, padding: '2px 7px', borderRadius: 'calc(6px * var(--sq))', background: 'color-mix(in srgb,var(--warning) 14%,transparent)' }}>Paused</span>}
+              {tData(hb.name)}
+              {hb.paused && <span style={{ fontSize: 11, color: 'var(--warning)', fontWeight: 650, marginInlineStart: 8, padding: '2px 7px', borderRadius: 'calc(6px * var(--sq))', background: 'color-mix(in srgb,var(--warning) 14%,transparent)' }}>{t('Paused')}</span>}
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: 5, marginTop: 1, minWidth: 0 }}>
               <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{hb.cue || daysLabel(hb.days)}</span>
@@ -60,12 +60,12 @@ export function Habits() {
           {/* Habit strength. Automaticity builds over roughly 66 repetitions on
               average (Lally et al., 2010), and a missed day barely dents it, so
               the count of days done is the honest measure, not a streak. */}
-          <div style={{ flex: 'none', textAlign: 'right' }} title="Days completed, all time">
+          <div style={{ flex: 'none', textAlign: 'end' }} title={t('Days completed, all time')}>
             <div style={{ fontSize: 12.5, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
-              {strength >= 1 ? 'Second nature' : `${hb.total} of ${FORMED} days`}
+              {strength >= 1 ? t('Second nature') : t('{total} of {FORMED} days', { total: hb.total, FORMED })}
             </div>
             {strength < 1 && (
-              <div style={{ width: 64, height: 3, borderRadius: 2, background: 'var(--hairline)', marginTop: 5, marginLeft: 'auto', overflow: 'hidden' }}>
+              <div style={{ width: 64, height: 3, borderRadius: 2, background: 'var(--hairline)', marginTop: 5, marginInlineStart: 'auto', overflow: 'hidden' }}>
                 <div style={{ width: `${strength * 100}%`, height: '100%', background: 'var(--indigo)', borderRadius: 2 }} />
               </div>
             )}
@@ -89,7 +89,7 @@ export function Habits() {
             return (
               <span
                 key={i}
-                aria-label={`${DAY_NAMES[wd]}: ${on ? 'done' : ahead ? 'coming up' : isToday ? 'not yet' : 'missed'}`}
+                aria-label={`${dayName(wd)}: ${on ? t('done') : ahead ? t('coming up') : isToday ? t('not yet') : t('missed')}`}
                 style={{
                   width: 30,
                   height: 30,
@@ -110,7 +110,7 @@ export function Habits() {
                     <path d="M3 6.5l2 2 4-4.5" />
                   </svg>
                 ) : (
-                  DAY_LETTERS[wd]
+                  dayLetter(wd)
                 )}
               </span>
             );
@@ -122,29 +122,29 @@ export function Habits() {
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <DetailHeader title="Habits" />
+      <DetailHeader title={t('Habits')} />
       {/* This week, always — the habit loop lives in the current week, so its
           card doesn't move with the range control further down. */}
       <Card style={{ padding: '16px 18px', marginBottom: 12 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)' }}>This week</div>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)' }}>{t('This week')}</div>
         <div className="display" style={{ fontSize: 26, color: 'var(--text)', marginTop: 4, lineHeight: 1.15 }}>
           {h.weekPlanned === 0
-            ? 'Nothing scheduled this week'
+            ? t('Nothing scheduled this week')
             : h.weekSecured
-            ? 'This week counts'
-            : `${h.weekToGo} more ${h.weekToGo === 1 ? 'check-in' : 'check-ins'} to make it count`}
+            ? t('This week counts')
+            : tn(h.weekToGo, '{n} more check-in to make it count', '{n} more check-ins to make it count')}
         </div>
         {h.weekPlanned > 0 && (
           <>
             <div style={{ position: 'relative', height: 8, borderRadius: 4, background: 'var(--hairline)', marginTop: 14, overflow: 'hidden' }}>
               <div style={{ position: 'absolute', inset: 0, width: `${Math.min(100, (h.weekDone / h.weekPlanned) * 100)}%`, background: 'var(--indigo)', borderRadius: 4, transition: 'width .4s ease' }} />
-              <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${(h.weekGoal / h.weekPlanned) * 100}%`, width: 2, background: 'var(--surface)' }} />
+              <div style={{ position: 'absolute', top: 0, bottom: 0, insetInlineStart: `${(h.weekGoal / h.weekPlanned) * 100}%`, width: 2, background: 'var(--surface)' }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 12, color: 'var(--text2)' }}>
               <span>
-                <b style={{ color: 'var(--text)', fontWeight: 650 }}>{h.weekDone}</b> of {h.weekPlanned} done
+                {t('{done} of {planned} done', { done: h.weekDone, planned: h.weekPlanned })}
               </span>
-              <span>Counts at {h.weekGoal}</span>
+              <span>{t('Counts at {weekGoal}', { weekGoal: h.weekGoal })}</span>
             </div>
           </>
         )}
@@ -152,14 +152,9 @@ export function Habits() {
           <Glyph name={h.weekStreak > 0 ? 'flame' : 'sprout'} size={18} color="var(--indigo)" />
           <span style={{ flex: 1, fontSize: 13, color: 'var(--text2)', lineHeight: 1.4 }}>
             {h.weekStreak > 0 ? (
-              <>
-                <b style={{ color: 'var(--text)', fontWeight: 650 }}>
-                  {h.weekStreak} good {h.weekStreak === 1 ? 'week' : 'weeks'}
-                </b>{' '}
-                in a row
-              </>
+              tn(h.weekStreak, '{n} good week in a row', '{n} good weeks in a row')
             ) : (
-              'A week counts at 70%, so one slow day won’t break your run'
+              t('A week counts at 70%, so one slow day won’t break your run')
             )}
           </span>
         </div>
@@ -175,13 +170,13 @@ export function Habits() {
           <rect x="2.5" y="3.5" width="13" height="12" rx="2" />
           <path d="M2.5 7h13M6 1.5v3M12 1.5v3M6.5 11l1.6 1.6L12 9" />
         </svg>
-        <span style={{ flex: 1 }}>Fill in the last 7 days</span>
+        <span style={{ flex: 1 }}>{t('Fill in the last 7 days')}</span>
         <svg width="16" height="16" viewBox="0 0 18 18" aria-hidden style={{ fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-          <path d="M7 4l5 5-5 5" />
+          <path className="flip-rtl" d="M7 4l5 5-5 5" />
         </svg>
       </div>
 
-      <SectionLabel>Your habits</SectionLabel>
+      <SectionLabel>{t('Your habits')}</SectionLabel>
       <Reorderable
         items={h.habits.map((hb) => ({ id: hb.id, node: <div style={{ marginBottom: 10 }}>{habitCard(hb)}</div> }))}
         onReorder={(ids) => mutate(() => api.reorderHabits(ids)).catch(() => {})}
@@ -195,11 +190,11 @@ export function Habits() {
         <svg width="18" height="18" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round' }} aria-hidden>
           <path d="M10 4v12M4 10h12" />
         </svg>
-        Add a habit
+        {t('Add a habit')}
       </div>
       <div style={{ height: 20 }} />
 
-      <SectionLabel>History</SectionLabel>
+      <SectionLabel>{t('History')}</SectionLabel>
       <RangeSeg period={h.period} />
       <Card style={{ padding: 18, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 18 }}>
         <div style={{ position: 'relative', width: 96, height: 96, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -211,29 +206,29 @@ export function Habits() {
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--text)' }}>
-            {h.rangeTotal ? `${h.rangeDone} of ${h.rangeTotal} check-ins` : 'Nothing scheduled'}
+            {h.rangeTotal ? t('{rangeDone} of {rangeTotal} check-ins', { rangeDone: h.rangeDone, rangeTotal: h.rangeTotal }) : t('Nothing scheduled')}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 3 }}>{h.period.caption}</div>
           {h.longestStreak > 1 && (
             <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 8 }}>
-              Longest run: <b style={{ color: 'var(--text)', fontWeight: 650 }}>{h.longestStreak} days</b>
+              {t('Longest run:') + ' '}<b style={{ color: 'var(--text)', fontWeight: 650 }}>{t('{longestStreak} days', { longestStreak: h.longestStreak })}</b>
             </div>
           )}
         </div>
       </Card>
 
       <Card style={{ padding: 18, marginBottom: 16 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', marginBottom: 14 }}>Last 12 weeks</div>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', marginBottom: 14 }}>{t('Last 12 weeks')}</div>
         <div style={{ overflow: 'hidden' }}>
           <Heat grid={h.grid} colorKey="indigo" cell={13} />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, marginTop: 14, fontSize: 11, color: 'var(--text2)' }}>
-          <span>Less</span>
+          <span>{t('Less')}</span>
           {legendSwatch('color-mix(in srgb,var(--text2) 12%,transparent)')}
           {legendSwatch('color-mix(in srgb,var(--indigo) 40%,transparent)')}
           {legendSwatch('color-mix(in srgb,var(--indigo) 70%,transparent)')}
           {legendSwatch('var(--indigo)')}
-          <span>More</span>
+          <span>{t('More')}</span>
         </div>
       </Card>
 

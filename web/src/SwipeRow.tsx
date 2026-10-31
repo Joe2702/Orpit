@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { isRTL, t } from './i18n';
 
 // Swipe a list row left to reveal Edit / Delete, the way native list apps work.
 //
@@ -17,7 +18,7 @@ export function SwipeRow({
   children,
   onEdit,
   onDelete,
-  deleteLabel = 'Delete',
+  deleteLabel = t('Delete'),
   disabled = false,
 }: {
   children: React.ReactNode;
@@ -50,7 +51,9 @@ export function SwipeRow({
 
   const move = (e: React.PointerEvent) => {
     if (!start.current) return;
-    const delta = e.clientX - start.current.x;
+    // Measured along the reading direction: in Arabic the actions sit on the
+    // left and the row is pulled to the right to show them.
+    const delta = (e.clientX - start.current.x) * (isRTL() ? -1 : 1);
     if (!dragging) {
       if (Math.abs(delta) < 6) return; // let small jitters through as taps
       setDragging(true);
@@ -110,7 +113,7 @@ export function SwipeRow({
       {dx !== 0 && (
       <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'flex-end' }}>
         {onEdit &&
-          btn('Edit', 'var(--indigo)', (
+          btn(t('Edit'), 'var(--indigo)', (
             <svg width="19" height="19" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M12.5 3.2l3.3 3.3M3 16h3.4l9-9-3.4-3.4-9 9z" />
             </svg>
@@ -138,7 +141,7 @@ export function SwipeRow({
         style={{
           position: 'relative',
           touchAction: 'pan-y',
-          transform: `translateX(${dx}px)`,
+          transform: `translateX(${isRTL() ? -dx : dx}px)`,
           transition: dragging ? 'none' : 'transform .22s cubic-bezier(.2,.8,.3,1)',
         }}
       >

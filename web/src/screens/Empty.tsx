@@ -3,21 +3,22 @@ import { useStore } from '../store';
 import { avatarInitial, BackButton } from '../ui';
 import { IconWorkout, IconSleep, IconExpense, IconHabit, IconPlus } from '../icons';
 import { todayStr } from '../lib/format';
+import { t } from '../i18n';
 
 export function HomeEmpty() {
   const { state, open } = useStore();
   const quick = [
-    { label: 'Workout', key: 'coral', icon: <IconWorkout />, sheet: 'workout' as const },
-    { label: 'Sleep', key: 'blue', icon: <IconSleep />, sheet: 'sleep' as const },
-    { label: 'Expense', key: 'emerald', icon: <IconExpense />, sheet: 'expense' as const },
-    { label: 'Habit', key: 'teal', icon: <IconHabit />, sheet: 'habit' as const },
+    { label: t('Workout'), key: 'coral', icon: <IconWorkout />, sheet: 'workout' as const },
+    { label: t('Sleep'), key: 'blue', icon: <IconSleep />, sheet: 'sleep' as const },
+    { label: t('Expense'), key: 'emerald', icon: <IconExpense />, sheet: 'expense' as const },
+    { label: t('Habit'), key: 'teal', icon: <IconHabit />, sheet: 'habit' as const },
   ];
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .4s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{todayStr()}</div>
-          <div style={{ fontSize: 27, fontWeight: 700, letterSpacing: '-.025em', marginTop: 3, color: 'var(--text)' }}>Welcome to Orbit</div>
+          <div style={{ fontSize: 27, fontWeight: 700, letterSpacing: '-.025em', marginTop: 3, color: 'var(--text)' }}>{t('Welcome to Orbit')}</div>
         </div>
         <div style={{ width: 46, height: 46, borderRadius: '50%', background: 'var(--indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--on-accent)', fontWeight: 700, fontSize: 17 }}>
           {avatarInitial(state!.profile.name)}
@@ -31,13 +32,13 @@ export function HomeEmpty() {
           </svg>
         </div>
         <div>
-          <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)' }}>Your day starts here</div>
+          <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)' }}>{t('Your day starts here')}</div>
           <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 6, lineHeight: 1.55, maxWidth: 264 }}>
-            Log something or add a habit, and this page fills in as you go.
+            {t('Log something or add a habit, and this page fills in as you go.')}
           </div>
         </div>
       </div>
-      <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>Start tracking</div>
+      <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>{t('Start tracking')}</div>
       <div style={{ display: 'flex', gap: 10 }}>
         {quick.map((it) => (
           <div role="button" tabIndex={0}
@@ -102,11 +103,11 @@ function DetailEmpty({
 
 export const WorkoutsEmpty = () => (
   <DetailEmpty
-    title="Workouts"
+    title={t('Workouts')}
     colorKey="indigo"
-    heading="No workouts yet"
-    body="Log your first session and your trends and breakdown will appear here."
-    cta="Log a workout"
+    heading={t('No workouts yet')}
+    body={t('Log your first session and your trends and breakdown will appear here.')}
+    cta={t('Log a workout')}
     sheet="workout"
     icon={
       <svg width="42" height="42" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
@@ -118,11 +119,11 @@ export const WorkoutsEmpty = () => (
 
 export const HabitsEmpty = () => (
   <DetailEmpty
-    title="Habits"
+    title={t('Habits')}
     colorKey="indigo"
-    heading="Build your first habit"
-    body="Pick something small and repeatable. Watch your streaks and heatmap grow."
-    cta="Add a habit"
+    heading={t('Build your first habit')}
+    body={t('Pick something small and repeatable. Watch your streaks and heatmap grow.')}
+    cta={t('Add a habit')}
     sheet="habit"
     icon={
       <svg width="42" height="42" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
@@ -135,11 +136,11 @@ export const HabitsEmpty = () => (
 
 export const SleepEmpty = () => (
   <DetailEmpty
-    title="Sleep"
+    title={t('Sleep')}
     colorKey="indigo"
-    heading="Track your first night"
-    body="Log how you slept to see duration, quality, and consistency over time."
-    cta="Log sleep"
+    heading={t('Track your first night')}
+    body={t('Log how you slept to see duration, quality, and consistency over time.')}
+    cta={t('Log sleep')}
     sheet="sleep"
     icon={
       <svg width="42" height="42" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
@@ -151,11 +152,11 @@ export const SleepEmpty = () => (
 
 export const FinancesEmpty = () => (
   <DetailEmpty
-    title="Finances"
+    title={t('Finances')}
     colorKey="indigo"
-    heading="No transactions yet"
-    body="Add income or an expense to see your balance, categories, and trends."
-    cta="Add transaction"
+    heading={t('No transactions yet')}
+    body={t('Add income or an expense to see your balance, categories, and trends.')}
+    cta={t('Add transaction')}
     sheet="expense"
     icon={
       <svg width="42" height="42" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>

@@ -3,6 +3,7 @@ import { analyseSms, maskMessage, SKIP_LABEL, type SmsMessage, type ParsedSms } 
 import { buildRows, type Fx, type SmsRow } from './ledger';
 import type { AppState } from '../types';
 import { ensureNotificationPermission } from './notify';
+import { getLang, t, tk, tn } from '../i18n';
 
 // Getting bank messages off the phone and into the ledger.
 //
@@ -23,7 +24,7 @@ interface OrbitSmsPlugin {
   setLive(o: { on: boolean }): Promise<{ available: boolean; granted: boolean; live?: boolean }>;
   addListener(event: 'message', fn: (e: { sender: string }) => void): Promise<PluginListenerHandle>;
   /** This month's totals for the line under a payment alert. Absent on older builds. */
-  setSummary?(o: { month: string; home: string; symbol: string; spent: number; budget: number }): Promise<void>;
+  setSummary?(o: { month: string; home: string; symbol: string; spent: number; budget: number; lang: string }): Promise<void>;
   read(o: { since: number; senders?: string[] }): Promise<{
     messages: SmsMessage[];
     more: boolean;
@@ -96,12 +97,11 @@ export async function smsStatus(): Promise<{ available: boolean; granted: boolea
  * shows this first.
  */
 export const SMS_DISCLOSURE = {
-  title: 'Track payments from bank messages?',
-  message:
-    'Orbit will read text messages from banks and wallets on this phone (never messages from phone numbers) and turn payment alerts into transactions, including new ones as they arrive. ' +
-    'The message text stays on your phone. Only what Orbit reads from it is saved to your account: the amount, the shop, the date, which bank, the last four digits of the card and the balance. ' +
-    'You can turn this off any time.',
-  confirmLabel: 'Continue',
+  title: t('Track payments from bank messages?'),
+  message: t(
+    'Orbit will read text messages from banks and wallets on this phone (never messages from phone numbers) and turn payment alerts into transactions, including new ones as they arrive. The message text stays on your phone. Only what Orbit reads from it is saved to your account: the amount, the shop, the date, which bank, the last four digits of the card and the balance. You can turn this off any time.'
+  ),
+  confirmLabel: t('Continue'),
 };
 
 /**
@@ -153,10 +153,12 @@ export async function ensureLiveSms(): Promise<void> {
 let lastSummary = '';
 export function shareMonthSummary(o: { month: string; home: string; symbol: string; spent: number; budget: number }): void {
   if (!smsSupported() || !smsEnabled()) return;
-  const key = JSON.stringify(o);
+  // The receiver writes its notification in the app's language.
+  const full = { ...o, lang: getLang() };
+  const key = JSON.stringify(full);
   if (key === lastSummary) return;
   lastSummary = key;
-  OrbitSms.setSummary?.(o).catch(() => {
+  OrbitSms.setSummary?.(full).catch(() => {
     lastSummary = '';
   });
 }
@@ -300,8 +302,8 @@ export async function syncSms(
   let reachedUntil = since;
   try {
     const st = await OrbitSms.check();
-    if (!st.available) return fail('This phone does not receive SMS.');
-    if (!st.granted) return fail('Permission to read messages was turned off in Android settings.');
+    if (!st.available) return fail(t('This phone does not receive SMS.'));
+    if (!st.granted) return fail(t('Permission to read messages was turned off in Android settings.'));
     for (let i = 0; i < MAX_BATCHES; i++) {
       const batch = await OrbitSms.read({ since });
       messages.push(...batch.messages);
@@ -325,7 +327,7 @@ export async function syncSms(
       sender: m.sender,
       snippet: m.body.replace(/\s+/g, ' ').trim().slice(0, 90),
       ts: m.ts,
-      outcome: a.ok ? 'Read as a payment' : SKIP_LABEL[a.reason],
+      outcome: a.ok ? tk('Read as a payment') : SKIP_LABEL[a.reason],
       ok: a.ok,
       ...(!a.ok && (a.reason === 'no-amount' || a.reason === 'no-verb')
         ? { masked: maskMessage(m.body).slice(0, 600), reason: a.reason }
@@ -369,7 +371,11 @@ export async function syncSms(
     saveDiag(diag);
     return { added: diag.added, read: parsed.length, state: next };
   } catch (e) {
-    return fail(`Read ${parsed.length} payment${parsed.length === 1 ? '' : 's'} but could not save them: ${e instanceof Error ? e.message : 'no connection'}. Will retry.`);
+    return fail(
+      tn(parsed.length, 'Read {n} payment but could not save it: {why}. Will retry.', 'Read {n} payments but could not save them: {why}. Will retry.', {
+        why: e instanceof Error ? e.message : t('no connection'),
+      })
+    );
   }
 }
 

@@ -1,6 +1,7 @@
 import React from 'react';
-import { cssVar, fmtClock } from './format';
+import { cssVar, fmtClock, hm } from './format';
 import type { Bucket } from './period';
+import { isRTL, t } from '../i18n';
 
 let sparkId = 0;
 
@@ -50,6 +51,7 @@ export function Spark({
   const id = 'sp' + sparkId++;
   return (
     <svg
+      className="mirror-rtl"
       width="100%"
       height={h}
       viewBox={`0 0 ${w} ${h}`}
@@ -199,6 +201,7 @@ export function Heat({ grid, colorKey, cell = 13 }: { grid: number[][]; colorKey
     h = rows * (cell + gap) - gap;
   return (
     <svg
+      className="mirror-rtl"
       width="100%"
       height={h}
       viewBox={`0 0 ${w} ${h}`}
@@ -238,13 +241,14 @@ function useSelection(n: number) {
 function Bubble({ idx, n, title, value, top, onOpen }: { idx: number; n: number; title: string; value: string; top: number; onOpen?: () => void }) {
   const x = ((idx + 0.5) / n) * 100;
   // Anchor to the nearer edge near the ends, so the bubble never leaves the card.
-  const anchor = x < 22 ? 'left' : x > 78 ? 'right' : 'center';
+  // Start and end, not left and right: in Arabic the bars run the other way.
+  const anchor = x < 22 ? 'start' : x > 78 ? 'end' : 'center';
   const pos: React.CSSProperties =
-    anchor === 'left'
-      ? { left: `max(0px, calc(${x}% - 14px))` }
-      : anchor === 'right'
-      ? { right: `max(0px, calc(${100 - x}% - 14px))` }
-      : { left: `${x}%`, transform: 'translateX(-50%)' };
+    anchor === 'start'
+      ? { insetInlineStart: `max(0px, calc(${x}% - 14px))` }
+      : anchor === 'end'
+      ? { insetInlineEnd: `max(0px, calc(${100 - x}% - 14px))` }
+      : { insetInlineStart: `${x}%`, transform: `translateX(${isRTL() ? 50 : -50}%)` };
   return (
     <div
       role={onOpen ? 'button' : undefined}
@@ -268,7 +272,7 @@ function Bubble({ idx, n, title, value, top, onOpen }: { idx: number; n: number;
     >
       <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-.01em' }}>{value}</div>
       <div style={{ fontSize: 11, opacity: 0.7, marginTop: 1 }}>{title}</div>
-      {onOpen && <div style={{ fontSize: 11.5, fontWeight: 650, marginTop: 4 }}>See payments ›</div>}
+      {onOpen && <div style={{ fontSize: 11.5, fontWeight: 650, marginTop: 4 }}>{t('See payments ›')}</div>}
     </div>
   );
 }
@@ -283,8 +287,8 @@ function XAxis({ buckets }: { buckets: Bucket[] }) {
             key={i}
             style={{
               position: 'absolute',
-              left: `${((i + 0.5) / n) * 100}%`,
-              transform: 'translateX(-50%)',
+              insetInlineStart: `${((i + 0.5) / n) * 100}%`,
+              transform: `translateX(${isRTL() ? 50 : -50}%)`,
               fontSize: 11,
               fontWeight: b.current ? 650 : 500,
               color: b.current ? 'var(--text)' : 'var(--text3)',
@@ -344,7 +348,7 @@ export function BarChart({
           [1, 0.5].map((f) => (
             <div key={f} style={{ position: 'absolute', left: 0, right: 0, bottom: `${f * 100}%`, borderTop: '1px dashed var(--hairline)' }}>
               {hasData && (
-                <span style={{ position: 'absolute', right: 0, top: -15, fontSize: 10.5, color: 'var(--text3)', background: 'var(--surface)', paddingLeft: 4 }}>
+                <span style={{ position: 'absolute', insetInlineEnd: 0, top: -15, fontSize: 10.5, color: 'var(--text3)', background: 'var(--surface)', paddingInlineStart: 4 }}>
                   {format(max * f)}
                 </span>
               )}
@@ -377,7 +381,7 @@ export function BarChart({
                 key={i}
                 onClick={tappable ? () => (sel === i && canOpen(i) ? onOpen!(i) : setSel(sel === i ? null : i)) : undefined}
                 style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', alignItems: 'flex-end', cursor: interactive && !future ? 'pointer' : 'default' }}
-                aria-label={`${b.name}: ${future ? 'not yet' : format(v!)}`}
+                aria-label={`${b.name}: ${future ? t('not yet') : format(v!)}`}
               >
                 {b.future ? (
                   <div style={{ width: '100%', height: 3, borderRadius: 2, background: 'var(--hairline)' }} />
@@ -470,7 +474,7 @@ export function SleepClock({
                   key={i}
                   onClick={nt ? () => setSel(sel === i ? null : i) : undefined}
                   style={{ flex: 1, minWidth: 0, position: 'relative', cursor: nt ? 'pointer' : 'default' }}
-                  aria-label={`${b.name}: ${nt ? `${nt.hours.toFixed(1)} hours` : b.future ? 'not yet' : 'no sleep logged'}`}
+                  aria-label={`${b.name}: ${nt ? hm(nt.hours) : b.future ? t('not yet') : t('no sleep logged')}`}
                 >
                   {nt ? (
                     <div
@@ -487,7 +491,7 @@ export function SleepClock({
                       }}
                     />
                   ) : (
-                    !b.future && <div style={{ position: 'absolute', left: '50%', bottom: 0, width: 3, height: 3, marginLeft: -1.5, borderRadius: 2, background: 'var(--hairline)' }} />
+                    !b.future && <div style={{ position: 'absolute', insetInlineStart: '50%', bottom: 0, width: 3, height: 3, marginInlineStart: -1.5, borderRadius: 2, background: 'var(--hairline)' }} />
                   )}
                 </div>
               );
@@ -507,7 +511,7 @@ export function SleepClock({
       </div>
       <div style={{ position: 'relative', width: 40, height, flex: 'none' }}>
         {ticks.map((t) => (
-          <span key={t} style={{ position: 'absolute', right: 0, top: `calc(${y(t)}% - 7px)`, fontSize: 10.5, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
+          <span key={t} style={{ position: 'absolute', insetInlineEnd: 0, top: `calc(${y(t)}% - 7px)`, fontSize: 10.5, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
             {label(t)}
           </span>
         ))}

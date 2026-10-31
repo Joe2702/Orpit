@@ -2,6 +2,7 @@ import React from 'react';
 import { useStore } from '../store';
 import { api } from '../api';
 import { dayKey } from '../lib/format';
+import { t, tData } from '../i18n';
 
 const D = 86400000;
 const WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -35,9 +36,9 @@ export function CatchUpSheet() {
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 6px' }}>Catch up</div>
+      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 6px' }}>{t('Catch up')}</div>
       <div style={{ fontSize: 13.5, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.5 }}>
-        The last 7 days. Tap a square to check it off, useful after a trip or a busy week.
+        {t('The last 7 days. Tap a square to check it off, useful after a trip or a busy week.')}
       </div>
 
       {/* One habit per card: the name gets its own line, and the seven days sit
@@ -54,23 +55,23 @@ export function CatchUpSheet() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 11 }}>
                 <span style={{ width: 9, height: 9, borderRadius: '50%', flex: 'none', background: `var(--${h.color})` }} />
                 <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {h.name}
+                  {tData(h.name)}
                 </span>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
-                {days.map((t) => {
-                  const ds = dayKey(t);
-                  const dt = new Date(t);
+                {days.map((tx) => {
+                  const ds = dayKey(tx);
+                  const dt = new Date(tx);
                   const scheduled = mask[dt.getDay()] === '1';
                   const on = done.has(h.id + '|' + ds);
                   return (
-                    <div key={t} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                    <div key={tx} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
                       <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text2)' }}>{WD[dt.getDay()]}</span>
                       <div tabIndex={0}
                         onClick={() => scheduled && toggle(h.id, ds)}
                         className={scheduled ? 'press92' : undefined}
                         role={scheduled ? 'button' : undefined}
-                        aria-label={`${h.name} on ${ds}`}
+                        aria-label={t('{name} on {ds}', { name: h.name, ds })}
                         style={{
                           width: '100%',
                           aspectRatio: '1',
@@ -102,7 +103,7 @@ export function CatchUpSheet() {
       </div>
 
       <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 14, textAlign: 'center' }}>
-        Dimmed squares aren't scheduled for that habit.
+        {t('Dimmed squares aren\'t scheduled for that habit.')}
       </div>
     </div>
   );

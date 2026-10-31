@@ -6,6 +6,7 @@ import { HABIT_PRESETS } from '../lib/presets';
 import { IconTrash } from '../icons';
 import { toggleTrack, toggleKnob } from '../ui';
 import { Glyph } from '../lib/appIcons';
+import { t } from '../i18n';
 
 const COLORS = ['teal', 'indigo', 'coral', 'blue', 'emerald', 'purple', 'pink', 'amber', 'cyan', 'rose'];
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Sun..Sat
@@ -40,7 +41,7 @@ export function HabitSheet() {
   const save = () => {
     if (!canSave) return;
     if (pending) {
-      showToast('Still saving. Try again in a moment.');
+      showToast(t('Still saving. Try again in a moment.'));
       return;
     }
     haptic();
@@ -59,7 +60,7 @@ export function HabitSheet() {
       mutateOpt(
         (s) => ({ ...s, habits: s.habits.map((hb) => (hb.id === editId ? { ...hb, ...body } : hb)) }),
         () => api.editHabit(editId, body),
-        'Habit updated'
+        t('Habit updated')
       ).catch(() => {});
     } else {
       const tempId = 'tmp_' + Date.now();
@@ -72,7 +73,7 @@ export function HabitSheet() {
           ],
         }),
         () => api.addHabit(body),
-        'Habit added'
+        t('Habit added')
       ).catch(() => {});
     }
     closeSheet();
@@ -83,15 +84,15 @@ export function HabitSheet() {
   const archive = async () => {
     if (!editId) return;
     if (!(await confirm({
-      title: 'Archive this habit?',
-      message: "It disappears from your lists, but its history is kept. You can't undo this from the app yet.",
-      confirmLabel: 'Archive',
+      title: t('Archive this habit?'),
+      message: t('It disappears from your lists, but its history is kept. You can\'t undo this from the app yet.'),
+      confirmLabel: t('Archive'),
     }))) return;
     haptic();
     mutateOpt(
       (s) => ({ ...s, habits: s.habits.map((hb) => (hb.id === editId ? { ...hb, archived: true } : hb)) }),
       () => api.editHabit(editId, { name: name.trim(), color, target: daysLabel(days), days, why: why.trim() || null, cue: cue.trim() || null, reminderTime: hReminder || null, paused, archived: true }),
-      'Habit archived'
+      t('Habit archived')
     ).catch(() => {});
     closeSheet();
   };
@@ -99,10 +100,10 @@ export function HabitSheet() {
   const del = async () => {
     if (!editId) return;
     if (pending) {
-      showToast('Still saving. Try again in a moment.');
+      showToast(t('Still saving. Try again in a moment.'));
       return;
     }
-    if (!(await confirm({ title: 'Delete this habit?', message: 'It and all its check-ins will be removed.' }))) return;
+    if (!(await confirm({ title: t('Delete this habit?'), message: t('It and all its check-ins will be removed.') }))) return;
     haptic();
     mutateOpt(
       (s) => ({
@@ -111,7 +112,7 @@ export function HabitSheet() {
         checkins: s.checkins.filter((c) => c.habitId !== editId),
       }),
       () => api.deleteHabit(editId),
-      'Habit deleted'
+      t('Habit deleted')
     ).catch(() => {});
     closeSheet();
   };
@@ -119,20 +120,20 @@ export function HabitSheet() {
   return (
     <div style={{ padding: '4px 20px 32px' }}>
       <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 20px' }}>
-        {editId ? 'Edit habit' : 'Add habit'}
+        {editId ? t('Edit habit') : t('Add habit')}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Name</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('Name')}</div>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="e.g. Morning walk"
+        placeholder={t('e.g. Morning walk')}
         style={{ width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginBottom: editId ? 22 : 14 }}
       />
 
       {!editId && (
         <>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Suggestions</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('Suggestions')}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
             {HABIT_PRESETS.map((p) => (
               <div role="button" tabIndex={0}
@@ -152,8 +153,8 @@ export function HabitSheet() {
         </>
       )}
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>Color</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, paddingLeft: 2 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>{t('Color')}</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, paddingInlineStart: 2 }}>
         {COLORS.map((c) => (
           <div role="button" tabIndex={0} aria-label={c} aria-pressed={color === c}
             key={c}
@@ -163,7 +164,7 @@ export function HabitSheet() {
         ))}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Days of the week</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('Days of the week')}</div>
       <div style={{ display: 'flex', gap: 7, marginBottom: 8 }}>
         {DAY_LABELS.map((lbl, i) => {
           const on = days[i] === '1';
@@ -193,35 +194,35 @@ export function HabitSheet() {
         })}
       </div>
       <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 8 }}>
-        This habit only appears on the days you pick.
+        {t('This habit only appears on the days you pick.')}
       </div>
 
       {/* The plan, before the reason: saying when and where you'll do it is
           what most reliably turns an intention into the act. */}
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>When and where (optional)</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('When and where (optional)')}</div>
       <input
         value={cue}
         onChange={(e) => setCue(e.target.value)}
-        placeholder="e.g. After my morning coffee, at my desk"
+        placeholder={t('e.g. After my morning coffee, at my desk')}
         maxLength={120}
         style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 6 }}
       />
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 20 }}>People who plan the moment are far more likely to follow through.</div>
+      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 20 }}>{t('People who plan the moment are far more likely to follow through.')}</div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>Why this matters (optional)</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('Why this matters (optional)')}</div>
       <input
         value={why}
         onChange={(e) => setWhy(e.target.value)}
-        placeholder="e.g. so I have energy for my kids"
+        placeholder={t('e.g. so I have energy for my kids')}
         maxLength={200}
         style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 6 }}
       />
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 20 }}>Shown when you're slipping, as a nudge.</div>
+      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 20 }}>{t('Shown when you\'re slipping, as a nudge.')}</div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: '12px 14px', marginBottom: 14 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>Its own reminder</div>
-          <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>Leave empty to use the daily one</div>
+          <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>{t('Its own reminder')}</div>
+          <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>{t('Leave empty to use the daily one')}</div>
         </div>
         <input
           type="time"
@@ -241,9 +242,9 @@ export function HabitSheet() {
         >
           <Glyph name={paused ? 'pause' : 'play'} size={19} color={paused ? 'var(--warning)' : 'var(--text2)'} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>{paused ? 'Paused' : 'Pause this habit'}</div>
+            <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>{paused ? t('Paused') : t('Pause this habit')}</div>
             <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>
-              Travelling or unwell? Pausing hides it without breaking your run.
+              {t('Travelling or unwell? Pausing hides it without breaking your run.')}
             </div>
           </div>
           <div style={toggleTrack(paused)}>
@@ -256,7 +257,7 @@ export function HabitSheet() {
         onClick={save}
         style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', marginTop: 8, transition: 'all .2s' }}
       >
-        {editId ? 'Save changes' : 'Create habit'}
+        {editId ? t('Save changes') : t('Create habit')}
       </div>
 
       {editId && (
@@ -266,14 +267,14 @@ export function HabitSheet() {
           role="button"
           style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', marginTop: 10 }}
         >
-          Archive (keeps your history)
+          {t('Archive (keeps your history)')}
         </div>
       )}
 
       {editId && (
         <div role="button" tabIndex={0} onClick={del} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
           <IconTrash />
-          Delete habit
+          {t('Delete habit')}
         </div>
       )}
     </div>

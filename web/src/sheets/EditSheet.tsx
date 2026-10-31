@@ -9,6 +9,7 @@ import { useEntryActions } from '../lib/entryActions';
 import { isUnsynced, unsyncedMessage } from '../lib/offline';
 import { ReceiptField } from '../Receipt';
 import type { Workout, Night, Txn, WorkoutSet } from '../types';
+import { t, tData } from '../i18n';
 
 export function EditSheet() {
   const { state, sheetData, open, closeSheet, mutateOpt, haptic, confirm, showToast } = useStore();
@@ -24,10 +25,10 @@ export function EditSheet() {
   const [sets, setSets] = useState<WorkoutSet[]>(w?.sets || []);
 
   const title =
-    kind === 'workout' ? 'Edit workout' : kind === 'sleep' ? 'Edit sleep' : kind === 'txn' ? 'Edit transaction' : 'Edit entry';
+    kind === 'workout' ? t('Edit workout') : kind === 'sleep' ? t('Edit sleep') : kind === 'txn' ? t('Edit transaction') : t('Edit entry');
   const summary =
     kind === 'workout'
-      ? `${(item as Workout).name} · ${(item as Workout).dur} min`
+      ? `${tData((item as Workout).name)} · ${t('{n} min', { n: (item as Workout).dur })}`
       : kind === 'sleep'
       ? `${hm((item as Night).hours)} · ${(item as Night).quality}/10`
       : kind === 'txn'
@@ -46,7 +47,7 @@ export function EditSheet() {
     mutateOpt(
       (s) => ({ ...s, workouts: s.workouts.map((x) => (x.id === w!.id ? { ...x, ...patch } : x)) }),
       () => api.editWorkout(w!.id, patch),
-      'Workout updated'
+      t('Workout updated')
     ).catch(() => {});
     closeSheet();
   };
@@ -61,14 +62,14 @@ export function EditSheet() {
   // Opened from a tap rather than a swipe, so confirm first — the swipe path
   // relies on the undo toast instead.
   const del = async () => {
-    const noun = kind === 'workout' ? 'workout' : kind === 'sleep' ? 'sleep entry' : 'transaction';
-    if (!(await confirm({ title: `Delete this ${noun}?`, message: 'You can undo this right after.' }))) return;
+    const title = kind === 'workout' ? t('Delete this workout?') : kind === 'sleep' ? t('Delete this sleep entry?') : t('Delete this transaction?');
+    if (!(await confirm({ title, message: t('You can undo this right after.') }))) return;
     remove(kind, item);
     closeSheet();
   };
 
-  const label = (t: string) => (
-    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t}</div>
+  const label = (text: string) => (
+    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{text}</div>
   );
   const fieldInput: React.CSSProperties = {
     width: '100%',
@@ -90,56 +91,56 @@ export function EditSheet() {
       {kind === 'workout' && (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>Category</span>
-            <span role="button" tabIndex={0} onClick={() => open('wcats')} style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>Manage</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{t('Category')}</span>
+            <span role="button" tabIndex={0} onClick={() => open('wcats')} style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>{t('Manage')}</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 22 }}>
             {state!.wCats.map((c) => (
               <div role="button" tabIndex={0} aria-pressed={catId === c.id} key={c.id} onClick={() => setCatId(c.id)} style={chip(catId === c.id, `var(--${c.color})`)}>
-                {c.name}
+                {tData(c.name)}
               </div>
             ))}
           </div>
 
-          {label('Duration')}
+          {label(t('Duration'))}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: 16, marginBottom: 22 }}>
-            <div role="button" tabIndex={0} aria-label="5 minutes less" onClick={() => setDur(Math.max(5, dur - 5))} className="press92" style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
+            <div role="button" tabIndex={0} aria-label={t('5 minutes less')} onClick={() => setDur(Math.max(5, dur - 5))} className="press92" style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
               <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M5 10h10" /></svg>
             </div>
             <div style={{ textAlign: 'center', minWidth: 96 }}>
               <span style={{ fontSize: 40, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{dur}</span>
-              <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text2)' }}> min</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text2)' }}>{' ' + t('min')}</span>
             </div>
-            <div role="button" tabIndex={0} aria-label="5 minutes more" onClick={() => setDur(dur + 5)} className="press92" style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
+            <div role="button" tabIndex={0} aria-label={t('5 minutes more')} onClick={() => setDur(dur + 5)} className="press92" style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
               <svg width="20" height="20" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M10 5v10M5 10h10" /></svg>
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: 12, marginBottom: 22 }}>
             <div style={{ flex: 1 }}>
-              {label('Distance')}
-              <input value={dist} onChange={(e) => setDist(e.target.value)} placeholder="e.g. 5.2 km" style={fieldInput} />
+              {label(t('Distance'))}
+              <input value={dist} onChange={(e) => setDist(e.target.value)} placeholder={t('e.g. 5.2 km')} style={fieldInput} />
             </div>
             <div style={{ flex: 1 }}>
-              {label('Calories')}
+              {label(t('Calories'))}
               <input value={kcal} onChange={(e) => setKcal(e.target.value.replace(/[^0-9]/g, ''))} inputMode="numeric" placeholder="e.g. 312" style={fieldInput} />
             </div>
           </div>
 
-          {label('Sets & reps')}
+          {label(t('Sets & reps'))}
           <div style={{ marginBottom: 22 }}>
             <SetsEditor sets={sets} onChange={setSets} />
           </div>
 
           <div role="button" tabIndex={0} onClick={saveWorkout} className="press" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', marginBottom: 10 }}>
-            Save changes
+            {t('Save changes')}
           </div>
         </>
       )}
 
       {kind === 'txn' && (
         <div style={{ marginBottom: 20 }}>
-          {label('Receipt')}
+          {label(t('Receipt'))}
           <ReceiptField txn={item as Txn} />
         </div>
       )}
@@ -149,12 +150,12 @@ export function EditSheet() {
           <rect x="6" y="6" width="10" height="10" rx="2" />
           <path d="M12 4H4v8" />
         </svg>
-        Duplicate to today
+        {t('Duplicate to today')}
       </div>
 
       <div role="button" tabIndex={0} onClick={del} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer' }}>
         <IconTrash />
-        Delete entry
+        {t('Delete entry')}
       </div>
     </div>
   );

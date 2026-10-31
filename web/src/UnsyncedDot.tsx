@@ -1,5 +1,6 @@
 import React from 'react';
 import { isUnsynced } from './lib/offline';
+import { t } from './i18n';
 
 /**
  * A small hollow ring on an entry that exists only on this device so far.
@@ -12,8 +13,8 @@ export function UnsyncedDot({ id }: { id: string }) {
   if (!isUnsynced(id)) return null;
   return (
     <span
-      title="Waiting to sync"
-      aria-label="Waiting to sync"
+      title={t('Waiting to sync')}
+      aria-label={t('Waiting to sync')}
       style={{
         width: 8,
         height: 8,

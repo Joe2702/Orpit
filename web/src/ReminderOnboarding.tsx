@@ -4,6 +4,7 @@ import { api } from './api';
 import { deviceTimezone } from './lib/push';
 import { enableReminders } from './lib/notify';
 import { Glyph } from './lib/appIcons';
+import { t } from './i18n';
 
 const DISMISS_KEY = 'orbit_reminder_dismissed';
 
@@ -26,11 +27,11 @@ export function ReminderOnboarding() {
     try {
       await mutate(() => api.updateMe({ reminderTime: time, reminderTz: deviceTimezone(), reminders: true }));
       const status = await enableReminders(time);
-      if (status === 'ok') showToast('Daily reminder is on');
-      else if (status === 'denied') showToast('Allow notifications to get reminders');
-      else showToast('Reminder time saved');
+      if (status === 'ok') showToast(t('Daily reminder is on'));
+      else if (status === 'denied') showToast(t('Allow notifications to get reminders'));
+      else showToast(t('Reminder time saved'));
     } catch {
-      showToast('Couldn’t save that. Try again.');
+      showToast(t('Couldn’t save that. Try again.'));
       setBusy(false);
       return;
     }
@@ -45,10 +46,10 @@ export function ReminderOnboarding() {
           <Glyph name="moon" size={32} color="var(--indigo)" sw={1.7} />
         </div>
         <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', textAlign: 'center', letterSpacing: '-.02em' }}>
-          When should we check in?
+          {t('When should we check in?')}
         </div>
         <div style={{ fontSize: 14, color: 'var(--text2)', textAlign: 'center', marginTop: 8, lineHeight: 1.55 }}>
-          Pick a time to log your day. Near the <b style={{ color: 'var(--text)' }}>end of the day</b> works best: it’s a natural moment to look back on everything that happened. It only takes about 2 minutes.
+          {t('Pick a time to log your day. Near the') + ' '}<b style={{ color: 'var(--text)' }}>{t('end of the day')}</b>{' ' + t('works best: it’s a natural moment to look back on everything that happened. It only takes about 2 minutes.')}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', margin: '22px 0' }}>
@@ -65,10 +66,10 @@ export function ReminderOnboarding() {
           className="press"
           style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 52, borderRadius: 'calc(15px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, boxShadow: 'var(--glow)' }}
         >
-          {busy ? 'Setting up…' : 'Turn on daily reminder'}
+          {busy ? t('Setting up…') : t('Turn on daily reminder')}
         </div>
         <div role="button" tabIndex={0} onClick={dismiss} style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: '14px 8px 4px', cursor: 'pointer', fontWeight: 500 }}>
-          Maybe later
+          {t('Maybe later')}
         </div>
       </div>
     </div>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nothing of Orbit's is copied by Android backup or phone-to-phone transfer.
+     The app keeps recent bank-message text and a sign-in token on the device;
+     the privacy policy promises the first never leaves the phone, and the
+     second shouldn't sign in whoever restores a backup. Everything else lives
+     on the server and comes back on sign-in. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

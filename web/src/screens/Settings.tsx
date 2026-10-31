@@ -22,15 +22,18 @@ import {
   type SmsDiag,
   type SmsDiagEntry,
 } from '../lib/smsSync';
+import { getDigits, getLang, langPref, setDigits, setLangPref, t, tk, tn } from '../i18n';
 
 export const MODULE_OPTS = [
-  { key: 'habits', label: 'Habits', icon: 'sprout' as const, color: 'teal' },
-  { key: 'workouts', label: 'Workouts', icon: 'dumbbell' as const, color: 'coral' },
-  { key: 'sleep', label: 'Sleep', icon: 'bed' as const, color: 'blue' },
-  { key: 'finances', label: 'Finances', icon: 'wallet' as const, color: 'emerald' },
-  { key: 'counters', label: 'Counters', icon: 'tally' as const, color: 'indigo' },
+  { key: 'habits', label: t('Habits'), icon: 'sprout' as const, color: 'teal' },
+  { key: 'workouts', label: t('Workouts'), icon: 'dumbbell' as const, color: 'coral' },
+  { key: 'sleep', label: t('Sleep'), icon: 'bed' as const, color: 'blue' },
+  { key: 'finances', label: t('Finances'), icon: 'wallet' as const, color: 'emerald' },
+  { key: 'counters', label: t('Counters'), icon: 'tally' as const, color: 'indigo' },
 ];
 
+
+const ACCENT_NAME: Record<string, string> = { indigo: tk('indigo'), text: tk('graphite'), blue: tk('blue'), teal: tk('teal'), emerald: tk('emerald'), rose: tk('rose') };
 export function Settings() {
   const { state, go, open, mutate, mutateOpt, signOut, showToast, haptic, confirm, askPassword, applyState, claimedBadges } = useStore();
   const badgeInfo = React.useMemo(() => {
@@ -68,14 +71,14 @@ export function Settings() {
   const ageDays = Math.max(0, Math.floor((Date.now() - profile.createdAt) / 86400000));
   const accountAge =
     ageDays < 1
-      ? 'Today'
+      ? t('Today')
       : ageDays < 7
-      ? `${ageDays}d`
+      ? t('{n}d', { n: ageDays })
       : ageDays < 30
-      ? `${Math.floor(ageDays / 7)}w`
+      ? t('{n}w', { n: Math.floor(ageDays / 7) })
       : ageDays < 365
-      ? `${Math.floor(ageDays / 30)}mo`
-      : `${(ageDays / 365).toFixed(1)}y`;
+      ? t('{n}mo', { n: Math.floor(ageDays / 30) })
+      : t('{n}y', { n: Number((ageDays / 365).toFixed(1)) });
 
   // Theme applies instantly (optimistic), then persists in the background.
   const setTheme = (val: 'light' | 'dark' | 'system') => {
@@ -106,17 +109,17 @@ export function Settings() {
   const shareFormat = async (r: SmsDiagEntry) => {
     if (!r.masked || sharedFormats.includes(r.masked)) return;
     const ok = await confirm({
-      title: 'Send this format?',
-      message: `This is exactly what will be sent, with numbers and names hidden, so Orbit can learn to read ${r.sender}:\n\n${r.masked}`,
-      confirmLabel: 'Send',
+      title: t('Send this format?'),
+      message: t('This is exactly what will be sent, with numbers and names hidden, so Orbit can learn to read {sender}:\n\n{masked}', { sender: r.sender, masked: r.masked }),
+      confirmLabel: t('Send'),
     });
     if (!ok) return;
     try {
       await api.shareSmsFormat({ sender: r.sender, text: r.masked, reason: r.reason || '' });
       setSharedFormats((x) => [...x, r.masked!]);
-      showToast('Sent, thank you');
+      showToast(t('Sent, thank you'));
     } catch {
-      showToast('Could not send it. Try again later.');
+      showToast(t('Could not send it. Try again later.'));
     }
   };
 
@@ -128,11 +131,11 @@ export function Settings() {
     setSmsInfo(smsDiag());
     if (r.state) applyState(r.state);
     if (r.added > 0) {
-      showToast(`${r.added} ${r.added === 1 ? 'payment' : 'payments'} added`);
+      showToast(tn(r.added, '{n} payment added', '{n} payments added'));
     } else if (announceNothing) {
       // "Nothing found" is a real answer and a useful one — silence after a
       // deliberate tap reads as a broken button.
-      showToast(r.read > 0 ? 'Already up to date' : 'No new bank messages found');
+      showToast(r.read > 0 ? t('Already up to date') : t('No new bank messages found'));
     }
   };
 
@@ -140,7 +143,7 @@ export function Settings() {
     if (smsOn) {
       disableSms();
       setSmsOn(false);
-      showToast('Bank messages off');
+      showToast(t('Bank messages off'));
       return;
     }
     // The same flow as onboarding and Finances: disclosure, permission, first
@@ -153,10 +156,10 @@ export function Settings() {
 
   const importOlder = async () => {
     const ok = await confirm({
-      title: 'Import older messages?',
+      title: t('Import older messages?'),
       message:
-        'Orbit will look back a year for bank messages it has not read yet. Payments already imported will not be added twice.',
-      confirmLabel: 'Import',
+        t('Orbit will look back a year for bank messages it has not read yet. Payments already imported will not be added twice.'),
+      confirmLabel: t('Import'),
     });
     if (!ok) return;
     rewindSms(365);
@@ -179,7 +182,7 @@ export function Settings() {
   // A one-line summary on the row. Fetched rather than derived: none of this is
   // part of the app state, because it is another person's information and must
   // never come out of the offline cache.
-  const [partnerHint, setPartnerHint] = React.useState('Someone to keep you honest');
+  const [partnerHint, setPartnerHint] = React.useState(t('Someone to keep you honest'));
   const [partnerUnread, setPartnerUnread] = React.useState(0);
   React.useEffect(() => {
     let alive = true;
@@ -190,12 +193,12 @@ export function Settings() {
         setPartnerUnread(r.partner?.unread || 0);
         setPartnerHint(
           r.partner
-            ? `Partnered with ${r.partner.name.split(' ')[0]}`
+            ? t('Partnered with {name}', { name: r.partner.name.split(' ')[0] })
             : r.queued
-              ? 'Looking for a match…'
+              ? t('Looking for a match…')
               : r.eligible
-                ? 'Not matched yet'
-                : 'For members aged 18 and over'
+                ? t('Not matched yet')
+                : t('For members aged 18 and over')
         );
       })
       .catch(() => {
@@ -217,13 +220,13 @@ export function Settings() {
     if (lockOn) {
       setLockEnabled(false);
       setLockOn(false);
-      showToast('App lock off');
+      showToast(t('App lock off'));
       return;
     }
-    if (!(await unlock('Turn on app lock'))) return;
+    if (!(await unlock(t('Turn on app lock')))) return;
     setLockEnabled(true);
     setLockOn(true);
-    showToast('Orbit will ask to unlock when it opens');
+    showToast(t('Orbit will ask to unlock when it opens'));
   };
 
   // Usage counts are on unless turned off; turning them off also tells the
@@ -248,9 +251,9 @@ export function Settings() {
       const time = profile.reminderTime || '21:00';
       await mutate(() => api.updateMe({ reminders: true, reminderTz: deviceTimezone(), reminderTime: time }));
       const st = await enableReminders(time);
-      if (st === 'denied') showToast('Allow notifications in your phone settings');
-      else if (st === 'ok') showToast('Daily reminder on');
-      else if (st === 'unsupported') showToast('Reminders not supported on this device');
+      if (st === 'denied') showToast(t('Allow notifications in your phone settings'));
+      else if (st === 'ok') showToast(t('Daily reminder on'));
+      else if (st === 'unsupported') showToast(t('Reminders not supported on this device'));
     } else {
       await disableReminders();
       mutate(() => api.updateMe({ reminders: false }));
@@ -305,60 +308,60 @@ export function Settings() {
 
   const sendTest = async () => {
     const r = await sendTestNotification();
-    if (r === 'sent') showToast('Test sent. Check your notifications.');
-    else if (r === 'denied') showToast('Allow notifications in your phone settings');
-    else if (r === 'none') showToast('Turn on reminders first');
-    else showToast('Could not send test');
+    if (r === 'sent') showToast(t('Test sent. Check your notifications.'));
+    else if (r === 'denied') showToast(t('Allow notifications in your phone settings'));
+    else if (r === 'none') showToast(t('Turn on reminders first'));
+    else showToast(t('Could not send test'));
   };
 
   // Wipe every entry (habits/workouts/sleep/finances/counters) after a
   // deliberate double confirmation — this can't be undone.
   const resetData = async () => {
     const ok = await confirm({
-      title: 'Erase all your data?',
-      message: 'Every workout, night, transaction, habit check-in and counter log will be deleted. This cannot be undone.',
-      confirmLabel: 'Erase everything',
+      title: t('Erase all your data?'),
+      message: t('Every workout, night, transaction, habit check-in and counter log will be deleted. This cannot be undone.'),
+      confirmLabel: t('Erase everything'),
     });
     if (!ok) return;
     const sure = await confirm({
-      title: 'Really sure?',
-      message: 'Consider exporting your data first. There is no way back.',
-      confirmLabel: 'Yes, erase it',
+      title: t('Really sure?'),
+      message: t('Consider exporting your data first. There is no way back.'),
+      confirmLabel: t('Yes, erase it'),
     });
     if (!sure) return;
     haptic();
-    mutate(() => api.reset(), 'All data erased').catch(() => {});
+    mutate(() => api.reset(), t('All data erased')).catch(() => {});
   };
 
   // Permanently delete the account (app-store requirement, and the honest
   // counterpart to "your data is yours"). Two confirmations, then sign out.
   const deleteAccount = async () => {
     const ok = await confirm({
-      title: 'Delete your account?',
-      message: 'Your account and everything in it will be permanently removed. This cannot be undone.',
-      confirmLabel: 'Delete account',
+      title: t('Delete your account?'),
+      message: t('Your account and everything in it will be permanently removed. This cannot be undone.'),
+      confirmLabel: t('Delete account'),
     });
     if (!ok) return;
     const sure = await confirm({
-      title: 'This is permanent',
-      message: 'Export your data first if you want to keep a copy. Continue?',
-      confirmLabel: 'Delete forever',
+      title: t('This is permanent'),
+      message: t('Export your data first if you want to keep a copy. Continue?'),
+      confirmLabel: t('Delete forever'),
     });
     if (!sure) return;
     // Final gate: prove it's really you. A phone left unlocked on a table
     // shouldn't be two taps away from erasing the account.
     const password = await askPassword({
-      title: 'Enter your password',
-      message: 'Confirm your password to permanently delete this account.',
-      confirmLabel: 'Delete account',
+      title: t('Enter your password'),
+      message: t('Confirm your password to permanently delete this account.'),
+      confirmLabel: t('Delete account'),
     });
     if (!password) return;
     try {
       await api.deleteMyAccount(password);
-      showToast('Account deleted');
+      showToast(t('Account deleted'));
       signOut();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Could not delete the account');
+      showToast(e instanceof Error ? e.message : t('Could not delete the account'));
     }
   };
 
@@ -374,40 +377,40 @@ export function Settings() {
         const parsed = JSON.parse(await file.text());
         const r = await api.importData(parsed);
         applyState(r.state);
-        showToast(r.added ? `Imported ${r.added} items` : 'Nothing new to import');
+        showToast(r.added ? t('Imported {added} items', { added: r.added }) : t('Nothing new to import'));
       } catch (e) {
-        showToast(e instanceof Error ? e.message : "That file couldn't be read");
+        showToast(e instanceof Error ? e.message : t('That file couldn\'t be read'));
       }
     };
     input.click();
   };
 
   const changePassword = async () => {
-    const current = window.prompt('Current password (leave blank if you signed up with Google)') ?? null;
+    const current = window.prompt(t('Current password (leave blank if you signed up with Google)')) ?? null;
     if (current === null) return;
-    const next = window.prompt('New password (at least 8 characters)') ?? null;
+    const next = window.prompt(t('New password (at least 8 characters)')) ?? null;
     if (next === null) return;
     try {
       await api.changePassword(current, next);
-      showToast('Password changed');
+      showToast(t('Password changed'));
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Could not change password');
+      showToast(e instanceof Error ? e.message : t('Could not change password'));
     }
   };
 
   const signOutOthers = async () => {
     if (!(await confirm({
-      title: 'Sign out other devices?',
-      message: 'Every other phone or browser signed into this account will be logged out. This device stays signed in.',
-      confirmLabel: 'Sign them out',
+      title: t('Sign out other devices?'),
+      message: t('Every other phone or browser signed into this account will be logged out. This device stays signed in.'),
+      confirmLabel: t('Sign them out'),
       danger: false,
     }))) return;
     try {
       const r = await api.signOutOthers();
       setToken(r.token);
-      showToast('Other devices signed out');
+      showToast(t('Other devices signed out'));
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'That didn’t go through. Try again.');
+      showToast(e instanceof Error ? e.message : t('That didn’t go through. Try again.'));
     }
   };
 
@@ -426,16 +429,45 @@ export function Settings() {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      showToast('Data exported');
+      showToast(t('Data exported'));
     } catch {
-      showToast('Export unavailable here');
+      showToast(t('Export unavailable here'));
     }
   };
 
-  const themeSeg: ['Light' | 'Dark' | 'System', 'light' | 'dark' | 'system'][] = [
-    ['Light', 'light'],
-    ['Dark', 'dark'],
-    ['System', 'system'],
+  // A row of choices with the chosen one raised. Changing the language or the
+  // digits reloads Orbit once, so every date and label comes back in it.
+  const segmented = (items: [string, boolean, () => void][], marginBottom = 24, keepDigits = false) => (
+    <div data-digits={keepDigits ? 'keep' : undefined} style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom }}>
+      {items.map(([label, active, onClick]) => (
+        <div
+          role="button"
+          tabIndex={0}
+          aria-pressed={active}
+          key={label}
+          onClick={active ? undefined : onClick}
+          style={{
+            flex: 1,
+            textAlign: 'center',
+            padding: '9px 0',
+            borderRadius: 'calc(11px * var(--sq))',
+            fontSize: 13.5,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all .2s',
+            ...(active ? { background: 'var(--surface)', color: 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }),
+          }}
+        >
+          {label}
+        </div>
+      ))}
+    </div>
+  );
+
+  const themeSeg: [string, 'light' | 'dark' | 'system'][] = [
+    [tk('Light'), 'light'],
+    [tk('Dark'), 'dark'],
+    [tk('System'), 'system'],
   ];
 
   const manageRow = (
@@ -460,7 +492,7 @@ export function Settings() {
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--text)', marginBottom: 18 }}>Profile</div>
+      <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--text)', marginBottom: 18 }}>{t('Profile')}</div>
 
       <div role="button" tabIndex={0}
         onClick={() => open('profile')}
@@ -473,15 +505,15 @@ export function Settings() {
           <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{profile.email}</div>
         </div>
         <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-          <path d="M8 4l5 6-5 6" />
+          <path className="flip-rtl" d="M8 4l5 6-5 6" />
         </svg>
       </div>
 
       <div style={{ display: 'flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '16px 8px', marginBottom: 24 }}>
         {[
-          [String(daysTracked), 'Days tracked'],
-          [String(entries), 'Entries'],
-          [accountAge, 'Account age'],
+          [String(daysTracked), t('Days tracked')],
+          [String(entries), t('Entries')],
+          [accountAge, t('Account age')],
         ].map(([v, l], i) => (
           <React.Fragment key={l}>
             {i > 0 && <div style={{ width: 1, background: 'var(--border)' }} />}
@@ -504,9 +536,9 @@ export function Settings() {
             </svg>
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>Confirm your email</div>
+            <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>{t('Confirm your email')}</div>
             <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>
-              So you can reset your password if you ever lose it.
+              {t('So you can reset your password if you ever lose it.')}
             </div>
           </div>
           <div tabIndex={0}
@@ -514,21 +546,21 @@ export function Settings() {
               haptic();
               try {
                 const r = await api.sendVerifyEmail();
-                showToast(r.already ? 'Already confirmed' : 'Link sent. Check your inbox.');
+                showToast(r.already ? t('Already confirmed') : t('Link sent. Check your inbox.'));
               } catch (e) {
-                showToast(e instanceof Error ? e.message : 'Could not send the link');
+                showToast(e instanceof Error ? e.message : t('Could not send the link'));
               }
             }}
             className="press92"
             role="button"
             style={{ flex: 'none', height: 38, padding: '0 15px', borderRadius: 999, background: 'var(--warning)', color: '#fff', display: 'flex', alignItems: 'center', fontSize: 13.5, fontWeight: 700, cursor: 'pointer' }}
           >
-            Send link
+            {t('Send link')}
           </div>
         </div>
       )}
 
-      <SectionLabel>Appearance</SectionLabel>
+      <SectionLabel>{t('Appearance')}</SectionLabel>
       <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 24 }}>
         {themeSeg.map(([label, val]) => {
           const active = (profile.theme || 'light') === val;
@@ -550,13 +582,36 @@ export function Settings() {
                   : { color: 'var(--text2)' }),
               }}
             >
-              {label}
+              {t(label)}
             </div>
           );
         })}
       </div>
 
-      <SectionLabel>What you track</SectionLabel>
+      <SectionLabel>{t('Language')}</SectionLabel>
+      {segmented(
+        [
+          [t('Phone setting'), langPref() === 'auto', () => setLangPref('auto')],
+          ['English', langPref() === 'en', () => setLangPref('en')],
+          ['العربية', langPref() === 'ar', () => setLangPref('ar')],
+        ],
+        getLang() === 'ar' ? 14 : 24
+      )}
+      {getLang() === 'ar' && (
+        <>
+          <SectionLabel>{t('Numbers')}</SectionLabel>
+          {segmented(
+            [
+              ['123', getDigits() === 'latn', () => setDigits('latn')],
+              ['١٢٣', getDigits() === 'arab', () => setDigits('arab')],
+            ],
+            24,
+            true
+          )}
+        </>
+      )}
+
+      <SectionLabel>{t('What you track')}</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 8 }}>
         {MODULE_OPTS.map((m, i) => {
           const on = !profile.modules || profile.modules.includes(m.key);
@@ -571,7 +626,7 @@ export function Settings() {
                   const cur = profile.modules || MODULE_OPTS.map((x) => x.key);
                   const next = on ? cur.filter((k) => k !== m.key) : [...cur, m.key];
                   if (!next.length) {
-                    showToast('You need at least one');
+                    showToast(t('You need at least one'));
                     return;
                   }
                   mutateOpt((st) => ({ ...st, profile: { ...st.profile, modules: next } }), () => api.updateMe({ modules: next }));
@@ -587,12 +642,12 @@ export function Settings() {
           );
         })}
       </div>
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24, paddingLeft: 4, lineHeight: 1.5 }}>
-        Hides what you don't use. Nothing is deleted.
+      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24, paddingInlineStart: 4, lineHeight: 1.5 }}>
+        {t('Hides what you don\'t use. Nothing is deleted.')}
       </div>
 
-      <SectionLabel>Accent colour</SectionLabel>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, paddingLeft: 2 }}>
+      <SectionLabel>{t('Accent colour')}</SectionLabel>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, paddingInlineStart: 2 }}>
         {['indigo', 'text', 'blue', 'teal', 'emerald', 'rose'].map((c) => {
           const active = (profile.accent || 'indigo') === c;
           return (
@@ -600,16 +655,16 @@ export function Settings() {
               key={c}
               onClick={() => mutateOpt((s) => ({ ...s, profile: { ...s.profile, accent: c } }), () => api.updateMe({ accent: c }))}
               role="button"
-              aria-label={`Accent ${c === 'text' ? 'graphite' : c}`}
+              aria-label={t('Accent colour: {name}', { name: t(ACCENT_NAME[c] ?? c) })}
               style={{ width: 38, height: 38, borderRadius: '50%', cursor: 'pointer', flex: 'none', background: `var(--${c})`, transition: 'all .15s', boxShadow: active ? `0 0 0 3px var(--surface),0 0 0 5px var(--${c})` : '0 0 0 0 transparent' }}
             />
           );
         })}
       </div>
 
-      <SectionLabel>Text size</SectionLabel>
+      <SectionLabel>{t('Text size')}</SectionLabel>
       <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 24 }}>
-        {([['Small', 0.9], ['Default', 1], ['Large', 1.1], ['Largest', 1.2]] as const).map(([lbl, v]) => {
+        {([[tk('Small'), 0.9], [tk('Default'), 1], [tk('Large'), 1.1], [tk('Largest'), 1.2]] as const).map(([lbl, v]) => {
           const active = Math.abs((profile.textScale || 1) - v) < 0.01;
           return (
             <div tabIndex={0}
@@ -618,7 +673,7 @@ export function Settings() {
               role="button"
               style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 'calc(11px * var(--sq))', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(active ? { background: 'var(--surface)', color: 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
             >
-              {lbl}
+              {t(lbl)}
             </div>
           );
         })}
@@ -626,7 +681,7 @@ export function Settings() {
 
       {/* Currency is a setting, so it lives with the settings; it used to sit
           at the bottom of the Finances screen, under the transactions. */}
-      <SectionLabel>Currency</SectionLabel>
+      <SectionLabel>{t('Currency')}</SectionLabel>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
         {CURRENCIES.map((c) => {
           const active = (profile.currency || 'EGP') === c.code;
@@ -644,12 +699,12 @@ export function Settings() {
         })}
       </div>
 
-      <SectionLabel>Preferences</SectionLabel>
+      <SectionLabel>{t('Preferences')}</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         <PrefRow
           iconKey="indigo"
-          title="Daily reminders"
-          sub="One reminder a day to log"
+          title={t('Daily reminders')}
+          sub={t('One reminder a day to log')}
           on={profile.reminders}
           onToggle={toggleReminders}
           icon={
@@ -668,8 +723,8 @@ export function Settings() {
               </svg>
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Reminder time</div>
-              <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>End of day works best</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Reminder time')}</div>
+              <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('End of day works best')}</div>
             </div>
             <input
               type="time"
@@ -682,7 +737,7 @@ export function Settings() {
         {profile.reminders && (
           <div role="button" tabIndex={0} onClick={sendTest} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
             <span style={{ width: 36, flex: 'none' }} />
-            <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--indigo)' }}>Send a test notification</div>
+            <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--indigo)' }}>{t('Send a test notification')}</div>
           </div>
         )}
         {isNative() && (
@@ -699,21 +754,21 @@ export function Settings() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: diag && !diagHealthy ? 'var(--danger)' : 'var(--text2)' }}>
                 {diagBusy
-                  ? 'Checking…'
+                  ? t('Checking…')
                   : !diag
-                    ? 'Check reminder setup'
+                    ? t('Check reminder setup')
                     : diagHealthy
-                      ? 'Reminders are set up correctly'
-                      : 'Reminders may not arrive'}
+                      ? t('Reminders are set up correctly')
+                      : t('Reminders may not arrive')}
               </div>
               {/* When everything is fine, the next scheduled time is the one
                   piece of proof worth showing — it answers the question the
                   panel used to exist for, in one line. */}
               {diag && diagHealthy && diag.nextAt && !diagOpen && (
-                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Next: {diag.nextAt}</div>
+                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Next: {nextAt}', { nextAt: diag.nextAt })}</div>
               )}
               {diag && !diagHealthy && !diagOpen && (
-                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Tap to see what needs fixing</div>
+                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Tap to see what needs fixing')}</div>
               )}
             </div>
           </div>
@@ -721,10 +776,10 @@ export function Settings() {
         {diag && (diagOpen || !diagHealthy) && (
           <div style={{ padding: '14px 16px', background: 'var(--bg)' }}>
             {[
-              ['Permission to notify', diag.permission === 'granted', diag.permission],
-              ['Enabled in system settings', diag.enabled !== false, diag.enabled === null ? 'unknown' : diag.enabled ? 'yes' : 'no'],
-              ['Exact alarms allowed', diag.exact !== false, diag.exact === null ? 'unknown' : diag.exact ? 'yes' : 'no'],
-              ['Reminders scheduled', diag.scheduled > 0, String(diag.scheduled)],
+              [t('Permission to notify'), diag.permission === 'granted', diag.permission],
+              [t('Enabled in system settings'), diag.enabled !== false, diag.enabled === null ? t('unknown') : diag.enabled ? t('yes') : t('no')],
+              [t('Exact alarms allowed'), diag.exact !== false, diag.exact === null ? t('unknown') : diag.exact ? t('yes') : t('no')],
+              [t('Reminders scheduled'), diag.scheduled > 0, String(diag.scheduled)],
             ].map(([label, ok, value]) => (
               <div key={label as string} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', flex: 'none', background: ok ? 'var(--success)' : 'var(--danger)' }} />
@@ -733,12 +788,11 @@ export function Settings() {
               </div>
             ))}
             {diag.nextAt && (
-              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 6 }}>Next reminder: {diag.nextAt}</div>
+              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 6 }}>{t('Next reminder: {nextAt}', { nextAt: diag.nextAt })}</div>
             )}
             {diag.permission !== 'granted' && (
               <div style={{ fontSize: 12.5, color: 'var(--danger)', marginTop: 10, lineHeight: 1.5 }}>
-                Android is blocking notifications for Orbit. Open your phone's Settings → Apps → Orbit →
-                Notifications and allow them, then check again.
+                {t('Android is blocking notifications for Orbit. Open your phone\'s Settings → Apps → Orbit → Notifications and allow them, then check again.')}
               </div>
             )}
             {diag.permission === 'granted' && diag.exact === false && (
@@ -751,12 +805,12 @@ export function Settings() {
                 role="button"
                 style={{ marginTop: 10, height: 44, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}
               >
-                Allow exact alarms so reminders arrive on time
+                {t('Allow exact alarms so reminders arrive on time')}
               </div>
             )}
             {diag.permission === 'granted' && diag.enabled !== false && diag.scheduled === 0 && (
               <div style={{ fontSize: 12.5, color: 'var(--warning)', marginTop: 10, lineHeight: 1.5 }}>
-                Nothing is scheduled. Turn the daily reminder off and on again to re-schedule it.
+                {t('Nothing is scheduled. Turn the daily reminder off and on again to re-schedule it.')}
               </div>
             )}
             <div tabIndex={0}
@@ -765,14 +819,14 @@ export function Settings() {
               role="button"
               style={{ marginTop: 10, fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}
             >
-              {diagBusy ? 'Checking…' : 'Check again'}
+              {diagBusy ? t('Checking…') : t('Check again')}
             </div>
           </div>
         )}
         <PrefRow
           iconKey="indigo"
-          title="Wind-down nudge"
-          sub="30 min before your usual bedtime"
+          title={t('Wind-down nudge')}
+          sub={t('30 min before your usual bedtime')}
           on={profile.windDown}
           onToggle={() =>
             mutateOpt(
@@ -789,8 +843,8 @@ export function Settings() {
         />
         <PrefRow
           iconKey="indigo"
-          title="Haptic feedback"
-          sub="Vibrate on actions"
+          title={t('Haptic feedback')}
+          sub={t('Vibrate on actions')}
           on={profile.haptics}
           onToggle={() => toggle('haptics')}
           icon={
@@ -803,12 +857,12 @@ export function Settings() {
 
       {smsSupported() && (
         <>
-          <SectionLabel>Bank messages</SectionLabel>
+          <SectionLabel>{t('Bank messages')}</SectionLabel>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
             <PrefRow
               iconKey="indigo"
-              title="Import from SMS"
-              sub="Bank alerts become transactions as they arrive"
+              title={t('Import from SMS')}
+              sub={t('Bank alerts become transactions as they arrive')}
               on={smsOn}
               onToggle={toggleSms}
               icon={
@@ -829,9 +883,9 @@ export function Settings() {
                     role="button"
                     style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                   >
-                    <div style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--indigo)' }}>Allow payment alerts</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--indigo)' }}>{t('Allow payment alerts')}</div>
                     <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2, lineHeight: 1.5 }}>
-                      Notifications are off, so a payment your bank tells you about while Orbit is closed won&rsquo;t show up until you open it.
+                      {t('Notifications are off, so a payment your bank tells you about while Orbit is closed won’t show up until you open it.')}
                     </div>
                   </div>
                 )}
@@ -841,10 +895,10 @@ export function Settings() {
                     accounts in Finances are the user's real ones. */}
                 <div style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
                   <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>
-                    {linkedCount ? `Tracking ${linkedCount} account${linkedCount === 1 ? '' : 's'}` : 'Accounts are set up for you'}
+                    {linkedCount ? tn(linkedCount, 'Tracking {n} account', 'Tracking {n} accounts') : t('Accounts are set up for you')}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.5 }}>
-                    Each bank, card and wallet gets its own account, with the balance your bank last reported. Transfers between them are counted once, not as spending.
+                    {t('Each bank, card and wallet gets its own account, with the balance your bank last reported. Transfers between them are counted once, not as spending.')}
                   </div>
                 </div>
 
@@ -855,7 +909,7 @@ export function Settings() {
                 >
                   <span style={{ width: 36, flex: 'none' }} />
                   <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--indigo)' }}>
-                    {scanning ? 'Checking…' : 'Check for new messages now'}
+                    {scanning ? t('Checking…') : t('Check for new messages now')}
                   </div>
                 </div>
 
@@ -865,7 +919,7 @@ export function Settings() {
                   style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                 >
                   <span style={{ width: 36, flex: 'none' }} />
-                  <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--indigo)' }}>Import the past year</div>
+                  <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--indigo)' }}>{t('Import the past year')}</div>
                 </div>
 
                 {/* What the last scan actually saw. This is the difference between
@@ -878,21 +932,26 @@ export function Settings() {
                   style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: smsInfo ? 'pointer' : 'default' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Last check</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{t('Last check')}</div>
                     <div style={{ fontSize: 12, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
-                      {smsInfo ? ago(smsInfo.at) : 'Not yet'}
+                      {smsInfo ? ago(smsInfo.at) : t('Not yet')}
                     </div>
                   </div>
                   {smsInfo && (
                     <div style={{ fontSize: 12, color: smsInfo.error ? 'var(--danger)' : 'var(--text2)', marginTop: 4, lineHeight: 1.5 }}>
                       {smsInfo.error
                         ? smsInfo.error
-                        : `${smsInfo.scanned} message${smsInfo.scanned === 1 ? '' : 's'} checked · ${smsInfo.fromBanks} from banks · ${smsInfo.parsed} read as payments · ${smsInfo.added} added`}
+                        : [
+                            tn(smsInfo.scanned, '{n} message checked', '{n} messages checked'),
+                            t('{n} from banks', { n: smsInfo.fromBanks }),
+                            t('{n} read as payments', { n: smsInfo.parsed }),
+                            t('{n} added', { n: smsInfo.added }),
+                          ].join(' · ')}
                     </div>
                   )}
                   {smsInfo && !smsInfo.error && smsInfo.recent.length > 0 && (
                     <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--indigo)', marginTop: 6 }}>
-                      {diagOpenSms ? 'Hide' : 'Show'} recent bank messages
+                      {diagOpenSms ? t('Hide recent bank messages') : t('Show recent bank messages')}
                     </div>
                   )}
                 </div>
@@ -902,7 +961,7 @@ export function Settings() {
                       <div key={i} style={{ padding: '9px 0', borderTop: i ? '1px solid var(--border)' : 'none' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
                           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.sender}</span>
-                          <span style={{ fontSize: 11.5, fontWeight: 600, color: r.ok ? 'var(--indigo)' : 'var(--text2)', flex: 'none' }}>{r.outcome}</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 600, color: r.ok ? 'var(--indigo)' : 'var(--text2)', flex: 'none' }}>{t(r.outcome)}</span>
                         </div>
                         <div dir="auto" style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3, lineHeight: 1.45, overflowWrap: 'anywhere' }}>
                           {r.snippet}
@@ -913,7 +972,7 @@ export function Settings() {
                             role="button"
                             style={{ fontSize: 12, fontWeight: 650, color: sharedFormats.includes(r.masked) ? 'var(--text3)' : 'var(--indigo)', marginTop: 5, cursor: 'pointer' }}
                           >
-                            {sharedFormats.includes(r.masked) ? 'Sent, thank you' : 'Help Orbit read this bank'}
+                            {sharedFormats.includes(r.masked) ? t('Sent, thank you') : t('Help Orbit read this bank')}
                           </div>
                         )}
                       </div>
@@ -926,19 +985,16 @@ export function Settings() {
             {/* Said plainly, and said here rather than buried in a policy page:
                 this is the permission people are most right to be wary of. */}
             <div style={{ padding: '13px 16px', fontSize: 12, lineHeight: 1.55, color: 'var(--text2)' }}>
-              Orbit reads only messages from banks and wallets, and only on this phone. The text of your
-              messages is never sent anywhere: it stays on this phone so you can see what each entry was
-              read from. Orbit works out the amount, the shop, the date and which bank on the device, and
-              stores just those. Imported payments are marked{' '}
-              <span style={{ fontWeight: 700, color: 'var(--indigo)' }}>SMS</span> so you can check them,
-              and you can edit or delete any of them like anything else.
+              {t(
+                'Orbit reads only messages from banks and wallets, and only on this phone. The text of your messages is never sent anywhere: it stays on this phone so you can see what each entry was read from. Orbit works out the amount, the shop, the date and which bank on the device, and stores just those. Imported payments are marked SMS so you can check them, and you can edit or delete any of them like anything else.'
+              )}
               {/* The keyless rate feeds ask for credit where their rates are used. */}
               <div style={{ marginTop: 8, color: 'var(--text3)' }}>
-                Foreign payments are converted with daily rates from{' '}
+                {t('Foreign payments are converted with daily rates from')}{' '}
                 <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
                   currency-api
                 </a>{' '}
-                and{' '}
+                {t('and')}{' '}
                 <a href="https://www.exchangerate-api.com" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
                   Rates By Exchange Rate API
                 </a>
@@ -954,7 +1010,7 @@ export function Settings() {
           tracker settings would understate what turning it on does. */}
       {/* Achievements live here now rather than as a trophy with a red dot in
           the Home header, where it asked for attention on every launch. */}
-      <SectionLabel>Progress</SectionLabel>
+      <SectionLabel>{t('Progress')}</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         <div tabIndex={0}
           onClick={() => go('achievements')}
@@ -966,9 +1022,10 @@ export function Settings() {
             <Glyph name="trophy" size={19} color="var(--text2)" />
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Achievements</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Achievements')}</div>
             <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
-              {badgeInfo.earned} of {badgeInfo.total} earned{badgeInfo.toReveal ? ` · ${badgeInfo.toReveal} to reveal` : ''}
+              {t('{earned} of {total} earned', { earned: badgeInfo.earned, total: badgeInfo.total })}
+              {badgeInfo.toReveal ? ' · ' + t('{n} to reveal', { n: badgeInfo.toReveal }) : ''}
             </div>
           </div>
           <IconChevron />
@@ -987,13 +1044,13 @@ export function Settings() {
             </svg>
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Accountability partner</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Accountability partner')}</div>
             <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
               {partnerHint}
             </div>
           </div>
           {partnerUnread > 0 && (
-            <span style={{ minWidth: 22, height: 22, padding: '0 6px', borderRadius: 'calc(11px * var(--sq))', background: 'var(--danger)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', marginRight: 4 }}>
+            <span style={{ minWidth: 22, height: 22, padding: '0 6px', borderRadius: 'calc(11px * var(--sq))', background: 'var(--danger)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', marginInlineEnd: 4 }}>
               {partnerUnread}
             </span>
           )}
@@ -1001,10 +1058,10 @@ export function Settings() {
         </div>
       </div>
 
-      <SectionLabel>Manage</SectionLabel>
+      <SectionLabel>{t('Manage')}</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         {manageRow(
-          'Counters',
+          t('Counters'),
           'indigo',
           <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path d="M6 3l-.8 13M11 3l-.8 13M3 7h10M2.5 11h10" />
@@ -1012,7 +1069,7 @@ export function Settings() {
           () => go('counters')
         )}
         {manageRow(
-          'Habits',
+          t('Habits'),
           'teal',
           <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <circle cx="9.5" cy="9.5" r="7.5" />
@@ -1021,7 +1078,7 @@ export function Settings() {
           () => go('habits')
         )}
         {manageRow(
-          'Workout categories',
+          t('Workout categories'),
           'coral',
           <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path d="M5 8v6M8 6v10M14 6v10M17 8v6M8 11h6" />
@@ -1029,7 +1086,7 @@ export function Settings() {
           () => open('wcats')
         )}
         {manageRow(
-          'Finances',
+          t('Finances'),
           'emerald',
           <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path d="M3 6.5h13M3 10h13M6 14h7" />
@@ -1039,12 +1096,12 @@ export function Settings() {
         )}
       </div>
 
-      <SectionLabel>Data</SectionLabel>
+      <SectionLabel>{t('Data')}</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 14 }}>
         <PrefRow
           iconKey="indigo"
-          title="Share usage counts"
-          sub="How often features are used, never what you enter"
+          title={t('Share usage counts')}
+          sub={t('How often features are used, never what you enter')}
           on={profile.shareUsage !== false}
           onToggle={toggleUsage}
           icon={
@@ -1061,8 +1118,8 @@ export function Settings() {
             </svg>
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Export data</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Download everything as JSON</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Export data')}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Download everything as JSON')}</div>
           </div>
           <IconChevron />
         </div>
@@ -1073,8 +1130,8 @@ export function Settings() {
             </svg>
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Import data</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Restore from an exported file</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Import data')}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Restore from an exported file')}</div>
           </div>
           <IconChevron />
         </div>
@@ -1085,19 +1142,19 @@ export function Settings() {
             </svg>
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--danger)' }}>Reset all data</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Erase every entry and start fresh</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--danger)' }}>{t('Reset all data')}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Erase every entry and start fresh')}</div>
           </div>
         </div>
       </div>
 
-      <SectionLabel>Security</SectionLabel>
+      <SectionLabel>{t('Security')}</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         {lockOffer && (
           <PrefRow
             iconKey="indigo"
-            title="App lock"
-            sub="Fingerprint, face or your phone's PIN to open Orbit"
+            title={t('App lock')}
+            sub={t('Fingerprint, face or your phone\'s PIN to open Orbit')}
             on={lockOn}
             onToggle={toggleLock}
             icon={
@@ -1116,8 +1173,8 @@ export function Settings() {
             </svg>
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Change password</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Without the email round-trip</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Change password')}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Without the email round-trip')}</div>
           </div>
           <IconChevron />
         </div>
@@ -1129,14 +1186,14 @@ export function Settings() {
             </svg>
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Sign out other devices</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Keeps you signed in here</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Sign out other devices')}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Keeps you signed in here')}</div>
           </div>
           <IconChevron />
         </div>
       </div>
 
-      <SectionLabel>Support</SectionLabel>
+      <SectionLabel>{t('Support')}</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
         <div role="button" tabIndex={0} onClick={() => go('privacy')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
@@ -1145,8 +1202,8 @@ export function Settings() {
             </svg>
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Privacy</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>What Orbit stores, and what it doesn't</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Privacy')}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('What Orbit stores, and what it doesn\'t')}</div>
           </div>
           <IconChevron />
         </div>
@@ -1157,8 +1214,8 @@ export function Settings() {
             </svg>
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Send feedback</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>Ideas, bugs, or suggestions</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Send feedback')}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Ideas, bugs, or suggestions')}</div>
           </div>
           <IconChevron />
         </div>
@@ -1170,7 +1227,7 @@ export function Settings() {
         role="button"
         style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginBottom: 10 }}
       >
-        Delete my account
+        {t('Delete my account')}
       </div>
 
       <div role="button" tabIndex={0}
@@ -1181,7 +1238,7 @@ export function Settings() {
         <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
           <path d="M8 4H4v11h4M12 13l3-3.5L12 6M15 9.5H7" />
         </svg>
-        Sign out
+        {t('Sign out')}
       </div>
       {/* Long-press the version to reach the (password-protected) feedback inbox. */}
       <div
@@ -1190,7 +1247,7 @@ export function Settings() {
         onPointerLeave={cancelHold}
         style={{ textAlign: 'center', fontSize: 12, color: 'var(--text2)', marginTop: 18, fontFamily: 'var(--font-mono)', userSelect: 'none', cursor: 'default' }}
       >
-        Orbit · build {__BUILD_ID__} · {__BUILT_AT__}
+        {t('Orbit · build {v} · {v2}', { v: __BUILD_ID__, v2: __BUILT_AT__ })}
       </div>
     </div>
   );

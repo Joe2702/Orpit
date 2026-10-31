@@ -43,7 +43,7 @@ export const IconPlus = ({ c = '#fff', size = 19, sw = 2.4 }: IP) => (
 
 export const IconChevron = ({ c = 'var(--text2)', size = 18, sw = 2 }: IP) => (
   <svg width={size} height={size} style={stroke(c, sw)}>
-    <path d="M7 4l5 5-5 5" />
+    <path className="flip-rtl" d="M7 4l5 5-5 5" />
   </svg>
 );
 

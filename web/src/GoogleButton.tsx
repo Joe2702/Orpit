@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from './store';
 import { nativeGoogleAvailable, nativeGoogleSignIn } from './lib/googleAuth';
+import { t } from './i18n';
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -28,7 +29,7 @@ export function GoogleButton() {
           try {
             await googleAuth(resp.credential);
           } catch (e) {
-            showToast(e instanceof Error ? e.message : 'Google sign-in failed');
+            showToast(e instanceof Error ? e.message : t(t('Google sign-in failed')));
           }
         },
       });
@@ -56,7 +57,7 @@ export function GoogleButton() {
       await googleAuth(idToken);
     } catch (e) {
       // A user closing the sheet throws too — keep quiet on cancels.
-      const msg = e instanceof Error ? e.message : 'Google sign-in failed';
+      const msg = e instanceof Error ? e.message : t('Google sign-in failed');
       if (!/cancel|closed|dismiss/i.test(msg)) showToast(msg);
     } finally {
       setBusy(false);
@@ -67,7 +68,7 @@ export function GoogleButton() {
     <div style={{ marginTop: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '0 0 14px', color: 'var(--text2)', fontSize: 12.5 }}>
         <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-        or
+        {t('or')}
         <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
       </div>
       {native ? (
@@ -98,7 +99,7 @@ export function GoogleButton() {
               <path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33Z" />
               <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.47.9 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58Z" />
             </svg>
-            {busy ? 'Signing in…' : 'Continue with Google'}
+            {busy ? t('Signing in…') : t('Continue with Google')}
           </div>
         </div>
       ) : (

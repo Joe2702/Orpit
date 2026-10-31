@@ -51,6 +51,8 @@ public class SmsReceiver extends BroadcastReceiver {
     static final String KEY_SYMBOL = "sum_symbol";
     static final String KEY_SPENT = "sum_spent";
     static final String KEY_BUDGET = "sum_budget";
+    /** The app's language, "en" or "ar", so notifications speak it too. */
+    static final String KEY_LANG = "lang";
     private static final String CHANNEL = "bank_messages";
 
     /** The running plugin, while the app's process is alive. */
@@ -124,11 +126,12 @@ public class SmsReceiver extends BroadcastReceiver {
         try {
             NotificationManagerCompat nm = NotificationManagerCompat.from(ctx);
             if (!nm.areNotificationsEnabled()) return;
+            boolean ar = "ar".equals(ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_LANG, "en"));
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 NotificationManager sys = ctx.getSystemService(NotificationManager.class);
                 if (sys != null && sys.getNotificationChannel(CHANNEL) == null) {
-                    NotificationChannel ch = new NotificationChannel(CHANNEL, "Bank messages", NotificationManager.IMPORTANCE_DEFAULT);
-                    ch.setDescription("A payment your bank just told you about, ready to add");
+                    NotificationChannel ch = new NotificationChannel(CHANNEL, ar ? "رسائل البنك" : "Bank messages", NotificationManager.IMPORTANCE_DEFAULT);
+                    ch.setDescription(ar ? "دفعة أخبرك بها بنكك للتو، جاهزة للإضافة" : "A payment your bank just told you about, ready to add");
                     sys.createNotificationChannel(ch);
                 }
             }
@@ -143,11 +146,11 @@ public class SmsReceiver extends BroadcastReceiver {
                 open,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
-            String context = in ? null : monthLine(ctx, amount);
-            String text = sender + " · tap to add it to Orbit";
+            String context = in ? null : monthLine(ctx, amount, ar);
+            String text = sender + (ar ? " · اضغط لإضافتها إلى Orbit" : " · tap to add it to Orbit");
             NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CHANNEL)
                 .setSmallIcon(R.drawable.ic_stat_orbit)
-                .setContentTitle((in ? "Money in · " : "Payment · ") + amount)
+                .setContentTitle((in ? (ar ? "أموال واردة · " : "Money in · ") : (ar ? "دفعة · " : "Payment · ")) + amount)
                 .setContentText(context != null ? context : text)
                 .setCategory(NotificationCompat.CATEGORY_STATUS)
                 .setAutoCancel(true)
@@ -167,7 +170,7 @@ public class SmsReceiver extends BroadcastReceiver {
      * currency and the app has told us this month's numbers. Keeps the running
      * total, so two payments before the app is opened both count.
      */
-    private static String monthLine(Context ctx, String amount) {
+    private static String monthLine(Context ctx, String amount, boolean ar) {
         try {
             android.content.SharedPreferences p = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
             java.util.Calendar cal = java.util.Calendar.getInstance();
@@ -181,6 +184,15 @@ public class SmsReceiver extends BroadcastReceiver {
             double budget = p.getFloat(KEY_BUDGET, 0f);
             p.edit().putFloat(KEY_SPENT, (float) spent).apply();
             String sym = p.getString(KEY_SYMBOL, home + " ");
+            if (ar) {
+                // "أُنفق هذا الشهر 12,850 ج.م · متبقٍ 7,150 ج.م": in Arabic the symbol follows the figure.
+                String s = sym.trim();
+                String line = "أُنفق هذا الشهر " + whole(spent) + " " + s;
+                if (budget > 0) {
+                    line += spent <= budget ? " · متبقٍ " + whole(budget - spent) + " " + s : " · تجاوز الميزانية بـ " + whole(spent - budget) + " " + s;
+                }
+                return line;
+            }
             String line = sym + whole(spent) + " spent this month";
             if (budget > 0) {
                 line += spent <= budget ? " · " + sym + whole(budget - spent) + " left" : " · " + sym + whole(spent - budget) + " over budget";
