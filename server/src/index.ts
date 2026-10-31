@@ -2544,6 +2544,7 @@ const USAGE_NAMES = new Set([
   'budget_alert',
   'report_view',
   'partner_open',
+  'brief_open',
 ]);
 
 app.post(

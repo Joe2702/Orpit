@@ -1,4 +1,5 @@
 import React from 'react';
+import { OrbitMark } from '../OrbitMark';
 import { useStore } from '../store';
 import { getLang, setLangPref, t } from '../i18n';
 
@@ -39,12 +40,7 @@ export function Welcome() {
         </div>
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 48 }}>
-        <svg width="52" height="52" viewBox="0 0 96 96" aria-hidden style={{ overflow: 'visible', marginBottom: 26 }}>
-          <circle cx="48" cy="48" r="44" style={{ fill: 'none', stroke: 'rgba(240,240,243,.18)', strokeWidth: 2 }} />
-          <ellipse cx="48" cy="48" rx="44" ry="17" transform="rotate(-28 48 48)" style={{ fill: 'none', stroke: 'rgba(240,240,243,.6)', strokeWidth: 2.4 }} />
-          <circle cx="84" cy="30" r="5.5" style={{ fill: '#f0f0f3' }} />
-          <circle cx="48" cy="48" r="12" style={{ fill: '#f0f0f3' }} />
-        </svg>
+        <OrbitMark size={60} style={{ marginBottom: 26 }} />
         <div className="display" style={{ fontSize: 64, lineHeight: 0.95 }}>{t('Orbit')}</div>
         <div style={{ fontSize: 18, lineHeight: 1.5, marginTop: 14, color: 'rgba(240,240,243,.72)', maxWidth: 300 }}>
           {t('Habits, training, sleep and money, kept in one place.')}

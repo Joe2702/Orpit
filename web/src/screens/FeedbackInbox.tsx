@@ -221,6 +221,7 @@ const FEATURE: Record<string, string> = {
   budget_alert: 'Got a budget alert',
   report_view: 'Opened a report',
   partner_open: 'Opened partner',
+  brief_open: 'Read the morning brief',
 };
 
 /**

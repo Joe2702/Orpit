@@ -9,7 +9,8 @@ import { computeBadges } from '../lib/badges';
 import { Avatar, SectionLabel, toggleTrack, toggleKnob, chip } from '../ui';
 import { IconChevron } from '../icons';
 import { deviceTimezone } from '../lib/push';
-import { enableReminders, disableReminders, updateReminderTime, sendTestNotification, diagnose, requestExactAlarms, isNative, notificationsAllowed, ensureNotificationPermission, type NotifyDiagnostics } from '../lib/notify';
+import { enableReminders, disableReminders, updateReminderTime, sendTestNotification, diagnose, requestExactAlarms, isNative, notificationsAllowed, ensureNotificationPermission, scheduleBriefs, type NotifyDiagnostics } from '../lib/notify';
+import { briefPrefs, briefSchedule, setBriefPrefs, type BriefPrefs } from '../lib/brief';
 import { Glyph } from '../lib/appIcons';
 import {
   smsSupported,
@@ -258,6 +259,20 @@ export function Settings() {
       await disableReminders();
       mutate(() => api.updateMe({ reminders: false }));
     }
+  };
+
+  // The morning brief belongs to this phone, like the app lock.
+  const [brief, setBrief] = React.useState<BriefPrefs>(briefPrefs);
+  const saveBrief = (next: BriefPrefs) => {
+    setBriefPrefs(next);
+    setBrief(next);
+    scheduleBriefs(briefSchedule(state!, next));
+  };
+  const toggleBrief = async () => {
+    const next = { ...brief, on: !brief.on };
+    if (next.on && isNative() && !(await ensureNotificationPermission())) showToast(t('Allow notifications in your phone settings'));
+    else showToast(next.on ? t('Morning brief on') : t('Morning brief off'));
+    saveBrief(next);
   };
 
   const setReminderTime = (t: string) => {
@@ -821,6 +836,34 @@ export function Settings() {
             >
               {diagBusy ? t('Checking…') : t('Check again')}
             </div>
+          </div>
+        )}
+        <PrefRow
+          iconKey="indigo"
+          title={t('Morning brief')}
+          sub={t('Your day, ready each morning')}
+          on={brief.on}
+          onToggle={toggleBrief}
+          icon={
+            <svg width="19" height="19" viewBox="0 0 22 22" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+              <path d="M3 15.5h16M6 15.5a5 5 0 0 1 10 0M11 4.5v2.2M4.6 8.1l1.5 1.5M17.4 8.1l-1.5 1.5M7 18.5h8" />
+            </svg>
+          }
+          border
+        />
+        {brief.on && isNative() && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)' }}>
+            <span style={{ width: 24, flex: 'none' }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Brief time')}</div>
+              <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('When the notification arrives')}</div>
+            </div>
+            <input
+              type="time"
+              value={brief.time}
+              onChange={(e) => /^\d{2}:\d{2}$/.test(e.target.value) && saveBrief({ ...brief, time: e.target.value })}
+              style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(12px * var(--sq))', padding: '8px 12px', outline: 'none', fontVariantNumeric: 'tabular-nums' }}
+            />
           </div>
         )}
         <PrefRow

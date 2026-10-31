@@ -43,6 +43,7 @@ export type Screen =
   | 'finsights'
   | 'freview'
   | 'weekreview'
+  | 'brief'
   | 'feedbackInbox'
   | 'privacy'
   | 'insights'
