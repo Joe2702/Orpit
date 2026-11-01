@@ -108,6 +108,7 @@ export function Workouts() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                     <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{tData(w.name)}</span>
+                    {w.source && <span style={{ fontSize: 11, fontWeight: 650, color: 'var(--text2)', border: '1px solid var(--border)', borderRadius: 999, padding: '1px 7px', flex: 'none' }}>{w.source}</span>}
                     <UnsyncedDot id={w.id} />
                   </div>
                   <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{meta}</div>

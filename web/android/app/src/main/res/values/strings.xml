@@ -19,4 +19,6 @@
     <string name="widget_sleep_label">Orbit · Sleep</string>
     <string name="widget_finance_label">Orbit · Finances</string>
     <string name="widget_summary_label">Orbit · Summary</string>
+    <!-- Shown when someone asks, from Health Connect, why Orbit reads their data. -->
+    <string name="health_connect_privacy_policy_url">https://orbit-x3z7.onrender.com/privacy</string>
 </resources>

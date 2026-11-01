@@ -11,6 +11,7 @@ import { IconChevron } from '../icons';
 import { deviceTimezone } from '../lib/push';
 import { enableReminders, disableReminders, updateReminderTime, sendTestNotification, diagnose, requestExactAlarms, isNative, notificationsAllowed, ensureNotificationPermission, scheduleBriefs, type NotifyDiagnostics } from '../lib/notify';
 import { briefPrefs, briefSchedule, setBriefPrefs, type BriefPrefs } from '../lib/brief';
+import { healthPrefs, healthSupported } from '../lib/health';
 import { Glyph } from '../lib/appIcons';
 import {
   smsSupported,
@@ -714,6 +715,27 @@ export function Settings() {
           );
         })}
       </div>
+
+      {/* Sleep and workouts from Fitbit, by way of Health Connect (Android). */}
+      {healthSupported() && (
+        <>
+          <SectionLabel>{t('Connected apps')}</SectionLabel>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+            <div role="button" tabIndex={0} onClick={() => open('health')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
+              <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+                  <path d="M2 10.5h3.2l2-4.5 3.4 9 2.2-6 1.4 1.5H18" />
+                </svg>
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Fitbit and Health Connect')}</div>
+                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{healthPrefs().on ? t('Syncing your sleep and workouts') : t('Bring in your sleep and workouts')}</div>
+              </div>
+              <IconChevron />
+            </div>
+          </div>
+        </>
+      )}
 
       <SectionLabel>{t('Preferences')}</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>

@@ -99,8 +99,8 @@ review screen.
 | Personal info → Name, Email | Collected. Required for an account. App functionality, Account management. |
 | Personal info → Other info (date of birth, gender) | Collected. Optional (only for the partner feature, to check 18+ and match preferences). App functionality. |
 | Photos and videos → Photos | Collected. Optional (a profile photo). App functionality. |
-| Health and fitness → Fitness info | Collected. Optional (workouts). App functionality. |
-| Health and fitness → Health info | Collected. Optional (sleep logs). App functionality. |
+| Health and fitness → Fitness info | Collected. Optional (workouts, typed or read from Health Connect if the person connects it). App functionality. |
+| Health and fitness → Health info | Collected. Optional (sleep logs, typed or read from Health Connect if the person connects it). App functionality. |
 | App activity → Other user-generated content | Collected. Optional (habits, counters, milestones, to-do lists and tasks, notes). App functionality. |
 | App activity / App info and performance → Crash logs | Collected. Optional. Analytics (crash fixing). |
 | App activity → App interactions (feature usage counts) | Collected. Optional (Profile → Data → Share usage counts). Analytics. |

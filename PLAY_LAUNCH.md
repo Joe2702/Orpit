@@ -64,6 +64,7 @@ never put it in the repo. Details: [`RELEASE.md`](RELEASE.md).
 | Target audience | **18 and over** only. The partner feature is 18+, and an adults-only audience keeps the app out of the Families programme. |
 | News app | No |
 | Health apps | Pick the fitness / activity tracking and sleep tracking categories if listed. Orbit is not a medical device and makes no medical claims. |
+| Health Connect | Orbit reads (never writes) five kinds of data: **Sleep**, **Exercise**, **Distance**, **Active calories burned** and **Total calories burned**. For each, the reason is the same: *"to show the person's sleep and workouts, recorded by their fitness tracker, in Orbit's sleep and training views, so they don't have to log them by hand."* It's off until the person connects it in Profile → Connected apps. The privacy policy's "Sleep and workouts from Health Connect" section covers it, including the Limited Use statement Google asks for. Every other Health Connect permission the plugin declares is removed in `AndroidManifest.xml`. |
 | Financial features | Orbit only tracks money: it holds none, moves none, lends nothing and trades nothing. If the form has a budgeting or money-management option, pick it; otherwise "my app doesn't provide financial features". |
 | Data safety | Row by row from [`PLAY_SMS.md` §5](PLAY_SMS.md#5-data-safety-form). Deletion URL: `https://orbit-x3z7.onrender.com/delete-account` |
 | Government app | No |

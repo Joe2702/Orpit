@@ -80,6 +80,7 @@ export type SheetKind =
   | 'smsFound'
   | 'todo'
   | 'todolistEdit'
+  | 'health'
   | null;
 
 interface StoreCtx {

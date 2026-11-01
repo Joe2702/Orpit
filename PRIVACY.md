@@ -70,6 +70,25 @@ contact: **youssif_mohammed@aucegypt.edu**
   turn it off at any time in Profile → Bank messages, or revoke the permission in
   Android's own settings. Entries already imported stay until you delete them.
 
+**Sleep and workouts from Health Connect (optional, Android only)**
+- If you turn it on in Profile → Connected apps, Orbit asks Android for
+  permission to read, from Health Connect, your sleep sessions, exercise
+  sessions, and the distance and calories burned during them. Health Connect
+  is where apps like Fitbit save that data on your phone.
+- Orbit reads only those, only while you use the app, and the first time only
+  the last 30 days. It saves them as your own nights and workouts: when you
+  slept and woke, how long you were asleep, a quality estimated from your
+  sleep stages, the kind of exercise, its time, duration, distance and
+  calories, and which app recorded it.
+- Orbit never writes to Health Connect, reads nothing else from it, and never
+  shares this data or uses it for advertising. It is used only to show your
+  sleep and training in Orbit.
+- Orbit's use of information received from Health Connect adheres to the
+  Health Connect Permissions policy, including the Limited Use requirements.
+- Stop at any time in Profile → Connected apps, or remove Orbit's access in
+  Health Connect's settings. What was already imported stays until you
+  delete it.
+
 **Accountability partners (optional, 18+)**
 - Your date of birth, if you give it. It is used only to check that you are 18
   or over, which this feature requires. Your partner never sees it or your age.

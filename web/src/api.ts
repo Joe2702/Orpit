@@ -412,6 +412,10 @@ export const api = {
     request<AppState>(`/milestones/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteMilestone: (id: string) => request<AppState>(`/milestones/${id}`, { method: 'DELETE' }),
 
+  // Sleep and workouts read from Health Connect, saved as Orbit entries.
+  healthImport: (b: { nights: unknown[]; workouts: unknown[] }) =>
+    request<AppState & { imported?: { nights: number; workouts: number; skipped: number } }>('/health/import', { method: 'POST', body: JSON.stringify(b) }),
+
   // To-do lists
   addTodoList: (b: { name: string; color: string; icon: string }) => request<AppState>('/todo-lists', { method: 'POST', body: JSON.stringify(b) }),
   editTodoList: (id: string, b: { name: string; color: string; icon: string }) =>

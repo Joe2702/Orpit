@@ -25,6 +25,7 @@ import { ReminderOnboarding } from './ReminderOnboarding';
 import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily, scheduleBriefs } from './lib/notify';
 import { briefSchedule, hasBriefData } from './lib/brief';
 import { OrbitMark } from './OrbitMark';
+import { syncDue, syncHealth } from './lib/health';
 import { connectivity, subscribe as subscribeConnectivity } from './lib/offline';
 import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
@@ -64,6 +65,7 @@ const LOAD = {
   HabitCalendarSheet: () => import('./sheets/HabitCalendarSheet'),
   MilestoneSheet: () => import('./sheets/MilestoneSheet'),
   TodoSheets: () => import('./sheets/TodoSheets'),
+  HealthSheet: () => import('./sheets/HealthSheet'),
   Todos: () => import('./screens/Todos'),
   TodoList: () => import('./screens/TodoList'),
   PartnerReportSheet: () => import('./sheets/PartnerReportSheet'),
@@ -106,6 +108,7 @@ const CountLogSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m.
 const CountPickSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m.CountPickSheet })));
 const MilestoneSheet = lazy(() => LOAD.MilestoneSheet().then((m) => ({ default: m.MilestoneSheet })));
 const TodoSheet = lazy(() => LOAD.TodoSheets().then((m) => ({ default: m.TodoSheet })));
+const HealthSheet = lazy(() => LOAD.HealthSheet().then((m) => ({ default: m.HealthSheet })));
 const TodoListSheet = lazy(() => LOAD.TodoSheets().then((m) => ({ default: m.TodoListSheet })));
 const Todos = lazy(() => LOAD.Todos().then((m) => ({ default: m.Todos })));
 const TodoList = lazy(() => LOAD.TodoList().then((m) => ({ default: m.TodoList })));
@@ -237,6 +240,8 @@ function SheetBody() {
       return <MilestoneSheet />;
     case 'todo':
       return <TodoSheet />;
+    case 'health':
+      return <HealthSheet />;
     case 'todolistEdit':
       return <TodoListSheet />;
     case 'countlog':
@@ -726,6 +731,37 @@ export function App() {
       document.removeEventListener('visibilitychange', onVis);
     };
   }, [authed]);
+
+  // ---- Sleep and workouts from Health Connect ----
+  // Quietly, when Orbit opens or comes back to the front, at most every 15
+  // minutes. A failed sync says nothing: the next open tries again, and the
+  // Fitbit screen in Profile shows when it last worked.
+  const healthBusy = useRef(false);
+  useEffect(() => {
+    if (!authed) return;
+    const run = () => {
+      const cur = liveState.current;
+      if (!cur || healthBusy.current || document.visibilityState !== 'visible' || !syncDue()) return;
+      healthBusy.current = true;
+      syncHealth(cur)
+        .then((r) => {
+          if (r && (r.nights || r.workouts)) {
+            applyState(r.state);
+            showToast(t('Imported {what}', { what: [r.nights ? tn(r.nights, 'one night', '{n} nights') : '', r.workouts ? tn(r.workouts, 'one workout', '{n} workouts') : ''].filter(Boolean).join(' · ') }));
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          healthBusy.current = false;
+        });
+    };
+    const first = setTimeout(run, 2500);
+    document.addEventListener('visibilitychange', run);
+    return () => {
+      clearTimeout(first);
+      document.removeEventListener('visibilitychange', run);
+    };
+  }, [authed, applyState, showToast]);
 
   // ---- Reminder action buttons ----
   // "Done" on a habit reminder checks that habit off for today; "Snooze" pushes

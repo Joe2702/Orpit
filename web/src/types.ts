@@ -125,6 +125,8 @@ export interface Workout {
   note: string | null;
   // Strength logging. null for cardio and anything logged without sets.
   sets: WorkoutSet[] | null;
+  /** The app it came from ("Fitbit"), when it was read from Health Connect. */
+  source?: string | null;
   ts: number;
 }
 
@@ -135,6 +137,8 @@ export interface Night {
   bedH: number | null;
   wakeH: number | null;
   note: string | null;
+  /** The app it came from ("Fitbit"), when it was read from Health Connect. */
+  source?: string | null;
   ts: number;
 }
 
