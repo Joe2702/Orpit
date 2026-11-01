@@ -30,6 +30,8 @@ const LISTS: Record<string, keyof AppState> = {
   fcats: 'fcats',
   categories: 'wCats',
   wtemplates: 'wTemplates',
+  'todo-lists': 'todoLists',
+  todos: 'todos',
 };
 
 const PARTNER = { eligible: true, dob: '2001-12-12', gender: null, want: 'any', queued: false, recent: null, partner: null };
@@ -84,6 +86,35 @@ function handle(method: string, path: string, body: any): { status: number; json
     };
     return ok();
   }
+  // To-do lists.
+  if (path === '/todo-lists/order' || path === '/todos/order') {
+    const ids: string[] = body.ids || [];
+    if (parts[0] === 'todos') db = { ...db, todos: db.todos.map((x) => (ids.includes(x.id) ? { ...x, sort: ids.indexOf(x.id) } : x)) };
+    else db = { ...db, todoLists: [...db.todoLists].sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id)) };
+    return ok();
+  }
+  if (parts[0] === 'todos' && parts[2] === 'done') {
+    const done = body.done !== false;
+    db = { ...db, todos: db.todos.map((x) => (x.id === parts[1] ? { ...x, doneTs: done ? x.doneTs ?? Date.now() : null } : x)) };
+    return ok();
+  }
+  if (parts[0] === 'todo-lists' && parts[2] === 'done' && method === 'DELETE') {
+    db = { ...db, todos: db.todos.filter((x) => !(x.listId === parts[1] && x.doneTs != null)) };
+    return ok();
+  }
+  if (parts[0] === 'todo-lists' && method === 'DELETE' && parts[1]) {
+    db = { ...db, todos: db.todos.filter((x) => x.listId !== parts[1]) };
+  }
+  if (path === '/todos' && method === 'POST') {
+    const sort = Math.max(-1, ...db.todos.filter((x) => x.listId === body.listId).map((x) => x.sort)) + 1;
+    db = { ...db, todos: [...db.todos, { id: newId(), listId: String(body.listId), title: String(body.title), note: body.note ?? null, due: body.due ?? null, doneTs: null, sort, ts: Date.now() }] };
+    return ok();
+  }
+  if (parts[0] === 'todos' && method === 'PATCH' && parts[1] && body.listId) {
+    const cur = db.todos.find((x) => x.id === parts[1]);
+    if (cur && cur.listId !== body.listId) body = { ...body, sort: 1e6 };
+  }
+
   if (parts[0] === 'counters' && parts[2] === 'log') {
     db = { ...db, countLogs: [...db.countLogs, { id: newId(), counterId: parts[1], amount: Number(body.amount) || 0, ts: body.ts ? Number(body.ts) : Date.now() }] };
     return ok();

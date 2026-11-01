@@ -436,7 +436,7 @@ app.get(
   requireAuth,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    const [profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs] =
+    const [profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs, todoLists, todos] =
       await Promise.all([
         one('SELECT name, email, (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt" FROM users WHERE id = $1', [uid]),
         query('SELECT id::text, name, color, target, days, why, paused, archived FROM habits WHERE user_id = $1 ORDER BY sort, id', [uid]),
@@ -449,9 +449,16 @@ app.get(
         query('SELECT id::text, name, icon, color, kind FROM fcats WHERE user_id = $1 ORDER BY sort, id', [uid]),
         query('SELECT id::text, name, unit, color, icon, step FROM counters WHERE user_id = $1 ORDER BY sort, id', [uid]),
         query(`SELECT id::text, counter_id::text AS "counterId", amount, ${TS('ts')} FROM count_logs WHERE user_id = $1 ORDER BY ts`, [uid]),
+        query('SELECT id::text, name, color, icon FROM todo_lists WHERE user_id = $1 ORDER BY sort, id', [uid]),
+        query(
+          `SELECT id::text, list_id::text AS "listId", title, note, to_char(due, 'YYYY-MM-DD') AS due,
+                  to_char(done_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "doneAt", ${TS('created_at')}
+           FROM todos WHERE user_id = $1 ORDER BY list_id, sort, id`,
+          [uid]
+        ),
       ]);
     res.json({
-      profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs,
+      profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs, todoLists, todos,
       exportedAt: new Date().toISOString(),
     });
   })
@@ -882,7 +889,8 @@ app.delete(
   idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    await query('DELETE FROM workouts WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    const gone = await one<{ ext_id: string | null }>('DELETE FROM workouts WHERE id = $1 AND user_id = $2 RETURNING ext_id', [req.params.id, uid]);
+    if (gone?.ext_id) await query('INSERT INTO health_ignored (user_id, ext_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [uid, gone.ext_id]);
     res.json(await buildState(uid));
   })
 );
@@ -922,7 +930,8 @@ app.delete(
   idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    await query('DELETE FROM nights WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    const gone = await one<{ ext_id: string | null }>('DELETE FROM nights WHERE id = $1 AND user_id = $2 RETURNING ext_id', [req.params.id, uid]);
+    if (gone?.ext_id) await query('INSERT INTO health_ignored (user_id, ext_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [uid, gone.ext_id]);
     res.json(await buildState(uid));
   })
 );
@@ -2067,6 +2076,284 @@ app.delete(
   })
 );
 
+// ---------------- Sleep and workouts from Health Connect ----------------
+// The phone reads what Fitbit (or another app) saved to Health Connect and
+// sends it here, already shaped as Orbit entries. Each keeps its Health
+// Connect id, so syncing the same week again adds nothing. What someone
+// logged by hand for the same night or the same hour wins over an import,
+// and an import they deleted stays deleted.
+
+const extOk = (s: unknown): s is string => typeof s === 'string' && s.length > 0 && s.length <= 200;
+const at = (ms: number) => new Date(ms).toISOString();
+
+app.post(
+  '/api/health/import',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const nights: any[] = Array.isArray(req.body.nights) ? req.body.nights.slice(0, 400) : [];
+    const workouts: any[] = Array.isArray(req.body.workouts) ? req.body.workouts.slice(0, 400) : [];
+    const ignored = new Set((await query<{ ext_id: string }>('SELECT ext_id FROM health_ignored WHERE user_id = $1', [uid])).map((r) => r.ext_id));
+    const cats = new Set((await query<{ id: string }>('SELECT id::text FROM workout_categories WHERE user_id = $1', [uid])).map((r) => r.id));
+    const out = { nights: 0, workouts: 0, skipped: 0 };
+    const source = (s: unknown) => String(s || 'Health Connect').slice(0, 40);
+
+    for (const n of nights) {
+      const ts = Number(n.ts);
+      const hours = Number(n.hours);
+      const quality = Math.round(Number(n.quality));
+      const hour = (v: unknown) => (v == null || !Number.isFinite(Number(v)) ? null : ((Number(v) % 24) + 24) % 24);
+      if (!extOk(n.extId) || ignored.has(n.extId) || !Number.isFinite(ts) || !(hours > 0 && hours < 24) || !(quality >= 1 && quality <= 10)) {
+        out.skipped++;
+        continue;
+      }
+      // Any other night ending within four hours of this one is the same night.
+      const clash = await one(
+        `SELECT id FROM nights WHERE user_id = $1 AND ext_id IS DISTINCT FROM $2
+           AND ts BETWEEN $3::timestamptz - interval '4 hours' AND $3::timestamptz + interval '4 hours'`,
+        [uid, n.extId, at(ts)]
+      );
+      if (clash) {
+        out.skipped++;
+        continue;
+      }
+      const r = await pool.query(
+        `INSERT INTO nights (user_id, hours, quality, bed_h, wake_h, ts, source, ext_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         ON CONFLICT (user_id, ext_id) WHERE ext_id IS NOT NULL DO NOTHING`,
+        [uid, Math.round(hours * 100) / 100, quality, hour(n.bedH), hour(n.wakeH), at(ts), source(n.source), n.extId]
+      );
+      out.nights += r.rowCount || 0;
+    }
+
+    for (const w of workouts) {
+      const ts = Number(w.ts);
+      const dur = Math.round(Number(w.dur));
+      const name = String(w.name || '').trim().slice(0, 60);
+      if (!extOk(w.extId) || ignored.has(w.extId) || !Number.isFinite(ts) || !(dur >= 1 && dur <= 1440) || !name) {
+        out.skipped++;
+        continue;
+      }
+      // A workout logged by hand around the same time is the same session.
+      const clash = await one(
+        `SELECT id FROM workouts WHERE user_id = $1 AND ext_id IS DISTINCT FROM $2
+           AND ts BETWEEN $3::timestamptz - interval '45 minutes' AND $3::timestamptz + make_interval(mins => $4 + 45)`,
+        [uid, w.extId, at(ts), dur]
+      );
+      if (clash) {
+        out.skipped++;
+        continue;
+      }
+      const kcal = w.kcal == null || !Number.isFinite(Number(w.kcal)) ? null : Math.max(0, Math.min(20000, Math.round(Number(w.kcal))));
+      const dist = w.dist ? String(w.dist).slice(0, 20) : null;
+      const catId = w.catId != null && cats.has(String(w.catId)) ? String(w.catId) : null;
+      const r = await pool.query(
+        `INSERT INTO workouts (user_id, category_id, name, dur, dist, kcal, ts, source, ext_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+         ON CONFLICT (user_id, ext_id) WHERE ext_id IS NOT NULL DO NOTHING`,
+        [uid, catId, name, dur, dist, kcal, at(ts), source(w.source), w.extId]
+      );
+      out.workouts += r.rowCount || 0;
+    }
+
+    res.json({ ...(await buildState(uid)), imported: out });
+  })
+);
+
+// ---------------- To-do lists ----------------
+// Lists ("Uni", "Training") and the tasks in them. Adding, ticking, editing
+// and deleting a task are idempotent like any log, so they can wait in the
+// offline queue and replay safely; setting up lists needs a connection.
+
+const MAX_LISTS = 50;
+const MAX_TODOS = 5000;
+const idList = (v: unknown): string[] => (Array.isArray(v) ? v.map(String).filter((x) => /^\d+$/.test(x)).slice(0, 2000) : []);
+const listBody = (b: any) => ({
+  name: String(b.name || '').trim().slice(0, 40),
+  color: String(b.color || 'indigo').slice(0, 20),
+  icon: String(b.icon || 'check').slice(0, 20),
+});
+const ownsList = (uid: number, id: unknown) =>
+  /^\d+$/.test(String(id)) ? one('SELECT id FROM todo_lists WHERE id = $1 AND user_id = $2', [String(id), uid]) : Promise.resolve(null);
+
+app.post(
+  '/api/todo-lists',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const b = listBody(req.body);
+    if (!b.name) return res.status(400).json({ error: 'Name the list' });
+    const n = await one<{ n: number; m: number }>(
+      'SELECT COUNT(*)::int AS n, COALESCE(MAX(sort), -1) + 1 AS m FROM todo_lists WHERE user_id = $1',
+      [uid]
+    );
+    if (n!.n >= MAX_LISTS) return res.status(400).json({ error: 'That’s as many lists as Orbit keeps' });
+    await query('INSERT INTO todo_lists (user_id, name, color, icon, sort) VALUES ($1,$2,$3,$4,$5)', [uid, b.name, b.color, b.icon, n!.m]);
+    res.json(await buildState(uid));
+  })
+);
+
+app.patch(
+  '/api/todo-lists/order',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const order = idList(req.body.ids);
+    await tx(async (c) => {
+      for (let i = 0; i < order.length; i++) {
+        await c.query('UPDATE todo_lists SET sort = $1 WHERE id = $2 AND user_id = $3', [i, order[i], uid]);
+      }
+    });
+    res.json(await buildState(uid));
+  })
+);
+
+app.patch(
+  '/api/todo-lists/:id',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const b = listBody(req.body);
+    if (!b.name) return res.status(400).json({ error: 'Name the list' });
+    await query('UPDATE todo_lists SET name=$1, color=$2, icon=$3 WHERE id=$4 AND user_id=$5', [b.name, b.color, b.icon, req.params.id, uid]);
+    res.json(await buildState(uid));
+  })
+);
+
+// Clear a list's finished tasks.
+app.delete(
+  '/api/todo-lists/:id/done',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    await query('DELETE FROM todos WHERE list_id = $1 AND user_id = $2 AND done_at IS NOT NULL', [req.params.id, uid]);
+    res.json(await buildState(uid));
+  })
+);
+
+app.delete(
+  '/api/todo-lists/:id',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    await query('DELETE FROM todo_lists WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    res.json(await buildState(uid));
+  })
+);
+
+app.post(
+  '/api/todos',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const title = String(req.body.title || '').trim().slice(0, 200);
+    if (!title) return res.status(400).json({ error: 'Write the task' });
+    if (!(await ownsList(uid, req.body.listId))) return res.status(404).json({ error: 'List not found' });
+    const due = req.body.due == null || req.body.due === '' ? null : String(req.body.due);
+    if (due && !DATE_ONLY.test(due)) return res.status(400).json({ error: 'Pick a date' });
+    const note = req.body.note ? String(req.body.note).trim().slice(0, 1000) || null : null;
+    const n = await one<{ n: number; m: number }>(
+      `SELECT (SELECT COUNT(*)::int FROM todos WHERE user_id = $1) AS n,
+              (SELECT COALESCE(MAX(sort), -1) + 1 FROM todos WHERE list_id = $2) AS m`,
+      [uid, String(req.body.listId)]
+    );
+    if (n!.n >= MAX_TODOS) return res.status(400).json({ error: 'Clear some finished tasks first' });
+    await query('INSERT INTO todos (user_id, list_id, title, note, due, sort) VALUES ($1,$2,$3,$4,$5,$6)', [
+      uid,
+      String(req.body.listId),
+      title,
+      note,
+      due,
+      n!.m,
+    ]);
+    res.json(await buildState(uid));
+  })
+);
+
+// Drag to reorder a list's tasks.
+app.patch(
+  '/api/todos/order',
+  requireAuth,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const order = idList(req.body.ids);
+    await tx(async (c) => {
+      for (let i = 0; i < order.length; i++) {
+        await c.query('UPDATE todos SET sort = $1 WHERE id = $2 AND user_id = $3', [i, order[i], uid]);
+      }
+    });
+    res.json(await buildState(uid));
+  })
+);
+
+// Edit a task: only the fields sent change. Moving it to another list puts it
+// at the end of that list.
+app.patch(
+  '/api/todos/:id',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const cur = await one<{ list_id: string }>('SELECT list_id::text FROM todos WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    if (!cur) return res.status(404).json({ error: 'Task not found' });
+    const sets: string[] = [];
+    const vals: unknown[] = [];
+    const set = (col: string, v: unknown) => {
+      vals.push(v);
+      sets.push(`${col} = $${vals.length}`);
+    };
+    if ('title' in req.body) {
+      const title = String(req.body.title || '').trim().slice(0, 200);
+      if (!title) return res.status(400).json({ error: 'Write the task' });
+      set('title', title);
+    }
+    if ('note' in req.body) set('note', req.body.note ? String(req.body.note).trim().slice(0, 1000) || null : null);
+    if ('due' in req.body) {
+      const due = req.body.due == null || req.body.due === '' ? null : String(req.body.due);
+      if (due && !DATE_ONLY.test(due)) return res.status(400).json({ error: 'Pick a date' });
+      set('due', due);
+    }
+    if ('listId' in req.body && String(req.body.listId) !== cur.list_id) {
+      if (!(await ownsList(uid, req.body.listId))) return res.status(404).json({ error: 'List not found' });
+      set('list_id', String(req.body.listId));
+      const m = await one<{ m: number }>('SELECT COALESCE(MAX(sort), -1) + 1 AS m FROM todos WHERE list_id = $1', [String(req.body.listId)]);
+      set('sort', m!.m);
+    }
+    if (sets.length) {
+      vals.push(req.params.id, uid);
+      await query(`UPDATE todos SET ${sets.join(', ')} WHERE id = $${vals.length - 1} AND user_id = $${vals.length}`, vals);
+    }
+    res.json(await buildState(uid));
+  })
+);
+
+// Done or not, said outright rather than flipped, so a replay can't undo it.
+app.post(
+  '/api/todos/:id/done',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const done = req.body.done !== false;
+    const r = await pool.query(
+      `UPDATE todos SET done_at = CASE WHEN $1 THEN COALESCE(done_at, now()) ELSE NULL END WHERE id = $2 AND user_id = $3`,
+      [done, req.params.id, uid]
+    );
+    if (!r.rowCount) return res.status(404).json({ error: 'Task not found' });
+    res.json(await buildState(uid));
+  })
+);
+
+app.delete(
+  '/api/todos/:id',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    await query('DELETE FROM todos WHERE id = $1 AND user_id = $2', [req.params.id, uid]);
+    res.json(await buildState(uid));
+  })
+);
+
 app.post(
   '/api/counters',
   requireAuth,
@@ -2152,6 +2439,9 @@ app.post(
       await c.query('DELETE FROM txns WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM sms_ignored WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM milestones WHERE user_id = $1', [uid]);
+      await c.query('DELETE FROM todos WHERE user_id = $1', [uid]);
+      await c.query('DELETE FROM health_ignored WHERE user_id = $1', [uid]);
+      await c.query('DELETE FROM todo_lists WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM habit_checkins WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM count_logs WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM counters WHERE user_id = $1', [uid]);
@@ -2544,6 +2834,7 @@ const USAGE_NAMES = new Set([
   'budget_alert',
   'report_view',
   'partner_open',
+  'brief_open',
 ]);
 
 app.post(

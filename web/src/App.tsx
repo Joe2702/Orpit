@@ -22,7 +22,10 @@ import { ExpenseSheet } from './sheets/ExpenseSheet';
 import { HabitSheet } from './sheets/HabitSheet';
 import { EditSheet } from './sheets/EditSheet';
 import { ReminderOnboarding } from './ReminderOnboarding';
-import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily } from './lib/notify';
+import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily, scheduleBriefs } from './lib/notify';
+import { briefSchedule, hasBriefData } from './lib/brief';
+import { OrbitMark } from './OrbitMark';
+import { syncDue, syncHealth } from './lib/health';
 import { connectivity, subscribe as subscribeConnectivity } from './lib/offline';
 import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
@@ -52,6 +55,7 @@ const LOAD = {
   StoryReport: () => import('./screens/StoryReport'),
   VerifyEmail: () => import('./screens/VerifyEmail'),
   WeekReview: () => import('./screens/WeekReview'),
+  Brief: () => import('./screens/Brief'),
   Welcome: () => import('./screens/Welcome'),
   CatchUpSheet: () => import('./sheets/CatchUpSheet'),
   CategorySheets: () => import('./sheets/CategorySheets'),
@@ -60,6 +64,10 @@ const LOAD = {
   FinanceSheets: () => import('./sheets/FinanceSheets'),
   HabitCalendarSheet: () => import('./sheets/HabitCalendarSheet'),
   MilestoneSheet: () => import('./sheets/MilestoneSheet'),
+  TodoSheets: () => import('./sheets/TodoSheets'),
+  HealthSheet: () => import('./sheets/HealthSheet'),
+  Todos: () => import('./screens/Todos'),
+  TodoList: () => import('./screens/TodoList'),
   PartnerReportSheet: () => import('./sheets/PartnerReportSheet'),
   ProfileSheet: () => import('./sheets/ProfileSheet'),
   SmsFoundSheet: () => import('./sheets/SmsFoundSheet'),
@@ -94,10 +102,16 @@ const Intro = lazy(() => LOAD.Intro().then((m) => ({ default: m.Intro })));
 const Partner = lazy(() => LOAD.Partner().then((m) => ({ default: m.Partner })));
 const PartnerThread = lazy(() => LOAD.PartnerThread().then((m) => ({ default: m.PartnerThread })));
 const WeekReview = lazy(() => LOAD.WeekReview().then((m) => ({ default: m.WeekReview })));
+const Brief = lazy(() => LOAD.Brief().then((m) => ({ default: m.Brief })));
 const CounterSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m.CounterSheet })));
 const CountLogSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m.CountLogSheet })));
 const CountPickSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m.CountPickSheet })));
 const MilestoneSheet = lazy(() => LOAD.MilestoneSheet().then((m) => ({ default: m.MilestoneSheet })));
+const TodoSheet = lazy(() => LOAD.TodoSheets().then((m) => ({ default: m.TodoSheet })));
+const HealthSheet = lazy(() => LOAD.HealthSheet().then((m) => ({ default: m.HealthSheet })));
+const TodoListSheet = lazy(() => LOAD.TodoSheets().then((m) => ({ default: m.TodoListSheet })));
+const Todos = lazy(() => LOAD.Todos().then((m) => ({ default: m.Todos })));
+const TodoList = lazy(() => LOAD.TodoList().then((m) => ({ default: m.TodoList })));
 const AccountSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.AccountSheet })));
 const FcatSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.FcatSheet })));
 const BudgetSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.BudgetSheet })));
@@ -166,6 +180,12 @@ function CurrentScreen() {
       return <FReview />;
     case 'weekreview':
       return <WeekReview />;
+    case 'brief':
+      return <Brief />;
+    case 'todos':
+      return <Todos />;
+    case 'todolist':
+      return <TodoList />;
     case 'feedbackInbox':
       return <FeedbackInbox />;
     case 'privacy':
@@ -218,6 +238,12 @@ function SheetBody() {
       return <CounterSheet />;
     case 'milestone':
       return <MilestoneSheet />;
+    case 'todo':
+      return <TodoSheet />;
+    case 'health':
+      return <HealthSheet />;
+    case 'todolistEdit':
+      return <TodoListSheet />;
     case 'countlog':
       return <CountLogSheet />;
     case 'countpick':
@@ -416,16 +442,8 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', animation: 'fadeUp .6s ease' }}>
-        {/* Orbit mark: soft glow, a breathing pale planet, one dot circling the ring. */}
-        <div style={{ position: 'relative', width: 120, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 30 }}>
-          <div style={{ position: 'absolute', width: 132, height: 132, animation: 'orbitSpin 3.6s linear infinite' }}>
-            <svg width="132" height="132" style={{ overflow: 'visible' }}>
-              <ellipse cx="66" cy="66" rx="58" ry="23" transform="rotate(-26 66 66)" style={{ fill: 'none', stroke: 'rgba(240,240,243,.45)', strokeWidth: 2 }} />
-              <circle cx="115" cy="41" r="6" style={{ fill: '#f0f0f3' }} />
-            </svg>
-          </div>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#f0f0f3', animation: 'breathe 3.2s ease-in-out infinite' }} />
-        </div>
+        {/* The mark from the launcher icon, its sun going round while it loads. */}
+        <OrbitMark size={96} spin={!error} style={{ marginBottom: 30 }} />
 
         <div className="display" style={{ fontSize: 44, lineHeight: 1 }}>{t('Orbit')}</div>
 
@@ -512,6 +530,15 @@ export function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remOn, habitsKey, billsKey, state?.profile.windDown]);
+
+  // The morning brief's notifications, written again whenever what they'd say
+  // could have changed. Its own setting, independent of the evening reminder.
+  const hasData = !!state && hasBriefData(state);
+  const tasksKey = state ? state.todos.filter((x) => x.doneTs == null && x.due).map((x) => x.due).join(',') : '';
+  useEffect(() => {
+    if (authed && state) scheduleBriefs(briefSchedule(state));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authed, habitsKey, billsKey, tasksKey, hasData, state?.profile.modules]);
 
   // The chosen accent replaces the app's primary colour everywhere by remapping
   // the --indigo token the UI already uses.
@@ -704,6 +731,37 @@ export function App() {
       document.removeEventListener('visibilitychange', onVis);
     };
   }, [authed]);
+
+  // ---- Sleep and workouts from Health Connect ----
+  // Quietly, when Orbit opens or comes back to the front, at most every 15
+  // minutes. A failed sync says nothing: the next open tries again, and the
+  // Fitbit screen in Profile shows when it last worked.
+  const healthBusy = useRef(false);
+  useEffect(() => {
+    if (!authed) return;
+    const run = () => {
+      const cur = liveState.current;
+      if (!cur || healthBusy.current || document.visibilityState !== 'visible' || !syncDue()) return;
+      healthBusy.current = true;
+      syncHealth(cur)
+        .then((r) => {
+          if (r && (r.nights || r.workouts)) {
+            applyState(r.state);
+            showToast(t('Imported {what}', { what: [r.nights ? tn(r.nights, 'one night', '{n} nights') : '', r.workouts ? tn(r.workouts, 'one workout', '{n} workouts') : ''].filter(Boolean).join(' · ') }));
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          healthBusy.current = false;
+        });
+    };
+    const first = setTimeout(run, 2500);
+    document.addEventListener('visibilitychange', run);
+    return () => {
+      clearTimeout(first);
+      document.removeEventListener('visibilitychange', run);
+    };
+  }, [authed, applyState, showToast]);
 
   // ---- Reminder action buttons ----
   // "Done" on a habit reminder checks that habit off for today; "Snooze" pushes

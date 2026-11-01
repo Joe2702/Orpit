@@ -280,6 +280,41 @@ export async function scheduleExtras(
   }
 }
 
+// The morning brief: one notification per morning for the next two weeks,
+// each with its own line (that day's habits, a bill due that day). Written
+// ahead because a scheduled notification can't change its words when it
+// fires; every time Orbit opens they're written again from the latest data.
+// Someone who doesn't open Orbit for two weeks stops getting them, which is
+// the right point to stop.
+const BRIEF_BASE = 4000;
+const BRIEF_SPAN = 100;
+
+export async function scheduleBriefs(mornings: { at: Date; body: string }[]): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const { ln } = await LN();
+    // Never asks here: that happens when someone turns the brief on.
+    if ((await ln.checkPermissions()).display !== 'granted') return;
+    await ensureChannel(ln);
+    const pending = await ln.getPending();
+    const stale = pending.notifications.filter((n) => n.id >= BRIEF_BASE && n.id < BRIEF_BASE + BRIEF_SPAN).map((n) => ({ id: n.id }));
+    if (stale.length) await ln.cancel({ notifications: stale });
+    if (!mornings.length) return;
+    await ln.schedule({
+      notifications: mornings.slice(0, BRIEF_SPAN).map((m, i) => ({
+        id: BRIEF_BASE + i,
+        title: t('Your morning brief'),
+        body: m.body,
+        extra: { screen: 'brief' },
+        schedule: { at: m.at, allowWhileIdle: true },
+        channelId: CHANNEL_ID,
+      })),
+    });
+  } catch {
+    /* best-effort, like every reminder */
+  }
+}
+
 /**
  * Called on app launch: if the account has reminders on, make sure the daily
  * notification is actually scheduled on THIS device (permissions were granted

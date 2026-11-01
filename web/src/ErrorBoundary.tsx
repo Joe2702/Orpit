@@ -1,4 +1,5 @@
 import React from 'react';
+import { OrbitMark } from './OrbitMark';
 import { reportError } from './lib/crash';
 import { t } from './i18n';
 
@@ -39,10 +40,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
           fontFamily: "'Geist Variable', 'Geist', system-ui, sans-serif",
         }}
       >
-        <svg width="52" height="52" viewBox="0 0 24 24" style={{ marginBottom: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round', opacity: 0.9 }} aria-hidden>
-          <circle cx="12" cy="11" r="6" />
-          <ellipse cx="12" cy="11" rx="10.5" ry="4" transform="rotate(-24 12 11)" />
-        </svg>
+        <OrbitMark size={56} style={{ marginBottom: 18 }} />
         <div style={{ fontSize: 21, fontWeight: 700, marginBottom: 10 }}>{t('Something went wrong')}</div>
         <div style={{ fontSize: 14.5, lineHeight: 1.55, opacity: 0.9, maxWidth: 300, marginBottom: 26 }}>
           {t('The error has been reported. Reloading usually fixes it, and your data is safe on the server.')}

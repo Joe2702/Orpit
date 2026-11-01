@@ -43,6 +43,9 @@ export type Screen =
   | 'finsights'
   | 'freview'
   | 'weekreview'
+  | 'brief'
+  | 'todos'
+  | 'todolist'
   | 'feedbackInbox'
   | 'privacy'
   | 'insights'
@@ -75,6 +78,9 @@ export type SheetKind =
   | 'catchup'
   | 'partnerReport'
   | 'smsFound'
+  | 'todo'
+  | 'todolistEdit'
+  | 'health'
   | null;
 
 interface StoreCtx {
@@ -188,9 +194,21 @@ const initialVerifyToken =
     ? new URLSearchParams(window.location.search).get('token')
     : null;
 
+/** Fill in lists that a cached or older-server state may not have. */
+export function withDefaults(s: AppState | null): AppState | null {
+  if (!s || (Array.isArray(s.todoLists) && Array.isArray(s.todos))) return s;
+  return { ...s, todoLists: s.todoLists ?? [], todos: s.todos ?? [] };
+}
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
-  const [state, setState] = useState<AppState | null>(null);
+  const [state, setStateRaw] = useState<AppState | null>(null);
+  // Every state that arrives passes through here: a copy cached by an older
+  // version, or a server not yet updated, can lack lists added since, and a
+  // screen reading one would crash on `undefined`.
+  const setState = useCallback((v: AppState | null | ((cur: AppState | null) => AppState | null)) => {
+    setStateRaw((cur) => withDefaults(typeof v === 'function' ? v(cur) : v));
+  }, []);
   const [screen, setScreen] = useState<Screen>(
     initialResetToken ? 'reset' : initialVerifyToken ? 'verify' : 'welcome'
   );

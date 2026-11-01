@@ -412,6 +412,25 @@ export const api = {
     request<AppState>(`/milestones/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteMilestone: (id: string) => request<AppState>(`/milestones/${id}`, { method: 'DELETE' }),
 
+  // Sleep and workouts read from Health Connect, saved as Orbit entries.
+  healthImport: (b: { nights: unknown[]; workouts: unknown[] }) =>
+    request<AppState & { imported?: { nights: number; workouts: number; skipped: number } }>('/health/import', { method: 'POST', body: JSON.stringify(b) }),
+
+  // To-do lists
+  addTodoList: (b: { name: string; color: string; icon: string }) => request<AppState>('/todo-lists', { method: 'POST', body: JSON.stringify(b) }),
+  editTodoList: (id: string, b: { name: string; color: string; icon: string }) =>
+    request<AppState>(`/todo-lists/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+  orderTodoLists: (ids: string[]) => request<AppState>('/todo-lists/order', { method: 'PATCH', body: JSON.stringify({ ids }) }),
+  clearDoneTodos: (listId: string) => request<AppState>(`/todo-lists/${listId}/done`, { method: 'DELETE' }),
+  deleteTodoList: (id: string) => request<AppState>(`/todo-lists/${id}`, { method: 'DELETE' }),
+  addTodo: (b: { listId: string; title: string; note?: string | null; due?: string | null }) =>
+    request<AppState>('/todos', { method: 'POST', body: JSON.stringify(b) }),
+  editTodo: (id: string, b: { title?: string; note?: string | null; due?: string | null; listId?: string }) =>
+    request<AppState>(`/todos/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+  setTodoDone: (id: string, done: boolean) => request<AppState>(`/todos/${id}/done`, { method: 'POST', body: JSON.stringify({ done }) }),
+  orderTodos: (ids: string[]) => request<AppState>('/todos/order', { method: 'PATCH', body: JSON.stringify({ ids }) }),
+  deleteTodo: (id: string) => request<AppState>(`/todos/${id}`, { method: 'DELETE' }),
+
   addAccount: (b: { name: string; type: string; color: string; opening: number }) =>
     request<AppState>('/accounts', { method: 'POST', body: JSON.stringify(b) }),
   editAccount: (id: string, b: { name: string; type: string; color: string; opening: number; balanceNow?: number }) =>

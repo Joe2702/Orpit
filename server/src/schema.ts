@@ -537,4 +537,49 @@ CREATE TABLE IF NOT EXISTS partner_reports (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   handled     BOOLEAN NOT NULL DEFAULT FALSE
 );
+
+-- ===== To-do lists =====
+-- Lists for different parts of life ("Uni", "Training"), each holding tasks.
+-- A task is done when done_at is set, so "done" and "when" are one fact. \`due\`
+-- is a bare DATE like a milestone's: a task is due on a day, not at an instant
+-- that a timezone could shift. Deleting a list deletes its tasks.
+CREATE TABLE IF NOT EXISTS todo_lists (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  color      TEXT NOT NULL DEFAULT 'indigo',
+  icon       TEXT NOT NULL DEFAULT 'check',
+  sort       INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS todo_lists_user ON todo_lists(user_id);
+CREATE TABLE IF NOT EXISTS todos (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  list_id    BIGINT NOT NULL REFERENCES todo_lists(id) ON DELETE CASCADE,
+  title      TEXT NOT NULL,
+  note       TEXT,
+  due        DATE,
+  done_at    TIMESTAMPTZ,
+  sort       INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS todos_user ON todos(user_id);
+CREATE INDEX IF NOT EXISTS todos_list ON todos(list_id);
+
+-- ===== Sleep and workouts from Health Connect (Fitbit and others) =====
+-- An imported entry keeps where it came from and the record's own id there,
+-- so a re-sync never adds it twice. Deleting one leaves its id behind in
+-- health_ignored, so the next sync doesn't bring it straight back.
+ALTER TABLE workouts ADD COLUMN IF NOT EXISTS source TEXT;
+ALTER TABLE workouts ADD COLUMN IF NOT EXISTS ext_id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS workouts_ext ON workouts(user_id, ext_id) WHERE ext_id IS NOT NULL;
+ALTER TABLE nights ADD COLUMN IF NOT EXISTS source TEXT;
+ALTER TABLE nights ADD COLUMN IF NOT EXISTS ext_id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS nights_ext ON nights(user_id, ext_id) WHERE ext_id IS NOT NULL;
+CREATE TABLE IF NOT EXISTS health_ignored (
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ext_id  TEXT NOT NULL,
+  PRIMARY KEY (user_id, ext_id)
+);
 `;

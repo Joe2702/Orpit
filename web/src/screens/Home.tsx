@@ -5,6 +5,9 @@ import { api } from '../api';
 import { greeting, minutes, hm, money0, moneyShort, cNum, counterTotals, dayKey, relLabel } from '../lib/format';
 import { missedRun } from '../lib/comeback';
 import { reviewDue, currentIntention } from '../lib/weekReview';
+import { briefDue, hasBriefData } from '../lib/brief';
+import { dueNow, listCounts } from '../lib/todos';
+import { TodoRow } from '../TodoRow';
 import { period } from '../lib/period';
 import { freshStart } from '../lib/freshStart';
 import { parseLayout, reconcile } from '../lib/layout';
@@ -132,6 +135,8 @@ export function Home() {
 
   // ---- The weekly review, and the one thing chosen in it ----
   const weekDue = reviewDue() && (state!.txns.length > 0 || state!.checkins.length > 0);
+  // The morning brief, offered until it's read or the morning is over.
+  const briefOpen = briefDue() && hasBriefData(state!);
   const intention = currentIntention();
 
   // ---- Never miss twice, and coming back ----
@@ -164,7 +169,49 @@ export function Home() {
   const showChecklist = stepsDone < steps.length;
 
   // ---- Movable dashboard blocks ----
+  // ---- To-do: what's due today, and every list one tap away ----
+  const due = dueNow(state!).slice(0, 5);
+  const lists = state!.todoLists;
+  const openTotal = state!.todos.filter((x) => x.doneTs == null).length;
+
   const blocks: Record<string, React.ReactNode> = {
+    todos: (
+      <>
+        <SectionLabel action={lists.length ? { label: t('All lists'), onClick: () => go('todos') } : undefined}>{t('To-do')}</SectionLabel>
+        <div style={listCard}>
+          {due.map((x) => {
+            const l = lists.find((y) => y.id === x.listId)!;
+            return <TodoRow key={x.id} x={x} color={l.color} list={{ name: l.name, color: l.color }} onOpen={() => open('todo', { id: x.id })} />;
+          })}
+          {lists.length > 0 && due.length === 0 && (
+            <div style={{ padding: '13px 16px', borderBottom: '1px solid var(--hairline)' }}>
+              <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>{t('Nothing due today')}</div>
+              <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{tn(openTotal, 'One thing to do across your lists', '{n} things to do across your lists')}</div>
+            </div>
+          )}
+          {lists.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '12px 16px', borderBottom: '1px solid var(--hairline)' }}>
+              {lists.map((l) => (
+                <div key={l.id} role="button" tabIndex={0} onClick={() => go('todolist', { id: l.id })} className="press96" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 34, padding: '0 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--bg)', flex: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 600, color: 'var(--text)' }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: `var(--${l.color})` }} />
+                  {l.name}
+                  <span style={{ color: 'var(--text2)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{listCounts(state!, l.id).open}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div role="button" tabIndex={0} onClick={() => (lists.length ? open('todo') : go('todos'))} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', cursor: 'pointer' }}>
+            <span style={iconCell}>
+              <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M9 4v10M4 9h10" /></svg>
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--indigo)' }}>{lists.length ? t('Add a task') : t('Make your first list')}</div>
+              {!lists.length && <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Uni, work, training: a list for each')}</div>}
+            </div>
+          </div>
+        </div>
+      </>
+    ),
     habits: (
       <>
         <SectionLabel action={todaysHabits.length ? { label: t('{doneCount} of {n}', { doneCount, n: todaysHabits.length }), onClick: () => go('habits') } : undefined}>{t('Today')}</SectionLabel>
@@ -406,6 +453,7 @@ export function Home() {
   // Respect the trackers the user chose to see.
   const blockList = [
     ...(enabled(state!, 'habits') ? ['habits'] : []),
+    ...(enabled(state!, 'todos') ? ['todos'] : []),
     'week',
     ...(enabled(state!, 'counters') ? ['counters'] : []),
     // Always offered: a milestone belongs to no tracker, and the empty state is
@@ -457,6 +505,23 @@ export function Home() {
           <div tabIndex={0} onClick={fresh.run} role="button" style={{ display: 'inline-block', marginTop: 12, fontSize: 14, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
             {fresh.cta}
           </div>
+        </div>
+      )}
+
+      {briefOpen && (
+        <div tabIndex={0} onClick={() => go('brief')} className="press99" role="button" style={{ ...listCard, display: 'flex', alignItems: 'center', gap: 13, padding: '14px 14px 14px 14px', marginBottom: 22, cursor: 'pointer' }}>
+          <span style={{ width: 40, height: 40, flex: 'none', borderRadius: 'calc(12px * var(--sq))', background: 'var(--indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden style={{ fill: 'none', stroke: 'var(--on-accent)', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+              <path d="M3 15.5h16M6 15.5a5 5 0 0 1 10 0M11 4.5v2.2M4.6 8.1l1.5 1.5M17.4 8.1l-1.5 1.5M7 18.5h8" />
+            </svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>{t('Your morning brief')}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>{t('Last night, today’s plan and your money, in a minute.')}</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+            <path className="flip-rtl" d="M7 4l5 5-5 5" />
+          </svg>
         </div>
       )}
 

@@ -271,7 +271,7 @@ html[lang='ar'] .display {
   }
 }
 
-/* Splash: an orbiting dot, a gently breathing planet, and a soft loading pulse. */
+/* Splash: the mark's sun going round its orbit while the app loads. */
 @keyframes orbitSpin {
   to {
     transform: rotate(360deg);
@@ -285,15 +285,6 @@ html[lang='ar'] .display {
   }
   50% {
     opacity: 0.35;
-  }
-}
-@keyframes breathe {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
   }
 }
 @keyframes loadBar {

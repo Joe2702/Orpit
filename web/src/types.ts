@@ -125,6 +125,8 @@ export interface Workout {
   note: string | null;
   // Strength logging. null for cardio and anything logged without sets.
   sets: WorkoutSet[] | null;
+  /** The app it came from ("Fitbit"), when it was read from Health Connect. */
+  source?: string | null;
   ts: number;
 }
 
@@ -135,6 +137,8 @@ export interface Night {
   bedH: number | null;
   wakeH: number | null;
   note: string | null;
+  /** The app it came from ("Fitbit"), when it was read from Health Connect. */
+  source?: string | null;
   ts: number;
 }
 
@@ -277,6 +281,27 @@ export interface Milestone {
   icon: string;
 }
 
+/** A to-do list: "Uni", "SAC", "Training". */
+export interface TodoList {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+}
+
+export interface Todo {
+  id: string;
+  listId: string;
+  title: string;
+  note: string | null;
+  /** "YYYY-MM-DD", the day it's due, or none. */
+  due: string | null;
+  /** When it was ticked off; null while it's open. */
+  doneTs: number | null;
+  sort: number;
+  ts: number;
+}
+
 export interface CountLog {
   id: string;
   counterId: string;
@@ -300,6 +325,8 @@ export interface AppState {
   counters: Counter[];
   countLogs: CountLog[];
   milestones: Milestone[];
+  todoLists: TodoList[];
+  todos: Todo[];
   wTemplates: WTemplate[];
   /**
    * Totals for history older than the state window. The raw rows aren't sent —

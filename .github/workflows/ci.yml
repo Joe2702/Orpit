@@ -62,5 +62,15 @@ jobs:
         run: npm run build
         working-directory: server
       - name: Integration tests
-        run: npm test
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee test-output.txt
         working-directory: server
+      # Put the failing tests and their errors on the check itself, so a red
+      # check says what broke without opening the full log.
+      - name: Show what failed
+        if: failure()
+        working-directory: server
+        run: |
+          summary=$(grep -E -A12 '^not ok|^    not ok' test-output.txt | grep -vE '^\s*(at |\.\.\.|---)' | head -60 | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error title=Server tests failed::${summary:-see the Integration tests step}"

@@ -65,6 +65,10 @@ const QUEUEABLE: RegExp[] = [
   /^\/txns(\/[^/]+)?$/,
   /^\/habits\/[^/]+\/toggle$/,
   /^\/counters\/[^/]+\/log$/,
+  // Tasks: added, edited, ticked off and deleted with no signal like any log.
+  // Not /todos/order, which isn't idempotent-safe to replay out of order.
+  /^\/todos(\/\d+)?$/,
+  /^\/todos\/\d+\/done$/,
 ];
 
 export function isQueueable(path: string, method: string): boolean {

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { OrbitMark } from './OrbitMark';
 import { unlock } from './lib/appLock';
 import { t } from './i18n';
 
@@ -40,12 +41,7 @@ export function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
         padding: '0 32px',
       }}
     >
-      <svg width="52" height="52" viewBox="0 0 96 96" aria-hidden style={{ overflow: 'visible' }}>
-        <circle cx="48" cy="48" r="44" style={{ fill: 'none', stroke: 'rgba(240,240,243,.18)', strokeWidth: 2 }} />
-        <ellipse cx="48" cy="48" rx="44" ry="17" transform="rotate(-28 48 48)" style={{ fill: 'none', stroke: 'rgba(240,240,243,.6)', strokeWidth: 2.4 }} />
-        <circle cx="84" cy="30" r="5.5" style={{ fill: '#f0f0f3' }} />
-        <circle cx="48" cy="48" r="12" style={{ fill: '#f0f0f3' }} />
-      </svg>
+      <OrbitMark size={60} />
       <div className="display" style={{ fontSize: 34 }}>{t('Orbit is locked')}</div>
       <button
         onClick={ask}

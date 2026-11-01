@@ -20,7 +20,8 @@ export type UsageName =
   | 'bank_on'
   | 'budget_alert'
   | 'report_view'
-  | 'partner_open';
+  | 'partner_open'
+  | 'brief_open';
 
 const KEY = 'orbit_usage';
 let enabled = true;
