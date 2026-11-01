@@ -27,6 +27,7 @@ import { briefSchedule, hasBriefData } from './lib/brief';
 import { OrbitMark } from './OrbitMark';
 import { syncDue, syncHealth } from './lib/health';
 import { accentFor, isHex } from './lib/color';
+import { startLiquid } from './lib/liquid';
 import { connectivity, subscribe as subscribeConnectivity } from './lib/offline';
 import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
@@ -313,81 +314,189 @@ function StatusBar() {
   );
 }
 
-function TabBar() {
+/**
+ * The tab bar, in liquid glass: the three places in one floating capsule and
+ * + in a bubble of its own. A glass droplet sits behind the current tab and
+ * stretches as it slides to the next. Scrolling down folds the capsule into a
+ * single bubble showing where you are, so more of the screen shows; scrolling
+ * up, or tapping the bubble, opens it again.
+ */
+function TabBar({ scroller }: { scroller: React.RefObject<HTMLDivElement | null> }) {
   const { screen, go, open } = useStore();
-  // The lens: a pane of glass behind the current tab that glides to the next.
-  const slot = screen === 'home' ? 0 : screen === 'analytics' ? 1 : screen === 'settings' ? 3 : -1;
+  const slot = screen === 'home' ? 0 : screen === 'analytics' ? 1 : screen === 'settings' ? 2 : -1;
+  // Folded, the bubble shows the current place (or Home, on a screen under it).
+  const shownWhenFolded = slot < 0 ? 0 : slot;
+  const [folded, setFolded] = useState(false);
+  const tabRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const capsule = useRef<HTMLDivElement>(null);
+  const shine = useRef<HTMLDivElement>(null);
+  const [drop, setDrop] = useState<{ x: number; w: number } | null>(null);
+  const [squish, setSquish] = useState(0);
 
-  // A floating bar over the screen. Each destination is labelled: an icon
-  // alone makes people guess, and the guess is the moment an app feels unsure.
-  const item = (active: boolean, onClick: () => void, path: React.ReactNode, label: string) => (
-    <div tabIndex={0}
-      onClick={onClick}
-      className="press92"
-      role="tab"
-      aria-label={label}
-      aria-selected={active}
-      style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, cursor: 'pointer', minHeight: 52, color: active ? 'var(--text)' : 'var(--text3)', transition: 'color .2s' }}
-    >
-      <svg width="22" height="22" viewBox="0 0 24 24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: active ? 2.2 : 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
-        {path}
-      </svg>
-      <span style={{ fontSize: 10.5, fontWeight: active ? 650 : 550, letterSpacing: '.01em' }}>{label}</span>
-    </div>
-  );
+  const place = React.useCallback(() => {
+    const el = slot >= 0 ? tabRefs.current[slot] : null;
+    setDrop(el ? { x: el.offsetLeft + 5, w: el.offsetWidth - 10 } : null);
+  }, [slot]);
+  React.useLayoutEffect(place, [place, folded]);
+  useEffect(() => {
+    const el = capsule.current;
+    if (!el) return;
+    const ro = new ResizeObserver(place);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [place]);
+  // A new tab: the droplet squashes and stretches on its way over.
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) first.current = false;
+    else setSquish((n) => n + 1);
+    setFolded(false);
+  }, [slot, screen]);
 
-  return (
-    // Absolutely positioned so the screen scrolls BEHIND it; the container
-    // itself ignores taps (pointerEvents none) so the transparent sides don't
-    // block content — only the pill is interactive.
-    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 16px 16px', zIndex: 40, pointerEvents: 'none' }}>
+  useEffect(() => {
+    const sc = scroller.current;
+    if (!sc) return;
+    let lastY = sc.scrollTop;
+    const onScroll = () => {
+      const y = sc.scrollTop;
+      if (y > 80 && y > lastY + 6) setFolded(true);
+      else if (y < lastY - 6 || y < 24) setFolded(false);
+      lastY = y;
+      // The light along the rim moves as the page moves under it.
+      shine.current?.style.setProperty('--mx', `${((((y * 0.35) % 160) + 160) % 160) - 30}%`);
+    };
+    sc.addEventListener('scroll', onScroll, { passive: true });
+    return () => sc.removeEventListener('scroll', onScroll);
+  }, [scroller]);
+
+  const spring = 'cubic-bezier(.3,1.2,.5,1)';
+  const tab = (i: number, label: string, path: React.ReactNode, onClick: () => void) => {
+    const active = slot === i;
+    const shown = !folded || i === shownWhenFolded;
+    return (
       <div
-        className="glass"
+        key={i}
+        ref={(el) => {
+          tabRefs.current[i] = el;
+        }}
+        tabIndex={shown ? 0 : -1}
+        onClick={onClick}
+        className="press92"
+        role="tab"
+        aria-label={label}
+        aria-selected={active}
+        aria-hidden={!shown}
         style={{
-          position: 'relative',
-          height: 64,
-          pointerEvents: 'auto',
-          // Glass: what scrolls under the bar shows through, blurred.
-          borderRadius: 'calc(26px * var(--sq))',
+          flex: shown ? '1 1 0%' : '0 0 0px',
+          minWidth: 0,
+          overflow: 'hidden',
+          opacity: shown ? 1 : 0,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          padding: '0 8px',
+          justifyContent: 'center',
+          gap: 3,
+          cursor: 'pointer',
+          color: active ? 'var(--indigo)' : 'var(--text)',
+          textShadow: 'var(--glass-label-glow)',
+          transition: `flex .45s ${spring}, opacity .25s, color .2s`,
         }}
       >
+        <svg width="22" height="22" viewBox="0 0 24 24" style={{ flex: 'none', fill: 'none', stroke: 'currentColor', strokeWidth: active ? 2.2 : 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+          {path}
+        </svg>
+        {!folded && <span style={{ fontSize: 10.5, fontWeight: active ? 680 : 580, letterSpacing: '.01em', whiteSpace: 'nowrap' }}>{label}</span>}
+      </div>
+    );
+  };
+
+  return (
+    // The row ignores taps (pointerEvents none) so the space between the
+    // capsule and + doesn't block the screen; only the glass is interactive.
+    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 16px 18px', zIndex: 40, pointerEvents: 'none' }}>
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: 10, height: 62 }}>
         <div
-          aria-hidden
-          style={{
-            position: 'absolute',
-            top: 7,
-            bottom: 7,
-            width: 'calc((100% - 16px) / 4)',
-            borderRadius: 'calc(20px * var(--sq))',
-            background: 'var(--glass-lens)',
-            boxShadow: 'inset 0 1px 0 var(--glass-hi), 0 2px 8px -3px rgba(0,0,0,.18)',
-            transform: `translateX(${(isRTL() ? -1 : 1) * Math.max(0, slot) * 100}%)`,
-            opacity: slot < 0 ? 0 : 1,
-            transition: 'transform .5s cubic-bezier(.32,1.35,.5,1), opacity .25s ease',
-            insetInlineStart: 8,
-            pointerEvents: 'none',
+          ref={capsule}
+          role="tablist"
+          onClickCapture={(e) => {
+            // Folded, the first tap opens the capsule rather than navigating.
+            if (folded) {
+              e.stopPropagation();
+              setFolded(false);
+            }
           }}
-        />
-        {item(screen === 'home', () => go('home'), <path d="M4 11l8-7 8 7M6 9.5V19h4.5v-5h3v5H18V9.5" />, t('Home'))}
-        {item(screen === 'analytics', () => go('analytics'), <path d="M4 20V11M10 20V5M16 20v-6M4 20h16" />, t('Analytics'))}
-        {/* Add — the primary create action; accented but flat within the bar. */}
-        <div tabIndex={0} onClick={() => open('chooser')} className="press92" role="button" aria-label={t('Add an entry')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 48 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.28), 0 6px 14px -6px rgba(0,0,0,.45)' }}>
-            <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--bg)', strokeWidth: 2.3, strokeLinecap: 'round' }} aria-hidden><path d="M11 4v14M4 11h14" /></svg>
+          onPointerMove={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            shine.current?.style.setProperty('--mx', `${e.clientX - r.left}px`);
+          }}
+          style={{ position: 'relative', pointerEvents: 'auto', borderRadius: 31, flex: folded ? '0 0 62px' : '1 1 0%', minWidth: 62, transition: `flex .45s ${spring}` }}
+        >
+          {/* Glass layers are siblings, never nested: glass inside glass sees nothing behind. */}
+          <div className="glass" data-lens="bar" style={{ position: 'absolute', inset: 0, borderRadius: 31 }} />
+          <div
+            aria-hidden
+            className="glass-rim"
+            data-lens="drop"
+            style={{
+              position: 'absolute',
+              top: 5,
+              bottom: 5,
+              left: 0,
+              width: drop?.w ?? 0,
+              borderRadius: 999,
+              transform: `translateX(${drop?.x ?? 0}px)`,
+              opacity: folded || !drop ? 0 : 1,
+              backdropFilter: 'blur(12px) saturate(190%)',
+              WebkitBackdropFilter: 'blur(12px) saturate(190%)',
+              transition: `transform .55s cubic-bezier(.3,1.35,.45,1), width .4s ${spring}, opacity .25s`,
+              pointerEvents: 'none',
+            }}
+          >
+            <div
+              key={squish}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius: 'inherit',
+                background: 'var(--glass-drop)',
+                boxShadow: 'inset 0 0 10px var(--glass-drop-glow), 0 4px 14px -6px rgba(10,12,30,.4)',
+                animation: squish ? 'squish .55s cubic-bezier(.3,1.2,.4,1)' : undefined,
+              }}
+            />
+          </div>
+          <div
+            ref={shine}
+            aria-hidden
+            style={{ position: 'absolute', inset: 0, borderRadius: 31, pointerEvents: 'none', background: 'radial-gradient(110px 70px at var(--mx, 30%) 10%, var(--glass-shine), transparent 70%)' }}
+          />
+          <div style={{ position: 'relative', display: 'flex', height: '100%', borderRadius: 31, overflow: 'hidden' }}>
+            {tab(0, t('Home'), <path d="M4 11l8-7 8 7M6 9.5V19h4.5v-5h3v5H18V9.5" />, () => go('home'))}
+            {tab(1, t('Analytics'), <path d="M4 20V11M10 20V5M16 20v-6M4 20h16" />, () => go('analytics'))}
+            {tab(
+              2,
+              t('Profile'),
+              <>
+                <circle cx="12" cy="8" r="3.4" />
+                <path d="M5.5 19a6.5 6.5 0 0 1 13 0" />
+              </>,
+              () => go('settings')
+            )}
           </div>
         </div>
-        {item(
-          screen === 'settings',
-          () => go('settings'),
-          <>
-            <circle cx="12" cy="8" r="3.4" />
-            <path d="M5.5 19a6.5 6.5 0 0 1 13 0" />
-          </>,
-          t('Profile')
-        )}
+        {/* Add: the primary action, in its own bubble. */}
+        <div
+          tabIndex={0}
+          onClick={() => open('chooser')}
+          className="glass press92"
+          data-lens="fab"
+          role="button"
+          aria-label={t('Add an entry')}
+          style={{ position: 'relative', pointerEvents: 'auto', width: 62, height: 62, flex: 'none', borderRadius: '50%', marginInlineStart: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" style={{ position: 'relative', fill: 'none', stroke: 'var(--text)', strokeWidth: 2.3, strokeLinecap: 'round' }} aria-hidden>
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </div>
       </div>
     </div>
   );
@@ -405,7 +514,7 @@ function PasswordPrompt() {
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
       <div onClick={() => closePassword(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
-      <div className="glass-strong" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease' }}>
+      <div className="glass-strong" data-lens="dialog" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease' }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em', textAlign: 'center' }}>{passwordState.title}</div>
         {passwordState.message && (
           <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5, textAlign: 'center' }}>{passwordState.message}</div>
@@ -894,6 +1003,9 @@ export function App() {
   const [exitPrompt, setExitPrompt] = useState(false);
   const nav = useRef({ screen, sheet, authed, report });
   nav.current = { screen, sheet, authed, report };
+
+  // Liquid glass: every element marked data-lens gets its bent rim.
+  useEffect(() => startLiquid(document.body), []);
   const rootScreens = ['home', 'welcome', 'signin'];
 
   useEffect(() => {
@@ -985,7 +1097,7 @@ export function App() {
       </div>
 
       {toast && (
-        <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, color: 'var(--text)', padding: '11px 20px', borderRadius: (toast || '').length > 40 ? 'calc(18px * var(--sq))' : 999, fontSize: 14, fontWeight: 600, lineHeight: 1.4, animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, width: 'max-content', maxWidth: 'calc(100% - 32px)', whiteSpace: 'normal' }} className="glass-strong">
+        <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, color: 'var(--text)', padding: '11px 20px', borderRadius: (toast || '').length > 40 ? 'calc(18px * var(--sq))' : 999, fontSize: 14, fontWeight: 600, lineHeight: 1.4, animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, width: 'max-content', maxWidth: 'calc(100% - 32px)', whiteSpace: 'normal' }} className="glass-strong" data-lens="toast">
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <path d="M4 9.5l3.4 3.4L14 5" />
           </svg>
@@ -1003,16 +1115,17 @@ export function App() {
         </div>
       )}
 
-      {showTabs && <TabBar />}
+      {showTabs && <TabBar scroller={scrollRef} />}
 
       {sheet && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 90, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+        // The sheet floats clear of the edges, the way liquid-glass sheets do.
+        <div style={{ position: 'absolute', inset: 0, zIndex: 90, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: mobile ? '0 8px calc(8px + env(safe-area-inset-bottom))' : '0 8px 8px' }}>
           <div onClick={closeSheet} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .25s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
-          <div className="glass-strong" style={{ position: 'relative', borderRadius: 'calc(30px * var(--sq)) calc(30px * var(--sq)) 0 0', borderBottom: 'none', animation: 'sheetUp .34s cubic-bezier(.22,1,.36,1)', maxHeight: '92%', display: 'flex', flexDirection: 'column' }}>
+          <div className="glass-strong" data-lens="sheet" style={{ position: 'relative', borderRadius: 'calc(36px * var(--sq))', animation: 'sheetUp .34s cubic-bezier(.22,1,.36,1)', maxHeight: '92%', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 2px', flex: 'none' }}>
               <div style={{ width: 38, height: 4, borderRadius: 999, background: 'var(--border)' }} />
             </div>
-            <div style={{ overflowY: 'auto', paddingBottom: mobile ? 'env(safe-area-inset-bottom)' : 0 }}>
+            <div style={{ overflowY: 'auto', paddingBottom: 4, borderRadius: '0 0 calc(36px * var(--sq)) calc(36px * var(--sq))' }}>
               <Suspense fallback={null}>
                 <SheetBody />
               </Suspense>
@@ -1024,7 +1137,7 @@ export function App() {
       {exitPrompt && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 98, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
           <div onClick={cancelExit} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
-          <div className="glass-strong" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease', textAlign: 'center' }}>
+          <div className="glass-strong" data-lens="dialog" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease', textAlign: 'center' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>{t('Exit Orbit?')}</div>
             <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>{t('Are you sure you want to close the app?')}</div>
             <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
@@ -1042,7 +1155,7 @@ export function App() {
       {confirmState && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
           <div onClick={() => closeConfirm(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
-          <div className="glass-strong" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease', textAlign: 'center' }}>
+          <div className="glass-strong" data-lens="dialog" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease', textAlign: 'center' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>{confirmState.title}</div>
             {confirmState.message && (
               <div dir="auto" style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5, whiteSpace: 'pre-line', overflowWrap: 'anywhere', maxHeight: '50vh', overflowY: 'auto' }}>{confirmState.message}</div>
