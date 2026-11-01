@@ -69,8 +69,8 @@ body {
 
    Neutrals lean very slightly toward the accent rather than navy: a blue
    "dark mode" and an indigo glow on everything is the look of a generated
-   template, and it competes with the data for attention. Surfaces are solid; glass is kept for
-   the floating tab bar alone. */
+   template, and it competes with the data for attention. Cards are solid; glass is kept for
+   what floats above the page: the tab bar, sheets, dialogs and toasts. */
 
 /* ---- Light ---- */
 .orbit {
@@ -99,6 +99,16 @@ body {
   --shadow: 0 1px 2px rgba(20, 20, 15, 0.04);
   --shadow-sm: none;
   --shadow-lg: 0 20px 50px -16px rgba(20, 20, 15, 0.28);
+  /* Glass: the floating things (tab bar, sheets, dialogs, toasts) are
+     translucent and blur what's behind them, with a lit top edge. */
+  --glass-bg: rgba(255, 255, 255, 0.68);
+  --glass-bg-strong: rgba(255, 255, 255, 0.8);
+  --glass-edge: rgba(255, 255, 255, 0.7);
+  --glass-hi: rgba(255, 255, 255, 0.95);
+  --glass-line: rgba(19, 19, 32, 0.08);
+  --glass-sheen: rgba(255, 255, 255, 0.35);
+  --glass-shadow: 0 18px 40px -16px rgba(20, 22, 40, 0.34), 0 3px 10px -4px rgba(20, 22, 40, 0.12);
+  --glass-lens: rgba(255, 255, 255, 0.62);
   --glow: none;
   --scrim: rgba(12, 12, 10, 0.42);
   /* Text and icons sitting on an accent fill. */
@@ -138,6 +148,14 @@ body {
   --shadow: none;
   --shadow-sm: none;
   --shadow-lg: 0 24px 60px -18px rgba(0, 0, 0, 0.85);
+  --glass-bg: rgba(30, 30, 36, 0.64);
+  --glass-bg-strong: rgba(26, 26, 31, 0.82);
+  --glass-edge: rgba(255, 255, 255, 0.13);
+  --glass-hi: rgba(255, 255, 255, 0.22);
+  --glass-line: rgba(0, 0, 0, 0.45);
+  --glass-sheen: rgba(255, 255, 255, 0.07);
+  --glass-shadow: 0 18px 44px -14px rgba(0, 0, 0, 0.7), 0 3px 10px -4px rgba(0, 0, 0, 0.4);
+  --glass-lens: rgba(255, 255, 255, 0.12);
   --glow: none;
   --scrim: rgba(0, 0, 0, 0.62);
   --on-accent: #0c0c0f;
@@ -333,4 +351,213 @@ html[lang='ar'] .display {
 @keyframes slideInL {
   from { opacity: 0; transform: translate3d(-26px, 0, 0); }
   to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+/* ---- Glass ----
+   Translucent, blurring and saturating what's behind it, with a sheen from
+   the top and a lit edge, the way light catches the rim of a pane. The
+   strong kind is for sheets and dialogs, where text has to stay easy to read
+   whatever is underneath. Phones that can't blur get the strong fill. */
+.glass,
+.glass-strong {
+  border: 1px solid var(--glass-edge);
+  box-shadow: inset 0 1px 0 var(--glass-hi), inset 0 0 0 0.5px var(--glass-line), var(--glass-shadow);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
+  backdrop-filter: blur(30px) saturate(190%);
+}
+.glass {
+  background: linear-gradient(180deg, var(--glass-sheen), transparent 60%), var(--glass-bg);
+}
+.glass-strong {
+  background: linear-gradient(180deg, var(--glass-sheen), transparent 40%), var(--glass-bg-strong);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-strong {
+    background: var(--glass-bg-strong);
+  }
+}
+
+/* The accent sheet's brightness slider: a round, lifted thumb. */
+.orbit input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+.orbit input[type='range']::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* ---- Story reports and the weekly review: motion ---- */
+@keyframes wordUp {
+  from {
+    opacity: 0;
+    transform: translateY(0.45em) rotate(2deg);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+@keyframes ringDraw {
+  from {
+    stroke-dashoffset: var(--ring);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes storyOpen {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(24px);
+    border-radius: 32px;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    border-radius: 0;
+  }
+}
+@keyframes storyNext {
+  from {
+    opacity: 0;
+    transform: translateX(28px) scale(0.98);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+@keyframes storyPrev {
+  from {
+    opacity: 0;
+    transform: translateX(-28px) scale(0.98);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+@keyframes storyPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-20deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12) rotate(4deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes storyRise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes storyGlowA {
+  0%,
+  100% {
+    transform: translate(-12%, -6%) scale(1);
+  }
+  50% {
+    transform: translate(10%, 8%) scale(1.18);
+  }
+}
+@keyframes storyGlowB {
+  0%,
+  100% {
+    transform: translate(14%, 10%) scale(1.1);
+  }
+  50% {
+    transform: translate(-10%, -12%) scale(0.92);
+  }
+}
+@keyframes storyBar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes storyUnderline {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+@keyframes storyOrbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes storyBurst {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.3);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--bx), var(--by)) scale(1);
+  }
+}
+@keyframes storyHint {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateY(5px);
+    opacity: 0.9;
+  }
+}
+@keyframes barGrow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }

@@ -1,6 +1,7 @@
 // Formatting helpers ported 1:1 from the Orbit prototype. Everything a person
 // reads goes through ../i18n, so dates, digits and units follow the language.
 import { date, getLang, num, t, tn } from '../i18n';
+import { currencySymbol, isCurrency } from './currencies';
 
 /**
  * The calendar day (YYYY-MM-DD) a timestamp falls on **in the user's own
@@ -20,28 +21,14 @@ export function hm(h: number): string {
   return t('{h}h {m}m', { h: Math.floor(m / 60), m: pad2(m % 60) });
 }
 
-export interface CurrencyOpt {
-  code: string;
-  label: string;
-  symbol: string;
-}
-export const CURRENCIES: CurrencyOpt[] = [
-  { code: 'EGP', label: 'Egyptian Pound', symbol: 'E£' },
-  { code: 'USD', label: 'US Dollar', symbol: '$' },
-  { code: 'EUR', label: 'Euro', symbol: '€' },
-  { code: 'GBP', label: 'British Pound', symbol: '£' },
-  { code: 'SAR', label: 'Saudi Riyal', symbol: 'SR ' },
-];
-
 let CURRENT_CURRENCY = 'EGP';
 export function setCurrency(code: string | undefined) {
-  CURRENT_CURRENCY = CURRENCIES.some((c) => c.code === code) ? (code as string) : 'EGP';
+  CURRENT_CURRENCY = isCurrency(code) ? code : 'EGP';
 }
+export const currentCurrency = () => CURRENT_CURRENCY;
 /** In Arabic the pound is written ج.م and, like every symbol, follows the figure. */
-const AR_SYMBOL: Record<string, string> = { EGP: 'ج.م', SAR: 'ر.س', USD: '$', EUR: '€', GBP: '£' };
 export function moneySymbol(): string {
-  if (getLang() === 'ar') return AR_SYMBOL[CURRENT_CURRENCY] || CURRENT_CURRENCY;
-  return CURRENCIES.find((c) => c.code === CURRENT_CURRENCY)?.symbol || '$';
+  return currencySymbol(CURRENT_CURRENCY, getLang() === 'ar' ? 'ar' : 'en');
 }
 /** Puts the symbol where the reader expects it: "E£1,250" or "1,250 ج.م". */
 const withSymbol = (figure: string) => (getLang() === 'ar' ? `${figure}\u00a0${moneySymbol()}` : moneySymbol() + figure);

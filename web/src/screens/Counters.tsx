@@ -6,7 +6,7 @@ import { BackButton } from '../ui';
 import { t } from '../i18n';
 
 export function Counters() {
-  const { state, go, open, emptyMode } = useStore();
+  const { state, go, open, emptyMode, back } = useStore();
   const counters = state!.counters;
   const logs = state!.countLogs;
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
@@ -16,7 +16,7 @@ export function Counters() {
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-        <BackButton onClick={() => go('home')} />
+        <BackButton onClick={back} />
         <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>{t('Counters')}</div>
         <span style={{ width: 40, height: 40, borderRadius: 'calc(13px * var(--sq))', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
           <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>

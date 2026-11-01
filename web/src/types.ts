@@ -309,6 +309,12 @@ export interface CountLog {
   ts: number;
 }
 
+export interface AssistantBrief {
+  title: string;
+  sections: { heading: string; body: string }[];
+  ts: number;
+}
+
 export interface AppState {
   profile: Profile;
   habits: Habit[];
@@ -328,6 +334,12 @@ export interface AppState {
   todoLists: TodoList[];
   todos: Todo[];
   wTemplates: WTemplate[];
+  /**
+   * The newest morning brief the person's assistant (Claude) delivered with
+   * their key, if one came in the last day and a half. Optional so states
+   * from before it existed (and the demo) still load.
+   */
+  assistantBrief?: AssistantBrief | null;
   /**
    * Totals for history older than the state window. The raw rows aren't sent —
    * one habit tap would otherwise re-download years of entries — but every

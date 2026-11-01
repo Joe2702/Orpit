@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { t } from './i18n';
 
 interface Item {
   id: string;
@@ -6,15 +7,22 @@ interface Item {
 }
 
 /**
- * Press-and-hold a block (~300ms, finger still), then drag to reorder.
+ * Drag a block by its handle (the ⋮⋮ grip beside it) to reorder.
+ *
+ * Only the handle starts a drag, and it starts at once: holding anywhere on a
+ * card used to pick it up, which made a slow tap or a pause mid-scroll move
+ * things nobody meant to move. The handle sits in the margin beside each
+ * block, level with its title, the same place on every screen.
  *
  * Uses NON-passive native touch listeners so we can call preventDefault() once a
  * drag begins — that's what actually stops the page from scrolling and stealing
  * the gesture (React's synthetic listeners are passive and can't do this, which
- * is why an earlier pointer-event version failed). A quick tap or a scroll swipe
- * passes straight through untouched.
+ * is why an earlier pointer-event version failed). The handle also has
+ * `touch-action: none`, so the browser never treats it as a scroll.
+ *
+ * From the keyboard, a focused handle moves its block with the arrow keys.
  */
-export function Reorderable({ items, onReorder }: { items: Item[]; onReorder: (ids: string[]) => void }) {
+export function Reorderable({ items, onReorder, handleTop = 2 }: { items: Item[]; onReorder: (ids: string[]) => void; handleTop?: number }) {
   const idsKey = items.map((i) => i.id).join('|');
   const [order, setOrder] = useState<string[]>(items.map((i) => i.id));
   useEffect(() => setOrder(items.map((i) => i.id)), [idsKey]);
@@ -84,11 +92,12 @@ export function Reorderable({ items, onReorder }: { items: Item[]; onReorder: (i
       setShift(sh);
     };
 
+    const onHandle = (target: EventTarget | null) => !!(target as HTMLElement | null)?.closest?.('[data-drag-handle]');
     const start = (clientY: number, id: string | null) => {
       if (!id) return;
       S.current.pending = { id, startY: clientY };
       clearTimeout(S.current.timer);
-      S.current.timer = setTimeout(activate, 300);
+      activate();
     };
     const move = (clientY: number, e: Event) => {
       if (S.current.info) {
@@ -123,13 +132,17 @@ export function Reorderable({ items, onReorder }: { items: Item[]; onReorder: (i
 
     const onTS = (e: TouchEvent) => {
       const t = e.touches[0];
-      if (t) start(t.clientY, idFrom(e.target));
+      if (t && onHandle(e.target)) start(t.clientY, idFrom(e.target));
     };
     const onTM = (e: TouchEvent) => {
       const t = e.touches[0];
       if (t) move(t.clientY, e);
     };
-    const onMD = (e: MouseEvent) => start(e.clientY, idFrom(e.target));
+    const onMD = (e: MouseEvent) => {
+      if (!onHandle(e.target)) return;
+      e.preventDefault(); // no text selection while dragging with a mouse
+      start(e.clientY, idFrom(e.target));
+    };
     const onMM = (e: MouseEvent) => {
       if (S.current.info || S.current.pending) move(e.clientY, e);
     };
@@ -178,6 +191,48 @@ export function Reorderable({ items, onReorder }: { items: Item[]; onReorder: (i
               opacity: isDragged ? 0.98 : 1,
             }}
           >
+            <span
+              data-drag-handle
+              role="button"
+              tabIndex={0}
+              aria-label={t('Move')}
+              onKeyDown={(e) => {
+                const step = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0;
+                if (!step) return;
+                e.preventDefault();
+                const i = order.indexOf(id);
+                const j = i + step;
+                if (j < 0 || j >= order.length) return;
+                const next = [...order];
+                [next[i], next[j]] = [next[j], next[i]];
+                setOrder(next);
+                onReorder(next);
+              }}
+              style={{
+                position: 'absolute',
+                top: handleTop - 8,
+                insetInlineStart: -22,
+                width: 30,
+                height: 40,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                touchAction: 'none',
+                cursor: isDragged ? 'grabbing' : 'grab',
+                color: isDragged ? 'var(--indigo)' : 'var(--text3)',
+                opacity: isDragged ? 1 : 0.75,
+                zIndex: 2,
+              }}
+            >
+              <svg width="10" height="16" viewBox="0 0 10 16" aria-hidden style={{ fill: 'currentColor' }}>
+                <circle cx="2.5" cy="3" r="1.5" />
+                <circle cx="7.5" cy="3" r="1.5" />
+                <circle cx="2.5" cy="8" r="1.5" />
+                <circle cx="7.5" cy="8" r="1.5" />
+                <circle cx="2.5" cy="13" r="1.5" />
+                <circle cx="7.5" cy="13" r="1.5" />
+              </svg>
+            </span>
             {byId.get(id)}
           </div>
         );

@@ -582,4 +582,23 @@ CREATE TABLE IF NOT EXISTS health_ignored (
   ext_id  TEXT NOT NULL,
   PRIMARY KEY (user_id, ext_id)
 );
+
+-- ===== A brief written by an assistant (Claude), delivered into Orbit =====
+-- A scheduled assistant posts its morning brief here with a key the person
+-- made in the app. Only the key's hash is kept, one key per person; the
+-- newest fourteen briefs are kept and older ones dropped.
+CREATE TABLE IF NOT EXISTS assistant_keys (
+  user_id      BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  key_hash     TEXT NOT NULL UNIQUE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_used_at TIMESTAMPTZ
+);
+CREATE TABLE IF NOT EXISTS assistant_briefs (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title      TEXT NOT NULL,
+  sections   JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS assistant_briefs_user ON assistant_briefs(user_id, created_at DESC);
 `;

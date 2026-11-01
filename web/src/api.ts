@@ -416,6 +416,12 @@ export const api = {
   healthImport: (b: { nights: unknown[]; workouts: unknown[] }) =>
     request<AppState & { imported?: { nights: number; workouts: number; skipped: number } }>('/health/import', { method: 'POST', body: JSON.stringify(b) }),
 
+  // The key Claude (or any assistant) uses to deliver a morning brief. The key
+  // itself is only ever in the answer to POST; afterwards just when it was made.
+  assistantKey: () => request<{ exists: boolean; createdAt?: number; lastUsedAt?: number | null }>('/assistant/key'),
+  makeAssistantKey: () => request<{ key: string; createdAt: number; lastUsedAt: number | null }>('/assistant/key', { method: 'POST' }),
+  revokeAssistantKey: () => request<{ ok: true }>('/assistant/key', { method: 'DELETE' }),
+
   // To-do lists
   addTodoList: (b: { name: string; color: string; icon: string }) => request<AppState>('/todo-lists', { method: 'POST', body: JSON.stringify(b) }),
   editTodoList: (id: string, b: { name: string; color: string; icon: string }) =>

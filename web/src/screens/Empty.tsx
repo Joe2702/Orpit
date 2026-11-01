@@ -7,7 +7,7 @@ import { todayStr } from '../lib/format';
 import { t } from '../i18n';
 
 export function HomeEmpty() {
-  const { state, open } = useStore();
+  const { state, open, back } = useStore();
   const quick = [
     { label: t('Workout'), key: 'coral', icon: <IconWorkout />, sheet: 'workout' as const },
     { label: t('Sleep'), key: 'blue', icon: <IconSleep />, sheet: 'sleep' as const },
@@ -71,11 +71,11 @@ function DetailEmpty({
   sheet: 'workout' | 'sleep' | 'expense' | 'habit';
   icon: React.ReactNode;
 }) {
-  const { go, open } = useStore();
+  const { go, open, back } = useStore();
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-        <BackButton onClick={() => go('home')} />
+        <BackButton onClick={back} />
         <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>{title}</div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '56px 16px', gap: 18 }}>

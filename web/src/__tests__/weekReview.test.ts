@@ -26,6 +26,9 @@ describe('week review', () => {
     expect(w.weakestHabit).toBe('Read');
     expect(w.workouts).toBe(1);
     expect(w.avgSleep).toBe(7.5);
+    // Day by day, oldest first: Talabat 3 days ago, Carrefour 2, Talabat 1.
+    expect(w.daily).toEqual([0, 0, 0, 200, 900, 300, 0]);
+    expect(w.daily.reduce((a, b) => a + b, 0)).toBe(w.spent);
   });
 
   it('is offered from Saturday noon to the end of Monday', () => {

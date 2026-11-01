@@ -8,6 +8,8 @@ import { briefSchedule, buildBrief, hasBriefData, markBriefRead } from '../lib/b
 import { scheduleBriefs } from '../lib/notify';
 import { track } from '../lib/usage';
 import { TodoRow } from '../TodoRow';
+import { AssistantBriefView } from '../AssistantBriefView';
+import { assistantSetUp, markAssistantRead } from '../lib/assistant';
 import { date, getLang, t, tData, tn } from '../i18n';
 
 /**
@@ -16,7 +18,7 @@ import { date, getLang, t, tData, tn } from '../i18n';
  * it, so Home stops offering it for the day.
  */
 export function Brief() {
-  const { state, go, open, mutateOpt, haptic } = useStore();
+  const { state, go, open, mutateOpt, haptic, back } = useStore();
   const { d } = useData();
   const b = useMemo(
     () =>
@@ -27,6 +29,7 @@ export function Brief() {
       }),
     [state, d.safe, d.budgets, d.reviewCount]
   );
+  const ab = state!.assistantBrief || null;
   useEffect(() => {
     markBriefRead();
     track('brief_open');
@@ -34,9 +37,14 @@ export function Brief() {
     scheduleBriefs(briefSchedule(state!));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // Claude's brief can arrive while this is open (the state refreshes), so
+  // whatever is on screen counts as read.
+  useEffect(() => {
+    markAssistantRead(ab);
+  }, [ab]);
 
   const firstName = (state!.profile.name || '').trim().split(/\s+/)[0] || '';
-  const empty = !hasBriefData(state!);
+  const empty = !hasBriefData(state!) && !ab;
 
   const toggle = (id: string) => {
     const key = dayKey();
@@ -73,7 +81,7 @@ export function Brief() {
   return (
     <div style={{ padding: '6px 20px 32px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-        <BackButton onClick={() => go('home')} />
+        <BackButton onClick={back} />
         <div style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: 'var(--text2)' }}>{date(Date.now(), { weekday: 'long', month: 'long', day: 'numeric' })}</div>
       </div>
       <div className="display" style={{ fontSize: 38, lineHeight: 1.08, color: 'var(--text)' }}>
@@ -96,6 +104,17 @@ export function Brief() {
             </div>
           ))}
         </div>
+      )}
+
+      {ab ? (
+        <AssistantBriefView brief={ab} />
+      ) : (
+        assistantSetUp() && (
+          <div style={{ fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.45, margin: '-6px 2px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span aria-hidden style={{ width: 7, height: 7, borderRadius: 9, background: 'var(--text3)', flex: 'none', animation: 'orbitPulse 1.6s ease-in-out infinite' }} />
+            {t('Claude’s brief hasn’t arrived yet today.')}
+          </div>
+        )
       )}
 
       {(b.sleep || b.sleepTracked) && (

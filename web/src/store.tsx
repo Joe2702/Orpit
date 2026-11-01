@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import { nextHistory } from './lib/nav';
 import { api, flushQueue, getToken, setToken, clearToken, ApiError, probeServer } from './api';
 import {
   OfflineQueuedError,
@@ -81,6 +82,9 @@ export type SheetKind =
   | 'todo'
   | 'todolistEdit'
   | 'health'
+  | 'accent'
+  | 'assistant'
+  | 'currency'
   | null;
 
 interface StoreCtx {
@@ -106,6 +110,8 @@ interface StoreCtx {
   setAuthMode: (m: 'signup' | 'signin') => void;
   // setters
   go: (s: Screen, data?: any) => void;
+  /** Back to the screen this one was opened from (Home if none). */
+  back: () => void;
   open: (s: SheetKind, data?: any) => void;
   closeSheet: () => void;
   setRange: (r: Range) => void;
@@ -706,9 +712,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [state]
   );
 
+  // Where each screen was opened from, so Back returns there: Analytics →
+  // Finances → Back is Analytics again, not Home. The tabs are roots and
+  // start afresh; going to the screen just below on the stack (a list's back
+  // arrow naming its parent) steps back rather than piling up a loop.
+  const hist = useRef<{ s: Screen; data: any }[]>([]);
+  const cur = useRef<{ s: Screen; data: any }>({ s: screen, data: screenData });
+  cur.current = { s: screen, data: screenData };
   const go = useCallback((s: Screen, data: any = null) => {
+    hist.current = nextHistory(hist.current, cur.current, s) as { s: Screen; data: any }[];
     setScreenData(data);
     setScreen(s);
+    setSheet(null);
+  }, []);
+  const back = useCallback(() => {
+    const prev = hist.current.pop();
+    setScreenData(prev ? prev.data : null);
+    setScreen(prev ? prev.s : 'home');
     setSheet(null);
   }, []);
   const open = useCallback((s: SheetKind, data: any = null) => {
@@ -741,6 +761,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     authMode,
     setAuthMode,
     go,
+    back,
     open,
     closeSheet,
     setRange,

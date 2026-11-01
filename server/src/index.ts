@@ -436,7 +436,7 @@ app.get(
   requireAuth,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    const [profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs, todoLists, todos] =
+    const [profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs, todoLists, todos, assistantBriefs] =
       await Promise.all([
         one('SELECT name, email, (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt" FROM users WHERE id = $1', [uid]),
         query('SELECT id::text, name, color, target, days, why, paused, archived FROM habits WHERE user_id = $1 ORDER BY sort, id', [uid]),
@@ -456,9 +456,10 @@ app.get(
            FROM todos WHERE user_id = $1 ORDER BY list_id, sort, id`,
           [uid]
         ),
+        query(`SELECT title, sections, ${TS('created_at')} FROM assistant_briefs WHERE user_id = $1 ORDER BY created_at`, [uid]),
       ]);
     res.json({
-      profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs, todoLists, todos,
+      profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs, todoLists, todos, assistantBriefs,
       exportedAt: new Date().toISOString(),
     });
   })
@@ -562,7 +563,8 @@ app.patch(
     if (['light', 'dark', 'system'].includes(req.body.theme)) fields.theme = req.body.theme;
     if (typeof req.body.reminders === 'boolean') fields.reminders = req.body.reminders;
     if (typeof req.body.haptics === 'boolean') fields.haptics = req.body.haptics;
-    if (['USD', 'EGP', 'EUR', 'GBP', 'SAR'].includes(req.body.currency)) fields.currency = req.body.currency;
+    // Any ISO 4217 code: the app offers every currency in circulation.
+    if (typeof req.body.currency === 'string' && /^[A-Z]{3}$/.test(req.body.currency)) fields.currency = req.body.currency;
     // Profile photo: a data URL to set it, or null to remove it.
     if (req.body.avatar === null) fields.avatar = null;
     else if (typeof req.body.avatar === 'string' && req.body.avatar.startsWith('data:image/')) {
@@ -2076,6 +2078,87 @@ app.delete(
   })
 );
 
+// ---------------- A brief from an assistant ----------------
+// Someone's scheduled assistant (Claude, running their morning brief) posts
+// the finished brief here, and Orbit shows it at the top of its own brief.
+// The assistant proves who it's for with a key the person made in Orbit:
+// shown once, kept only as a hash, replaced or revoked from Profile.
+
+const keyInfo = (uid: number) =>
+  one<{ createdAt: number; lastUsedAt: number | null }>(
+    `SELECT (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt",
+            CASE WHEN last_used_at IS NULL THEN NULL ELSE (EXTRACT(EPOCH FROM last_used_at) * 1000)::float8 END AS "lastUsedAt"
+     FROM assistant_keys WHERE user_id = $1`,
+    [uid]
+  );
+
+app.get(
+  '/api/assistant/key',
+  requireAuth,
+  wrap(async (req, res) => {
+    const k = await keyInfo(req.userId!);
+    res.json(k ? { exists: true, ...k } : { exists: false });
+  })
+);
+
+// Make a key, replacing any before it. The only time it's ever shown.
+app.post(
+  '/api/assistant/key',
+  requireAuth,
+  rateLimit('assistant-key', 10, 60 * 60 * 1000),
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const key = `orb_${randomBytes(24).toString('hex')}`;
+    await query(
+      `INSERT INTO assistant_keys (user_id, key_hash) VALUES ($1,$2)
+       ON CONFLICT (user_id) DO UPDATE SET key_hash = EXCLUDED.key_hash, created_at = now(), last_used_at = NULL`,
+      [uid, sha256(key)]
+    );
+    res.json({ key, ...(await keyInfo(uid)) });
+  })
+);
+
+app.delete(
+  '/api/assistant/key',
+  requireAuth,
+  wrap(async (req, res) => {
+    await query('DELETE FROM assistant_keys WHERE user_id = $1', [req.userId!]);
+    res.json({ exists: false });
+  })
+);
+
+app.post(
+  '/api/assistant/brief',
+  rateLimit('assistant-brief', 60, 60 * 60 * 1000),
+  wrap(async (req, res) => {
+    const auth = String(req.headers['x-orbit-key'] || '').trim() || String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+    if (!/^orb_[0-9a-f]{48}$/.test(auth)) return res.status(401).json({ error: 'Missing or malformed key' });
+    const owner = await one<{ user_id: number }>('SELECT user_id FROM assistant_keys WHERE key_hash = $1', [sha256(auth)]);
+    if (!owner) return res.status(401).json({ error: 'Unknown key' });
+    const uid = Number(owner.user_id);
+
+    const raw = Array.isArray(req.body?.sections) ? req.body.sections : [];
+    const sections = raw
+      .slice(0, 12)
+      .map((x: any) => ({ heading: String(x?.heading || '').trim().slice(0, 80), body: String(x?.body || '').trim().slice(0, 8000) }))
+      .filter((x: { heading: string; body: string }) => x.heading && x.body);
+    if (!sections.length) return res.status(400).json({ error: 'Send at least one section with a heading and a body' });
+    const title = String(req.body?.title || 'Morning brief').trim().slice(0, 120) || 'Morning brief';
+
+    const today = await one<{ n: number }>("SELECT COUNT(*)::int AS n FROM assistant_briefs WHERE user_id = $1 AND created_at > now() - interval '1 day'", [uid]);
+    if (today!.n >= 30) return res.status(429).json({ error: 'That is enough briefs for one day' });
+
+    await query('INSERT INTO assistant_briefs (user_id, title, sections) VALUES ($1,$2,$3)', [uid, title, JSON.stringify(sections)]);
+    await query(
+      `DELETE FROM assistant_briefs WHERE user_id = $1 AND id NOT IN
+         (SELECT id FROM assistant_briefs WHERE user_id = $1 ORDER BY created_at DESC LIMIT 14)`,
+      [uid]
+    );
+    await query('UPDATE assistant_keys SET last_used_at = now() WHERE user_id = $1', [uid]);
+    res.json({ ok: true, sections: sections.length });
+  })
+);
+
 // ---------------- Sleep and workouts from Health Connect ----------------
 // The phone reads what Fitbit (or another app) saved to Health Connect and
 // sends it here, already shaped as Orbit entries. Each keeps its Health
@@ -2441,6 +2524,7 @@ app.post(
       await c.query('DELETE FROM milestones WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM todos WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM health_ignored WHERE user_id = $1', [uid]);
+      await c.query('DELETE FROM assistant_briefs WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM todo_lists WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM habit_checkins WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM count_logs WHERE user_id = $1', [uid]);

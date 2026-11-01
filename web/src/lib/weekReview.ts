@@ -25,6 +25,8 @@ export interface WeekSummary {
   weakestHabit: string | null;
   workouts: number;
   avgSleep: number | null;
+  /** Spending on each of the seven days, oldest first, for the little chart. */
+  daily: number[];
 }
 
 export function summariseWeek(state: AppState, now: number = Date.now()): WeekSummary {
@@ -81,6 +83,7 @@ export function summariseWeek(state: AppState, now: number = Date.now()): WeekSu
     weakestHabit: weakest?.name ?? null,
     workouts: state.workouts.filter((w) => inWeek(w.ts)).length,
     avgSleep: nights.length ? Math.round((nights.reduce((s, n) => s + n.hours, 0) / nights.length) * 10) / 10 : null,
+    daily: days.map((d, i) => Math.round(spendOf(d, i < 6 ? days[i + 1] : to + 1))),
   };
 }
 

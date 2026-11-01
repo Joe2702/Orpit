@@ -26,6 +26,7 @@ import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDail
 import { briefSchedule, hasBriefData } from './lib/brief';
 import { OrbitMark } from './OrbitMark';
 import { syncDue, syncHealth } from './lib/health';
+import { accentFor, isHex } from './lib/color';
 import { connectivity, subscribe as subscribeConnectivity } from './lib/offline';
 import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
@@ -66,6 +67,9 @@ const LOAD = {
   MilestoneSheet: () => import('./sheets/MilestoneSheet'),
   TodoSheets: () => import('./sheets/TodoSheets'),
   HealthSheet: () => import('./sheets/HealthSheet'),
+  AccentSheet: () => import('./sheets/AccentSheet'),
+  AssistantSheet: () => import('./sheets/AssistantSheet'),
+  CurrencySheet: () => import('./sheets/CurrencySheet'),
   Todos: () => import('./screens/Todos'),
   TodoList: () => import('./screens/TodoList'),
   PartnerReportSheet: () => import('./sheets/PartnerReportSheet'),
@@ -109,6 +113,9 @@ const CountPickSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m
 const MilestoneSheet = lazy(() => LOAD.MilestoneSheet().then((m) => ({ default: m.MilestoneSheet })));
 const TodoSheet = lazy(() => LOAD.TodoSheets().then((m) => ({ default: m.TodoSheet })));
 const HealthSheet = lazy(() => LOAD.HealthSheet().then((m) => ({ default: m.HealthSheet })));
+const AccentSheet = lazy(() => LOAD.AccentSheet().then((m) => ({ default: m.AccentSheet })));
+const AssistantSheet = lazy(() => LOAD.AssistantSheet().then((m) => ({ default: m.AssistantSheet })));
+const CurrencySheet = lazy(() => LOAD.CurrencySheet().then((m) => ({ default: m.CurrencySheet })));
 const TodoListSheet = lazy(() => LOAD.TodoSheets().then((m) => ({ default: m.TodoListSheet })));
 const Todos = lazy(() => LOAD.Todos().then((m) => ({ default: m.Todos })));
 const TodoList = lazy(() => LOAD.TodoList().then((m) => ({ default: m.TodoList })));
@@ -242,6 +249,12 @@ function SheetBody() {
       return <TodoSheet />;
     case 'health':
       return <HealthSheet />;
+    case 'accent':
+      return <AccentSheet />;
+    case 'assistant':
+      return <AssistantSheet />;
+    case 'currency':
+      return <CurrencySheet />;
     case 'todolistEdit':
       return <TodoListSheet />;
     case 'countlog':
@@ -302,6 +315,8 @@ function StatusBar() {
 
 function TabBar() {
   const { screen, go, open } = useStore();
+  // The lens: a pane of glass behind the current tab that glides to the next.
+  const slot = screen === 'home' ? 0 : screen === 'analytics' ? 1 : screen === 'settings' ? 3 : -1;
 
   // A floating bar over the screen. Each destination is labelled: an icon
   // alone makes people guess, and the guess is the moment an app feels unsure.
@@ -327,28 +342,40 @@ function TabBar() {
     // block content — only the pill is interactive.
     <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 16px 16px', zIndex: 40, pointerEvents: 'none' }}>
       <div
+        className="glass"
         style={{
           position: 'relative',
           height: 64,
           pointerEvents: 'auto',
-          // Frosted glass: translucent + backdrop blur, so text scrolling under
-          // it shows through blurred rather than sitting on a solid bar.
-          background: 'color-mix(in srgb, var(--surface) 82%, transparent)',
-          backdropFilter: 'blur(20px) saturate(1.4)',
-          WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
-          border: '1px solid var(--border)',
+          // Glass: what scrolls under the bar shows through, blurred.
           borderRadius: 'calc(26px * var(--sq))',
-          boxShadow: '0 10px 30px -12px rgba(0,0,0,.35)',
           display: 'flex',
           alignItems: 'center',
           padding: '0 8px',
         }}
       >
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            top: 7,
+            bottom: 7,
+            width: 'calc((100% - 16px) / 4)',
+            borderRadius: 'calc(20px * var(--sq))',
+            background: 'var(--glass-lens)',
+            boxShadow: 'inset 0 1px 0 var(--glass-hi), 0 2px 8px -3px rgba(0,0,0,.18)',
+            transform: `translateX(${(isRTL() ? -1 : 1) * Math.max(0, slot) * 100}%)`,
+            opacity: slot < 0 ? 0 : 1,
+            transition: 'transform .5s cubic-bezier(.32,1.35,.5,1), opacity .25s ease',
+            insetInlineStart: 8,
+            pointerEvents: 'none',
+          }}
+        />
         {item(screen === 'home', () => go('home'), <path d="M4 11l8-7 8 7M6 9.5V19h4.5v-5h3v5H18V9.5" />, t('Home'))}
         {item(screen === 'analytics', () => go('analytics'), <path d="M4 20V11M10 20V5M16 20v-6M4 20h16" />, t('Analytics'))}
         {/* Add — the primary create action; accented but flat within the bar. */}
         <div tabIndex={0} onClick={() => open('chooser')} className="press92" role="button" aria-label={t('Add an entry')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: 48 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.28), 0 6px 14px -6px rgba(0,0,0,.45)' }}>
             <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--bg)', strokeWidth: 2.3, strokeLinecap: 'round' }} aria-hidden><path d="M11 4v14M4 11h14" /></svg>
           </div>
         </div>
@@ -377,8 +404,8 @@ function PasswordPrompt() {
   if (!passwordState) return null;
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
-      <div onClick={() => closePassword(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.5)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(2px)' }} />
-      <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(8,9,14,.35)', animation: 'fadeUp .25s ease' }}>
+      <div onClick={() => closePassword(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
+      <div className="glass-strong" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease' }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em', textAlign: 'center' }}>{passwordState.title}</div>
         {passwordState.message && (
           <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5, textAlign: 'center' }}>{passwordState.message}</div>
@@ -484,7 +511,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 }
 
 export function App() {
-  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, open, mutateOpt, booting, bootError, retryBoot, go, confirmState, closeConfirm, passwordState, report, closeReport, applyState, showToast } = useStore();
+  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, open, mutateOpt, booting, bootError, retryBoot, go, back, confirmState, closeConfirm, passwordState, report, closeReport, applyState, showToast } = useStore();
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
 
   // Track the phone's own light/dark setting so "System" can follow it live.
@@ -540,15 +567,6 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authed, habitsKey, billsKey, tasksKey, hasData, state?.profile.modules]);
 
-  // The chosen accent replaces the app's primary colour everywhere by remapping
-  // the --indigo token the UI already uses.
-  const accent = (authed && state ? state.profile.accent : 'indigo') || 'indigo';
-  useEffect(() => {
-    const root = document.querySelector('.orbit') as HTMLElement | null;
-    if (!root) return;
-    if (accent === 'indigo') root.style.removeProperty('--indigo');
-    else root.style.setProperty('--indigo', `var(--${accent})`);
-  }, [accent, authed]);
 
   // Text size: the UI uses fixed pixel sizes, so scale the whole app with
   // `zoom` (supported in the Android WebView and Chrome) rather than rewriting
@@ -562,6 +580,23 @@ export function App() {
 
   const rawTheme = authed && state ? state.profile.theme : localTheme;
   const theme: 'light' | 'dark' = rawTheme === 'system' ? (sysDark ? 'dark' : 'light') : rawTheme;
+
+  // The chosen accent replaces the app's primary colour everywhere by remapping
+  // the --indigo token the UI already uses. A colour from the wheel is
+  // adjusted per theme so it reads against the page (lib/color.ts); the older
+  // preset names still map to their tokens.
+  const accent = (authed && state ? state.profile.accent : 'indigo') || 'indigo';
+  useEffect(() => {
+    document.querySelectorAll<HTMLElement>('.orbit').forEach((root) => {
+      root.style.removeProperty('--on-accent');
+      if (isHex(accent)) {
+        const a = accentFor(accent, theme);
+        root.style.setProperty('--indigo', a.accent);
+        root.style.setProperty('--on-accent', a.onAccent);
+      } else if (accent === 'indigo') root.style.removeProperty('--indigo');
+      else root.style.setProperty('--indigo', `var(--${accent})`);
+    });
+  }, [accent, authed, theme]);
 
   // The status and navigation bar icons, matched to what's behind them. On
   // Android 15 and later the bars are transparent and the app draws under
@@ -857,22 +892,28 @@ export function App() {
   // Back should navigate inside the app; only at the top level does it ask
   // "exit Orbit?" — like a real installed app, instead of instantly closing.
   const [exitPrompt, setExitPrompt] = useState(false);
-  const nav = useRef({ screen, sheet, authed });
-  nav.current = { screen, sheet, authed };
+  const nav = useRef({ screen, sheet, authed, report });
+  nav.current = { screen, sheet, authed, report };
   const rootScreens = ['home', 'welcome', 'signin'];
 
   useEffect(() => {
     // Seed one history entry so the first Back press is caught, not an instant exit.
     window.history.pushState({ orbit: true }, '');
     const onPop = () => {
-      const { screen: sc, sheet: sh } = nav.current;
+      const { screen: sc, sheet: sh, report: rp } = nav.current;
+      // A story report sits above everything: Back closes it first.
+      if (rp) {
+        closeReport();
+        window.history.pushState({ orbit: true }, ''); // re-arm
+        return;
+      }
       if (sh) {
         closeSheet();
         window.history.pushState({ orbit: true }, ''); // re-arm
         return;
       }
       if (!rootScreens.includes(sc)) {
-        go('home');
+        back();
         window.history.pushState({ orbit: true }, ''); // re-arm
         return;
       }
@@ -944,7 +985,7 @@ export function App() {
       </div>
 
       {toast && (
-        <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, background: 'var(--text)', color: 'var(--bg)', padding: '11px 20px', borderRadius: (toast || '').length > 40 ? 'calc(18px * var(--sq))' : 999, fontSize: 14, fontWeight: 600, lineHeight: 1.4, boxShadow: '0 12px 32px rgba(8,9,14,.28)', animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, width: 'max-content', maxWidth: 'calc(100% - 32px)', whiteSpace: 'normal' }}>
+        <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, color: 'var(--text)', padding: '11px 20px', borderRadius: (toast || '').length > 40 ? 'calc(18px * var(--sq))' : 999, fontSize: 14, fontWeight: 600, lineHeight: 1.4, animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, width: 'max-content', maxWidth: 'calc(100% - 32px)', whiteSpace: 'normal' }} className="glass-strong">
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <path d="M4 9.5l3.4 3.4L14 5" />
           </svg>
@@ -954,7 +995,7 @@ export function App() {
               onClick={runUndo}
               role="button"
               aria-label={t('Undo')}
-              style={{ marginInlineStart: 4, paddingInlineStart: 12, borderInlineStart: '1px solid color-mix(in srgb,var(--bg) 35%,transparent)', fontWeight: 700, color: 'var(--warning)', cursor: 'pointer' }}
+              style={{ marginInlineStart: 4, paddingInlineStart: 12, borderInlineStart: '1px solid var(--border)', fontWeight: 700, color: 'var(--indigo)', cursor: 'pointer' }}
             >
               {t('Undo')}
             </span>
@@ -966,8 +1007,8 @@ export function App() {
 
       {sheet && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 90, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-          <div onClick={closeSheet} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.5)', animation: 'fadeIn .25s ease', backdropFilter: 'blur(2px)' }} />
-          <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 'calc(30px * var(--sq)) calc(30px * var(--sq)) 0 0', animation: 'sheetUp .34s cubic-bezier(.22,1,.36,1)', maxHeight: '92%', display: 'flex', flexDirection: 'column', boxShadow: '0 -10px 40px rgba(8,9,14,.3)' }}>
+          <div onClick={closeSheet} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .25s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
+          <div className="glass-strong" style={{ position: 'relative', borderRadius: 'calc(30px * var(--sq)) calc(30px * var(--sq)) 0 0', borderBottom: 'none', animation: 'sheetUp .34s cubic-bezier(.22,1,.36,1)', maxHeight: '92%', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 2px', flex: 'none' }}>
               <div style={{ width: 38, height: 4, borderRadius: 999, background: 'var(--border)' }} />
             </div>
@@ -982,8 +1023,8 @@ export function App() {
 
       {exitPrompt && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 98, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
-          <div onClick={cancelExit} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.5)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(2px)' }} />
-          <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(8,9,14,.35)', animation: 'fadeUp .25s ease', textAlign: 'center' }}>
+          <div onClick={cancelExit} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
+          <div className="glass-strong" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease', textAlign: 'center' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>{t('Exit Orbit?')}</div>
             <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>{t('Are you sure you want to close the app?')}</div>
             <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
@@ -1000,8 +1041,8 @@ export function App() {
 
       {confirmState && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
-          <div onClick={() => closeConfirm(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.5)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(2px)' }} />
-          <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, boxShadow: '0 20px 60px rgba(8,9,14,.35)', animation: 'fadeUp .25s ease', textAlign: 'center' }}>
+          <div onClick={() => closeConfirm(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
+          <div className="glass-strong" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease', textAlign: 'center' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>{confirmState.title}</div>
             {confirmState.message && (
               <div dir="auto" style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5, whiteSpace: 'pre-line', overflowWrap: 'anywhere', maxHeight: '50vh', overflowY: 'auto' }}>{confirmState.message}</div>
