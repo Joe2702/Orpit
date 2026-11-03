@@ -164,7 +164,11 @@ export function attachLens(el: HTMLElement, cfg: LensCfg): () => void {
       const w = Math.round(el.offsetWidth);
       const h = Math.round(el.offsetHeight);
       if (!w || !h) return;
-      const r = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0;
+      const cs = getComputedStyle(el);
+      const r = parseFloat(cs.borderTopLeftRadius) || 0;
+      // Chrome doesn't trim an SVG backdrop filter to rounded corners, so
+      // without this the glass pokes out square past the rim at each corner.
+      el.style.setProperty('clip-path', `inset(0 round ${cs.borderRadius})`);
       const key = `${w}x${h}x${r}`;
       if (key === last) return;
       last = key;
@@ -185,6 +189,7 @@ export function attachLens(el: HTMLElement, cfg: LensCfg): () => void {
       ro.disconnect();
       if (frame) cancelAnimationFrame(frame);
       el.style.removeProperty('backdrop-filter');
+      el.style.removeProperty('clip-path');
       img.parentElement?.remove();
     };
 }

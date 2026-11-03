@@ -429,7 +429,8 @@ function TabBar({ scroller }: { scroller: React.RefObject<HTMLDivElement | null>
             const r = e.currentTarget.getBoundingClientRect();
             shine.current?.style.setProperty('--mx', `${e.clientX - r.left}px`);
           }}
-          style={{ position: 'relative', pointerEvents: 'auto', borderRadius: 31, flex: folded ? '0 0 62px' : '1 1 0%', minWidth: 62, transition: `flex .45s ${spring}` }}
+          // The shadow lives here: the glass itself is clipped to its shape.
+          style={{ position: 'relative', pointerEvents: 'auto', borderRadius: 31, boxShadow: 'var(--glass-shadow)', flex: folded ? '0 0 62px' : '1 1 0%', minWidth: 62, transition: `flex .45s ${spring}` }}
         >
           {/* Glass layers are siblings, never nested: glass inside glass sees nothing behind. */}
           <div className="glass" data-lens="bar" style={{ position: 'absolute', inset: 0, borderRadius: 31 }} />
@@ -487,12 +488,12 @@ function TabBar({ scroller }: { scroller: React.RefObject<HTMLDivElement | null>
         <div
           tabIndex={0}
           onClick={() => open('chooser')}
-          className="glass press92"
-          data-lens="fab"
+          className="press92"
           role="button"
           aria-label={t('Add an entry')}
-          style={{ position: 'relative', pointerEvents: 'auto', width: 62, height: 62, flex: 'none', borderRadius: '50%', marginInlineStart: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          style={{ position: 'relative', pointerEvents: 'auto', width: 62, height: 62, flex: 'none', borderRadius: '50%', boxShadow: 'var(--glass-shadow)', marginInlineStart: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
         >
+          <div className="glass" data-lens="fab" aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: '50%' }} />
           <svg width="24" height="24" viewBox="0 0 24 24" style={{ position: 'relative', fill: 'none', stroke: 'var(--text)', strokeWidth: 2.3, strokeLinecap: 'round' }} aria-hidden>
             <path d="M12 5v14M5 12h14" />
           </svg>
