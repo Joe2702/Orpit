@@ -69,8 +69,8 @@ body {
 
    Neutrals lean very slightly toward the accent rather than navy: a blue
    "dark mode" and an indigo glow on everything is the look of a generated
-   template, and it competes with the data for attention. Surfaces are solid; glass is kept for
-   the floating tab bar alone. */
+   template, and it competes with the data for attention. Cards are solid; glass is kept for
+   what floats above the page: the tab bar, sheets, dialogs and toasts. */
 
 /* ---- Light ---- */
 .orbit {
@@ -99,6 +99,21 @@ body {
   --shadow: 0 1px 2px rgba(20, 20, 15, 0.04);
   --shadow-sm: none;
   --shadow-lg: 0 20px 50px -16px rgba(20, 20, 15, 0.28);
+  /* Glass: the floating things (tab bar, sheets, dialogs, toasts) are
+     translucent and blur what's behind them, with a lit top edge. */
+  /* Liquid glass, "tinted": clear enough to see colour and shape through,
+     frosted enough that labels stay readable over photos. */
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-strong: rgba(255, 255, 255, 0.7);
+  --glass-glow: rgba(255, 255, 255, 0.4);
+  --glass-rim-a: rgba(255, 255, 255, 0.95);
+  --glass-rim-b: rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 10px 30px -10px rgba(10, 12, 30, 0.35);
+  --glass-drop: rgba(255, 255, 255, 0.16);
+  --glass-drop-glow: rgba(255, 255, 255, 0.6);
+  --glass-label-glow: 0 0 6px rgba(255, 255, 255, 0.85);
+  --glass-shine: rgba(255, 255, 255, 0.3);
+  --glass-hi: rgba(255, 255, 255, 0.95);
   --glow: none;
   --scrim: rgba(12, 12, 10, 0.42);
   /* Text and icons sitting on an accent fill. */
@@ -138,6 +153,17 @@ body {
   --shadow: none;
   --shadow-sm: none;
   --shadow-lg: 0 24px 60px -18px rgba(0, 0, 0, 0.85);
+  --glass-bg: rgba(30, 30, 36, 0.58);
+  --glass-bg-strong: rgba(28, 28, 34, 0.74);
+  --glass-glow: rgba(255, 255, 255, 0.12);
+  --glass-rim-a: rgba(255, 255, 255, 0.55);
+  --glass-rim-b: rgba(255, 255, 255, 0.35);
+  --glass-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
+  --glass-drop: rgba(255, 255, 255, 0.09);
+  --glass-drop-glow: rgba(255, 255, 255, 0.24);
+  --glass-label-glow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  --glass-shine: rgba(255, 255, 255, 0.12);
+  --glass-hi: rgba(255, 255, 255, 0.22);
   --glow: none;
   --scrim: rgba(0, 0, 0, 0.62);
   --on-accent: #0c0c0f;
@@ -333,4 +359,257 @@ html[lang='ar'] .display {
 @keyframes slideInL {
   from { opacity: 0; transform: translate3d(-26px, 0, 0); }
   to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+/* ---- Glass ----
+   Translucent, blurring and saturating what's behind it, with a sheen from
+   the top and a lit edge, the way light catches the rim of a pane. The
+   strong kind is for sheets and dialogs, where text has to stay easy to read
+   whatever is underneath. Phones that can't blur get the strong fill. */
+/* Liquid glass. The frost is here; the bend at the rim is added per element
+   by lib/liquid.ts where the phone can draw it. Nothing above glass may use
+   a blend mode, filter or opacity: in Chrome that cuts the glass off from
+   what's behind it. */
+.glass,
+.glass-strong {
+  -webkit-backdrop-filter: blur(14px) saturate(170%);
+  backdrop-filter: blur(14px) saturate(170%);
+  box-shadow: var(--glass-shadow), inset 0 0 14px var(--glass-glow), inset 0 -2px 6px rgba(0, 0, 0, 0.06);
+}
+.glass {
+  background: var(--glass-bg);
+}
+.glass-strong {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  backdrop-filter: blur(26px) saturate(180%);
+  box-shadow: var(--glass-shadow), inset 0 0 22px var(--glass-glow);
+}
+/* The rim: lit at the top-left and bottom-right, darker along the rest. */
+.glass::after,
+.glass-strong::after,
+.glass-rim::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.2px;
+  pointer-events: none;
+  background: linear-gradient(135deg, var(--glass-rim-a), rgba(255, 255, 255, 0.16) 30%, rgba(255, 255, 255, 0.05) 60%, var(--glass-rim-b));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-strong {
+    background: var(--glass-bg-strong);
+  }
+}
+/* "Reduce transparency" in the phone's settings: solid panes, no see-through. */
+@media (prefers-reduced-transparency: reduce) {
+  .orbit .glass,
+  .orbit .glass-strong {
+    background: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@keyframes squish {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scaleX(1.3) scaleY(0.86);
+  }
+  65% {
+    transform: scaleX(0.95) scaleY(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* The accent sheet's brightness slider: a round, lifted thumb. */
+.orbit input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+.orbit input[type='range']::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* ---- Story reports and the weekly review: motion ---- */
+@keyframes wordUp {
+  from {
+    opacity: 0;
+    transform: translateY(0.45em) rotate(2deg);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+@keyframes ringDraw {
+  from {
+    stroke-dashoffset: var(--ring);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes storyOpen {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(24px);
+    border-radius: 32px;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    border-radius: 0;
+  }
+}
+@keyframes storyNext {
+  from {
+    opacity: 0;
+    transform: translateX(28px) scale(0.98);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+@keyframes storyPrev {
+  from {
+    opacity: 0;
+    transform: translateX(-28px) scale(0.98);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+@keyframes storyPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-20deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12) rotate(4deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes storyRise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes storyGlowA {
+  0%,
+  100% {
+    transform: translate(-12%, -6%) scale(1);
+  }
+  50% {
+    transform: translate(10%, 8%) scale(1.18);
+  }
+}
+@keyframes storyGlowB {
+  0%,
+  100% {
+    transform: translate(14%, 10%) scale(1.1);
+  }
+  50% {
+    transform: translate(-10%, -12%) scale(0.92);
+  }
+}
+@keyframes storyBar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes storyUnderline {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+@keyframes storyOrbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes storyBurst {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.3);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--bx), var(--by)) scale(1);
+  }
+}
+@keyframes storyHint {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateY(5px);
+    opacity: 0.9;
+  }
+}
+@keyframes barGrow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }

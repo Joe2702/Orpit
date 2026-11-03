@@ -180,6 +180,7 @@ export function Habits() {
       <Reorderable
         items={h.habits.map((hb) => ({ id: hb.id, node: <div style={{ marginBottom: 10 }}>{habitCard(hb)}</div> }))}
         onReorder={(ids) => mutate(() => api.reorderHabits(ids)).catch(() => {})}
+        handleTop={14}
       />
       <div tabIndex={0}
         onClick={() => open('habit')}

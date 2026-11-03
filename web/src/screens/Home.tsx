@@ -2,10 +2,11 @@ import React from 'react';
 import { useStore } from '../store';
 import { useData } from '../hooks';
 import { api } from '../api';
-import { greeting, minutes, hm, money0, moneyShort, cNum, counterTotals, dayKey, relLabel } from '../lib/format';
+import { greeting, minutes, hm, money0, moneyShort, cNum, counterTotals, dayKey, relLabel, listSep } from '../lib/format';
 import { missedRun } from '../lib/comeback';
 import { reviewDue, currentIntention } from '../lib/weekReview';
 import { briefDue, hasBriefData } from '../lib/brief';
+import { assistantUnread } from '../lib/assistant';
 import { dueNow, listCounts } from '../lib/todos';
 import { TodoRow } from '../TodoRow';
 import { period } from '../lib/period';
@@ -136,7 +137,9 @@ export function Home() {
   // ---- The weekly review, and the one thing chosen in it ----
   const weekDue = reviewDue() && (state!.txns.length > 0 || state!.checkins.length > 0);
   // The morning brief, offered until it's read or the morning is over.
-  const briefOpen = briefDue() && hasBriefData(state!);
+  // Claude's brief is offered whenever a new one has come in, morning or not.
+  const claudeNew = assistantUnread(state!.assistantBrief) ? state!.assistantBrief! : null;
+  const briefOpen = !!claudeNew || (briefDue() && hasBriefData(state!));
   const intention = currentIntention();
 
   // ---- Never miss twice, and coming back ----
@@ -476,6 +479,13 @@ export function Home() {
         <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {date(Date.now(), { weekday: 'long', month: 'long', day: 'numeric' })}
         </div>
+        {/* The brief is always a tap away, not only while the morning card shows. */}
+        <div tabIndex={0} onClick={() => go('brief')} className="press96" role="button" aria-label={t('Morning brief')} style={{ ...headBtn, position: 'relative' }}>
+          <svg width="20" height="20" viewBox="0 0 22 22" aria-hidden style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+            <path d="M3 15.5h16M6 15.5a5 5 0 0 1 10 0M11 4.5v2.2M4.6 8.1l1.5 1.5M17.4 8.1l-1.5 1.5M7 18.5h8" />
+          </svg>
+          {claudeNew && <span aria-hidden style={{ position: 'absolute', top: 6, insetInlineEnd: 6, width: 8, height: 8, borderRadius: 9, background: 'var(--indigo)', boxShadow: '0 0 0 2px var(--surface)' }} />}
+        </div>
         <div tabIndex={0} onClick={() => go('search')} className="press96" role="button" aria-label={t('Search')} style={headBtn}>
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <circle cx="8.5" cy="8.5" r="5.5" />
@@ -516,8 +526,10 @@ export function Home() {
             </svg>
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>{t('Your morning brief')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>{t('Last night, today’s plan and your money, in a minute.')}</div>
+            <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>{claudeNew ? t('Claude’s brief is in') : t('Your morning brief')}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45, ...(claudeNew ? { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } : {}) }}>
+              {claudeNew ? claudeNew.sections.map((s) => s.heading).join(listSep()) : t('Last night, today’s plan and your money, in a minute.')}
+            </div>
           </div>
           <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path className="flip-rtl" d="M7 4l5 5-5 5" />
@@ -600,7 +612,7 @@ export function Home() {
         </div>
       )}
 
-      <Reorderable items={items} onReorder={saveOrder} />
+      <Reorderable items={items} onReorder={saveOrder} handleTop={4} />
     </div>
   );
 }

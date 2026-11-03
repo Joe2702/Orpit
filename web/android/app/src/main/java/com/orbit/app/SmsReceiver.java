@@ -64,6 +64,22 @@ public class SmsReceiver extends BroadcastReceiver {
         "\\bOTP\\b|ONE[ -]?TIME|VERIFICATION|PASSCODE|PASSWORD|\\bPIN\\b|\\bCODE\\b|كلمة المرور|رمز|كود",
         Pattern.CASE_INSENSITIVE
     );
+    /**
+     * A declined, rejected or failed payment: no money moved, so no "Payment"
+     * notification and nothing added to the month's total. The same wording
+     * the web layer skips (smsParse.ts, NOT_A_TRANSACTION).
+     */
+    private static final Pattern DECLINED = Pattern.compile(
+        "\\b(?:DECLINE[DS]?|REJECT(?:ED|ION)?|FAILED|FAILURE|UNSUCCESSFUL|INSUFFICIENT|DENIED)\\b"
+            + "|\\bNOT (?:SUCCESSFUL|APPROVED|COMPLETED|PROCESSED)\\b"
+            + "|\\b(?:COULD|CAN) ?NOT BE (?:COMPLETED|PROCESSED|DONE)\\b"
+            + "|\\bUNABLE TO (?:PROCESS|COMPLETE)\\b"
+            + "|\\b(?:INCORRECT|WRONG|INVALID) PIN\\b"
+            + "|\\bEXCEEDS? (?:THE |YOUR )?(?:AVAILABLE |DAILY |CARD |CREDIT |TRANSACTION )?LIMIT\\b"
+            + "|مرفوض|رفض|فشل|غير ناجح|لم تنجح|لم تتم|لم تكتمل|لم يتم (?:تنفيذ|إتمام|اتمام|قبول|اعتماد|الموافق)"
+            + "|تعذر|غير كاف|لا يكفي|عدم كفاي|غير مقبول|غير مكتمل",
+        Pattern.CASE_INSENSITIVE
+    );
     private static final String CUR = "EGP|LE|L\\.E\\.?|E£|USD|EUR|GBP|SAR|AED|KWD|QAR|جنيه|ج\\.م";
     private static final String NUM = "\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?";
     private static final Pattern AMOUNT = Pattern.compile(
@@ -106,6 +122,7 @@ public class SmsReceiver extends BroadcastReceiver {
         }
         String body = toLatinDigits(sb.toString());
         if (CODE.matcher(body).find()) return;
+        if (DECLINED.matcher(body).find()) return;
         String amount = amountOf(body);
         if (amount == null) return;
 

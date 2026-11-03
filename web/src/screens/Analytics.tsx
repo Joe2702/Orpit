@@ -173,7 +173,7 @@ export function Analytics() {
       </div>
       <RangeSeg period={P} />
 
-      <Reorderable items={items} onReorder={saveOrder} />
+      <Reorderable items={items} onReorder={saveOrder} handleTop={16} />
 
       <div style={{ height: 14 }} />
 

@@ -7,7 +7,7 @@ import { Glyph } from '../lib/appIcons';
 import { t, tn } from '../i18n';
 
 export function Achievements() {
-  const { state, go, claimedBadges, claimBadge, haptic } = useStore();
+  const { state, go, claimedBadges, claimBadge, haptic, back } = useStore();
   const [justClaimed, setJustClaimed] = useState<string | null>(null);
   const claimed = new Set(claimedBadges);
 
@@ -31,7 +31,7 @@ export function Achievements() {
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <BackButton onClick={() => go('home')} />
+      <BackButton onClick={back} />
       <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--text)', margin: '4px 0 18px' }}>
         {t('Achievements')}
       </div>

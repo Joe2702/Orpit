@@ -18,7 +18,7 @@ interface Hit {
 // One search box across everything — entries, habits and counters — so people
 // can find "that gym session in March" without hunting through tabs.
 export function Search() {
-  const { state, go, open } = useStore();
+  const { state, go, open, back } = useStore();
   const [q, setQ] = useState('');
   const ql = q.trim().toLowerCase();
 
@@ -111,7 +111,7 @@ export function Search() {
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-        <BackButton onClick={() => go('home')} />
+        <BackButton onClick={back} />
         <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>{t('Search')}</div>
       </div>
 

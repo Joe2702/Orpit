@@ -99,10 +99,10 @@ export function SectionLabel({
 }
 
 export function DetailHeader({ title, subtitle }: { title: string; subtitle?: string }) {
-  const { go } = useStore();
+  const { go, back } = useStore();
   return (
     <div style={{ marginBottom: 18 }}>
-      <BackButton onClick={() => go('home')} />
+      <BackButton onClick={back} />
       <div className="display" style={{ fontSize: 38, lineHeight: 1.05, color: 'var(--text)', marginTop: 14 }}>
         {title}
       </div>
@@ -128,7 +128,7 @@ const Chevron = ({ dir }: { dir: 'l' | 'r' }) => (
 const RANGE_LABEL: Record<Range, string> = { Week: tk('Week'), Month: tk('Month'), Year: tk('Year'), All: tk('All') };
 
 export function RangeSeg({ period }: { period?: { title: string; caption: string; hasPrev: boolean; isCurrent: boolean } }) {
-  const { range, setRange, rangeOffset, setRangeOffset } = useStore();
+  const { range, setRange, rangeOffset, setRangeOffset, back } = useStore();
   const items: Range[] = ['Week', 'Month', 'Year', 'All'];
   const navBtn = (dir: 'l' | 'r', enabled: boolean, onClick: () => void, label: string) => (
     <div tabIndex={0}

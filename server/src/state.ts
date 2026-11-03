@@ -105,6 +105,13 @@ export async function buildState(userId: number) {
 
   // To-do lists, every open task, and what was finished in the last 30 days:
   // enough for a list's "Done" section without shipping years of ticked boxes.
+  // The newest brief from the person's assistant, if one came in the last 36 hours.
+  const assistantQ = one(
+    `SELECT title, sections, (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS ts
+     FROM assistant_briefs WHERE user_id = $1 AND created_at > now() - interval '36 hours'
+     ORDER BY created_at DESC LIMIT 1`,
+    [userId]
+  );
   const todoListsQ = query(
     `SELECT id::text, name, color, icon FROM todo_lists WHERE user_id = $1 ORDER BY sort, id`,
     [userId]
@@ -224,6 +231,7 @@ export async function buildState(userId: number) {
     accSumRows,
     todoLists,
     todos,
+    assistantBrief,
   ] = await Promise.all([
     profileQ,
     habitsQ,
@@ -245,6 +253,7 @@ export async function buildState(userId: number) {
     accSumRowsQ,
     todoListsQ,
     todosQ,
+    assistantQ,
   ]);
 
   // claimed_badges is stored as a JSON string; hand the client a real array.
@@ -307,6 +316,7 @@ export async function buildState(userId: number) {
     countLogs,
     todoLists,
     todos,
+    assistantBrief: assistantBrief ?? null,
     archive,
   };
 }

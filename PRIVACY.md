@@ -89,6 +89,17 @@ contact: **youssif_mohammed@aucegypt.edu**
   Health Connect's settings. What was already imported stays until you
   delete it.
 
+**A morning brief from Claude (optional)**
+- If you make a key in Profile → Connected apps → Claude and give it to your
+  own Claude scheduled task, that task can send Orbit the morning brief it
+  wrote for you. Orbit stores the brief's title, headings and text, and when it
+  arrived, and keeps your 14 most recent. It shows them only to you.
+- Orbit keeps only a fingerprint (hash) of the key, never the key itself. The
+  key can only add a brief: it can't read or change anything in your account.
+- Data goes one way: Orbit sends nothing to Claude or to Anthropic.
+- Turn it off in Profile → Connected apps → Claude, which stops the key working
+  at once. Briefs are deleted with Reset all data and with your account.
+
 **Accountability partners (optional, 18+)**
 - Your date of birth, if you give it. It is used only to check that you are 18
   or over, which this feature requires. Your partner never sees it or your age.
@@ -152,6 +163,7 @@ routine backups for a short period before being overwritten.
 - **Report a partner**: Profile → Accountability partner → Report.
 - **Turn off bank message importing**: Profile → Bank messages → Import from SMS.
   Transactions already imported stay until you delete them.
+- **Stop Claude's morning brief**: Profile → Connected apps → Claude → Turn off.
 
 ## Security
 

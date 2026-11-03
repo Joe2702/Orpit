@@ -1,7 +1,8 @@
 import React from 'react';
 import { useStore } from '../store';
 import { api, setToken } from '../api';
-import { CURRENCIES, ago } from '../lib/format';
+import { ago } from '../lib/format';
+import { currencyFlag, currencyName, currencySymbol } from '../lib/currencies';
 import { useStartBankTracking } from '../lib/bankTracking';
 import { setUsageSharing } from '../lib/usage';
 import { lockAvailable, lockEnabled, setLockEnabled, unlock } from '../lib/appLock';
@@ -12,6 +13,7 @@ import { deviceTimezone } from '../lib/push';
 import { enableReminders, disableReminders, updateReminderTime, sendTestNotification, diagnose, requestExactAlarms, isNative, notificationsAllowed, ensureNotificationPermission, scheduleBriefs, type NotifyDiagnostics } from '../lib/notify';
 import { briefPrefs, briefSchedule, setBriefPrefs, type BriefPrefs } from '../lib/brief';
 import { healthPrefs, healthSupported } from '../lib/health';
+import { assistantSetUp } from '../lib/assistant';
 import { Glyph } from '../lib/appIcons';
 import {
   smsSupported,
@@ -36,7 +38,6 @@ export const MODULE_OPTS = [
 ];
 
 
-const ACCENT_NAME: Record<string, string> = { indigo: tk('indigo'), text: tk('graphite'), blue: tk('blue'), teal: tk('teal'), emerald: tk('emerald'), rose: tk('rose') };
 export function Settings() {
   const { state, go, open, mutate, mutateOpt, signOut, showToast, haptic, confirm, askPassword, applyState, claimedBadges } = useStore();
   const badgeInfo = React.useMemo(() => {
@@ -664,19 +665,16 @@ export function Settings() {
       </div>
 
       <SectionLabel>{t('Accent colour')}</SectionLabel>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, paddingInlineStart: 2 }}>
-        {['indigo', 'text', 'blue', 'teal', 'emerald', 'rose'].map((c) => {
-          const active = (profile.accent || 'indigo') === c;
-          return (
-            <div tabIndex={0}
-              key={c}
-              onClick={() => mutateOpt((s) => ({ ...s, profile: { ...s.profile, accent: c } }), () => api.updateMe({ accent: c }))}
-              role="button"
-              aria-label={t('Accent colour: {name}', { name: t(ACCENT_NAME[c] ?? c) })}
-              style={{ width: 38, height: 38, borderRadius: '50%', cursor: 'pointer', flex: 'none', background: `var(--${c})`, transition: 'all .15s', boxShadow: active ? `0 0 0 3px var(--surface),0 0 0 5px var(--${c})` : '0 0 0 0 transparent' }}
-            />
-          );
-        })}
+      {/* Any colour, from a wheel: the sheet opens on the current one. */}
+      <div role="button" tabIndex={0} onClick={() => open('accent')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', marginBottom: 24, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', cursor: 'pointer' }}>
+        <span style={{ width: 38, height: 38, borderRadius: '50%', flex: 'none', background: 'conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--indigo)', border: '2.5px solid var(--surface)' }} />
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Pick any colour')}</div>
+          <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Buttons, charts and highlights follow it')}</div>
+        </div>
+        <IconChevron />
       </div>
 
       <SectionLabel>{t('Text size')}</SectionLabel>
@@ -699,28 +697,27 @@ export function Settings() {
       {/* Currency is a setting, so it lives with the settings; it used to sit
           at the bottom of the Finances screen, under the transactions. */}
       <SectionLabel>{t('Currency')}</SectionLabel>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
-        {CURRENCIES.map((c) => {
-          const active = (profile.currency || 'EGP') === c.code;
-          return (
-            <div tabIndex={0}
-              key={c.code}
-              onClick={() => mutateOpt((st) => ({ ...st, profile: { ...st.profile, currency: c.code } }), () => api.updateMe({ currency: c.code }))}
-              role="button"
-              aria-pressed={active}
-              style={{ ...chip(active, 'var(--indigo)'), padding: '9px 14px' }}
-            >
-              {c.symbol.trim()} {c.code}
-            </div>
-          );
-        })}
-      </div>
+      <CurrencyButton code={profile.currency || 'EGP'} onClick={() => open('currency')} />
 
-      {/* Sleep and workouts from Fitbit, by way of Health Connect (Android). */}
-      {healthSupported() && (
-        <>
-          <SectionLabel>{t('Connected apps')}</SectionLabel>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+      {/* Sleep and workouts from Fitbit, by way of Health Connect (Android),
+          and the morning brief Claude writes (everywhere). */}
+      <SectionLabel>{t('Connected apps')}</SectionLabel>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
+        <div role="button" tabIndex={0} onClick={() => open('assistant')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
+          <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" viewBox="0 0 22 22" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+              <path d="M3 15.5h16M6 15.5a5 5 0 0 1 10 0M11 4.5v2.2M4.6 8.1l1.5 1.5M17.4 8.1l-1.5 1.5M7 18.5h8" />
+            </svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Claude')}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{assistantSetUp() ? t('Sends your morning brief here') : t('Get Claude’s morning brief in Orbit')}</div>
+          </div>
+          <IconChevron />
+        </div>
+        {healthSupported() && (
+          <>
+            <div style={{ height: 1, background: 'var(--hairline)', marginInlineStart: 53 }} />
             <div role="button" tabIndex={0} onClick={() => open('health')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
               <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
                 <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
@@ -733,9 +730,9 @@ export function Settings() {
               </div>
               <IconChevron />
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
 
       <SectionLabel>{t('Preferences')}</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
@@ -1348,6 +1345,58 @@ function PrefRow({
       <div role="switch" tabIndex={0} aria-checked={on} aria-label={title} onClick={onToggle} style={toggleTrack(on)}>
         <div style={toggleKnob(on)} />
       </div>
+    </div>
+  );
+}
+
+/**
+ * The home currency as a card: its symbol on an accent disc, its name and
+ * code, and its flag. Opens the picker with every currency.
+ */
+function CurrencyButton({ code, onClick }: { code: string; onClick: () => void }) {
+  const lang = getLang() === 'ar' ? 'ar' : 'en';
+  const sym = currencySymbol(code, lang).trim();
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      aria-label={t('Currency: {name}. Change', { name: currencyName(code, lang) })}
+      className="press99"
+      style={{ position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', marginBottom: 24, cursor: 'pointer', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)' }}
+    >
+      {/* The flag, large and faint, tucked into the far corner. */}
+      <span aria-hidden style={{ position: 'absolute', insetInlineEnd: -8, top: -14, fontSize: 84, lineHeight: 1, opacity: 0.12, transform: 'rotate(-12deg)', pointerEvents: 'none' }}>
+        {currencyFlag(code)}
+      </span>
+      <span
+        aria-hidden
+        style={{
+          width: 50,
+          height: 50,
+          flex: 'none',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'radial-gradient(circle at 30% 25%, rgba(255,255,255,.35), transparent 55%), var(--indigo)',
+          color: 'var(--on-accent)',
+          fontSize: sym.length > 3 ? 13 : sym.length > 2 ? 15 : 20,
+          fontWeight: 700,
+          letterSpacing: '-.02em',
+          boxShadow: '0 8px 18px -8px var(--indigo), inset 0 1px 0 rgba(255,255,255,.3)',
+        }}
+      >
+        {sym}
+      </span>
+      <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 16, fontWeight: 650, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currencyName(code, lang)}</div>
+        <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2 }}>
+          <span style={{ direction: 'ltr', unicodeBidi: 'isolate' }}>{code}</span> · {t('Tap to change')}
+        </div>
+      </div>
+      <span aria-hidden style={{ position: 'relative', fontSize: 26, lineHeight: 1 }}>{currencyFlag(code)}</span>
+      <IconChevron />
     </div>
   );
 }

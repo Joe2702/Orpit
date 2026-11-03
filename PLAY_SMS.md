@@ -101,7 +101,7 @@ review screen.
 | Photos and videos → Photos | Collected. Optional (a profile photo). App functionality. |
 | Health and fitness → Fitness info | Collected. Optional (workouts, typed or read from Health Connect if the person connects it). App functionality. |
 | Health and fitness → Health info | Collected. Optional (sleep logs, typed or read from Health Connect if the person connects it). App functionality. |
-| App activity → Other user-generated content | Collected. Optional (habits, counters, milestones, to-do lists and tasks, notes). App functionality. |
+| App activity → Other user-generated content | Collected. Optional (habits, counters, milestones, to-do lists and tasks, notes, and a morning brief the person's own Claude task sends with a key they made). App functionality. |
 | App activity / App info and performance → Crash logs | Collected. Optional. Analytics (crash fixing). |
 | App activity → App interactions (feature usage counts) | Collected. Optional (Profile → Data → Share usage counts). Analytics. |
 | Encrypted in transit | Yes (HTTPS). |

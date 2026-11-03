@@ -28,7 +28,7 @@ const SUGGESTED = [
  * life ("Uni", "Training") keeps each one short enough to finish.
  */
 export function Todos() {
-  const { state, go, open, mutate, haptic } = useStore();
+  const { state, go, open, mutate, haptic, back } = useStore();
   const s = state!;
   const due = useMemo(() => dueNow(s), [s]);
   const lists = s.todoLists;
@@ -77,7 +77,7 @@ export function Todos() {
   return (
     <div style={{ padding: '6px 20px 32px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-        <BackButton onClick={() => go('home')} />
+        <BackButton onClick={back} />
         <div className="display" style={{ flex: 1, fontSize: 34, lineHeight: 1.1, color: 'var(--text)' }}>{t('To-do')}</div>
         {lists.length > 0 && (
           <div role="button" tabIndex={0} aria-label={t('Add a task')} onClick={() => open('todo')} className="press96" style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
@@ -104,12 +104,13 @@ export function Todos() {
       {lists.length > 0 ? (
         <>
           <SectionLabel>{t('Lists')}</SectionLabel>
-          {/* Press and hold a list to move it. */}
+          {/* Drag a list by the handle beside it to move it. */}
           <Reorderable
             items={lists.map((l) => ({ id: l.id, node: row(l) }))}
             onReorder={(ids) =>
               mutate(() => api.orderTodoLists(ids)).catch(() => {})
             }
+            handleTop={21}
           />
           <div role="button" tabIndex={0} onClick={() => open('todolistEdit')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', cursor: 'pointer', borderRadius: 'calc(20px * var(--sq))', border: '1.5px dashed var(--border)' }}>
             <span style={{ width: 38, height: 38, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -117,7 +118,7 @@ export function Todos() {
             </span>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--indigo)' }}>{t('New list')}</div>
           </div>
-          {lists.length > 1 && <div style={{ fontSize: 12.5, color: 'var(--text3)', textAlign: 'center', marginTop: 14 }}>{t('Press and hold a list to move it.')}</div>}
+          {lists.length > 1 && <div style={{ fontSize: 12.5, color: 'var(--text3)', textAlign: 'center', marginTop: 14 }}>{t('Drag the handle beside a list to move it.')}</div>}
         </>
       ) : (
         <div style={{ ...card, padding: '22px 18px' }}>

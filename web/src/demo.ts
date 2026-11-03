@@ -12,6 +12,25 @@ import type { AppState } from './types';
 import { t } from './i18n';
 
 let db: AppState = JSON.parse(JSON.stringify(seed));
+// A sample of the brief Claude delivers, so the demo shows where it lands:
+// this morning at 9:48, or twenty minutes ago if it isn't 9:48 yet.
+{
+  const at = new Date();
+  at.setHours(9, 48, 0, 0);
+  db.assistantBrief = {
+    title: 'Morning brief',
+    ts: Math.min(at.getTime(), Date.now() - 20 * 60 * 1000),
+    sections: [
+      { heading: 'Today’s post', body: 'Reel: **three habits that survived exam week**.\n- Hook: “I stopped trying to be perfect in week 9.”\n- Cut at 0:07 to the gym shot\n- Caption ends on one question' },
+      { heading: 'Advocacy watch', body: 'Two accounts you follow posted about campus access. Worth a reply on the second one, it asks a direct question.' },
+      { heading: 'Yesterday’s post', body: 'Carousel did **2.1×** your usual saves. Most came from slide 4 (the checklist).' },
+      { heading: 'Markets yesterday', body: '- Stocks mostly flat\n- Gold a little higher\n- The pound unchanged against the dollar' },
+      { heading: 'Political news', body: 'A quiet day. One item to keep an eye on this week, summarised in two lines.' },
+      { heading: 'Trending news', body: 'A football transfer story and a new phone launch lead the feeds. Details: https://example.com/trending' },
+    ],
+  };
+}
+let assistantKey = false;
 let nextId = 1;
 const newId = () => `demo${nextId++}`;
 
@@ -67,6 +86,18 @@ function handle(method: string, path: string, body: any): { status: number; json
   if (path.startsWith('/partner')) return ok(PARTNER);
   if (path.startsWith('/auth/')) return ok({ token: 'demo', state: db });
   if (path.startsWith('/push/')) return ok({ ok: true, sent: 0, key: '' });
+  if (path === '/assistant/key') {
+    if (method === 'POST') assistantKey = true;
+    if (method === 'DELETE') assistantKey = false;
+    const now = Date.now();
+    return ok(
+      method === 'POST'
+        ? { key: `orb_${'0123456789abcdef'.repeat(3)}`, createdAt: now, lastUsedAt: null }
+        : assistantKey
+          ? { exists: true, createdAt: now - 86400000, lastUsedAt: db.assistantBrief?.ts ?? null }
+          : { exists: false }
+    );
+  }
 
   if (path === '/me' && method === 'PATCH') {
     db = { ...db, profile: { ...db.profile, ...body } };

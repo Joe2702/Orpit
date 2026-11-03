@@ -13,14 +13,14 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 export function Insights() {
-  const { go, state } = useStore();
+  const { go, state, back } = useStore();
   const insights = buildInsights(state!);
   const ready = insightsReady(state!);
 
   return (
     <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-        <BackButton onClick={() => go('analytics')} />
+        <BackButton onClick={back} />
         <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>{t('Insights')}</div>
       </div>
       <div style={{ fontSize: 13.5, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.5, paddingInlineStart: 2 }}>
