@@ -21,7 +21,6 @@ import { SleepSheet } from './sheets/SleepSheet';
 import { ExpenseSheet } from './sheets/ExpenseSheet';
 import { HabitSheet } from './sheets/HabitSheet';
 import { EditSheet } from './sheets/EditSheet';
-import { ReminderOnboarding } from './ReminderOnboarding';
 import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily, scheduleBriefs } from './lib/notify';
 import { briefSchedule, hasBriefData } from './lib/brief';
 import { OrbitMark } from './OrbitMark';
@@ -622,7 +621,9 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 
 export function App() {
   const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, open, mutateOpt, booting, bootError, retryBoot, go, back, confirmState, closeConfirm, passwordState, report, closeReport, applyState, showToast } = useStore();
-  const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
+  // Dark until an account says otherwise: Orbit starts dark, and the
+  // theme can be changed in Profile.
+  const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('dark');
 
   // Track the phone's own light/dark setting so "System" can follow it live.
   const [sysDark, setSysDark] = useState<boolean>(
@@ -1183,7 +1184,6 @@ export function App() {
           <Intro />
         </Suspense>
       )}
-      {authed && state?.profile.introDone && <ReminderOnboarding />}
       {authed && state && <MoneyWatcher />}
 
       {report && state && (

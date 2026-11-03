@@ -1,0 +1,228 @@
+/* The first-run tour. Only loaded with it. */
+
+.intro-root {
+  --ink: #f2f2f5;
+  --ink2: rgba(242, 242, 245, 0.72);
+  --ink3: rgba(242, 242, 245, 0.45);
+  --card: rgba(255, 255, 255, 0.06);
+  --card-line: rgba(255, 255, 255, 0.1);
+  --mock: #141418;
+  --mock2: #1c1c22;
+}
+
+@keyframes introIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes introOut {
+  to {
+    opacity: 0;
+    transform: scale(1.08);
+    filter: blur(10px);
+  }
+}
+@keyframes sceneInNext {
+  from {
+    opacity: 0;
+    transform: translateX(40px) scale(0.96);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+@keyframes sceneInPrev {
+  from {
+    opacity: 0;
+    transform: translateX(-40px) scale(0.96);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+@keyframes sceneOutNext {
+  to {
+    opacity: 0;
+    transform: translateX(-60px) scale(0.94);
+    filter: blur(10px);
+  }
+}
+@keyframes sceneOutPrev {
+  to {
+    opacity: 0;
+    transform: translateX(60px) scale(0.94);
+    filter: blur(10px);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes spinBack {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes sunPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 40px 8px color-mix(in srgb, var(--indigo) 45%, transparent), 0 0 120px 30px color-mix(in srgb, var(--indigo) 18%, transparent);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 56px 14px color-mix(in srgb, var(--indigo) 60%, transparent), 0 0 150px 40px color-mix(in srgb, var(--indigo) 24%, transparent);
+  }
+}
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ripple {
+  from {
+    opacity: 0.6;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+@keyframes floatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-14px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-70px) scale(1);
+  }
+}
+@keyframes stamp {
+  0% {
+    opacity: 0;
+    transform: rotate(-8deg) scale(2.2);
+  }
+  55% {
+    opacity: 1;
+    transform: rotate(-8deg) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-8deg) scale(1);
+  }
+}
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+@keyframes nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+@keyframes hintPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+@keyframes drawLine {
+  from {
+    stroke-dashoffset: var(--len);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes sunrise {
+  from {
+    transform: translateY(16px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes slotUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes glowRing {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--indigo) 22%, transparent);
+  }
+}
+
+/* "Reduce motion": the tour still works, it just doesn't move. */
+@media (prefers-reduced-motion: reduce) {
+  .intro-root *,
+  .intro-root {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

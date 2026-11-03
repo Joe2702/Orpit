@@ -613,3 +613,52 @@ html[lang='ar'] .display {
     transform: none;
   }
 }
+
+/* ---- Space: the backdrop of the language screen, Welcome and the tour ---- */
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+}
+/* A shooting star: visible for the first tenth of its cycle, then gone. */
+@keyframes shoot {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(-28deg) scaleX(0.3);
+  }
+  1.5% {
+    opacity: 1;
+  }
+  8% {
+    opacity: 0;
+    transform: translate(-280px, 150px) rotate(-28deg) scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-280px, 150px) rotate(-28deg) scaleX(1);
+  }
+}
+@keyframes nebula {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) rotate(14deg) scale(1.1);
+  }
+}
+@keyframes atmosphere {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}

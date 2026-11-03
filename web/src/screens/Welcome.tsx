@@ -1,14 +1,20 @@
 import React from 'react';
 import { OrbitMark } from '../OrbitMark';
 import { useStore } from '../store';
-import { getLang, setLangPref, t } from '../i18n';
+import { getLang, langPref, setLangPref, t } from '../i18n';
+import { Space } from '../Space';
+import { LanguagePick } from './LanguagePick';
+import { reducedMotion } from '../Motion';
 
-// The first screen anyone sees. Deliberately plain: the mark, the name set in
-// the display serif, one sentence, two buttons. A gradient backdrop and a row
+// The first screen anyone sees, after the language. Deliberately plain: the
+// mark, the name set in the display serif, one sentence, two buttons, on the
+// same night sky as the tour. A gradient backdrop and a row
 // of feature chips under a tagline is the stock layout of generated landing
 // pages, and it made the app look like one.
 export function Welcome() {
   const { go, setAuthMode } = useStore();
+  // The first time Orbit opens, before anything else: which language.
+  if (langPref() === 'auto') return <LanguagePick />;
   const open = (mode: 'signup' | 'signin') => {
     setAuthMode(mode);
     go('signin');
@@ -22,13 +28,15 @@ export function Welcome() {
         flexDirection: 'column',
         padding: '0 28px',
         color: '#f0f0f3',
-        background: '#0c0c0f',
+        background: '#06060a',
         animation: 'fadeIn .5s ease',
+        overflow: 'hidden',
       }}
     >
+      <Space horizonTop="76%" animate={!reducedMotion()} />
       {/* The language is chosen before anything else is read, so it's offered
           here in the other language's own words. */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 'max(18px, env(safe-area-inset-top))' }}>
+      <div style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end', paddingTop: 'max(18px, env(safe-area-inset-top))' }}>
         <div
           role="button"
           tabIndex={0}
@@ -39,14 +47,14 @@ export function Welcome() {
           {getLang() === 'ar' ? 'English' : 'العربية'}
         </div>
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 48 }}>
+      <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 48 }}>
         <OrbitMark size={60} style={{ marginBottom: 26 }} />
         <div className="display" style={{ fontSize: 64, lineHeight: 0.95 }}>{t('Orbit')}</div>
         <div style={{ fontSize: 18, lineHeight: 1.5, marginTop: 14, color: 'rgba(240,240,243,.72)', maxWidth: 300 }}>
           {t('Habits, training, sleep and money, kept in one place.')}
         </div>
       </div>
-      <div style={{ paddingBottom: 'max(30px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ position: 'relative', paddingBottom: 'max(30px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 4 }}>
         <div tabIndex={0}
           onClick={() => open('signup')}
           className="press"

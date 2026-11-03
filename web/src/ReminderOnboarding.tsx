@@ -1,28 +1,48 @@
 import React, { useState } from 'react';
 import { useStore } from './store';
 import { api } from './api';
-import { deviceTimezone } from './lib/push';
-import { enableReminders } from './lib/notify';
-import { Glyph } from './lib/appIcons';
+import { deviceTimezone, pushSupported } from './lib/push';
+import { enableReminders, isNative } from './lib/notify';
 import { t } from './i18n';
 
 const DISMISS_KEY = 'orbit_reminder_dismissed';
 
-/** One-time prompt (after signup) to set the daily reminder time + enable pushes. */
-export function ReminderOnboarding() {
-  const { state, mutate, showToast } = useStore();
-  const [dismissed, setDismissed] = useState<boolean>(() => localStorage.getItem(DISMISS_KEY) === '1');
+const dismissedBefore = () => {
+  try {
+    return localStorage.getItem(DISMISS_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * An offer of a daily check-in reminder, as a card on Home rather than a
+ * pop-up. It waits until someone has logged a few things (an offer to remind
+ * you about an app you haven't used yet is noise), never covers the screen,
+ * and asks the phone for permission only when "Turn on" is tapped.
+ */
+export function ReminderCard() {
+  const { state, mutate, showToast, haptic } = useStore();
+  const [dismissed, setDismissed] = useState(dismissedBefore);
   const [time, setTime] = useState('21:00');
   const [busy, setBusy] = useState(false);
 
   if (!state || state.profile.reminderTime || dismissed) return null;
+  if (!isNative() && !pushSupported()) return null;
+  const logged = state.checkins.length + state.txns.length + state.workouts.length + state.nights.length + (state.countLogs?.length ?? 0);
+  if (logged < 3) return null;
 
   const dismiss = () => {
-    localStorage.setItem(DISMISS_KEY, '1');
+    try {
+      localStorage.setItem(DISMISS_KEY, '1');
+    } catch {
+      /* it just shows again next time */
+    }
     setDismissed(true);
   };
 
   const turnOn = async () => {
+    haptic(10);
     setBusy(true);
     try {
       await mutate(() => api.updateMe({ reminderTime: time, reminderTz: deviceTimezone(), reminders: true }));
@@ -33,43 +53,39 @@ export function ReminderOnboarding() {
     } catch {
       showToast(t('Couldn’t save that. Try again.'));
       setBusy(false);
-      return;
     }
-    // Once reminderTime is set, this component stops rendering itself.
+    // Once reminderTime is set, this card stops rendering itself.
   };
 
   return (
-    <div style={{ position: 'absolute', inset: 0, zIndex: 97, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 26 }}>
-      <div onClick={dismiss} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.55)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(2px)' }} />
-      <div style={{ position: 'relative', background: 'var(--surface)', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 340, boxShadow: '0 20px 60px rgba(8,9,14,.4)', animation: 'fadeUp .28s ease' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-          <Glyph name="moon" size={32} color="var(--indigo)" sw={1.7} />
+    <div style={{ position: 'relative', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', padding: '15px 16px 14px', marginBottom: 22, animation: 'fadeUp .4s ease' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)' }}>{t('Want a nudge to check in?')}</div>
+          <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 3, lineHeight: 1.45 }}>{t('One reminder a day, at a time you pick. The end of the day works best.')}</div>
         </div>
-        <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', textAlign: 'center', letterSpacing: '-.02em' }}>
-          {t('When should we check in?')}
+        <div tabIndex={0} onClick={dismiss} role="button" aria-label={t('Dismiss')} className="press92" style={{ width: 30, height: 30, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 99, color: 'var(--text3)', cursor: 'pointer', marginTop: -4, marginInlineEnd: -6 }}>
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' }}>
+            <path d="M3 3l8 8M11 3l-8 8" />
+          </svg>
         </div>
-        <div style={{ fontSize: 14, color: 'var(--text2)', textAlign: 'center', marginTop: 8, lineHeight: 1.55 }}>
-          {t('Pick a time to log your day. Near the') + ' '}<b style={{ color: 'var(--text)' }}>{t('end of the day')}</b>{' ' + t('works best: it’s a natural moment to look back on everything that happened. It only takes about 2 minutes.')}
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center', margin: '22px 0' }}>
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => e.target.value && setTime(e.target.value)}
-            style={{ fontSize: 30, fontWeight: 700, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '12px 20px', outline: 'none', fontVariantNumeric: 'tabular-nums' }}
-          />
-        </div>
-
-        <div role="button" tabIndex={0}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
+        <input
+          type="time"
+          value={time}
+          aria-label={t('Reminder time')}
+          onChange={(e) => e.target.value && setTime(e.target.value)}
+          style={{ height: 42, fontSize: 16, fontWeight: 650, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(12px * var(--sq))', padding: '0 12px', outline: 'none', fontVariantNumeric: 'tabular-nums' }}
+        />
+        <div
+          role="button"
+          tabIndex={0}
           onClick={busy ? undefined : turnOn}
           className="press"
-          style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 52, borderRadius: 'calc(15px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, boxShadow: 'var(--glow)' }}
+          style={{ flex: 1, height: 42, borderRadius: 'calc(12px * var(--sq))', background: 'var(--indigo)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14.5, fontWeight: 700, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1 }}
         >
-          {busy ? t('Setting up…') : t('Turn on daily reminder')}
-        </div>
-        <div role="button" tabIndex={0} onClick={dismiss} style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: '14px 8px 4px', cursor: 'pointer', fontWeight: 500 }}>
-          {t('Maybe later')}
+          {busy ? t('Setting up…') : t('Turn on')}
         </div>
       </div>
     </div>

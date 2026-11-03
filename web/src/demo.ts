@@ -31,6 +31,12 @@ let db: AppState = JSON.parse(JSON.stringify(seed));
   };
 }
 let assistantKey = false;
+// "#intro" on the demo's address starts it with the first-run tour.
+try {
+  if (typeof location !== 'undefined' && location.hash === '#intro') db.profile.introDone = false;
+} catch {
+  /* not in a browser */
+}
 let nextId = 1;
 const newId = () => `demo${nextId++}`;
 
