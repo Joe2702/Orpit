@@ -621,7 +621,9 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 
 export function App() {
   const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, open, mutateOpt, booting, bootError, retryBoot, go, back, confirmState, closeConfirm, passwordState, report, closeReport, applyState, showToast } = useStore();
-  const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
+  // Dark until an account says otherwise: Orbit starts dark, and the
+  // theme can be changed in Profile.
+  const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('dark');
 
   // Track the phone's own light/dark setting so "System" can follow it live.
   const [sysDark, setSysDark] = useState<boolean>(

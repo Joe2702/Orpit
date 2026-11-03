@@ -65,17 +65,6 @@
     filter: blur(10px);
   }
 }
-@keyframes twinkle {
-  0%,
-  100% {
-    opacity: 0.15;
-    transform: scale(0.7);
-  }
-  50% {
-    opacity: 0.9;
-    transform: scale(1);
-  }
-}
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -90,11 +79,11 @@
   0%,
   100% {
     transform: scale(1);
-    box-shadow: 0 0 40px 8px rgba(255, 160, 80, 0.45), 0 0 120px 30px rgba(255, 120, 60, 0.18);
+    box-shadow: 0 0 40px 8px color-mix(in srgb, var(--indigo) 45%, transparent), 0 0 120px 30px color-mix(in srgb, var(--indigo) 18%, transparent);
   }
   50% {
     transform: scale(1.06);
-    box-shadow: 0 0 56px 14px rgba(255, 170, 90, 0.6), 0 0 150px 40px rgba(255, 120, 60, 0.24);
+    box-shadow: 0 0 56px 14px color-mix(in srgb, var(--indigo) 60%, transparent), 0 0 150px 40px color-mix(in srgb, var(--indigo) 24%, transparent);
   }
 }
 @keyframes popIn {
@@ -221,10 +210,10 @@
 @keyframes glowRing {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(120, 140, 255, 0);
+    box-shadow: 0 0 0 0 transparent;
   }
   50% {
-    box-shadow: 0 0 0 6px rgba(120, 140, 255, 0.18);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--indigo) 22%, transparent);
   }
 }
 

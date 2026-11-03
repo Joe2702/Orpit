@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   email         TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   name          TEXT NOT NULL DEFAULT 'Alex Rivera',
-  theme         TEXT NOT NULL DEFAULT 'light',
+  theme         TEXT NOT NULL DEFAULT 'dark',
   reminders     BOOLEAN NOT NULL DEFAULT TRUE,
   haptics       BOOLEAN NOT NULL DEFAULT TRUE,
   onboarded     BOOLEAN NOT NULL DEFAULT FALSE,
@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarded BOOLEAN NOT NULL DEFAULT FALSE;
+-- New accounts start dark; anyone already here keeps what they have.
+ALTER TABLE users ALTER COLUMN theme SET DEFAULT 'dark';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'EGP';
 -- Google sign-in users have no password; password reset needs a tokens table.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT;

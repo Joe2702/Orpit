@@ -4,6 +4,7 @@ import { api } from '../api';
 import { smsSupported } from '../lib/smsSync';
 import { RisingWords, reducedMotion } from '../Motion';
 import { CounterVisual, DragVisual, HabitsVisual, HelloVisual, InsightsVisual, MoneyVisual, PlusVisual, TRACKERS, YoursVisual } from './IntroScenes';
+import { Space } from '../Space';
 import { isRTL, t } from '../i18n';
 import './intro.css';
 
@@ -16,23 +17,8 @@ import './intro.css';
 
 type SceneKey = 'hello' | 'plus' | 'habits' | 'drag' | 'counters' | 'money' | 'insights' | 'yours';
 const ORDER: SceneKey[] = ['hello', 'plus', 'habits', 'drag', 'counters', 'money', 'insights', 'yours'];
-// Two colours of light behind each scene; they ease from one scene to the next.
-const TINT: Record<SceneKey, [string, string]> = {
-  hello: ['#5560ff', '#ff9a5a'],
-  plus: ['#3fb6a6', '#5560ff'],
-  habits: ['#5560ff', '#3fb6a6'],
-  drag: ['#5f8cff', '#9a62ff'],
-  counters: ['#5f8cff', '#3fae84'],
-  money: ['#3fae84', '#d99a3e'],
-  insights: ['#e07a64', '#5f8cff'],
-  yours: ['#7d86ff', '#e07a64'],
-};
-
-// A fixed sky, the same every time.
-const STARS = Array.from({ length: 54 }, (_, i) => {
-  const r = (n: number) => ((Math.sin(i * 12.9898 + n * 78.233) * 43758.5453) % 1 + 1) % 1;
-  return { x: r(1) * 100, y: r(2) * 100, s: 1 + r(3) * 2, d: r(4) * 4, dur: 2.5 + r(5) * 3 };
-});
+// Where the nebula drifts for each scene: the light moves, the colour doesn't.
+const DRIFT = [-60, 40, -30, 60, -40, 30, -10, 0];
 
 export function Intro() {
   const { state, applyState, haptic } = useStore();
@@ -155,7 +141,6 @@ export function Intro() {
   const outAnim = (d: 1 | -1) => `${d === 1 ? 'sceneOutNext' : 'sceneOutPrev'} .42s cubic-bezier(.4,0,1,1) both`;
   // In right-to-left the story moves the other way.
   const flip = (d: 1 | -1) => (rtl ? (-d as 1 | -1) : d);
-  const [c1, c2] = TINT[key];
 
   return (
     <div
@@ -182,21 +167,7 @@ export function Intro() {
         animation: leaving ? 'introOut .55s cubic-bezier(.4,0,1,1) both' : still ? undefined : 'introIn .6s cubic-bezier(.2,.8,.2,1) both',
       }}
     >
-      {/* Light: two slow glows in the scene's colours. */}
-      <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-        <div style={{ position: 'absolute', color: c1, transition: 'color 1.2s ease', width: '140vw', height: '140vw', maxWidth: 760, maxHeight: 760, left: '50%', top: '30%', transform: 'translate(-50%,-50%)' }}>
-          <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'radial-gradient(circle, currentColor 0%, transparent 60%)', opacity: 0.32, animation: 'storyGlowA 12s ease-in-out infinite' }} />
-        </div>
-        <div style={{ position: 'absolute', color: c2, transition: 'color 1.2s ease', width: '110vw', height: '110vw', maxWidth: 600, maxHeight: 600, left: '50%', top: '72%', transform: 'translate(-50%,-50%)' }}>
-          <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'radial-gradient(circle, currentColor 0%, transparent 60%)', opacity: 0.2, animation: 'storyGlowB 15s ease-in-out infinite' }} />
-        </div>
-        {/* Stars, drifting a little with each scene, for depth. */}
-        <div style={{ position: 'absolute', inset: '-10% -20%', transform: `translateX(${(rtl ? 1 : -1) * i * 14 + drag * 0.08}px)`, transition: drag ? 'none' : 'transform 1.2s cubic-bezier(.2,.8,.2,1)' }}>
-          {STARS.map((s, k) => (
-            <span key={k} style={{ position: 'absolute', left: `${s.x}%`, top: `${s.y}%`, width: s.s, height: s.s, borderRadius: '50%', background: '#fff', animation: `twinkle ${s.dur}s ease-in-out ${s.d}s infinite` }} />
-          ))}
-        </div>
-      </div>
+      <Space shift={(rtl ? -1 : 1) * i + drag * -0.006} drift={(rtl ? -1 : 1) * DRIFT[i]} horizonTop="64%" animate={!still} />
 
       {/* Progress, and the way out. */}
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: 'calc(env(safe-area-inset-top) + 14px) 18px 0' }}>
@@ -262,7 +233,7 @@ export function Intro() {
           onClick={next}
           onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), next())}
           className="press"
-          style={{ position: 'relative', overflow: 'hidden', flex: 1, height: 56, borderRadius: 999, background: '#f2f2f5', color: '#0c0c0f', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: `0 14px 34px -12px ${c1}`, transition: 'box-shadow 1.2s' }}
+          style={{ position: 'relative', overflow: 'hidden', flex: 1, height: 56, borderRadius: 999, background: '#f2f2f5', color: '#0c0c0f', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 14px 34px -12px color-mix(in srgb, var(--indigo) 70%, transparent)' }}
         >
           <span key={`b${last ? 'l' : i === 0 ? 'f' : 'n'}`} style={{ animation: still ? undefined : 'rise .35s ease both' }}>
             {last ? t('Start using Orbit') : i === 0 ? t('Show me around') : t('Next')}

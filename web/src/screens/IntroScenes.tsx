@@ -9,7 +9,13 @@ import { RollingText, reducedMotion } from '../Motion';
 import { money0 } from '../lib/format';
 import { isRTL, t, tk } from '../i18n';
 
-const COLORS = { indigo: '#8a94ff', coral: '#ea8a76', teal: '#4cc2b2', blue: '#6f9dff', emerald: '#4dbb8f', amber: '#e5a94e', red: '#f2685e' };
+// One colour: the accent (which follows the person's choice in Profile), in a
+// few strengths, and white. The tour is space, not a paint box.
+const A = 'var(--indigo)';
+/** The accent mixed toward white (or another colour) by `pct` percent of accent. */
+const tone = (pct: number, base = '#fff') => `color-mix(in srgb, var(--indigo) ${pct}%, ${base})`;
+const glow = (pct: number) => `color-mix(in srgb, var(--indigo) ${pct}%, transparent)`;
+const COLORS = { indigo: A, coral: A, teal: A, blue: A, emerald: A, amber: A, red: '#fff' };
 
 /**
  * Steps of a little demonstration: step k begins `at[k-1]` ms after it starts,
@@ -124,10 +130,10 @@ const Check = ({ on, color = COLORS.indigo, size = 26 }: { on: boolean; color?: 
 // 1. Hello: the four parts of a life, in orbit around you
 
 const PLANETS: { icon: GlyphName; color: string; orbit: 0 | 1; phase: number }[] = [
-  { icon: 'check', color: COLORS.indigo, orbit: 0, phase: 0 },
-  { icon: 'dumbbell', color: COLORS.coral, orbit: 0, phase: 0.5 },
-  { icon: 'moon', color: COLORS.blue, orbit: 1, phase: 0.25 },
-  { icon: 'cash', color: COLORS.emerald, orbit: 1, phase: 0.75 },
+  { icon: 'check', color: A, orbit: 0, phase: 0 },
+  { icon: 'dumbbell', color: tone(55), orbit: 0, phase: 0.5 },
+  { icon: 'moon', color: tone(75), orbit: 1, phase: 0.25 },
+  { icon: 'cash', color: tone(35), orbit: 1, phase: 0.75 },
 ];
 // The inner orbit turns the other way, so planets on the two never travel
 // together for long.
@@ -157,7 +163,7 @@ export function HelloVisual() {
       ))}
       {/* The sun: you. */}
       <div style={{ position: 'absolute', left: '50%', top: '50%', width: 64, height: 64, margin: '-32px 0 0 -32px', animation: 'popIn .9s cubic-bezier(.3,1.4,.5,1) both' }}>
-        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'radial-gradient(circle at 35% 30%, #fff3c4, #ffc46b 40%, #ff8a4c 75%, #e2603a)', animation: 'sunPulse 4s ease-in-out infinite' }} />
+        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: `radial-gradient(circle at 38% 32%, #fff, #f1f2ff 32%, ${tone(55)} 70%, ${A})`, animation: 'sunPulse 4s ease-in-out infinite' }} />
       </div>
       {/* Planets ride a circle squashed into an ellipse; each layer undoes the
           one before, so they stay round and upright the whole way round. */}
@@ -178,7 +184,7 @@ export function HelloVisual() {
                         marginTop: -19,
                         borderRadius: '50%',
                         background: `radial-gradient(circle at 35% 30%, ${p.color}, color-mix(in srgb, ${p.color} 55%, #000))`,
-                        boxShadow: `0 0 18px ${p.color}88`,
+                        boxShadow: `0 0 18px ${glow(55)}`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -236,7 +242,7 @@ function MiniPhone({ children, style }: { children: React.ReactNode; style?: Rea
 
 const Row = ({ color, title, sub, style }: { color: string; title: string; sub?: string; style?: React.CSSProperties }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 14, background: 'var(--card)', border: '1px solid var(--card-line)', ...style }}>
-    <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, flex: 'none', boxShadow: `0 0 10px ${color}` }} />
+    <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, flex: 'none', boxShadow: color === A ? `0 0 10px ${glow(70)}` : 'none' }} />
     <div style={{ minWidth: 0 }}>
       <div style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
       {sub && <div style={{ fontSize: 10.5, color: 'var(--ink3)', marginTop: 1 }}>{sub}</div>}
@@ -263,9 +269,9 @@ export function PlusVisual() {
     <MiniPhone>
       <div style={{ padding: '22px 14px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div className="display" style={{ fontSize: 22, color: 'var(--ink)', marginBottom: 4 }}>{t('Today')}</div>
-        {k >= 6 && <Row color={COLORS.coral} title={t('Morning run')} sub={t('32 min · just now')} style={{ animation: 'popIn .55s cubic-bezier(.3,1.4,.5,1) both', borderColor: `${COLORS.coral}66` }} />}
-        <Row color={COLORS.indigo} title={t('Read 20 pages')} sub={t('In bed, before my phone')} />
-        <Row color={COLORS.teal} title={t('Drink water')} sub={t('5 of 8 glasses')} />
+        {k >= 6 && <Row color={COLORS.coral} title={t('Morning run')} sub={t('32 min · just now')} style={{ animation: 'popIn .55s cubic-bezier(.3,1.4,.5,1) both', borderColor: glow(45) }} />}
+        <Row color="rgba(255,255,255,.45)" title={t('Read 20 pages')} sub={t('In bed, before my phone')} />
+        <Row color="rgba(255,255,255,.45)" title={t('Drink water')} sub={t('5 of 8 glasses')} />
       </div>
       {/* The bar: tabs in their capsule, + in its own bubble. */}
       <div style={{ position: 'absolute', left: 12, right: 12, bottom: 12, height: 44, display: 'flex', gap: 8, direction: rtl ? 'rtl' : 'ltr' }}>
@@ -316,8 +322,8 @@ export function PlusVisual() {
               transitionDelay: sheetUp ? `${0.08 + i * 0.05}s` : '0s',
             }}
           >
-            <span style={{ width: 24, height: 24, borderRadius: 8, background: it.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-              <Glyph name={it.icon} size={13} color="#0c0c0f" sw={2.3} />
+            <span style={{ width: 24, height: 24, borderRadius: 8, background: glow(22), display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+              <Glyph name={it.icon} size={13} color={tone(70)} sw={2.3} />
             </span>
             <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink)' }}>{it.label}</span>
           </div>
@@ -364,8 +370,8 @@ export function HabitsVisual() {
           position: 'relative',
           borderRadius: 24,
           background: 'var(--card)',
-          border: `1px solid ${all ? 'rgba(138,148,255,.55)' : 'var(--card-line)'}`,
-          boxShadow: all ? '0 0 40px -6px rgba(138,148,255,.5)' : '0 20px 40px -24px rgba(0,0,0,.6)',
+          border: `1px solid ${all ? glow(60) : 'var(--card-line)'}`,
+          boxShadow: all ? `0 0 40px -6px ${glow(55)}` : '0 20px 40px -24px rgba(0,0,0,.6)',
           padding: '6px 0',
           transition: 'border-color .4s, box-shadow .6s',
         }}
@@ -386,8 +392,8 @@ export function HabitsVisual() {
               <div style={{ fontSize: 15, fontWeight: 650, color: done[i] ? 'var(--ink2)' : 'var(--ink)', transition: 'color .3s' }}>{h.name}</div>
               <div style={{ fontSize: 12, color: 'var(--ink3)', marginTop: 2 }}>{h.cue}</div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: done[i] ? '#ffb36b' : 'var(--ink3)', transition: 'color .3s', fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-              <Glyph name="flame" size={14} color={done[i] ? '#ffb36b' : 'rgba(255,255,255,.35)'} sw={2} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: done[i] ? 'var(--ink)' : 'var(--ink3)', transition: 'color .3s', fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+              <Glyph name="flame" size={14} color={done[i] ? tone(60) : 'rgba(255,255,255,.35)'} sw={2} />
               <span key={String(done[i])}>
                 <RollingText text={String(streaks[i] + (done[i] ? 1 : 0))} />
               </span>
@@ -397,7 +403,7 @@ export function HabitsVisual() {
       </div>
       <div style={{ height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 12 }}>
         {all ? (
-          <div style={{ position: 'relative', fontSize: 13.5, fontWeight: 700, color: '#c9ceff', padding: '7px 14px', borderRadius: 999, background: 'rgba(138,148,255,.16)', animation: 'popIn .6s cubic-bezier(.3,1.5,.5,1) both' }}>
+          <div style={{ position: 'relative', fontSize: 13.5, fontWeight: 700, color: tone(45), padding: '7px 14px', borderRadius: 999, background: glow(18), animation: 'popIn .6s cubic-bezier(.3,1.5,.5,1) both' }}>
             {t('Day complete')}
             <Burst key={burst} />
           </div>
@@ -531,8 +537,8 @@ export function DragVisual() {
             >
               <Grip />
             </div>
-            <span style={{ width: 34, height: 34, borderRadius: 11, background: `color-mix(in srgb, ${c.color} 22%, transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-              <Glyph name={c.icon} size={17} color={c.color} sw={2} />
+            <span style={{ width: 34, height: 34, borderRadius: 11, background: glow(20), display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+              <Glyph name={c.icon} size={17} color={tone(70)} sw={2} />
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--ink)' }}>{c.title}</div>
@@ -542,7 +548,7 @@ export function DragVisual() {
         );
       })}
       {!touched && <Finger x={handleX} y={(k >= 3 ? 0 : 2) * STEP + CARD_H / 2} on={k >= 1 && k < 4} pressing={k === 2 || k === 3} />}
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, textAlign: 'center', fontSize: 13, fontWeight: 600, color: moved ? '#9fe3c6' : 'var(--ink3)', animation: moved ? 'popIn .5s cubic-bezier(.3,1.5,.5,1) both' : 'hintPulse 1.8s ease-in-out infinite' }}>
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, textAlign: 'center', fontSize: 13, fontWeight: 600, color: moved ? 'var(--ink)' : 'var(--ink3)', animation: moved ? 'popIn .5s cubic-bezier(.3,1.5,.5,1) both' : 'hintPulse 1.8s ease-in-out infinite' }}>
         {moved ? t('That’s it. Your Home, your order.') : t('Grab a ⋮⋮ handle and drag')}
       </div>
     </div>
@@ -594,12 +600,12 @@ export function CounterVisual() {
             cy={size / 2}
             r={r}
             fill="none"
-            stroke={reached ? COLORS.emerald : COLORS.blue}
+            stroke={reached ? tone(45) : A}
             strokeWidth={sw}
             strokeLinecap="round"
             strokeDasharray={c}
             strokeDashoffset={c * (1 - Math.min(1, n / goal))}
-            style={{ transition: 'stroke-dashoffset .7s cubic-bezier(.3,1.3,.5,1), stroke .4s', filter: `drop-shadow(0 0 10px ${reached ? COLORS.emerald : COLORS.blue}88)` }}
+            style={{ transition: 'stroke-dashoffset .7s cubic-bezier(.3,1.3,.5,1), stroke .4s', filter: `drop-shadow(0 0 10px ${glow(reached ? 80 : 55)})` }}
           />
         </svg>
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -609,11 +615,11 @@ export function CounterVisual() {
           <div style={{ fontSize: 12.5, color: 'var(--ink3)', marginTop: 4 }}>{t('of {n} today', { n: goal })}</div>
         </div>
         {pops.map((p) => (
-          <span key={p} aria-hidden style={{ position: 'absolute', left: '50%', top: 18, marginLeft: -14, fontSize: 15, fontWeight: 800, color: COLORS.blue, animation: 'floatUp 1s ease-out both', pointerEvents: 'none' }}>
+          <span key={p} aria-hidden style={{ position: 'absolute', left: '50%', top: 18, marginLeft: -14, fontSize: 15, fontWeight: 800, color: tone(60), animation: 'floatUp 1s ease-out both', pointerEvents: 'none' }}>
             +1
           </span>
         ))}
-        {reached && <Burst key={n === goal ? 'g' : 'x'} color={COLORS.emerald} />}
+        {reached && <Burst key={n === goal ? 'g' : 'x'} />}
       </div>
       {/* What's being counted keeps changing, because it can be anything. */}
       <div style={{ height: 22, overflow: 'hidden', position: 'relative', width: 260, textAlign: 'center' }}>
@@ -682,8 +688,8 @@ export function MoneyVisual() {
       <div style={{ position: 'absolute', left: 0, right: 0, top: 104, borderRadius: 20, background: 'var(--card)', border: '1px solid var(--card-line)', padding: '6px 0' }}>
         {k >= 2 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 14px', animation: 'popIn .5s cubic-bezier(.3,1.4,.5,1) both' }}>
-            <span style={{ width: 32, height: 32, borderRadius: 10, background: `color-mix(in srgb, ${COLORS.coral} 24%, transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Glyph name="coin" size={16} color={COLORS.coral} sw={2} />
+            <span style={{ width: 32, height: 32, borderRadius: 10, background: glow(22), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Glyph name="coin" size={16} color={tone(70)} sw={2} />
             </span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--ink)' }}>Talabat</div>
@@ -693,8 +699,8 @@ export function MoneyVisual() {
           </div>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 14px', borderTop: k >= 2 ? '1px solid rgba(255,255,255,.07)' : 'none' }}>
-          <span style={{ width: 32, height: 32, borderRadius: 10, background: `color-mix(in srgb, ${COLORS.emerald} 24%, transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Glyph name="cash" size={16} color={COLORS.emerald} sw={2} />
+          <span style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Glyph name="cash" size={16} color="rgba(255,255,255,.7)" sw={2} />
           </span>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--ink)' }}>Carrefour</div>
@@ -712,7 +718,7 @@ export function MoneyVisual() {
           </span>
         </div>
         <div style={{ height: 8, borderRadius: 9, background: 'rgba(255,255,255,.1)', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${pct}%`, borderRadius: 9, background: `linear-gradient(90deg, ${COLORS.emerald}, ${COLORS.amber})`, transition: 'width .9s cubic-bezier(.3,1.2,.5,1)' }} />
+          <div style={{ height: '100%', width: `${pct}%`, borderRadius: 9, background: `linear-gradient(90deg, ${tone(45)}, ${A})`, transition: 'width .9s cubic-bezier(.3,1.2,.5,1)' }} />
         </div>
       </div>
       {/* A declined one: read, stamped, and left out. */}
@@ -722,7 +728,7 @@ export function MoneyVisual() {
         'Your purchase of EGP 3,200.00 at B.TECH was declined.',
         <div style={{ height: 30, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
           {k >= 5 && (
-            <div style={{ padding: '4px 9px', borderRadius: 8, border: `2px solid ${COLORS.red}`, color: COLORS.red, fontSize: 11, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', background: 'rgba(20,20,24,.8)', animation: 'stamp .45s cubic-bezier(.3,1.4,.5,1) both' }}>
+            <div style={{ padding: '4px 9px', borderRadius: 8, border: '2px solid rgba(255,255,255,.85)', color: '#fff', fontSize: 11, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', background: 'rgba(20,20,24,.8)', animation: 'stamp .45s cubic-bezier(.3,1.4,.5,1) both' }}>
               {t('Declined, not counted')}
             </div>
           )}
@@ -750,7 +756,7 @@ export function InsightsVisual() {
         <div style={{ position: 'relative', height: 120, marginTop: 6 }}>
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', gap: 10, padding: '0 4px' }}>
             {bars.map((b, i) => (
-              <div key={i} style={{ flex: 1, height: `${b}%`, borderRadius: 7, background: i === 6 ? COLORS.blue : `color-mix(in srgb, ${COLORS.blue} 40%, transparent)`, transformOrigin: 'bottom', animation: `barGrow .7s cubic-bezier(.3,1.4,.5,1) ${0.25 + i * 0.07}s both` }} />
+              <div key={i} style={{ flex: 1, height: `${b}%`, borderRadius: 7, background: i === 6 ? A : glow(40), transformOrigin: 'bottom', animation: `barGrow .7s cubic-bezier(.3,1.4,.5,1) ${0.25 + i * 0.07}s both` }} />
             ))}
           </div>
           <svg width="222" height="120" viewBox="0 0 222 120" style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
@@ -766,7 +772,7 @@ export function InsightsVisual() {
         </div>
       </div>
       {/* A story of the month, flicking in. */}
-      <div style={{ position: 'absolute', insetInlineEnd: 0, top: 70, width: 112, height: 184, borderRadius: 18, background: 'radial-gradient(circle at 50% 35%, rgba(234,138,118,.45), transparent 65%), #0e0e12', border: '1px solid rgba(255,255,255,.16)', boxShadow: '0 24px 40px -16px rgba(0,0,0,.8)', padding: '9px 9px', transform: 'rotate(6deg)', animation: 'popIn .7s cubic-bezier(.3,1.4,.5,1) .7s both', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ position: 'absolute', insetInlineEnd: 0, top: 70, width: 112, height: 184, borderRadius: 18, background: `radial-gradient(circle at 50% 35%, ${glow(40)}, transparent 65%), #0e0e12`, border: '1px solid rgba(255,255,255,.16)', boxShadow: '0 24px 40px -16px rgba(0,0,0,.8)', padding: '9px 9px', transform: 'rotate(6deg)', animation: 'popIn .7s cubic-bezier(.3,1.4,.5,1) .7s both', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 3, width: '100%' }}>
           {[1, 1, 0.5, 0].map((f, i) => (
             <div key={i} style={{ flex: 1, height: 2, borderRadius: 9, background: 'rgba(255,255,255,.25)', overflow: 'hidden' }}>
@@ -778,13 +784,13 @@ export function InsightsVisual() {
         <div className="display" style={{ fontSize: 44, lineHeight: 1, color: '#fff', marginTop: 4 }}>
           <RollingText text="18" delay={1} />
         </div>
-        <div style={{ width: 26, height: 2.5, borderRadius: 9, background: COLORS.coral, marginTop: 8 }} />
+        <div style={{ width: 26, height: 2.5, borderRadius: 9, background: A, marginTop: 8 }} />
         <div style={{ fontSize: 9.5, color: 'var(--ink3)', marginTop: 8, textAlign: 'center' }}>{t('this month')}</div>
       </div>
       {/* The morning brief: a sun coming up. */}
       <div style={{ position: 'absolute', insetInlineStart: 0, bottom: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px 9px 10px', borderRadius: 999, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.14)', animation: 'rise .55s cubic-bezier(.2,.8,.2,1) 1.2s both' }}>
         <span style={{ position: 'relative', width: 26, height: 18, overflow: 'hidden', display: 'block' }}>
-          <span style={{ position: 'absolute', left: 4, bottom: -9, width: 18, height: 18, borderRadius: '50%', background: 'radial-gradient(circle at 40% 35%, #fff1b8, #ffb15e)', animation: 'sunrise 1.6s cubic-bezier(.2,.8,.2,1) 1.4s both' }} />
+          <span style={{ position: 'absolute', left: 4, bottom: -9, width: 18, height: 18, borderRadius: '50%', background: `radial-gradient(circle at 40% 35%, #fff, ${tone(45)})`, animation: 'sunrise 1.6s cubic-bezier(.2,.8,.2,1) 1.4s both' }} />
           <span style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 1.5, background: 'rgba(255,255,255,.6)' }} />
         </span>
         <span style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--ink)' }}>{t('Your morning brief')}</span>

@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   email         TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   name          TEXT NOT NULL DEFAULT 'Alex Rivera',
-  theme         TEXT NOT NULL DEFAULT 'light',
+  theme         TEXT NOT NULL DEFAULT 'dark',
   reminders     BOOLEAN NOT NULL DEFAULT TRUE,
   haptics       BOOLEAN NOT NULL DEFAULT TRUE,
   onboarded     BOOLEAN NOT NULL DEFAULT FALSE,
