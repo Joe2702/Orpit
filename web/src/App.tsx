@@ -21,7 +21,6 @@ import { SleepSheet } from './sheets/SleepSheet';
 import { ExpenseSheet } from './sheets/ExpenseSheet';
 import { HabitSheet } from './sheets/HabitSheet';
 import { EditSheet } from './sheets/EditSheet';
-import { ReminderOnboarding } from './ReminderOnboarding';
 import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDaily, scheduleBriefs } from './lib/notify';
 import { briefSchedule, hasBriefData } from './lib/brief';
 import { OrbitMark } from './OrbitMark';
@@ -1183,7 +1182,6 @@ export function App() {
           <Intro />
         </Suspense>
       )}
-      {authed && state?.profile.introDone && <ReminderOnboarding />}
       {authed && state && <MoneyWatcher />}
 
       {report && state && (

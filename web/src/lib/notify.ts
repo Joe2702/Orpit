@@ -328,9 +328,10 @@ export async function syncReminders(enabled: boolean, time: string, remaining = 
       return;
     }
     const { ln } = await LN();
-    let perm = await ln.checkPermissions();
-    if (perm.display !== 'granted') perm = await ln.requestPermissions();
-    if (perm.display !== 'granted') return;
+    // Only ever checks. This runs whenever the app opens, and Orbit never asks
+    // for a permission the person didn't tap something for: permission comes
+    // from turning reminders on (enableReminders), not from opening the app.
+    if ((await ln.checkPermissions()).display !== 'granted') return;
     await scheduleDaily(time, remaining);
     await scheduleWeekly();
     api.pushUnsubscribeAll().catch(() => {});

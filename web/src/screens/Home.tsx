@@ -9,6 +9,7 @@ import { briefDue, hasBriefData } from '../lib/brief';
 import { assistantUnread } from '../lib/assistant';
 import { dueNow, listCounts } from '../lib/todos';
 import { TodoRow } from '../TodoRow';
+import { ReminderCard } from '../ReminderOnboarding';
 import { period } from '../lib/period';
 import { freshStart } from '../lib/freshStart';
 import { parseLayout, reconcile } from '../lib/layout';
@@ -536,6 +537,8 @@ export function Home() {
           </svg>
         </div>
       )}
+
+      <ReminderCard />
 
       {weekDue && (
         <div tabIndex={0} onClick={() => go('weekreview')} className="press99" role="button" style={{ ...listCard, display: 'flex', alignItems: 'center', gap: 12, padding: '14px 14px 14px 16px', marginBottom: 22, cursor: 'pointer' }}>

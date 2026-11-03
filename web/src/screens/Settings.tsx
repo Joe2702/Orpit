@@ -1282,6 +1282,20 @@ export function Settings() {
           </div>
           <IconChevron />
         </div>
+        {/* The first-run tour, again: shown on this phone only, nothing is reset. */}
+        <div role="button" tabIndex={0} onClick={() => applyState({ ...state!, profile: { ...state!.profile, introDone: false } })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer', borderTop: '1px solid var(--hairline)' }}>
+          <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
+              <circle cx="10" cy="10" r="7.5" />
+              <path d="M8.5 7v6l4.5-3z" />
+            </svg>
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Watch the tour again')}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('What Orbit does, in a minute')}</div>
+          </div>
+          <IconChevron />
+        </div>
       </div>
 
       <div tabIndex={0}
