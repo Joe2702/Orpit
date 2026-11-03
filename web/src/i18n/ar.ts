@@ -37,6 +37,7 @@ export const AR: Dict = {
   "Try again": "حاول مرة أخرى",
   "You're offline. Waiting for a connection.": "أنت غير متصل. في انتظار الاتصال.",
   "Waking up the server. This can take about 30 seconds after a quiet spell.": "جارٍ تشغيل الخادم. قد يستغرق ذلك نحو 30 ثانية بعد فترة هدوء.",
+  "Removed {n} declined payments: the bank said they didn’t go through": { one: "حُذفت دفعة مرفوضة: البنك قال إنها لم تتم", two: "حُذفت دفعتان مرفوضتان: البنك قال إنهما لم تتما", few: "حُذفت {n} دفعات مرفوضة: البنك قال إنها لم تتم", many: "حُذفت {n} دفعة مرفوضة: البنك قال إنها لم تتم", other: "حُذفت {n} دفعة مرفوضة: البنك قال إنها لم تتم" },
   "{n} payments added from your messages": { one: "أُضيفت دفعة واحدة من رسائلك", two: "أُضيفت دفعتان من رسائلك", few: "أُضيفت {n} دفعات من رسائلك", many: "أُضيفت {n} دفعة من رسائلك", other: "أُضيفت {n} دفعة من رسائلك" },
   "Checked off": "تم",
   "Refreshing…": "جارٍ التحديث…",

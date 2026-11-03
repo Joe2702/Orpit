@@ -227,9 +227,15 @@ const NOT_A_TRANSACTION: [RegExp, SkipReason][] = [
   // message, and importing both would double the payment.
   [/\b(?:PAYMENT |MONEY )?REQUEST (?:FROM|OF|HAS BEEN)|\bREQUESTED\b/, 'request'],
   [/طلب (?:تحويل|دفع|اموال|سداد)|يطلب منك/, 'request'],
-  // A failure is not a transaction either.
-  [/\b(?:DECLINED|REJECTED|FAILED|UNSUCCESSFUL|INSUFFICIENT)\b/, 'declined'],
-  [/مرفوض|رفض|فشل|غير ناجح|لم تتم|تعذر|غير كاف/, 'declined'],
+  // A failure is not a transaction either: the money never moved, however the
+  // bank words it. Phrases that also turn up in successful alerts stay out:
+  // "if this was not authorised by you, call…" is on half of all card alerts,
+  // and "cancelled" is often followed by a refund that did move money.
+  [
+    /\b(?:DECLINE[DS]?|REJECT(?:ED|ION)?|FAILED|FAILURE|UNSUCCESSFUL|INSUFFICIENT|DENIED)\b|\bNOT (?:SUCCESSFUL|APPROVED|COMPLETED|PROCESSED)\b|\b(?:COULD|CAN) ?NOT BE (?:COMPLETED|PROCESSED|DONE)\b|\bUNABLE TO (?:PROCESS|COMPLETE)\b|\b(?:INCORRECT|WRONG|INVALID) PIN\b|\bEXCEEDS? (?:THE |YOUR )?(?:AVAILABLE |DAILY |CARD |CREDIT |TRANSACTION )?LIMIT\b/,
+    'declined',
+  ],
+  [/مرفوض|رفض|فشل|غير ناجح|لم تنجح|لم تتم|لم تكتمل|لم يتم (?:تنفيذ|اتمام|قبول|اعتماد|الموافقه)|تعذر|غير كاف|لا يكفي|عدم كفايه|غير مقبول|غير مكتمل/, 'declined'],
   // A statement or a reminder mentions amounts that have already been counted,
   // or will be later.
   [/\bDUE (?:ON|DATE|AMOUNT)\b|\bMINIMUM (?:DUE|PAYMENT)\b|\bSTATEMENT\b|\bWILL BE (?:DEBITED|CHARGED|DEDUCTED)\b/, 'not-yet'],

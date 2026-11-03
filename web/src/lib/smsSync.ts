@@ -249,7 +249,7 @@ const PARSER_KEY = 'orbit_sms_parser';
  * Bump whenever smsParse or ledger learns to read something better. A rescan
  * is safe: the server rewrites only entries still as an import left them.
  */
-const PARSER_VERSION = 3;
+const PARSER_VERSION = 4;
 
 export function smsDiag(): SmsDiag | null {
   try {
@@ -484,6 +484,41 @@ function keepTexts(rows: SmsRow[], parsed: { p: ParsedSms; sender: string }[]) {
     .sort((a, b) => b[1].ts - a[1].ts)
     .slice(0, KEEP_TEXTS);
   set(TEXT_KEY, JSON.stringify(Object.fromEntries(keep)));
+}
+
+/**
+ * Entries imported from a message that, read again with today's reader, says
+ * the payment was declined. Earlier readers knew fewer ways of saying it, so
+ * some declines got in; the money never moved, so they come out. Only the
+ * entry's own message decides, and only while this phone still keeps it.
+ */
+export function declinedImports(state: AppState): string[] {
+  const texts = readTexts();
+  const home = state.profile.currency || 'EGP';
+  return state.txns
+    .filter((tx) => {
+      if (!tx.sms || !tx.smsKey) return false;
+      const key = tx.smsKey.replace(/:fee$/, '');
+      const kept = texts[key];
+      if (!kept) return false;
+      const a = analyseSms({ id: key, sender: kept.sender, body: kept.body, ts: kept.ts }, home);
+      return !a.ok && a.reason === 'declined';
+    })
+    .map((tx) => tx.id);
+}
+
+/**
+ * Deletes those entries. The server remembers each deleted message, so a later
+ * scan can't bring one back.
+ */
+export async function removeDeclined(state: AppState, del: (id: string) => Promise<AppState>): Promise<{ removed: number; state: AppState }> {
+  let next = state;
+  let removed = 0;
+  for (const id of declinedImports(state)) {
+    next = await del(id);
+    removed++;
+  }
+  return { removed, state: next };
 }
 
 /** The bank message an imported entry was read from, if this phone still has it. */

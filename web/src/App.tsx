@@ -32,7 +32,7 @@ import { connectivity, subscribe as subscribeConnectivity } from './lib/offline'
 import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
 import { updateWidget } from './lib/widget';
-import { syncSms, smsEnabled, ensureLiveSms, onSmsArrived, SMS_CHANGED } from './lib/smsSync';
+import { syncSms, removeDeclined, smsEnabled, ensureLiveSms, onSmsArrived, SMS_CHANGED } from './lib/smsSync';
 import { isRTL, t, tn } from './i18n';
 
 // Screens and sheets that aren't needed to open the app and log something load
@@ -802,13 +802,14 @@ export function App() {
       const cur = smsState.current;
       if (!cur) return;
       syncSms(cur, (items) => api.importSms(items), (base) => api.fx(base))
-        .then((r) => {
-          if (!r.state) return;
-          applyState(r.state);
-          if (r.added > 0) {
-            track('sms_import');
-            showToast(tn(r.added, '{n} payment added from your messages', '{n} payments added from your messages'));
-          }
+        .then(async (r) => {
+          if (r.state) applyState(r.state);
+          // Payments read from a message that says it was declined come out.
+          const gone = await removeDeclined(r.state || cur, (id) => api.deleteTxn(id));
+          if (gone.removed) applyState(gone.state);
+          if (r.added > 0) track('sms_import');
+          if (gone.removed) showToast(tn(gone.removed, 'Removed a declined payment: the bank said it didn’t go through', 'Removed {n} declined payments: the bank said they didn’t go through'));
+          else if (r.added > 0) showToast(tn(r.added, '{n} payment added from your messages', '{n} payments added from your messages'));
         })
         .catch(() => {});
     };
