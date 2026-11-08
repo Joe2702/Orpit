@@ -164,6 +164,11 @@ function handle(method: string, path: string, body: any): { status: number; json
     db = { ...db, txns: db.txns.map((t) => (ids.includes(t.id) ? { ...t, review: false } : t)) };
     return ok();
   }
+  if (path === '/txns/delete') {
+    const ids = new Set<string>(body.ids || []);
+    db = { ...db, txns: db.txns.filter((t) => !ids.has(t.id)) };
+    return ok();
+  }
   if (path === '/txns/recat') {
     const ids: string[] = body.ids || [];
     db = { ...db, txns: db.txns.map((t) => (ids.includes(t.id) ? { ...t, cat: String(body.cat), review: false, auto: false } : t)) };

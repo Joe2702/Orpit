@@ -370,6 +370,8 @@ export const api = {
   usage: (day: string, counts: Record<string, number>) =>
     request<{ ok: boolean }>('/usage', { method: 'POST', body: JSON.stringify({ day, counts }) }),
   /** Imported entries the user has looked at and is happy with. */
+  /** Several entries at once, from the website's table. */
+  deleteTxns: (ids: string[]) => request<AppState>('/txns/delete', { method: 'POST', body: JSON.stringify({ ids }) }),
   markReviewed: (ids: string[]) => request<AppState>('/txns/reviewed', { method: 'POST', body: JSON.stringify({ ids }) }),
   /** One category for many entries: "everything from this shop". */
   recategorise: (ids: string[], cat: string) =>

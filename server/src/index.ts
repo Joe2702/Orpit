@@ -1671,6 +1671,28 @@ app.delete(
   })
 );
 
+// Several entries deleted at once, from the website's table. The same rules as
+// deleting one: an imported payment stays deleted, however many go together.
+app.post(
+  '/api/txns/delete',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const ids: string[] = Array.isArray(req.body.ids) ? req.body.ids.slice(0, 2000).map(String).filter((x: string) => /^\d{1,18}$/.test(x)) : [];
+    if (ids.length) {
+      await tx(async (c) => {
+        const gone = await c.query<{ k: string | null }>('DELETE FROM txns WHERE user_id = $1 AND id = ANY($2::bigint[]) RETURNING sms_key AS k', [uid, ids]);
+        const keys = gone.rows.map((r) => r.k).filter((k): k is string => !!k);
+        if (keys.length) {
+          await c.query('INSERT INTO sms_ignored (user_id, sms_key) SELECT $1, unnest($2::text[]) ON CONFLICT DO NOTHING', [uid, keys]);
+        }
+      });
+    }
+    res.json(await buildState(uid));
+  })
+);
+
 // ---------------- Accounts ----------------
 
 app.post(
