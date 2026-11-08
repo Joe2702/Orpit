@@ -4,7 +4,7 @@
   "private": true,
   "description": "Orbit — full-stack life tracker (React + Node + Postgres)",
   "scripts": {
-    "build": "npm --prefix web install && npm --prefix web run build && npm --prefix server install && npm --prefix server run build",
+    "build": "npm --prefix web install && npm --prefix web run build && npm --prefix site install && npm --prefix site run build && npm --prefix server install && npm --prefix server run build",
     "start": "npm --prefix server run start",
     "migrate": "npm --prefix server run migrate"
   }

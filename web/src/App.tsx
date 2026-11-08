@@ -33,9 +33,6 @@ import { dayKey } from './lib/format';
 import { updateWidget } from './lib/widget';
 import { syncSms, removeDeclined, smsEnabled, ensureLiveSms, onSmsArrived, SMS_CHANGED } from './lib/smsSync';
 import { isRTL, t, tn } from './i18n';
-import { DesktopShell, DeskModal, StoryFrame, useSidebarCollapsed } from './desktop/DesktopShell';
-import { DeskEntry } from './desktop/Entry';
-import { useDeskKeys, ShortcutHelp } from './desktop/keys';
 
 // Screens and sheets that aren't needed to open the app and log something load
 // when first used, so a cold start parses less. A few seconds after launch the
@@ -135,10 +132,6 @@ const FeedbackSheet = lazy(() => LOAD.FeedbackSheet().then((m) => ({ default: m.
 const HabitCalendarSheet = lazy(() => LOAD.HabitCalendarSheet().then((m) => ({ default: m.HabitCalendarSheet })));
 const CatchUpSheet = lazy(() => LOAD.CatchUpSheet().then((m) => ({ default: m.CatchUpSheet })));
 const PartnerReportSheet = lazy(() => LOAD.PartnerReportSheet().then((m) => ({ default: m.PartnerReportSheet })));
-// The website's own pages, loaded only on a big screen.
-const Dashboard = lazy(() => import('./desktop/Dashboard').then((m) => ({ default: m.Dashboard })));
-const TxnTable = lazy(() => import('./desktop/TxnTable').then((m) => ({ default: m.TxnTable })));
-const CommandPalette = lazy(() => import('./desktop/CommandPalette').then((m) => ({ default: m.CommandPalette })));
 
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];
@@ -217,14 +210,6 @@ function CurrentScreen() {
   }
 }
 
-/** On the website, Home and the transactions list have wide layouts of their own. */
-function DeskScreen() {
-  const { screen, emptyMode } = useStore();
-  if (screen === 'home' && !emptyMode) return <Dashboard />;
-  if (screen === 'ftxns') return <TxnTable />;
-  return <CurrentScreen />;
-}
-
 function PartnerThreadScreen() {
   const { screenData } = useStore();
   return <PartnerThread module={screenData?.module ?? null} />;
@@ -299,6 +284,33 @@ function SheetBody() {
     default:
       return null;
   }
+}
+
+function StatusBar() {
+  return (
+    <div style={{ height: 54, flex: 'none', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 30px 9px', zIndex: 60 }}>
+      <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', letterSpacing: '.01em' }}>9:41</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: 'var(--text)' }}>
+        <svg width="18" height="12" style={{ display: 'block', fill: 'currentColor' }}>
+          <rect x="0" y="8" width="3" height="4" rx="1" />
+          <rect x="5" y="5.5" width="3" height="6.5" rx="1" />
+          <rect x="10" y="3" width="3" height="9" rx="1" />
+          <rect x="15" y="0" width="3" height="12" rx="1" />
+        </svg>
+        <svg width="17" height="12" style={{ display: 'block', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round' }}>
+          <path d="M2 4.5a10 10 0 0 1 13 0" />
+          <path d="M4.5 7.2a6 6 0 0 1 8 0" />
+          <path d="M7 9.8a2.2 2.2 0 0 1 3 0" />
+        </svg>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <div style={{ width: 22, height: 11.5, border: '1.4px solid currentColor', borderRadius: 3, padding: 1.4, opacity: 0.9 }}>
+            <div style={{ width: '78%', height: '100%', background: 'currentColor', borderRadius: 1 }} />
+          </div>
+          <div style={{ width: 1.5, height: 4, background: 'currentColor', borderRadius: 2, opacity: 0.5 }} />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -667,24 +679,6 @@ export function App() {
   }, [authed, habitsKey, billsKey, tasksKey, hasData, state?.profile.modules]);
 
 
-  // Phone, or the website on a big screen. The website has its own layout once
-  // signed in (sidebar, wide pages); before that, the phone's flow floats in a card.
-  const [mobile, setMobile] = useState<boolean>(() => detectMobile());
-  useEffect(() => {
-    const on = () => setMobile(detectMobile());
-    window.addEventListener('resize', on);
-    const mm = window.matchMedia('(display-mode: standalone)');
-    mm.addEventListener?.('change', on);
-    return () => {
-      window.removeEventListener('resize', on);
-      mm.removeEventListener?.('change', on);
-    };
-  }, []);
-  const PRE_AUTH = ['welcome', 'signin', 'forgot', 'reset', 'verify'];
-  const [locked, setLocked] = useState(() => lockSupported() && lockEnabled());
-  const shell = !mobile && authed && !!state && ready && !!state.profile.introDone && !locked && !PRE_AUTH.includes(screen);
-  const layout = mobile ? 'phone' : shell ? 'shell' : 'entry';
-
   // Text size: the UI uses fixed pixel sizes, so scale the whole app with
   // `zoom` (supported in the Android WebView and Chrome) rather than rewriting
   // every size. Layout stays proportional.
@@ -693,7 +687,7 @@ export function App() {
     const root = document.querySelector('.orbit') as HTMLElement | null;
     if (!root) return;
     root.style.setProperty('zoom', String(textScale));
-  }, [textScale, authed, layout]);
+  }, [textScale, authed]);
 
   const rawTheme = authed && state ? state.profile.theme : localTheme;
   const theme: 'light' | 'dark' = rawTheme === 'system' ? (sysDark ? 'dark' : 'light') : rawTheme;
@@ -713,7 +707,7 @@ export function App() {
       } else if (accent === 'indigo') root.style.removeProperty('--indigo');
       else root.style.setProperty('--indigo', `var(--${accent})`);
     });
-  }, [accent, authed, theme, layout]);
+  }, [accent, authed, theme]);
 
   // The status and navigation bar icons, matched to what's behind them. On
   // Android 15 and later the bars are transparent and the app draws under
@@ -732,6 +726,20 @@ export function App() {
       mutateOpt((s) => ({ ...s, profile: { ...s.profile, theme: t } }), () => api.updateMe({ theme: t }));
     else setLocalTheme(t);
   };
+
+  // On a phone (or installed as a PWA) fill the whole screen like a native app.
+  // On a desktop, keep the pretty phone-mockup showcase.
+  const [mobile, setMobile] = useState<boolean>(() => detectMobile());
+  useEffect(() => {
+    const on = () => setMobile(detectMobile());
+    window.addEventListener('resize', on);
+    const mm = window.matchMedia('(display-mode: standalone)');
+    mm.addEventListener?.('change', on);
+    return () => {
+      window.removeEventListener('resize', on);
+      mm.removeEventListener?.('change', on);
+    };
+  }, []);
 
   const showTabs = APP_SCREENS.includes(screen);
 
@@ -831,6 +839,7 @@ export function App() {
   // Locked from the start when it's on, and again after a minute away. Short
   // trips (the unlock prompt itself, a permission dialog, a glance at a
   // message) don't count.
+  const [locked, setLocked] = useState(() => lockSupported() && lockEnabled());
   const hiddenAt = useRef<number | null>(null);
   useEffect(() => {
     const onVis = () => {
@@ -995,8 +1004,8 @@ export function App() {
   // Back should navigate inside the app; only at the top level does it ask
   // "exit Orbit?" — like a real installed app, instead of instantly closing.
   const [exitPrompt, setExitPrompt] = useState(false);
-  const nav = useRef({ screen, sheet, authed, report, desk: !mobile });
-  nav.current = { screen, sheet, authed, report, desk: !mobile };
+  const nav = useRef({ screen, sheet, authed, report });
+  nav.current = { screen, sheet, authed, report };
 
   // Liquid glass: every element marked data-lens gets its bent rim.
   useEffect(() => startLiquid(document.body), []);
@@ -1023,11 +1032,6 @@ export function App() {
         window.history.pushState({ orbit: true }, ''); // re-arm
         return;
       }
-      // A website just goes back to the page before it, as browsers do.
-      if (nav.current.desk) {
-        window.history.back();
-        return;
-      }
       // At the top level: ask before leaving. Don't re-arm yet — the choice decides.
       setExitPrompt(true);
     };
@@ -1045,32 +1049,32 @@ export function App() {
     window.history.back(); // no sentinel armed → this leaves the app
   };
 
-  // ---- The website's keyboard ----
-  const [palette, setPalette] = useState(false);
-  const [help, setHelp] = useState(false);
-  const [sideCollapsed, setSideCollapsed] = useSidebarCollapsed();
-  // Fetch the website's own pages as soon as its layout shows, so the palette
-  // opens on the first keystroke and Home doesn't flash empty.
-  useEffect(() => {
-    if (!shell) return;
-    import('./desktop/CommandPalette').catch(() => {});
-    import('./desktop/TxnTable').catch(() => {});
-  }, [shell]);
-  useDeskKeys(shell, {
-    palette: () => setPalette(true),
-    help: () => setHelp(true),
-    toggleSidebar: () => setSideCollapsed(!sideCollapsed),
-    blocked: palette || help || !!report || !!confirmState,
-  });
-
   // While restoring a session (esp. waking the free server), show a branded
   // splash instead of a blank page or the login screen.
   if (booting) {
     return <Splash theme={theme} error={bootError} onRetry={retryBoot} />;
   }
 
-  const phonePage = (
+  const pill = (active: boolean): React.CSSProperties => ({
+    padding: '7px 17px',
+    borderRadius: 999,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all .2s',
+    fontFamily: 'var(--font-ui)',
+    border: 'none',
+    ...(active ? { background: '#14151A', color: '#fff' } : { background: 'transparent', color: '#3a3b42' }),
+  });
+
+  const appInner = (
     <>
+      {!mobile && (
+        <div style={{ position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)', width: 118, height: 34, background: '#000', borderRadius: 'calc(20px * var(--sq))', zIndex: 80 }} />
+      )}
+
+      {!mobile && <StatusBar />}
+
       <div
         ref={scrollRef}
         onTouchStart={(e) => { onPullStart(e); onSwipeStart(e); }}
@@ -1094,14 +1098,9 @@ export function App() {
           ) : null}
         </div>
       </div>
-      {showTabs && <TabBar scroller={scrollRef} />}
-    </>
-  );
 
-  const layers = (
-    <>
       {toast && (
-        <div style={{ position: 'absolute', ...(shell ? { bottom: 26 } : { top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 20 }), left: '50%', transform: 'translateX(-50%)', zIndex: 95, color: 'var(--text)', padding: '11px 20px', borderRadius: (toast || '').length > 40 ? 'calc(18px * var(--sq))' : 999, fontSize: 14, fontWeight: 600, lineHeight: 1.4, animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, width: 'max-content', maxWidth: 'calc(100% - 32px)', whiteSpace: 'normal' }} className="glass-strong" data-lens="toast">
+        <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, color: 'var(--text)', padding: '11px 20px', borderRadius: (toast || '').length > 40 ? 'calc(18px * var(--sq))' : 999, fontSize: 14, fontWeight: 600, lineHeight: 1.4, animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, width: 'max-content', maxWidth: 'calc(100% - 32px)', whiteSpace: 'normal' }} className="glass-strong" data-lens="toast">
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <path d="M4 9.5l3.4 3.4L14 5" />
           </svg>
@@ -1119,16 +1118,9 @@ export function App() {
         </div>
       )}
 
-      {sheet && shell && (
-        <DeskModal onClose={closeSheet}>
-          <div className="desk-modal-body">
-            <Suspense fallback={null}>
-              <SheetBody />
-            </Suspense>
-          </div>
-        </DeskModal>
-      )}
-      {sheet && !shell && (
+      {showTabs && <TabBar scroller={scrollRef} />}
+
+      {sheet && (
         // The sheet floats clear of the edges, the way liquid-glass sheets do.
         <div style={{ position: 'absolute', inset: 0, zIndex: 90, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: mobile ? '0 8px calc(8px + env(safe-area-inset-bottom))' : '0 8px 8px' }}>
           <div onClick={closeSheet} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .25s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
@@ -1194,14 +1186,7 @@ export function App() {
       )}
       {authed && state && <MoneyWatcher />}
 
-      {report && state && shell && (
-        <StoryFrame onClose={closeReport}>
-          <Suspense fallback={null}>
-            <StoryReport kind={report.kind} offset={report.offset} onClose={closeReport} />
-          </Suspense>
-        </StoryFrame>
-      )}
-      {report && state && !shell && (
+      {report && state && (
         <Suspense fallback={null}>
           <StoryReport kind={report.kind} offset={report.offset} onClose={closeReport} />
         </Suspense>
@@ -1209,7 +1194,7 @@ export function App() {
     </>
   );
 
-  // Phone / installed app: fill the whole screen.
+  // Phone / installed PWA: fill the whole screen, no mockup frame.
   if (mobile) {
     return (
       <div
@@ -1227,55 +1212,45 @@ export function App() {
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
-        {phonePage}
-        {layers}
+        {appInner}
       </div>
     );
   }
 
-  // The website, signed in: sidebar and wide pages.
-  if (shell) {
-    return (
-      <div className="orbit desk" data-theme={theme} style={{ position: 'fixed', inset: 0, color: 'var(--text)' }}>
-        <DesktopShell scrollRef={scrollRef} theme={theme} setTheme={setTheme} openPalette={() => setPalette(true)} showHelp={() => setHelp(true)}>
-          {ready && <SyncStatus />}
-          <div key={screen} style={{ animation: 'fadeIn .2s ease' }}>
-            <Suspense fallback={null}>
-              <DeskScreen />
-            </Suspense>
-          </div>
-        </DesktopShell>
-        {layers}
-        {palette && (
-          <Suspense fallback={null}>
-            <CommandPalette onClose={() => setPalette(false)} theme={theme} setTheme={setTheme} showHelp={() => setHelp(true)} />
-          </Suspense>
-        )}
-        {help && <ShortcutHelp onClose={() => setHelp(false)} />}
-      </div>
-    );
-  }
-
-  // The website before signing in, and during the first-run tour: the phone's
-  // flow in a card floating in space.
+  // Desktop: pretty phone-mockup showcase.
   return (
-    <div className="orbit desk" data-theme={theme} style={{ position: 'fixed', inset: 0, color: 'var(--text)' }}>
-      <DeskEntry hero={!authed}>
-        {phonePage}
-        {layers}
-      </DeskEntry>
+    <div className="stage">
+      <div style={{ display: 'flex', gap: 4, alignItems: 'center', background: 'rgba(255,255,255,.7)', backdropFilter: 'blur(8px)', borderRadius: 999, padding: 5, boxShadow: '0 2px 12px rgba(20,21,30,.12)' }}>
+        <div role="button" tabIndex={0} aria-pressed={theme === 'light'} onClick={() => setTheme('light')} style={pill(theme === 'light')}>{t('Light')}</div>
+        <div role="button" tabIndex={0} aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')} style={pill(theme === 'dark')}>{t('Dark')}</div>
+        {/* Someone who chose the phone layout on a computer gets back to the desktop site here. */}
+        <div role="button" tabIndex={0} onClick={openDesktopSite} onKeyDown={(e) => e.key === 'Enter' && openDesktopSite()} style={pill(false)}>{t('Desktop site')}</div>
+      </div>
+
+      <div style={{ width: 414, height: 868, background: '#08080a', borderRadius: 56, padding: 12, boxShadow: '0 60px 120px -30px rgba(15,16,24,.6), 0 0 0 2px rgba(255,255,255,.05) inset', flex: 'none' }}>
+        <div className="orbit" data-theme={theme} style={{ position: 'relative', width: 390, height: 844, borderRadius: 44, overflow: 'hidden', background: 'var(--app-bg)', display: 'flex', flexDirection: 'column', color: 'var(--text)' }}>
+          {appInner}
+        </div>
+      </div>
+
+      <div style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, color: '#7c808a', letterSpacing: '.04em' }}>
+        {t('orbit · tap anything, it\'s live')}
+      </div>
     </div>
   );
 }
 
-/**
- * The phone layout: in the Android app, in a narrow window, and on a touch
- * screen that isn't laptop-sized (a phone on its side, a small tablet). Wide
- * windows get the website's own layout, installed as an app or not.
- */
+/** The server sends computers the desktop site unless this cookie says otherwise. */
+function openDesktopSite(): void {
+  document.cookie = 'orbit_view=desktop; path=/; max-age=31536000; samesite=lax';
+  window.location.href = '/';
+}
+
 function detectMobile(): boolean {
   if (typeof window === 'undefined') return false;
-  if (Capacitor.isNativePlatform()) return true;
-  const touchOnly = window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(any-pointer: fine)').matches;
-  return window.innerWidth < 900 || (touchOnly && window.innerWidth < 1100);
+  const standalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    // iOS Safari standalone flag
+    (window.navigator as any).standalone === true;
+  return standalone || window.innerWidth < 700;
 }

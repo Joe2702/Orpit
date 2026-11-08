@@ -48,7 +48,7 @@ export function toggleKnob(on: boolean): CSSProperties {
 
 export function BackButton({ onClick }: { onClick: () => void }) {
   return (
-    <div role="button" tabIndex={0} aria-label={t('Back')} data-back=""
+    <div role="button" tabIndex={0} aria-label={t('Back')}
       onClick={onClick}
       style={{
         width: 38,

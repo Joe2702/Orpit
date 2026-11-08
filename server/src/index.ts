@@ -11,6 +11,7 @@ import webpush from 'web-push';
 
 import type { PoolClient } from 'pg';
 import { pool, query, one, tx } from './db.js';
+import { pickView } from './view.js';
 import { signToken, requireAuth, type AuthedRequest } from './auth.js';
 import { seedUser } from './seed.js';
 import { buildState } from './state.js';
@@ -3277,15 +3278,24 @@ app.post(
   })
 );
 
-// ---------------- Serve the built frontend (production) ----------------
-// The compiled server lives at server/dist; the web build is at web/dist.
+// ---------------- Serve the built frontends (production) ----------------
+// Two apps share this address. Phones get the phone app (web/dist), the same
+// one the Android app bundles. Computers get the desktop website (site/dist),
+// built for a big screen. Each has a switch to the other, kept in a cookie.
+// The website's files live under /d/, so neither app's files hide the other's.
 const webDist = join(__dirname, '../../web/dist');
+const siteDist = join(__dirname, '../../site/dist');
+const hasSite = existsSync(join(siteDist, 'index.html'));
+if (hasSite) app.use('/d', express.static(join(siteDist, 'd'), { immutable: true, maxAge: '365d' }));
 if (existsSync(webDist)) {
-  app.use(express.static(webDist));
-  // Any non-API route returns the SPA shell.
+  // index: false, so "/" falls through to the choice below.
+  app.use(express.static(webDist, { index: false }));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
-    res.sendFile(join(webDist, 'index.html'));
+    const view = hasSite ? pickView({ cookie: req.headers.cookie, ua: req.headers['user-agent'], chMobile: req.headers['sec-ch-ua-mobile'] as string | undefined }) : 'phone';
+    res.setHeader('Vary', 'User-Agent, Sec-CH-UA-Mobile, Cookie');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(join(view === 'desktop' ? siteDist : webDist, 'index.html'));
   });
 }
 

@@ -3,9 +3,9 @@
 // what's loaded if that fails.
 
 import { api } from '../api';
-import type { AppState, Txn } from '../types';
-import { csvDate, downloadCsv, toCsv, type Cell } from '../lib/csv';
-import { currentCurrency, dayKey, fmtClock } from '../lib/format';
+import type { AppState, Txn } from '@core/types';
+import { csvDate, downloadCsv, toCsv, type Cell } from './csv';
+import { currentCurrency, dayKey, fmtClock } from '@core/lib/format';
 import { t, tData } from '../i18n';
 
 export type ExportKind = 'txns' | 'workouts' | 'sleep' | 'habits';
