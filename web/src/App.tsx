@@ -1223,6 +1223,8 @@ export function App() {
       <div style={{ display: 'flex', gap: 4, alignItems: 'center', background: 'rgba(255,255,255,.7)', backdropFilter: 'blur(8px)', borderRadius: 999, padding: 5, boxShadow: '0 2px 12px rgba(20,21,30,.12)' }}>
         <div role="button" tabIndex={0} aria-pressed={theme === 'light'} onClick={() => setTheme('light')} style={pill(theme === 'light')}>{t('Light')}</div>
         <div role="button" tabIndex={0} aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')} style={pill(theme === 'dark')}>{t('Dark')}</div>
+        {/* Someone who chose the phone layout on a computer gets back to the desktop site here. */}
+        <div role="button" tabIndex={0} onClick={openDesktopSite} onKeyDown={(e) => e.key === 'Enter' && openDesktopSite()} style={pill(false)}>{t('Desktop site')}</div>
       </div>
 
       <div style={{ width: 414, height: 868, background: '#08080a', borderRadius: 56, padding: 12, boxShadow: '0 60px 120px -30px rgba(15,16,24,.6), 0 0 0 2px rgba(255,255,255,.05) inset', flex: 'none' }}>
@@ -1236,6 +1238,12 @@ export function App() {
       </div>
     </div>
   );
+}
+
+/** The server sends computers the desktop site unless this cookie says otherwise. */
+function openDesktopSite(): void {
+  document.cookie = 'orbit_view=desktop; path=/; max-age=31536000; samesite=lax';
+  window.location.href = '/';
 }
 
 function detectMobile(): boolean {

@@ -128,9 +128,12 @@ export function Reorderable({ items, onReorder, handleTop = 2 }: { items: Item[]
       }
     };
 
-    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
+    // Both, always: a laptop with a touch screen has a mouse too. A browser
+    // follows a tap with pretend mouse events; those are ignored, so one
+    // touch can't start a second drag.
+    let lastTouch = 0;
     const onTS = (e: TouchEvent) => {
+      lastTouch = Date.now();
       const t = e.touches[0];
       if (t && onHandle(e.target)) start(t.clientY, idFrom(e.target));
     };
@@ -138,34 +141,39 @@ export function Reorderable({ items, onReorder, handleTop = 2 }: { items: Item[]
       const t = e.touches[0];
       if (t) move(t.clientY, e);
     };
+    const onTE = () => {
+      lastTouch = Date.now();
+      finish();
+    };
+    const fromTouch = () => Date.now() - lastTouch < 800;
     const onMD = (e: MouseEvent) => {
-      if (!onHandle(e.target)) return;
+      if (fromTouch() || e.button !== 0 || !onHandle(e.target)) return;
       e.preventDefault(); // no text selection while dragging with a mouse
       start(e.clientY, idFrom(e.target));
     };
     const onMM = (e: MouseEvent) => {
-      if (S.current.info || S.current.pending) move(e.clientY, e);
+      if (!fromTouch() && (S.current.info || S.current.pending)) move(e.clientY, e);
+    };
+    const onMU = () => {
+      if (!fromTouch() && (S.current.info || S.current.pending)) finish();
     };
 
-    if (hasTouch) {
-      c.addEventListener('touchstart', onTS, { passive: true });
-      c.addEventListener('touchmove', onTM, { passive: false });
-      c.addEventListener('touchend', finish);
-      c.addEventListener('touchcancel', finish);
-    } else {
-      c.addEventListener('mousedown', onMD);
-      window.addEventListener('mousemove', onMM);
-      window.addEventListener('mouseup', finish);
-    }
+    c.addEventListener('touchstart', onTS, { passive: true });
+    c.addEventListener('touchmove', onTM, { passive: false });
+    c.addEventListener('touchend', onTE);
+    c.addEventListener('touchcancel', onTE);
+    c.addEventListener('mousedown', onMD);
+    window.addEventListener('mousemove', onMM);
+    window.addEventListener('mouseup', onMU);
     return () => {
       clearTimeout(S.current.timer);
       c.removeEventListener('touchstart', onTS);
       c.removeEventListener('touchmove', onTM);
-      c.removeEventListener('touchend', finish);
-      c.removeEventListener('touchcancel', finish);
+      c.removeEventListener('touchend', onTE);
+      c.removeEventListener('touchcancel', onTE);
       c.removeEventListener('mousedown', onMD);
       window.removeEventListener('mousemove', onMM);
-      window.removeEventListener('mouseup', finish);
+      window.removeEventListener('mouseup', onMU);
     };
   }, [order, onReorder]);
 

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Orbit</title>
+    <meta name="description" content="Habits, training, sleep and money in one place: Orbit on your computer." />
+    <meta name="theme-color" content="#09090b" />
+    <link rel="icon" href="/icon-192.png" />
+    <script>
+      // Paint the right theme before anything loads, so a dark page never flashes white.
+      try {
+        var t = localStorage.getItem('orbit_site_theme') || 'dark';
+        if (t === 'system') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.dataset.theme = t;
+      } catch (e) {
+        document.documentElement.dataset.theme = 'dark';
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

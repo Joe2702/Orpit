@@ -29,6 +29,30 @@ jobs:
       - name: Unit tests
         run: npm test
 
+  # The desktop website. It imports the phone app's calculations from web/src,
+  # so both packages are installed.
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            site/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npm ci
+        working-directory: site
+      - name: Type check and build
+        working-directory: site
+        run: npm run build
+      - name: Unit tests
+        working-directory: site
+        run: npm test
+
   server:
     runs-on: ubuntu-latest
     # A throwaway database for the server's integration tests.

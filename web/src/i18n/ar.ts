@@ -49,6 +49,7 @@ export const AR: Dict = {
   "Stay": "البقاء",
   "Exit": "خروج",
   "Delete": "حذف",
+  "Desktop site": "موقع الكمبيوتر",
   "Light": "فاتح",
   "Dark": "داكن",
   "orbit · tap anything, it's live": "orbit · اضغط على أي شيء، إنه يعمل",

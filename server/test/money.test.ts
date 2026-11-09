@@ -159,3 +159,26 @@ test('merging two accounts moves everything and drops transfers between them', a
   const links = c.account('CIB').smsLinks || [];
   assert.ok(links.some((l) => l.sender === 'NBE'), 'future NBE messages go to the merged account');
 });
+
+test('deleting several entries at once removes only your own, and imported ones stay gone', async () => {
+  const a = await user();
+  const b = await user();
+  const msgs = [
+    { sender: 'CIB', ts: T0, body: 'Your CIB debit card ending with 1234 was charged for EGP 120.00 at SPINNEYS CAIRO EG. Available balance EGP 9,880.00' },
+    { sender: 'CIB', ts: T0 + H, body: 'Your CIB debit card ending with 1234 was charged for EGP 60.00 at COSTA COFFEE CAIRO EG. Available balance EGP 9,820.00' },
+  ];
+  await a.importSms(msgs);
+  await a.call('/api/txns', 'POST', { name: 'Lunch', cat: 'Food', amount: 90, income: false, accId: null, ts: T0 + 2 * H });
+  await b.call('/api/txns', 'POST', { name: 'Theirs', cat: 'Food', amount: 50, income: false, accId: null, ts: T0 });
+  const id = (n: string) => a.state.txns.find((x) => x.name === n)!.id;
+  const theirs = b.state.txns.find((x) => x.name === 'Theirs')!.id;
+
+  await a.call('/api/txns/delete', 'POST', { ids: [id('Spinneys'), id('Lunch'), theirs, 'not-an-id'] });
+  assert.deepEqual(a.state.txns.map((x) => x.name), ['Costa']);
+  // Someone else's entry can't be reached by its id.
+  await b.call('/api/state');
+  assert.equal(b.state.txns.length, 1);
+  // The bank message is still in the phone's inbox: a rescan mustn't bring it back.
+  await a.importSms(msgs);
+  assert.deepEqual(a.state.txns.map((x) => x.name), ['Costa']);
+});
