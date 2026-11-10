@@ -6,7 +6,7 @@ import { useTodoActions } from '../TodoRow';
 import { dueChoices, lastList, rememberList, LIST_COLORS } from '../lib/todos';
 import { t, tn } from '../i18n';
 
-const label = (text: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{text}</div>;
+const label = (text: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{text}</div>;
 const input: React.CSSProperties = {
   width: '100%',
   minHeight: 52,
@@ -14,19 +14,19 @@ const input: React.CSSProperties = {
   border: '1px solid var(--border)',
   background: 'var(--bg)',
   padding: '0 16px',
-  fontSize: 16,
+  fontSize: 15,
   color: 'var(--text)',
   outline: 'none',
 };
 const pill = (active: boolean, color = 'indigo'): React.CSSProperties => ({
   display: 'inline-flex',
   alignItems: 'center',
-  gap: 7,
+  gap: 8,
   height: 38,
-  padding: '0 14px',
+  padding: '0 16px',
   borderRadius: 999,
   flex: 'none',
-  fontSize: 14,
+  fontSize: 15,
   fontWeight: 600,
   cursor: 'pointer',
   border: `1px solid ${active ? `var(--${color})` : 'var(--border)'}`,
@@ -41,7 +41,7 @@ const primary = (on: boolean): React.CSSProperties => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontSize: 16,
+  fontSize: 15,
   fontWeight: 700,
   cursor: on ? 'pointer' : 'default',
 });
@@ -57,7 +57,7 @@ const dangerBtn: React.CSSProperties = {
   fontWeight: 600,
   color: 'var(--danger)',
   cursor: 'pointer',
-  marginTop: 10,
+  marginTop: 8,
 };
 
 /** Add a task, or change one: its words, its list, when it's due, a note. */
@@ -77,8 +77,8 @@ export function TodoSheet() {
   if (!s.todoLists.length) {
     return (
       <div style={{ padding: '8px 20px 32px' }}>
-        <div className="display" style={{ fontSize: 28, lineHeight: 1.1, color: 'var(--text)', margin: '6px 2px 10px' }}>{t('Make a list first')}</div>
-        <div style={{ fontSize: 14.5, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 20 }}>{t('Tasks live in lists, like Uni or Training. Make one, then add to it.')}</div>
+        <div className="display" style={{ fontSize: 28, lineHeight: 1.1, color: 'var(--text)', margin: '8px 2px 8px' }}>{t('Make a list first')}</div>
+        <div style={{ fontSize: 15, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 20 }}>{t('Tasks live in lists, like Uni or Training. Make one, then add to it.')}</div>
         <div role="button" tabIndex={0} onClick={() => open('todolistEdit')} className="press99" style={primary(true)}>
           {t('New list')}
         </div>
@@ -108,7 +108,7 @@ export function TodoSheet() {
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 18px' }}>{editing ? t('Edit task') : t('New task')}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '8px 0 16px' }}>{editing ? t('Edit task') : t('New task')}</div>
 
       <textarea
         value={title}
@@ -124,7 +124,7 @@ export function TodoSheet() {
         maxLength={200}
         placeholder={t('What needs doing?')}
         aria-label={t('Task')}
-        style={{ ...input, padding: '14px 16px', resize: 'none', fontWeight: 600, lineHeight: 1.4, marginBottom: 20, fontFamily: 'inherit' }}
+        style={{ ...input, padding: '16px 16px', resize: 'none', fontWeight: 600, lineHeight: 1.4, marginBottom: 20, fontFamily: 'inherit' }}
       />
 
       {label(t('List'))}
@@ -138,7 +138,7 @@ export function TodoSheet() {
       </div>
 
       {label(t('Due'))}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: picking || dueKey === 'pick' ? 10 : 20 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: picking || dueKey === 'pick' ? 8 : 20 }}>
         <div role="button" tabIndex={0} aria-pressed={dueKey === 'none'} onClick={() => { setDue(null); setPicking(false); }} style={pill(dueKey === 'none')}>
           {t('No date')}
         </div>
@@ -236,7 +236,7 @@ export function TodoListSheet() {
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 18px' }}>{editing ? t('Edit list') : t('New list')}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '8px 0 16px' }}>{editing ? t('Edit list') : t('New list')}</div>
       {label(t('Name'))}
       <input
         value={name}
@@ -248,7 +248,7 @@ export function TodoListSheet() {
         style={{ ...input, marginBottom: 20 }}
       />
       {label(t('Colour'))}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 26, paddingInlineStart: 2 }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24, paddingInlineStart: 2 }}>
         {LIST_COLORS.map((c) => (
           <div
             key={c}

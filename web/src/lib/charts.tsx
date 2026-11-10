@@ -264,7 +264,7 @@ function Bubble({ idx, n, title, value, top, onOpen }: { idx: number; n: number;
         background: 'var(--text)',
         color: 'var(--bg)',
         borderRadius: 'calc(10px * var(--sq))',
-        padding: '6px 10px',
+        padding: '8px 8px',
         whiteSpace: 'nowrap',
         boxShadow: 'var(--shadow-lg)',
         animation: 'fadeIn .12s ease',
@@ -272,7 +272,7 @@ function Bubble({ idx, n, title, value, top, onOpen }: { idx: number; n: number;
     >
       <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '-.01em' }}>{value}</div>
       <div style={{ fontSize: 11, opacity: 0.7, marginTop: 1 }}>{title}</div>
-      {onOpen && <div style={{ fontSize: 11.5, fontWeight: 650, marginTop: 4 }}>{t('See payments ›')}</div>}
+      {onOpen && <div style={{ fontSize: 11, fontWeight: 600, marginTop: 4 }}>{t('See payments ›')}</div>}
     </div>
   );
 }
@@ -280,7 +280,7 @@ function Bubble({ idx, n, title, value, top, onOpen }: { idx: number; n: number;
 function XAxis({ buckets }: { buckets: Bucket[] }) {
   const n = buckets.length;
   return (
-    <div style={{ position: 'relative', height: 16, marginTop: 7 }}>
+    <div style={{ position: 'relative', height: 16, marginTop: 8 }}>
       {buckets.map((b, i) =>
         b.label ? (
           <span
@@ -290,7 +290,7 @@ function XAxis({ buckets }: { buckets: Bucket[] }) {
               insetInlineStart: `${((i + 0.5) / n) * 100}%`,
               transform: `translateX(${isRTL() ? 50 : -50}%)`,
               fontSize: 11,
-              fontWeight: b.current ? 650 : 500,
+              fontWeight: b.current ? 600 : 500,
               color: b.current ? 'var(--text)' : 'var(--text3)',
               whiteSpace: 'nowrap',
             }}
@@ -348,7 +348,7 @@ export function BarChart({
           [1, 0.5].map((f) => (
             <div key={f} style={{ position: 'absolute', left: 0, right: 0, bottom: `${f * 100}%`, borderTop: '1px dashed var(--hairline)' }}>
               {hasData && (
-                <span style={{ position: 'absolute', insetInlineEnd: 0, top: -15, fontSize: 10.5, color: 'var(--text3)', background: 'var(--surface)', paddingInlineStart: 4 }}>
+                <span style={{ position: 'absolute', insetInlineEnd: 0, top: -15, fontSize: 11, color: 'var(--text3)', background: 'var(--surface)', paddingInlineStart: 4 }}>
                   {format(max * f)}
                 </span>
               )}
@@ -514,7 +514,7 @@ export function SleepClock({
       </div>
       <div style={{ position: 'relative', width: 40, height, flex: 'none' }}>
         {ticks.map((t) => (
-          <span key={t} style={{ position: 'absolute', insetInlineEnd: 0, top: `calc(${y(t)}% - 7px)`, fontSize: 10.5, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
+          <span key={t} style={{ position: 'absolute', insetInlineEnd: 0, top: `calc(${y(t)}% - 7px)`, fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
             {label(t)}
           </span>
         ))}
@@ -526,9 +526,9 @@ export function SleepClock({
 /** Legend dots under a chart. */
 export function Legend({ items }: { items: { color: string; label: string }[] }) {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', marginTop: 14 }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', marginTop: 16 }}>
       {items.map((it) => (
-        <span key={it.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--text2)' }}>
+        <span key={it.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)' }}>
           <span style={{ width: 8, height: 8, borderRadius: 3, background: it.color }} />
           {it.label}
         </span>

@@ -57,9 +57,9 @@ export function ExpenseSheet() {
   const tab = (active: boolean, color: string): React.CSSProperties => ({
     flex: 1,
     textAlign: 'center',
-    padding: '9px 0',
+    padding: '8px 0',
     borderRadius: 'calc(11px * var(--sq))',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: 600,
     cursor: 'pointer',
     transition: 'all .2s',
@@ -70,9 +70,9 @@ export function ExpenseSheet() {
 
   return (
     <div style={{ padding: '4px 20px 28px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '6px 0 18px' }}>
-        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{t('Log transaction')}</div>
-        <label style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 7, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 16px' }}>
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{t('Log transaction')}</div>
+        <label style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '8px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
           <svg width="15" height="15" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <rect x="2" y="3" width="11" height="10" rx="2" />
             <path d="M2 6h11M5 1.5v3M10 1.5v3" />
@@ -88,19 +88,19 @@ export function ExpenseSheet() {
         </label>
       </div>
 
-      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 18 }}>
+      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 4, marginBottom: 16 }}>
         <div role="button" tabIndex={0} onClick={() => setKind('expense')} style={tab(!income, 'var(--text)')}>{t('Expense')}</div>
         <div role="button" tabIndex={0} onClick={() => setKind('income')} style={tab(income, 'var(--indigo)')}>{t('Income')}</div>
       </div>
 
-      <div style={{ textAlign: 'center', marginBottom: 18 }}>
-        <span style={{ fontSize: 30, fontWeight: 600, color: 'var(--text2)', verticalAlign: 'top', lineHeight: 1.6 }}>{moneySymbol().trim()}</span>
-        <span style={{ fontSize: 52, fontWeight: 700, letterSpacing: '-.03em', color: income ? 'var(--indigo)' : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <span style={{ fontSize: 28, fontWeight: 600, color: 'var(--text2)', verticalAlign: 'top', lineHeight: 1.6 }}>{moneySymbol().trim()}</span>
+        <span style={{ fontSize: 56, fontWeight: 700, letterSpacing: '-.03em', color: income ? 'var(--indigo)' : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
           {amount === '' ? '0' : amount}
         </span>
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, justifyContent: 'center', marginBottom: 18 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 16 }}>
         {(income ? INCOME_CATS : EXPENSE_CATS).map((c) => (
           <div role="button" tabIndex={0} aria-pressed={cat === c} key={c} onClick={() => (income ? setIncCat(c) : setExCat(c))} style={chip(cat === c, 'var(--indigo)')}>
             {tData(c)}
@@ -108,7 +108,7 @@ export function ExpenseSheet() {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 18 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
         {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'].map((k) => (
           <div role="button" tabIndex={0} aria-label={k === 'del' ? t('Delete digit') : k === '.' ? t('Decimal point') : k} key={k} onClick={() => press(k)} style={{ height: 52, borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', background: 'var(--bg)' }}>
             {k === 'del' ? (
@@ -122,7 +122,7 @@ export function ExpenseSheet() {
         ))}
       </div>
 
-      <div role="button" tabIndex={0} onClick={save} className="press" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>
+      <div role="button" tabIndex={0} onClick={save} className="press" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>
         {t('Save')}
       </div>
     </div>

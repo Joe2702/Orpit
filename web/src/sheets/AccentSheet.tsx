@@ -50,10 +50,10 @@ export function AccentSheet() {
   const full = hsvToHex({ ...hsv, v: 1 });
 
   return (
-    <div style={{ padding: '6px 20px 30px' }}>
-      <div className="display" style={{ fontSize: 30, lineHeight: 1.1, color: 'var(--text)', margin: '6px 2px 18px' }}>{t('Accent colour')}</div>
+    <div style={{ padding: '8px 20px 32px' }}>
+      <div className="display" style={{ fontSize: 28, lineHeight: 1.1, color: 'var(--text)', margin: '8px 2px 16px' }}>{t('Accent colour')}</div>
 
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 22 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
         <div
           ref={wheel}
           role="slider"
@@ -114,8 +114,8 @@ export function AccentSheet() {
         style={{ width: '100%', height: 28, appearance: 'none', WebkitAppearance: 'none', borderRadius: 999, background: `linear-gradient(to right, #3a3a3a, ${full})`, outline: 'none', marginBottom: 20, direction: 'ltr' }}
       />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-        <div style={{ flex: 1, height: 52, borderRadius: 'calc(16px * var(--sq))', background: shown.accent, color: shown.onAccent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+        <div style={{ flex: 1, height: 52, borderRadius: 'calc(16px * var(--sq))', background: shown.accent, color: shown.onAccent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700 }}>
           {t('Looks like this')}
         </div>
         <input
@@ -132,11 +132,11 @@ export function AccentSheet() {
           maxLength={7}
           aria-label={t('Hex code')}
           spellCheck={false}
-          style={{ width: 112, height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 12px', fontSize: 16, fontWeight: 600, color: 'var(--text)', outline: 'none', fontFamily: 'var(--font-mono)', direction: 'ltr', textAlign: 'center' }}
+          style={{ width: 112, height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 12px', fontSize: 15, fontWeight: 600, color: 'var(--text)', outline: 'none', fontFamily: 'var(--font-mono)', direction: 'ltr', textAlign: 'center' }}
         />
       </div>
       {shown.accent.toLowerCase() !== hex.toLowerCase() && (
-        <div style={{ fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.5, margin: '0 2px 12px' }}>{t('Adjusted a little in this theme so text on it stays easy to read.')}</div>
+        <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, margin: '0 2px 12px' }}>{t('Adjusted a little in this theme so text on it stays easy to read.')}</div>
       )}
       <div
         role="button"
@@ -146,7 +146,7 @@ export function AccentSheet() {
           setTyped(DEFAULT);
           save('indigo');
         }}
-        style={{ textAlign: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', padding: 8, cursor: 'pointer' }}
+        style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text2)', padding: 8, cursor: 'pointer' }}
       >
         {t('Back to Orbit’s indigo')}
       </div>

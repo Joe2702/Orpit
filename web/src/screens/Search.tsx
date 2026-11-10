@@ -181,13 +181,13 @@ export function Search() {
   const ideas = ql.length < 2 ? suggestions(state!).filter((x) => !recent.some((r) => r.toLowerCase() === x.toLowerCase())) : [];
 
   return (
-    <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
+    <div style={{ padding: '8px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <BackButton onClick={back} />
-        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>{t('Search')}</div>
+        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 34, lineHeight: 1.1, color: 'var(--text)' }}>{t('Search')}</div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: '0 14px', height: 50, marginBottom: 18 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: '0 16px', height: 50, marginBottom: 16 }}>
         <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', flex: 'none' }} aria-hidden>
           <circle cx="8.5" cy="8.5" r="5.5" />
           <path d="M13 13l3 3" />
@@ -203,7 +203,7 @@ export function Search() {
           style={{ flex: 1, minWidth: 0, border: 'none', background: 'none', fontSize: 15, color: 'var(--text)', outline: 'none' }}
         />
         {q && (
-          <span tabIndex={0} onClick={() => setQ('')} role="button" aria-label={t('Clear')} className="hit" style={{ fontSize: 18, color: 'var(--text2)', cursor: 'pointer', padding: 4 }}>
+          <span tabIndex={0} onClick={() => setQ('')} role="button" aria-label={t('Clear')} className="hit" style={{ fontSize: 17, color: 'var(--text2)', cursor: 'pointer', padding: 4 }}>
             ×
           </span>
         )}

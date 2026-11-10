@@ -26,7 +26,7 @@ export function TodoList() {
   if (!list) {
     // Deleted, here or on another device.
     return (
-      <div style={{ padding: '6px 20px' }}>
+      <div style={{ padding: '8px 20px' }}>
         <BackButton onClick={() => go('todos')} />
         <div style={{ fontSize: 15, color: 'var(--text2)', marginTop: 24 }}>{t('This list no longer exists.')}</div>
       </div>
@@ -53,7 +53,7 @@ export function TodoList() {
   };
 
   return (
-    <div style={{ padding: '6px 20px 32px', animation: 'fadeIn .35s ease' }}>
+    <div style={{ padding: '8px 20px 32px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
         <BackButton onClick={() => go('todos')} />
         <span style={{ width: 10, height: 10, borderRadius: '50%', background: `var(--${list.color})`, flex: 'none' }} />
@@ -66,7 +66,7 @@ export function TodoList() {
           </svg>
         </div>
       </div>
-      <div style={{ fontSize: 13.5, color: 'var(--text2)', margin: '0 2px 18px' }}>
+      <div style={{ fontSize: 13, color: 'var(--text2)', margin: '0 2px 16px' }}>
         {c.open ? tn(c.open, 'One to do', '{n} to do') : t('Nothing left to do')}
         {c.done ? ' · ' + tn(c.done, 'one done', '{n} done') : ''}
       </div>
@@ -90,10 +90,10 @@ export function TodoList() {
           placeholder={t('Add a task')}
           maxLength={200}
           aria-label={t('Add a task')}
-          style={{ flex: 1, minWidth: 0, height: 52, border: 'none', background: 'transparent', fontSize: 16, color: 'var(--text)', outline: 'none' }}
+          style={{ flex: 1, minWidth: 0, height: 52, border: 'none', background: 'transparent', fontSize: 15, color: 'var(--text)', outline: 'none' }}
         />
         {text.trim() && (
-          <div role="button" tabIndex={0} onClick={submit} className="press96" style={{ height: 34, padding: '0 14px', marginInlineEnd: 9, borderRadius: 999, background: 'var(--indigo)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', fontSize: 14, fontWeight: 650, cursor: 'pointer' }}>
+          <div role="button" tabIndex={0} onClick={submit} className="press96" style={{ height: 34, padding: '0 16px', marginInlineEnd: 8, borderRadius: 999, background: 'var(--indigo)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
             {t('Add')}
           </div>
         )}
@@ -108,22 +108,22 @@ export function TodoList() {
           ))}
         </div>
       ) : (
-        <div style={{ textAlign: 'center', padding: '26px 20px 30px', color: 'var(--text2)', fontSize: 14.5, lineHeight: 1.5 }}>
+        <div style={{ textAlign: 'center', padding: '24px 20px 32px', color: 'var(--text2)', fontSize: 15, lineHeight: 1.5 }}>
           {done.length ? t('All done. Nicely handled.') : t('Nothing here yet. Add the first task above.')}
         </div>
       )}
 
       {done.length > 0 && (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', margin: '0 2px 10px' }}>
-            <div role="button" tabIndex={0} aria-expanded={showDone} onClick={() => setShowDone((v) => !v)} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, fontSize: 15, fontWeight: 650, color: 'var(--text)', cursor: 'pointer' }}>
+          <div style={{ display: 'flex', alignItems: 'center', margin: '0 2px 8px' }}>
+            <div role="button" tabIndex={0} aria-expanded={showDone} onClick={() => setShowDone((v) => !v)} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
               {tn(done.length, 'Done · {n}', 'Done · {n}')}
               <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden style={{ fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', transform: showDone ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
                 <path d="M2.5 4.5L6 8l3.5-3.5" />
               </svg>
             </div>
             {showDone && (
-              <span role="button" tabIndex={0} onClick={clearDone} style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
+              <span role="button" tabIndex={0} onClick={clearDone} style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
                 {t('Clear done')}
               </span>
             )}
@@ -137,7 +137,7 @@ export function TodoList() {
               ))}
             </div>
           )}
-          {showDone && <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', marginTop: 10 }}>{t('Finished tasks stay here for 30 days.')}</div>}
+          {showDone && <div style={{ fontSize: 13, color: 'var(--text3)', textAlign: 'center', marginTop: 8 }}>{t('Finished tasks stay here for 30 days.')}</div>}
         </>
       )}
     </div>

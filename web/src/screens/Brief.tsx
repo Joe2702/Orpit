@@ -60,10 +60,10 @@ export function Brief() {
   // than vanishing from under the finger.
   const [taskIds] = React.useState(() => b.tasks.map((x) => x.id));
   const shownTasks = state!.todos.filter((x) => taskIds.includes(x.id));
-  const label = (s: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', margin: '0 2px 9px' }}>{s}</div>;
+  const label = (s: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', margin: '0 2px 8px' }}>{s}</div>;
   const line: React.CSSProperties = { fontSize: 15, color: 'var(--text)', lineHeight: 1.45 };
   const sub: React.CSSProperties = { fontSize: 13, color: 'var(--text2)', lineHeight: 1.45, marginTop: 2 };
-  const link: React.CSSProperties = { fontSize: 14, fontWeight: 650, color: 'var(--indigo)', cursor: 'pointer' };
+  const link: React.CSSProperties = { fontSize: 15, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' };
   const when = (n: number) => (n === 0 ? t('due today') : n === 1 ? t('due tomorrow') : tn(n, 'due in {n} day', 'due in {n} days'));
   const ago = (n: number) => (n <= 0 ? t('today') : n === 1 ? t('yesterday') : tn(n, '{n} day ago', '{n} days ago'));
 
@@ -79,28 +79,28 @@ export function Brief() {
   const money = b.spentYesterday > 0 || b.bills.length > 0 || b.budgetsNear.length > 0 || b.toReview > 0 || !!b.safe;
 
   return (
-    <div style={{ padding: '6px 20px 32px', animation: 'fadeIn .35s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+    <div style={{ padding: '8px 20px 32px', animation: 'fadeIn .35s ease' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <BackButton onClick={back} />
-        <div style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: 'var(--text2)' }}>{date(Date.now(), { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+        <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{date(Date.now(), { weekday: 'long', month: 'long', day: 'numeric' })}</div>
       </div>
-      <div className="display" style={{ fontSize: 38, lineHeight: 1.08, color: 'var(--text)' }}>
+      <div className="display" style={{ fontSize: 40, lineHeight: 1.08, color: 'var(--text)' }}>
         {greeting()}
         {firstName ? `${getLang() === 'ar' ? '،' : ','} ${firstName}` : ''}
       </div>
-      <div style={{ fontSize: 15, color: 'var(--text2)', margin: '8px 2px 22px', lineHeight: 1.45 }}>
+      <div style={{ fontSize: 15, color: 'var(--text2)', margin: '8px 2px 24px', lineHeight: 1.45 }}>
         {empty ? t('Once you’ve logged a few days, this is where they come together each morning.') : t('Here’s your day, in a minute.')}
       </div>
 
       {glance.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${glance.length}, minmax(0, 1fr))`, gap: 10, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${glance.length}, minmax(0, 1fr))`, gap: 8, marginBottom: 24 }}>
           {glance.map((g) => (
-            <div key={g.k} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '12px 12px 11px', minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.k}</div>
+            <div key={g.k} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '12px 12px 12px', minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.k}</div>
               {/* Arabic units ("٧ س ٣٠ د", "٩٫٥ ألف") run wider: a touch smaller, and
                   allowed to wrap at a space rather than be cut off. */}
-              <div style={{ fontSize: getLang() === 'ar' ? 18 : 20, lineHeight: 1.2, fontWeight: 700, letterSpacing: getLang() === 'ar' ? 0 : '-.03em', color: 'var(--text)', marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>{g.v.replace(/[\u00a0\u202f]/g, ' ')}</div>
-              {g.s && <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.s}</div>}
+              <div style={{ fontSize: getLang() === 'ar' ? 17 : 22, lineHeight: 1.2, fontWeight: 700, letterSpacing: getLang() === 'ar' ? 0 : '-.03em', color: 'var(--text)', marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>{g.v.replace(/[\u00a0\u202f]/g, ' ')}</div>
+              {g.s && <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.s}</div>}
             </div>
           ))}
         </div>
@@ -110,7 +110,7 @@ export function Brief() {
         <AssistantBriefView brief={ab} />
       ) : (
         assistantSetUp() && (
-          <div style={{ fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.45, margin: '-6px 2px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.45, margin: '-8px 2px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
             <span aria-hidden style={{ width: 7, height: 7, borderRadius: 9, background: 'var(--text3)', flex: 'none', animation: 'orbitPulse 1.6s ease-in-out infinite' }} />
             {t('Claude’s brief hasn’t arrived yet today.')}
           </div>
@@ -120,11 +120,11 @@ export function Brief() {
       {(b.sleep || b.sleepTracked) && (
         <>
           {label(t('Last night'))}
-          <Card style={{ padding: '14px 16px', marginBottom: 20 }}>
+          <Card style={{ padding: '16px 16px', marginBottom: 20 }}>
             {b.sleep ? (
               <>
                 <div style={line}>
-                  <b style={{ fontWeight: 650 }}>{hm(b.sleep.hours)}</b>
+                  <b style={{ fontWeight: 600 }}>{hm(b.sleep.hours)}</b>
                   {' · '}
                   {t('quality {q}/10', { q: b.sleep.quality })}
                 </div>
@@ -156,16 +156,16 @@ export function Brief() {
       {(b.habits.length > 0 || b.intention || b.tasks.length > 0) && (
         <>
           {label(t('Today'))}
-          <Card style={{ padding: '6px 0', marginBottom: 20 }}>
+          <Card style={{ padding: '8px 0', marginBottom: 20 }}>
             {b.intention && (
-              <div style={{ padding: '10px 16px', borderBottom: b.habits.length || b.slip ? '1px solid var(--hairline)' : 'none' }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)' }}>{t('This week')}</div>
+              <div style={{ padding: '8px 16px', borderBottom: b.habits.length || b.slip ? '1px solid var(--hairline)' : 'none' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text3)' }}>{t('This week')}</div>
                 <div style={{ ...line, fontWeight: 600, marginTop: 1 }}>{b.intention}</div>
               </div>
             )}
             {b.slip && (
-              <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--hairline)' }}>
-                <div style={{ ...line, fontWeight: 650 }}>{tn(1, 'Don’t miss {name} twice', 'Back to {name}?', { name: tData(b.slip.name) })}</div>
+              <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--hairline)' }}>
+                <div style={{ ...line, fontWeight: 600 }}>{tn(1, 'Don’t miss {name} twice', 'Back to {name}?', { name: tData(b.slip.name) })}</div>
                 <div style={sub}>{b.slip.why ? t('You said: “{why}”', { why: b.slip.why }) : t('You missed it last time. Today keeps it going.')}</div>
               </div>
             )}
@@ -178,7 +178,7 @@ export function Brief() {
                 tabIndex={0}
                 onClick={() => toggle(h.id)}
                 className="pressRow"
-                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderTop: i ? '1px solid var(--hairline)' : 'none', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderTop: i ? '1px solid var(--hairline)' : 'none', cursor: 'pointer' }}
               >
                 <span
                   style={{
@@ -221,7 +221,7 @@ export function Brief() {
       {money && (
         <>
           {label(t('Money'))}
-          <Card style={{ padding: '14px 16px', marginBottom: 20 }}>
+          <Card style={{ padding: '16px 16px', marginBottom: 20 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div>
                 <div style={line}>
@@ -242,12 +242,12 @@ export function Brief() {
                 </div>
               )}
               {b.bills.map((x) => (
-                <div key={x.name + x.inDays} style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                <div key={x.name + x.inDays} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                   <div style={{ ...line, flex: 1, minWidth: 0 }}>
                     {x.name}
                     <span style={{ color: 'var(--text2)' }}>{' · ' + when(x.inDays)}</span>
                   </div>
-                  <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{money0(x.amount)}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{money0(x.amount)}</div>
                 </div>
               ))}
               {over.length > 0 && <div style={{ ...line, color: 'var(--danger)' }}>{t('Over budget this month: {cats}', { cats: over.join(listSep()) })}</div>}
@@ -257,7 +257,7 @@ export function Brief() {
                 </div>
               ))}
               {b.toReview > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ ...line, flex: 1 }}>{tn(b.toReview, 'One payment to check', '{n} payments to check')}</div>
                   <div role="button" tabIndex={0} onClick={() => go('freview')} style={link}>
                     {t('Check')}
@@ -272,7 +272,7 @@ export function Brief() {
       {b.training && (
         <>
           {label(t('Training'))}
-          <Card style={{ padding: '14px 16px', marginBottom: 20 }}>
+          <Card style={{ padding: '16px 16px', marginBottom: 20 }}>
             <div style={line}>{t('Last workout: {name}, {when}', { name: tData(b.training.lastName), when: ago(b.training.daysSince) })}</div>
             <div style={sub}>
               {tn(b.training.lastWeek, 'One in the last 7 days', '{n} in the last 7 days')}
@@ -285,7 +285,7 @@ export function Brief() {
       {b.insight && (
         <>
           {label(t('Worth noticing'))}
-          <Card style={{ padding: '14px 16px', marginBottom: 24 }}>
+          <Card style={{ padding: '16px 16px', marginBottom: 24 }}>
             <div style={{ ...line, fontWeight: 600 }}>{b.insight.title}</div>
             <div style={sub}>{b.insight.detail}</div>
           </Card>
@@ -297,7 +297,7 @@ export function Brief() {
         role="button"
         onClick={() => go('home')}
         className="press"
-        style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}
+        style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
       >
         {t('Start the day')}
       </div>

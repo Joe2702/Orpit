@@ -40,14 +40,14 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
           fontFamily: "'Geist Variable', 'Geist', system-ui, sans-serif",
         }}
       >
-        <OrbitMark size={56} style={{ marginBottom: 18 }} />
-        <div style={{ fontSize: 21, fontWeight: 700, marginBottom: 10 }}>{t('Something went wrong')}</div>
-        <div style={{ fontSize: 14.5, lineHeight: 1.55, opacity: 0.9, maxWidth: 300, marginBottom: 26 }}>
+        <OrbitMark size={56} style={{ marginBottom: 16 }} />
+        <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>{t('Something went wrong')}</div>
+        <div style={{ fontSize: 15, lineHeight: 1.55, opacity: 0.9, maxWidth: 300, marginBottom: 24 }}>
           {t('The error has been reported. Reloading usually fixes it, and your data is safe on the server.')}
         </div>
         <div role="button" tabIndex={0}
           onClick={() => window.location.reload()}
-          style={{ background: '#fff', color: '#4a45a6', height: 50, padding: '0 30px', borderRadius: 'calc(15px * var(--sq))', display: 'flex', alignItems: 'center', fontSize: 15.5, fontWeight: 700, cursor: 'pointer' }}
+          style={{ background: '#fff', color: '#4a45a6', height: 50, padding: '0 32px', borderRadius: 'calc(15px * var(--sq))', display: 'flex', alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
         >
           {t('Reload Orbit')}
         </div>

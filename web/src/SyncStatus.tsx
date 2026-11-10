@@ -66,8 +66,8 @@ export function SyncStatus() {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 11,
-          padding: '10px 14px',
+          gap: 12,
+          padding: '8px 16px',
           borderRadius: 'calc(14px * var(--sq))',
           background: 'var(--surface)',
           border: '1px solid var(--border)',
@@ -89,12 +89,12 @@ export function SyncStatus() {
           }}
         />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--text)', letterSpacing: '-.005em', lineHeight: 1.25 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-.005em', lineHeight: 1.25 }}>
             {retrying ? t('Checking…') : title}
           </div>
           <div
             style={{
-              fontSize: 12,
+              fontSize: 13,
               color: 'var(--text2)',
               lineHeight: 1.35,
               marginTop: 1,

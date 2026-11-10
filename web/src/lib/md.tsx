@@ -144,7 +144,7 @@ export function Markdown({ text, size = 15 }: { text: string; size?: number }) {
         const k = `b${i}`;
         if (b.k === 'h')
           return (
-            <div key={k} role="heading" aria-level={Math.min(6, b.level + 2)} style={{ ...base, fontSize: b.level <= 2 ? size + 1.5 : size, fontWeight: 700, marginTop: i ? 6 : 0 }}>
+            <div key={k} role="heading" aria-level={Math.min(6, b.level + 2)} style={{ ...base, fontSize: b.level <= 2 ? size + 1.5 : size, fontWeight: 700, marginTop: i ? 8 : 0 }}>
               {inline(b.text, k)}
             </div>
           );
@@ -162,7 +162,7 @@ export function Markdown({ text, size = 15 }: { text: string; size?: number }) {
           );
         if (b.k === 'li')
           return (
-            <div key={k} style={{ ...base, display: 'flex', gap: 9, paddingInlineStart: b.depth * 18, marginTop: -3 }}>
+            <div key={k} style={{ ...base, display: 'flex', gap: 8, paddingInlineStart: b.depth * 18, marginTop: -4 }}>
               <span aria-hidden style={{ flex: 'none', minWidth: b.ordered ? 18 : 8, color: 'var(--text2)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
                 {b.ordered ? `${b.n}.` : <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 9, background: 'var(--text3)', transform: 'translateY(-2px)' }} />}
               </span>

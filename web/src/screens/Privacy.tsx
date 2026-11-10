@@ -51,26 +51,26 @@ const SECTIONS: { title: string; body: string }[] = [
 export function Privacy() {
   const { go } = useStore();
   return (
-    <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+    <div style={{ padding: '8px 20px 28px', animation: 'fadeIn .35s ease' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <BackButton onClick={() => go('settings')} />
-        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>{t('Privacy')}</div>
+        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 34, lineHeight: 1.1, color: 'var(--text)' }}>{t('Privacy')}</div>
       </div>
 
-      <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 18, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 16, lineHeight: 1.5 }}>
         {t('The short version of how Orbit handles your data.')}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {SECTIONS.map((s) => (
           <div key={s.title} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>{s.title}</div>
-            <div style={{ fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.6 }}>{s.body}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{s.title}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.6 }}>{s.body}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--text2)', textAlign: 'center', marginTop: 20, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 13, color: 'var(--text2)', textAlign: 'center', marginTop: 20, lineHeight: 1.5 }}>
         {t('Last updated 28 October 2026')}
       </div>
     </div>

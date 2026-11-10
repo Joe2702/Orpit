@@ -36,8 +36,8 @@ export function CatchUpSheet() {
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 6px' }}>{t('Catch up')}</div>
-      <div style={{ fontSize: 13.5, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '8px 0 8px' }}>{t('Catch up')}</div>
+      <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.5 }}>
         {t('The last 7 days. Tap a square to check it off, useful after a trip or a busy week.')}
       </div>
 
@@ -50,23 +50,23 @@ export function CatchUpSheet() {
           return (
             <div
               key={h.id}
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', padding: '13px 14px' }}
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', padding: '12px 16px' }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 11 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <span style={{ width: 9, height: 9, borderRadius: '50%', flex: 'none', background: `var(--${h.color})` }} />
-                <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {tData(h.name)}
                 </span>
               </div>
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
                 {days.map((tx) => {
                   const ds = dayKey(tx);
                   const dt = new Date(tx);
                   const scheduled = mask[dt.getDay()] === '1';
                   const on = done.has(h.id + '|' + ds);
                   return (
-                    <div key={tx} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text2)' }}>{WD[dt.getDay()]}</span>
+                    <div key={tx} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)' }}>{WD[dt.getDay()]}</span>
                       <div tabIndex={0}
                         onClick={() => scheduled && toggle(h.id, ds)}
                         className={scheduled ? 'press92' : undefined}
@@ -102,7 +102,7 @@ export function CatchUpSheet() {
         })}
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 14, textAlign: 'center' }}>
+      <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 16, textAlign: 'center' }}>
         {t('Dimmed squares aren\'t scheduled for that habit.')}
       </div>
     </div>

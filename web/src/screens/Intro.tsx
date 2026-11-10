@@ -170,8 +170,8 @@ export function Intro() {
       <Space shift={(rtl ? -1 : 1) * i + drag * -0.006} drift={(rtl ? -1 : 1) * DRIFT[i]} horizonTop="64%" animate={!still} />
 
       {/* Progress, and the way out. */}
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: 'calc(env(safe-area-inset-top) + 14px) 18px 0' }}>
-        <div style={{ flex: 1, display: 'flex', gap: 5 }}>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 16, padding: 'calc(env(safe-area-inset-top) + 16px) 16px 0' }}>
+        <div style={{ flex: 1, display: 'flex', gap: 4 }}>
           {ORDER.map((_, n) => (
             <div key={n} role="button" tabIndex={-1} aria-label={t('Step {n}', { n: n + 1 })} onClick={() => goTo(n)} style={{ flex: 1, height: 3.5, borderRadius: 9, background: 'rgba(255,255,255,.16)', overflow: 'hidden', cursor: 'pointer' }}>
               <div style={{ height: '100%', borderRadius: 9, background: '#fff', width: n <= i ? '100%' : '0%', transition: 'width .5s cubic-bezier(.3,1.2,.5,1)', boxShadow: n === i ? '0 0 8px rgba(255,255,255,.8)' : 'none' }} />
@@ -183,7 +183,7 @@ export function Intro() {
           tabIndex={0}
           onClick={() => finish(false)}
           onKeyDown={(e) => e.key === 'Enter' && finish(false)}
-          style={{ fontSize: 14, fontWeight: 650, color: 'var(--ink2)', padding: '8px 4px', cursor: 'pointer', opacity: last ? 0 : 1, pointerEvents: last ? 'none' : 'auto', transition: 'opacity .3s' }}
+          style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink2)', padding: '8px 4px', cursor: 'pointer', opacity: last ? 0 : 1, pointerEvents: last ? 'none' : 'auto', transition: 'opacity .3s' }}
         >
           {t('Skip')}
         </div>
@@ -206,14 +206,14 @@ export function Intro() {
 
       {/* What it means. */}
       <div key={`t${i}`} style={{ position: 'relative', padding: '0 28px', minHeight: 150 }}>
-        <div className="display" style={{ fontSize: 36, lineHeight: 1.05, color: 'var(--ink)', textWrap: 'balance' } as React.CSSProperties}>
+        <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--ink)', textWrap: 'balance' } as React.CSSProperties}>
           <RisingWords text={copy[key].title} delay={0.08} step={0.07} />
         </div>
-        <div style={{ fontSize: 15.5, lineHeight: 1.55, color: 'var(--ink2)', marginTop: 12, maxWidth: 380, animation: still ? undefined : 'rise .6s cubic-bezier(.2,.8,.2,1) .3s both' }}>{copy[key].body}</div>
+        <div style={{ fontSize: 15, lineHeight: 1.55, color: 'var(--ink2)', marginTop: 12, maxWidth: 380, animation: still ? undefined : 'rise .6s cubic-bezier(.2,.8,.2,1) .3s both' }}>{copy[key].body}</div>
       </div>
 
       {/* Back, and on. */}
-      <div style={{ position: 'relative', display: 'flex', gap: 10, padding: '16px 24px calc(env(safe-area-inset-bottom) + 20px)' }}>
+      <div style={{ position: 'relative', display: 'flex', gap: 8, padding: '16px 24px calc(env(safe-area-inset-bottom) + 20px)' }}>
         <div
           role="button"
           tabIndex={i ? 0 : -1}
@@ -233,7 +233,7 @@ export function Intro() {
           onClick={next}
           onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), next())}
           className="press"
-          style={{ position: 'relative', overflow: 'hidden', flex: 1, height: 56, borderRadius: 999, background: '#f2f2f5', color: '#0c0c0f', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 14px 34px -12px color-mix(in srgb, var(--indigo) 70%, transparent)' }}
+          style={{ position: 'relative', overflow: 'hidden', flex: 1, height: 56, borderRadius: 999, background: '#f2f2f5', color: '#0c0c0f', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 14px 34px -12px color-mix(in srgb, var(--indigo) 70%, transparent)' }}
         >
           <span key={`b${last ? 'l' : i === 0 ? 'f' : 'n'}`} style={{ animation: still ? undefined : 'rise .35s ease both' }}>
             {last ? t('Start using Orbit') : i === 0 ? t('Show me around') : t('Next')}

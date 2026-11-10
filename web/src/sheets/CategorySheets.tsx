@@ -12,15 +12,15 @@ export function WCatsSheet() {
   const cats = state!.wCats;
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 6px' }}>{t('Categories')}</div>
-      <div style={{ fontSize: 13.5, color: 'var(--text2)', marginBottom: 18, lineHeight: 1.5 }}>{t('Tap a category to rename, recolor, or remove it.')}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '8px 0 8px' }}>{t('Categories')}</div>
+      <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 16, lineHeight: 1.5 }}>{t('Tap a category to rename, recolor, or remove it.')}</div>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', marginBottom: 16 }}>
         {cats.map((c, i) => (
           <div role="button" tabIndex={0}
             key={c.id}
             onClick={() => open('wcat', { id: c.id, name: c.name, color: c.color })}
             className="pressRow"
-            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '15px 16px', borderBottom: i === cats.length - 1 ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', borderBottom: i === cats.length - 1 ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}
           >
             <span style={{ width: 12, height: 12, borderRadius: 4, flex: 'none', background: `var(--${c.color})` }} />
             <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{tData(c.name)}</span>
@@ -87,15 +87,15 @@ export function WCatSheet() {
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 20px' }}>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '8px 0 20px' }}>
         {editId ? t('Edit category') : t('New category')}
       </div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('Name')}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{t('Name')}</div>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder={t('e.g. Swim')}
-        style={{ width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 22 }}
+        style={{ width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 24 }}
       />
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>{t('Color')}</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, paddingInlineStart: 2 }}>
@@ -109,12 +109,12 @@ export function WCatSheet() {
       </div>
       <div role="button" tabIndex={0}
         onClick={save}
-        style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default', letterSpacing: '-.01em' }}
+        style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, cursor: canSave ? 'pointer' : 'default', letterSpacing: '-.01em' }}
       >
         {editId ? t('Save changes') : t('Add category')}
       </div>
       {editId && (
-        <div role="button" tabIndex={0} onClick={del} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
+        <div role="button" tabIndex={0} onClick={del} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 8 }}>
           <IconTrash />
           {t('Delete category')}
         </div>

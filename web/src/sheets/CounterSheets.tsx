@@ -70,14 +70,14 @@ export function CounterSheet() {
     closeSheet();
   };
 
-  const input: React.CSSProperties = { width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none' };
-  const label = (text: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{text}</div>;
+  const input: React.CSSProperties = { width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none' };
+  const label = (text: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{text}</div>;
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 20px' }}>{editId ? t('Edit counter') : t('New counter')}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '8px 0 20px' }}>{editId ? t('Edit counter') : t('New counter')}</div>
       {label(t('Name'))}
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('e.g. Pull-ups')} style={{ ...input, marginBottom: editId ? 20 : 14 }} />
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('e.g. Pull-ups')} style={{ ...input, marginBottom: editId ? 20 : 16 }} />
       {!editId && (
         <>
           {label(t('Suggestions'))}
@@ -93,7 +93,7 @@ export function CounterSheet() {
                   setStep(p.step);
                 }}
                 className="pressRow"
-                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 13px', borderRadius: 999, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', border: `1.5px solid color-mix(in srgb,var(--${p.color}) 45%,var(--border))`, background: `color-mix(in srgb,var(--${p.color}) 10%,transparent)`, color: `var(--${p.color})` }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: `1.5px solid color-mix(in srgb,var(--${p.color}) 45%,var(--border))`, background: `color-mix(in srgb,var(--${p.color}) 10%,transparent)`, color: `var(--${p.color})` }}
               >
                 <CIcon icon={p.icon} color={`var(--${p.color})`} size={16} />
                 {p.name}
@@ -104,13 +104,13 @@ export function CounterSheet() {
       )}
       {label(t('Unit'))}
       <input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder={t('e.g. reps')} style={{ ...input, marginBottom: 12 }} />
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 20 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
         {UNITS.map((u) => (
           <div role="button" tabIndex={0} aria-pressed={unit === u} key={u} onClick={() => setUnit(u)} style={chip(unit === u, 'var(--indigo)')}>{u}</div>
         ))}
       </div>
       {label(t('Quick-add step'))}
-      <div style={{ display: 'flex', gap: 9, marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         {STEPS.map((n) => (
           <div role="button" tabIndex={0} aria-pressed={step === n} key={n} onClick={() => setStep(n)} style={{ ...chip(step === n, 'var(--indigo)'), flex: 1, textAlign: 'center' }}>+{n}</div>
         ))}
@@ -122,18 +122,18 @@ export function CounterSheet() {
         ))}
       </div>
       {label(t('Icon'))}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 9, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 8, marginBottom: 24 }}>
         {CTR_ICONS.map((ic) => (
           <div role="button" tabIndex={0} aria-label={ic} aria-pressed={icon === ic} key={ic} onClick={() => setIcon(ic)} style={{ height: 52, borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: `1.5px solid ${icon === ic ? 'var(--indigo)' : 'var(--border)'}`, background: icon === ic ? `color-mix(in srgb,var(--${color}) 12%,transparent)` : 'var(--bg)' }}>
             <CIcon icon={ic} color={icon === ic ? 'var(--indigo)' : 'var(--text2)'} size={22} />
           </div>
         ))}
       </div>
-      <div role="button" tabIndex={0} onClick={save} style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', marginTop: 8, transition: 'all .2s' }}>
+      <div role="button" tabIndex={0} onClick={save} style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, cursor: canSave ? 'pointer' : 'default', marginTop: 8, transition: 'all .2s' }}>
         {editId ? t('Save changes') : t('Create counter')}
       </div>
       {editId && (
-        <div role="button" tabIndex={0} onClick={del} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10 }}>
+        <div role="button" tabIndex={0} onClick={del} className="press99" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 8 }}>
           <IconTrash />{t('Delete counter')}
         </div>
       )}
@@ -146,19 +146,19 @@ export function CountPickSheet() {
   const { state, open } = useStore();
   const logs = state!.countLogs;
   return (
-    <div style={{ padding: '8px 20px 34px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 4px 16px' }}>{t('Log a counter')}</div>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', marginBottom: 14 }}>
+    <div style={{ padding: '8px 20px 32px' }}>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '8px 4px 16px' }}>{t('Log a counter')}</div>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', marginBottom: 16 }}>
         {state!.counters.map((c, i) => {
           const tx = counterTotals(logs, c.id);
           return (
-            <div role="button" tabIndex={0} key={c.id} onClick={() => open('countlog', { counterId: c.id, amount: c.step })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: i === state!.counters.length - 1 ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}>
+            <div role="button" tabIndex={0} key={c.id} onClick={() => open('countlog', { counterId: c.id, amount: c.step })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', borderBottom: i === state!.counters.length - 1 ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}>
               <span style={{ width: 26, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <CIcon icon={c.icon} color="var(--text2)" size={22} />
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{c.name}</div>
-                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('{n} {unit} this month', { n: cNum(tx.month), unit: c.unit })}</div>
+                <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('{n} {unit} this month', { n: cNum(tx.month), unit: c.unit })}</div>
               </div>
               <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', flex: 'none' }}><path className="flip-rtl" d="M7 4l5 5-5 5" /></svg>
             </div>
@@ -210,15 +210,15 @@ export function CountLogSheet() {
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '6px 0 22px' }}>
-        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{t('Log {n}', { n: counter?.name || 'counter' })}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{t('Today')}</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 24px' }}>
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{t('Log {n}', { n: counter?.name || 'counter' })}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '8px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{t('Today')}</div>
       </div>
       <div style={{ textAlign: 'center', marginBottom: 20 }}>
-        <span style={{ fontSize: 60, fontWeight: 700, letterSpacing: '-.03em', color: amount < 0 ? 'var(--danger)' : 'var(--text)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{cNum(amount)}</span>
-        <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text2)', marginInlineStart: 8 }}>{counter?.unit}</span>
+        <span style={{ fontSize: 56, fontWeight: 700, letterSpacing: '-.03em', color: amount < 0 ? 'var(--danger)' : 'var(--text)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{cNum(amount)}</span>
+        <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--text2)', marginInlineStart: 8 }}>{counter?.unit}</span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 26, marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, marginBottom: 20 }}>
         <div tabIndex={0} onClick={() => setClamped(amount - step)} className="press92" role="button" aria-label={t('Decrease by {step}', { step })} style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
           <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2.4, strokeLinecap: 'round' }} aria-hidden><path d="M5 11h12" /></svg>
         </div>
@@ -226,19 +226,19 @@ export function CountLogSheet() {
           <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--on-accent)', strokeWidth: 2.4, strokeLinecap: 'round' }} aria-hidden><path d="M11 5v12M5 11h12" /></svg>
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 9, marginBottom: 8 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
         {chips.map((n) => (
-          <div tabIndex={0} key={n} onClick={() => setClamped(amount + n)} className="pressRow" role="button" style={{ flex: 1, textAlign: 'center', padding: '11px 0', borderRadius: 'calc(12px * var(--sq))', fontSize: 14, fontWeight: 600, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', cursor: 'pointer' }}>+{cNum(n)}</div>
+          <div tabIndex={0} key={n} onClick={() => setClamped(amount + n)} className="pressRow" role="button" style={{ flex: 1, textAlign: 'center', padding: '12px 0', borderRadius: 'calc(12px * var(--sq))', fontSize: 15, fontWeight: 600, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', cursor: 'pointer' }}>+{cNum(n)}</div>
         ))}
       </div>
       {amount < 0 && (
-        <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text2)', marginBottom: 8 }}>
+        <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text2)', marginBottom: 8 }}>
           {t('Removing {amount} of {total} {unit} logged', { amount: cNum(-amount), total: cNum(runningTotal), unit: counter?.unit ?? '' })}</div>
       )}
-      <div style={{ textAlign: 'center', marginBottom: 18 }}>
-        <span role="button" tabIndex={0} onClick={() => setAmount(0)} style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', padding: 6 }}>{t('Reset')}</span>
+      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <span role="button" tabIndex={0} onClick={() => setAmount(0)} style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer', padding: 8 }}>{t('Reset')}</span>
       </div>
-      <div role="button" tabIndex={0} onClick={save} style={{ background: amount === 0 ? 'color-mix(in srgb,var(--indigo) 40%,var(--surface))' : amount < 0 ? 'var(--danger)' : 'var(--indigo)', color: amount < 0 ? '#fff' : 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: amount === 0 ? 'default' : 'pointer', marginTop: 6, transition: 'all .2s' }}>{amount < 0 ? t('Remove') : t('Save log')}</div>
+      <div role="button" tabIndex={0} onClick={save} style={{ background: amount === 0 ? 'color-mix(in srgb,var(--indigo) 40%,var(--surface))' : amount < 0 ? 'var(--danger)' : 'var(--indigo)', color: amount < 0 ? '#fff' : 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, cursor: amount === 0 ? 'default' : 'pointer', marginTop: 8, transition: 'all .2s' }}>{amount < 0 ? t('Remove') : t('Save log')}</div>
     </div>
   );
 }

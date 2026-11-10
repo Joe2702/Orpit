@@ -23,7 +23,7 @@ function Arrow() {
 /** Tracker card heading: the whole row opens the tracker; the chart below stays tappable on its own. */
 function Head({ title, value, onClick }: { title: string; value?: React.ReactNode; onClick: () => void }) {
   return (
-    <div tabIndex={0} onClick={onClick} role="button" className="hit" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, cursor: 'pointer' }}>
+    <div tabIndex={0} onClick={onClick} role="button" className="hit" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, cursor: 'pointer' }}>
       <span style={title_}>{title}</span>
       {value != null && <span style={statRight}>{value}</span>}
       <Arrow />
@@ -64,7 +64,7 @@ export function Analytics() {
             <div style={{ position: 'absolute', fontSize: 15, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{h.rangePct}%</div>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <span style={title_}>{t('Habits')}</span>
               <Arrow />
             </div>
@@ -87,11 +87,11 @@ export function Analytics() {
                   style={{ display: 'flex', alignItems: 'center', gap: 12, minHeight: 44, padding: '12px 2px', cursor: 'pointer', borderBottom: '1px solid var(--hairline)' }}
                 >
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: `var(--${hb.color})`, flex: 'none' }} />
-                  <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 550, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tData(hb.name)}</span>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tData(hb.name)}</span>
                   <span style={{ flex: '0 1 54px', minWidth: 20, height: 5, borderRadius: 3, background: 'var(--hairline)', overflow: 'hidden' }}>
                     <span style={{ display: 'block', width: `${pct}%`, height: '100%', background: 'var(--indigo)', borderRadius: 3 }} />
                   </span>
-                  <span style={{ minWidth: 44, textAlign: 'end', fontSize: 12.5, color: 'var(--text2)', flex: 'none', fontVariantNumeric: 'tabular-nums' }}>
+                  <span style={{ minWidth: 44, textAlign: 'end', fontSize: 13, color: 'var(--text2)', flex: 'none', fontVariantNumeric: 'tabular-nums' }}>
                     {r ? `${r.done}/${r.scheduled}` : '—'}
                   </span>
                 </div>
@@ -124,11 +124,11 @@ export function Analytics() {
     counters: (
       <div style={cardB}>
         <Head title={t('Counters')} onClick={() => go('counters')} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {d.counterRange.map((c) => (
-            <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tData(c.name)}</span>
-              <span style={{ fontSize: 14, fontWeight: 650, color: 'var(--text)', fontVariantNumeric: 'tabular-nums', flex: 'none' }}>
+            <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tData(c.name)}</span>
+              <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', fontVariantNumeric: 'tabular-nums', flex: 'none' }}>
                 {cNum(c.val)} <span style={{ fontWeight: 500, color: 'var(--text2)' }}>{c.unit}</span>
               </span>
             </div>
@@ -167,7 +167,7 @@ export function Analytics() {
   ];
 
   return (
-    <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
+    <div style={{ padding: '8px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ marginBottom: 16 }}>
         <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--text)' }}>{t('Analytics')}</div>
       </div>
@@ -211,12 +211,12 @@ const cardB: React.CSSProperties = {
   border: '1px solid var(--border)',
   borderRadius: 'calc(20px * var(--sq))',
   boxShadow: 'var(--shadow)',
-  padding: '16px 18px',
+  padding: '16px 16px',
 };
-const title_: React.CSSProperties = { flex: 1, minWidth: 0, fontSize: 16, fontWeight: 650, letterSpacing: '-.01em', color: 'var(--text)' };
-const statRight: React.CSSProperties = { fontSize: 16, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', fontVariantNumeric: 'tabular-nums' };
-const sub: React.CSSProperties = { fontSize: 12.5, color: 'var(--text2)', marginTop: 12 };
-const rowS: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--hairline)', cursor: 'pointer' };
+const title_: React.CSSProperties = { flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, letterSpacing: '-.01em', color: 'var(--text)' };
+const statRight: React.CSSProperties = { fontSize: 15, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', fontVariantNumeric: 'tabular-nums' };
+const sub: React.CSSProperties = { fontSize: 13, color: 'var(--text2)', marginTop: 12 };
+const rowS: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--hairline)', cursor: 'pointer' };
 const rowTitle: React.CSSProperties = { fontSize: 15, fontWeight: 600, color: 'var(--text)' };
-const rowNote: React.CSSProperties = { fontSize: 12.5, color: 'var(--text2)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
+const rowNote: React.CSSProperties = { fontSize: 13, color: 'var(--text2)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
 const iconBox: React.CSSProperties = { width: 24, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' };

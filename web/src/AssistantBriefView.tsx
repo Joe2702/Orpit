@@ -29,13 +29,13 @@ export function AssistantBriefView({ brief }: { brief: AssistantBrief }) {
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '0 2px 9px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '0 2px 8px' }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{t('From Claude')}</div>
-        <div style={{ fontSize: 12.5, color: 'var(--text3)', flex: 1, minWidth: 0, textAlign: 'end', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{arrived(brief.ts)}</div>
+        <div style={{ fontSize: 13, color: 'var(--text3)', flex: 1, minWidth: 0, textAlign: 'end', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{arrived(brief.ts)}</div>
       </div>
       <Card style={{ padding: 0, marginBottom: 20, overflow: 'hidden' }}>
         {brief.title && brief.title !== 'Morning brief' && (
-          <div className="display" style={{ fontSize: 21, lineHeight: 1.2, color: 'var(--text)', padding: '15px 16px 4px' }}>
+          <div className="display" style={{ fontSize: 22, lineHeight: 1.2, color: 'var(--text)', padding: '16px 16px 4px' }}>
             {brief.title}
           </div>
         )}
@@ -50,10 +50,10 @@ export function AssistantBriefView({ brief }: { brief: AssistantBrief }) {
                 onClick={() => toggle(i)}
                 onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggle(i))}
                 className="pressRow"
-                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '13px 16px', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', cursor: 'pointer' }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--text)' }}>{s.heading}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{s.heading}</div>
                   {!isOpen && <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{plain(s.body)}</div>}
                 </div>
                 <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', transition: 'transform .3s cubic-bezier(.3,1.3,.5,1)', transform: isOpen ? 'rotate(180deg)' : 'none' }}>
@@ -63,7 +63,7 @@ export function AssistantBriefView({ brief }: { brief: AssistantBrief }) {
               {/* Opens to its own height: the grid row grows from nothing. */}
               <div style={{ display: 'grid', gridTemplateRows: isOpen ? '1fr' : '0fr', transition: 'grid-template-rows .32s cubic-bezier(.2,.8,.2,1)' }}>
                 <div style={{ overflow: 'hidden' }}>
-                  <div style={{ padding: '0 16px 15px', opacity: isOpen ? 1 : 0, transition: 'opacity .25s' }}>
+                  <div style={{ padding: '0 16px 16px', opacity: isOpen ? 1 : 0, transition: 'opacity .25s' }}>
                     <Markdown text={s.body} />
                   </div>
                 </div>

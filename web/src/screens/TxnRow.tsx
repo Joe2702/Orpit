@@ -36,7 +36,7 @@ export function TxnRow({ t: tx, onClick, last }: { t: Txn; onClick: () => void; 
       ? [t('Balance correction'), acc].filter(Boolean).join(' · ')
       : [refund ? t('Refund') : null, tData(tx.cat), acc].filter(Boolean).join(' · ');
   return (
-    <div role="button" tabIndex={0} onClick={onClick} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: last ? 'none' : '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}>
+    <div role="button" tabIndex={0} onClick={onClick} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', borderBottom: last ? 'none' : '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}>
       <span style={{ position: 'relative', width: 38, height: 38, borderRadius: 'calc(11px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {xfer ? (
           <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-label={t('Transfer')}>
@@ -57,7 +57,7 @@ export function TxnRow({ t: tx, onClick, last }: { t: Txn; onClick: () => void; 
         )}
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
           <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tData(tx.name)}</span>
           <UnsyncedDot id={tx.id} />
           {tx.sms && (
@@ -65,7 +65,7 @@ export function TxnRow({ t: tx, onClick, last }: { t: Txn; onClick: () => void; 
             // machine picked the name and the category, and the user should be
             // able to see at a glance which figures came from that.
             <span
-              style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: '.04em', color: 'var(--indigo)', background: 'color-mix(in srgb,var(--indigo) 14%,transparent)', borderRadius: 5, padding: '2px 5px', flex: 'none' }}
+              style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.04em', color: 'var(--indigo)', background: 'color-mix(in srgb,var(--indigo) 14%,transparent)', borderRadius: 5, padding: '2px 4px', flex: 'none' }}
               aria-label={t('Imported from a bank message')}
             >
               {t('SMS')}
@@ -78,7 +78,7 @@ export function TxnRow({ t: tx, onClick, last }: { t: Txn; onClick: () => void; 
             </svg>
           )}
         </div>
-        <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div>
+        <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub}</div>
       </div>
       <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flex: 'none', color: xfer || adj ? 'var(--text2)' : 'var(--text)' }}>
         {(xfer ? '' : tx.amount >= 0 ? '+' : '−') + money(tx.amount)}

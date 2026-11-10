@@ -33,13 +33,13 @@ export function FeedbackSheet() {
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 6px' }}>{t('Send feedback')}</div>
-      <div style={{ fontSize: 13.5, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '8px 0 8px' }}>{t('Send feedback')}</div>
+      <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.5 }}>
         {t('Ideas, bugs, or anything on your mind. It goes straight to the person who builds Orbit.')}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('Type')}</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{t('Type')}</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
         {KINDS.map(([val, label]) => {
           const active = kind === val;
           return (
@@ -47,9 +47,9 @@ export function FeedbackSheet() {
               key={val}
               onClick={() => setKind(val)}
               style={{
-                padding: '9px 15px',
+                padding: '8px 16px',
                 borderRadius: 'calc(12px * var(--sq))',
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: 600,
                 cursor: 'pointer',
                 border: `1.5px solid ${active ? 'var(--indigo)' : 'var(--border)'}`,
@@ -63,19 +63,19 @@ export function FeedbackSheet() {
         })}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('Message')}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{t('Message')}</div>
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder={t('Tell us what\'s on your mind…')}
         rows={5}
-        style={{ width: '100%', borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '13px 15px', fontSize: 15, color: 'var(--text)', outline: 'none', resize: 'none', marginBottom: 22, lineHeight: 1.5 }}
+        style={{ width: '100%', borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '12px 16px', fontSize: 15, color: 'var(--text)', outline: 'none', resize: 'none', marginBottom: 24, lineHeight: 1.5 }}
       />
 
       <div role="button" tabIndex={0}
         onClick={send}
         className="press"
-        style={{ background: canSend ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSend ? 'pointer' : 'default' }}
+        style={{ background: canSend ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, cursor: canSend ? 'pointer' : 'default' }}
       >
         {busy ? t('Sending…') : t('Send feedback')}
       </div>

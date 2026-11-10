@@ -69,7 +69,7 @@ export function EditSheet() {
   };
 
   const label = (text: string) => (
-    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{text}</div>
+    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{text}</div>
   );
   const fieldInput: React.CSSProperties = {
     width: '100%',
@@ -85,16 +85,16 @@ export function EditSheet() {
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 18px' }}>{title}</div>
-      <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: '15px 16px', marginBottom: 20, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{summary}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '8px 0 16px' }}>{title}</div>
+      <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: '16px 16px', marginBottom: 20, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{summary}</div>
 
       {kind === 'workout' && (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{t('Category')}</span>
             <span role="button" tabIndex={0} onClick={() => open('wcats')} style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>{t('Manage')}</span>
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 22 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
             {state!.wCats.map((c) => (
               <div role="button" tabIndex={0} aria-pressed={catId === c.id} key={c.id} onClick={() => setCatId(c.id)} style={chip(catId === c.id, `var(--${c.color})`)}>
                 {tData(c.name)}
@@ -103,20 +103,20 @@ export function EditSheet() {
           </div>
 
           {label(t('Duration'))}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: 16, marginBottom: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: 16, marginBottom: 24 }}>
             <div role="button" tabIndex={0} aria-label={t('5 minutes less')} onClick={() => setDur(Math.max(5, dur - 5))} className="press92" style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
               <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M5 10h10" /></svg>
             </div>
             <div style={{ textAlign: 'center', minWidth: 96 }}>
               <span style={{ fontSize: 40, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{dur}</span>
-              <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text2)' }}>{' ' + t('min')}</span>
+              <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text2)' }}>{' ' + t('min')}</span>
             </div>
             <div role="button" tabIndex={0} aria-label={t('5 minutes more')} onClick={() => setDur(dur + 5)} className="press92" style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
               <svg width="20" height="20" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M10 5v10M5 10h10" /></svg>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 12, marginBottom: 22 }}>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
             <div style={{ flex: 1 }}>
               {label(t('Distance'))}
               <input value={dist} onChange={(e) => setDist(e.target.value)} placeholder={t('e.g. 5.2 km')} style={fieldInput} />
@@ -128,11 +128,11 @@ export function EditSheet() {
           </div>
 
           {label(t('Sets & reps'))}
-          <div style={{ marginBottom: 22 }}>
+          <div style={{ marginBottom: 24 }}>
             <SetsEditor sets={sets} onChange={setSets} />
           </div>
 
-          <div role="button" tabIndex={0} onClick={saveWorkout} className="press" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', marginBottom: 10 }}>
+          <div role="button" tabIndex={0} onClick={saveWorkout} className="press" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 8 }}>
             {t('Save changes')}
           </div>
         </>
@@ -145,7 +145,7 @@ export function EditSheet() {
         </div>
       )}
 
-      <div tabIndex={0} onClick={duplicate} className="press99" role="button" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', marginBottom: 10 }}>
+      <div tabIndex={0} onClick={duplicate} className="press99" role="button" style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', marginBottom: 8 }}>
         <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
           <rect x="6" y="6" width="10" height="10" rx="2" />
           <path d="M12 4H4v8" />

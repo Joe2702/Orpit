@@ -46,8 +46,8 @@ export function Chooser() {
   // the labels are translated, and matching English ones hid everything in Arabic.
   const items = allItems.filter((it) => enabled(state!, it.mod));
   return (
-    <div style={{ padding: '8px 20px 34px' }}>
-      <div className="display" style={{ fontSize: 30, lineHeight: 1.1, color: 'var(--text)', margin: '6px 2px 16px' }}>{t('Log something')}</div>
+    <div style={{ padding: '8px 20px 32px' }}>
+      <div className="display" style={{ fontSize: 28, lineHeight: 1.1, color: 'var(--text)', margin: '8px 2px 16px' }}>{t('Log something')}</div>
       {/* A list rather than a grid of tinted tiles: five rows are quicker to
           scan, and the choice is the label, not the colour. */}
       <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', overflow: 'hidden' }}>
@@ -57,11 +57,11 @@ export function Chooser() {
             onClick={() => (it.action ? it.action() : it.sheet && open(it.sheet))}
             className="pressRow"
             role="button"
-            style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px', borderBottom: i === items.length - 1 ? 'none' : '1px solid var(--hairline)', cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 16px', borderBottom: i === items.length - 1 ? 'none' : '1px solid var(--hairline)', cursor: 'pointer' }}
           >
             <span style={{ width: 26, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{it.icon}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{it.label}</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{it.label}</div>
               <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{it.desc}</div>
             </div>
             <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>

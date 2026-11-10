@@ -50,10 +50,10 @@ export function SleepSheet() {
   ) => (
     // minWidth 0: a time input has a wide intrinsic size, and without it the
     // second card was pushed past the edge of the sheet on a 390px phone.
-    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', padding: '14px 15px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
+    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', padding: '16px 16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <span style={{ width: 28, height: 28, borderRadius: 'calc(9px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)' }}>{labelText}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{labelText}</span>
       </div>
       <input type="time" value={value} onChange={(e) => setValue(e.target.value)} style={{ width: '100%', minWidth: 0, border: 'none', background: 'none', fontSize: 22, fontWeight: 700, color: 'var(--text)', outline: 'none', fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em', padding: 0 }} />
     </div>
@@ -61,9 +61,9 @@ export function SleepSheet() {
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '6px 0 20px' }}>
-        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{t('Log sleep')}</div>
-        <label style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 7, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 20px' }}>
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{t('Log sleep')}</div>
+        <label style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '8px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
           <svg width="15" height="15" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <rect x="2" y="3" width="11" height="10" rx="2" />
             <path d="M2 6h11M5 1.5v3M10 1.5v3" />
@@ -79,8 +79,8 @@ export function SleepSheet() {
         </label>
       </div>
 
-      <div style={{ textAlign: 'center', marginBottom: 6 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text2)', marginBottom: 2 }}>{t('Time asleep')}</div>
+      <div style={{ textAlign: 'center', marginBottom: 8 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 2 }}>{t('Time asleep')}</div>
         <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{durLabel}</span>
       </div>
 
@@ -89,7 +89,7 @@ export function SleepSheet() {
       {/* The exact times, under the dial. Dragging is for the shape of the
           night; these are for reading it back, and for typing an exact time
           when you already know it. */}
-      <div style={{ display: 'flex', alignItems: 'stretch', gap: 12, margin: '18px 0 26px' }}>
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: 12, margin: '16px 0 24px' }}>
         {timeCard(t('Bedtime'), 'indigo', (
           <svg width="16" height="16" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M14 9.3A5.6 5.6 0 1 1 6.7 2a4.4 4.4 0 0 0 7.3 7.3Z" /></svg>
         ), bed, (v) => setBedH(parseClock(v)))}
@@ -98,17 +98,17 @@ export function SleepSheet() {
         ), wake, (v) => setWakeH(parseClock(v)))}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{t('Quality')}</span>
-        <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--indigo)', fontVariantNumeric: 'tabular-nums' }}>{quality} / 10</span>
+        <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--indigo)', fontVariantNumeric: 'tabular-nums' }}>{quality} / 10</span>
       </div>
-      <input type="range" min={1} max={10} step={1} value={quality} onChange={(e) => setQuality(parseInt(e.target.value))} style={{ width: '100%', accentColor: 'var(--indigo)', height: 6, marginBottom: 6, cursor: 'pointer' }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--text2)', marginBottom: 26 }}>
+      <input type="range" min={1} max={10} step={1} value={quality} onChange={(e) => setQuality(parseInt(e.target.value))} style={{ width: '100%', accentColor: 'var(--indigo)', height: 6, marginBottom: 8, cursor: 'pointer' }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text2)', marginBottom: 24 }}>
         <span>{t('Poor')}</span>
         <span>{t('Excellent')}</span>
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('Note (optional)')}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{t('Note (optional)')}</div>
       <input
         value={note}
         onChange={(e) => setNote(e.target.value)}
@@ -117,7 +117,7 @@ export function SleepSheet() {
         style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 24 }}
       />
 
-      <div role="button" tabIndex={0} onClick={save} className="press" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>{t('Save sleep')}</div>
+      <div role="button" tabIndex={0} onClick={save} className="press" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 12px 20px -10px rgba(40,36,28,.22)' }}>{t('Save sleep')}</div>
     </div>
   );
 }

@@ -24,7 +24,7 @@ export function Sleep() {
   const none = d.slNights === 0;
 
   return (
-    <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
+    <div style={{ padding: '8px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <DetailHeader title={t('Sleep')} />
       <TrackerAction label={t('Log sleep')} onClick={() => open('sleep')} />
       <RangeSeg period={P} />
@@ -47,7 +47,7 @@ export function Sleep() {
         </ChartCard>
       )}
 
-      <Card style={{ padding: '15px 16px', marginBottom: 22, display: 'flex', alignItems: 'center', gap: 13 }}>
+      <Card style={{ padding: '16px 16px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
         <span style={{ width: 38, height: 38, borderRadius: 'calc(12px * var(--sq))', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
           <svg width="20" height="20" viewBox="0 0 22 22" aria-hidden style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path d={d.slConsistGood ? 'M5 12l4 4 8-9' : d.bedDevMin == null ? 'M11 6v5l3 2' : 'M11 5v7M11 16v.5'} />
@@ -69,7 +69,7 @@ export function Sleep() {
 
       <SectionLabel>{list.length ? `${P.title} · ${tn(list.length, '{n} night', '{n} nights')}` : P.title}</SectionLabel>
       {list.length === 0 && (
-        <Card style={{ padding: '22px 18px', textAlign: 'center', fontSize: 14, color: 'var(--text2)' }}>{t('No nights logged {phrase}', { phrase: P.phrase })}</Card>
+        <Card style={{ padding: '24px 16px', textAlign: 'center', fontSize: 15, color: 'var(--text2)' }}>{t('No nights logged {phrase}', { phrase: P.phrase })}</Card>
       )}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', display: list.length ? undefined : 'none' }}>
         {list.slice(0, shown).map((n) => (
@@ -77,18 +77,18 @@ export function Sleep() {
             <div role="button" tabIndex={0}
               onClick={() => open('edit', { kind: 'sleep', item: n })}
               className="pressRow"
-              style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer' }}
             >
               <span style={{ width: 38, height: 38, borderRadius: 'calc(11px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <IconSleep c="var(--indigo)" size={20} />
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{relLabel(n.ts)}</span>
-                  {n.source && <span style={{ fontSize: 11, fontWeight: 650, color: 'var(--text2)', border: '1px solid var(--border)', borderRadius: 999, padding: '1px 7px', flex: 'none' }}>{n.source}</span>}
+                  {n.source && <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', border: '1px solid var(--border)', borderRadius: 999, padding: '1px 8px', flex: 'none' }}>{n.source}</span>}
                   <UnsyncedDot id={n.id} />
                 </div>
-                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2 }}>
+                <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2 }}>
                   {n.bedH != null && n.wakeH != null ? `${fmtClock(n.bedH)} – ${fmtClock(n.wakeH)} · ` : ''}
                   {t('Quality {q}/10', { q: n.quality })}
                 </div>
@@ -99,7 +99,7 @@ export function Sleep() {
         ))}
       </div>
       {list.length > shown && (
-        <div tabIndex={0} onClick={() => setShown(shown + 50)} className="press99" role="button" style={{ marginTop: 12, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={() => setShown(shown + 50)} className="press99" role="button" style={{ marginTop: 12, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
           {t('Show {v} more', { v: Math.min(50, list.length - shown) })}</div>
       )}
     </div>

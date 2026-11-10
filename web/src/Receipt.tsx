@@ -91,7 +91,7 @@ const pickerBox: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   gap: 8,
-  fontSize: 14.5,
+  fontSize: 15,
   fontWeight: 600,
   color: 'var(--text)',
   cursor: 'pointer',
@@ -150,10 +150,10 @@ export function ReceiptPicker({ value, onChange }: { value: string | null; onCha
       <input ref={fileRef} type="file" accept="image/*" onChange={pick} style={{ display: 'none' }} />
       {value ? (
         <div>
-          <div style={{ borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', border: '1px solid var(--border)', marginBottom: 10, background: 'var(--bg)' }}>
+          <div style={{ borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', border: '1px solid var(--border)', marginBottom: 8, background: 'var(--bg)' }}>
             <img src={value} alt={t('Receipt')} style={{ display: 'block', width: '100%', maxHeight: 200, objectFit: 'cover' }} />
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
             <div tabIndex={0} onClick={choose} className="press99" role="button" style={{ ...pickerBox, flex: 1 }}>{t('Replace')}</div>
             <div tabIndex={0} onClick={() => onChange(null)} className="press99" role="button" style={{ ...pickerBox, flex: 1, color: 'var(--danger)', borderColor: 'color-mix(in srgb,var(--danger) 35%,var(--border))' }}>{t('Remove')}</div>
           </div>
@@ -264,7 +264,7 @@ export function ReceiptField({ txn }: { txn: Txn }) {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    fontSize: 14.5,
+    fontSize: 15,
     fontWeight: 600,
     color: 'var(--text)',
     cursor: 'pointer',
@@ -276,10 +276,10 @@ export function ReceiptField({ txn }: { txn: Txn }) {
 
       {photo ? (
         <div>
-          <div tabIndex={0} onClick={() => setFull(true)} className="press99" role="button" aria-label={t('View receipt full size')} style={{ borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', border: '1px solid var(--border)', cursor: 'pointer', marginBottom: 10, background: 'var(--bg)' }}>
+          <div tabIndex={0} onClick={() => setFull(true)} className="press99" role="button" aria-label={t('View receipt full size')} style={{ borderRadius: 'calc(16px * var(--sq))', overflow: 'hidden', border: '1px solid var(--border)', cursor: 'pointer', marginBottom: 8, background: 'var(--bg)' }}>
             <img src={photo} alt={t('Receipt')} style={{ display: 'block', width: '100%', maxHeight: 220, objectFit: 'cover' }} />
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
             <div tabIndex={0} onClick={choose} className="press99" role="button" style={{ ...box, flex: 1 }}>
               {t('Replace')}
             </div>

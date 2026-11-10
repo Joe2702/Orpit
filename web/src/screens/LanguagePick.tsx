@@ -34,19 +34,19 @@ export function LanguagePick() {
   return (
     <div style={{ position: 'absolute', inset: 0, color: '#f2f2f5', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'opacity .45s, transform .45s', opacity: chosen ? 0.0001 : 1, transform: chosen ? 'scale(1.04)' : 'none', transitionDelay: chosen ? '.15s' : '0s' }}>
       <Space horizonTop="58%" animate={!still} />
-      <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 'calc(env(safe-area-inset-top) + 24px) 26px 0' }}>
+      <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 'calc(env(safe-area-inset-top) + 24px) 24px 0' }}>
         <div style={still ? undefined : { animation: 'popIn .8s cubic-bezier(.3,1.4,.5,1) both' }}>
           <OrbitMark size={56} spin={!still} />
         </div>
-        <div className="display" style={{ fontSize: 38, lineHeight: 1.05, marginTop: 26, ...rise(0.15) }}>
+        <div className="display" style={{ fontSize: 40, lineHeight: 1.05, marginTop: 24, ...rise(0.15) }}>
           Choose your language
         </div>
-        <div dir="rtl" lang="ar" className="display" style={{ fontSize: 32, lineHeight: 1.25, marginTop: 6, color: 'rgba(242,242,245,.72)', textAlign: 'left', ...rise(0.25) }}>
+        <div dir="rtl" lang="ar" className="display" style={{ fontSize: 34, lineHeight: 1.25, marginTop: 8, color: 'rgba(242,242,245,.72)', textAlign: 'left', ...rise(0.25) }}>
           اختر لغتك
         </div>
       </div>
 
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 12, padding: '0 22px calc(env(safe-area-inset-bottom) + 26px)' }}>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 12, padding: '0 24px calc(env(safe-area-inset-bottom) + 24px)' }}>
         {options.map((o, k) => {
           const on = chosen === o.lang;
           return (
@@ -62,8 +62,8 @@ export function LanguagePick() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 14,
-                padding: '14px 16px',
+                gap: 16,
+                padding: '16px 16px',
                 borderRadius: 24,
                 cursor: 'pointer',
                 background: on ? 'color-mix(in srgb, var(--indigo) 22%, rgba(255,255,255,.06))' : 'rgba(255,255,255,.06)',
@@ -75,12 +75,12 @@ export function LanguagePick() {
                 ...rise(0.4 + k * 0.1),
               }}
             >
-              <span style={{ width: 48, height: 48, flex: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, fontWeight: 700, background: on ? 'var(--indigo)' : 'rgba(255,255,255,.1)', color: on ? 'var(--on-accent)' : '#f2f2f5', transition: 'background .3s, color .3s' }}>
+              <span style={{ width: 48, height: 48, flex: 'none', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 700, background: on ? 'var(--indigo)' : 'rgba(255,255,255,.1)', color: on ? 'var(--on-accent)' : '#f2f2f5', transition: 'background .3s, color .3s' }}>
                 {o.glyph}
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 19, fontWeight: 700 }}>{o.name}</div>
-                <div style={{ fontSize: 13.5, color: 'rgba(242,242,245,.6)', marginTop: 2 }}>{o.line}</div>
+                <div style={{ fontSize: 17, fontWeight: 700 }}>{o.name}</div>
+                <div style={{ fontSize: 13, color: 'rgba(242,242,245,.6)', marginTop: 2 }}>{o.line}</div>
               </div>
               <span style={{ width: 24, height: 24, flex: 'none', borderRadius: '50%', border: `1.8px solid ${on ? 'var(--indigo)' : 'rgba(255,255,255,.3)'}`, background: on ? 'var(--indigo)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .25s', transform: on ? 'scale(1.1)' : 'none' }}>
                 {on && (
@@ -92,7 +92,7 @@ export function LanguagePick() {
             </div>
           );
         })}
-        <div style={{ textAlign: 'center', fontSize: 12.5, color: 'rgba(242,242,245,.5)', marginTop: 6, lineHeight: 1.6, ...rise(0.65) }}>
+        <div style={{ textAlign: 'center', fontSize: 13, color: 'rgba(242,242,245,.5)', marginTop: 8, lineHeight: 1.6, ...rise(0.65) }}>
           You can change this later in Profile
           <br />
           <span dir="rtl" lang="ar">يمكنك تغييرها لاحقًا من حسابي</span>

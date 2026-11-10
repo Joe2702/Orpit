@@ -77,12 +77,12 @@ export function ProfileSheet() {
     fontSize: 15,
     color: 'var(--text)',
     outline: 'none',
-    marginBottom: 18,
+    marginBottom: 16,
   };
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 20px' }}>{t('Edit profile')}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '8px 0 20px' }}>{t('Edit profile')}</div>
 
       <input ref={fileRef} type="file" accept="image/*" onChange={pickPhoto} style={{ display: 'none' }} />
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
@@ -97,24 +97,24 @@ export function ProfileSheet() {
         </div>
         <div role="button" tabIndex={0}
           onClick={() => !busy && fileRef.current?.click()}
-          style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', marginTop: 12, cursor: 'pointer' }}
+          style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', marginTop: 12, cursor: 'pointer' }}
         >
           {busy ? t('Processing…') : avatar ? t('Change photo') : t('Add a photo')}
         </div>
         {avatar && !busy && (
-          <div role="button" tabIndex={0} onClick={() => setAvatar(null)} style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)', marginTop: 6, cursor: 'pointer' }}>
+          <div role="button" tabIndex={0} onClick={() => setAvatar(null)} style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginTop: 8, cursor: 'pointer' }}>
             {t('Remove photo')}
           </div>
         )}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('Name')}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{t('Name')}</div>
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Your name')} style={input} />
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('Email')}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{t('Email')}</div>
       <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('you@example.com')} style={{ ...input, marginBottom: 24 }} />
       <div role="button" tabIndex={0}
         onClick={save}
-        style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default', letterSpacing: '-.01em' }}
+        style={{ background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, cursor: canSave ? 'pointer' : 'default', letterSpacing: '-.01em' }}
       >
         {t('Save profile')}
       </div>

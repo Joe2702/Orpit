@@ -59,15 +59,15 @@ export function SetsEditor({ sets, onChange }: { sets: WorkoutSet[]; onChange: (
       onChange={(e) => onValue(e.target.value.replace(/[^0-9.]/g, ''))}
       inputMode="decimal"
       placeholder={placeholder}
-      style={{ width: '100%', height: 40, borderRadius: 'calc(11px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', padding: '0 10px', fontSize: 15, fontWeight: 600, color: 'var(--text)', outline: 'none', textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}
+      style={{ width: '100%', height: 40, borderRadius: 'calc(11px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', padding: '0 8px', fontSize: 15, fontWeight: 600, color: 'var(--text)', outline: 'none', textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}
     />
   );
 
   return (
     <div>
       {groups.map((g, gi) => (
-        <div key={gi} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: 13, marginBottom: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <div key={gi} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: 12, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <input
               value={g.ex}
               onChange={(e) => renameGroup(g, e.target.value)}
@@ -80,15 +80,15 @@ export function SetsEditor({ sets, onChange }: { sets: WorkoutSet[]; onChange: (
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 8, marginBottom: 6, paddingInlineStart: 26, fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8, paddingInlineStart: 24, fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
             <span style={{ flex: 1 }}>{t('Reps')}</span>
             <span style={{ flex: 1 }}>{t('Weight')}</span>
             <span style={{ width: 34, flex: 'none' }} />
           </div>
 
           {g.rows.map((r, ri) => (
-            <div key={r.i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
-              <span style={{ width: 18, flex: 'none', fontSize: 12.5, fontWeight: 700, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>{ri + 1}</span>
+            <div key={r.i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <span style={{ width: 18, flex: 'none', fontSize: 13, fontWeight: 700, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>{ri + 1}</span>
               <div style={{ flex: 1 }}>{numField(r.set.reps ? String(r.set.reps) : '', (v) => patch(r.i, { reps: Math.min(9999, parseInt(v, 10) || 0) }), '10')}</div>
               <div style={{ flex: 1 }}>{numField(r.set.weight != null ? String(r.set.weight) : '', (v) => patch(r.i, { weight: v === '' ? null : Math.min(9999, parseFloat(v) || 0) }), '—')}</div>
               <div tabIndex={0} onClick={() => removeAt(r.i)} className="press92" role="button" aria-label={t('Remove set {n}', { n: ri + 1 })} style={{ width: 34, height: 34, flex: 'none', borderRadius: 'calc(10px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
@@ -97,14 +97,14 @@ export function SetsEditor({ sets, onChange }: { sets: WorkoutSet[]; onChange: (
             </div>
           ))}
 
-          <div tabIndex={0} onClick={() => addSet(g)} className="pressRow" role="button" style={{ marginTop: 4, height: 38, borderRadius: 'calc(11px * var(--sq))', border: '1px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
+          <div tabIndex={0} onClick={() => addSet(g)} className="pressRow" role="button" style={{ marginTop: 4, height: 38, borderRadius: 'calc(11px * var(--sq))', border: '1px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
             <svg width="15" height="15" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.3, strokeLinecap: 'round' }}><path d="M7.5 3v9M3 7.5h9" /></svg>
             {t('Add set')}
           </div>
         </div>
       ))}
 
-      <div tabIndex={0} onClick={addExercise} className="press99" role="button" style={{ height: 46, borderRadius: 'calc(14px * var(--sq))', border: '1.5px dashed color-mix(in srgb,var(--indigo) 40%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 14.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer', background: 'color-mix(in srgb,var(--indigo) 6%,transparent)' }}>
+      <div tabIndex={0} onClick={addExercise} className="press99" role="button" style={{ height: 46, borderRadius: 'calc(14px * var(--sq))', border: '1.5px dashed color-mix(in srgb,var(--indigo) 40%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer', background: 'color-mix(in srgb,var(--indigo) 6%,transparent)' }}>
         <svg width="17" height="17" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round' }}><path d="M8.5 3.5v10M3.5 8.5h10" /></svg>
         {sets.length ? t('Add exercise') : t('Add exercises, sets & reps')}
       </div>

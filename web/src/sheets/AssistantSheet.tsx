@@ -11,13 +11,13 @@ const btn = (primary: boolean): React.CSSProperties => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontSize: 15.5,
+  fontSize: 15,
   fontWeight: 700,
   cursor: 'pointer',
   background: primary ? 'var(--indigo)' : 'var(--surface)',
   color: primary ? 'var(--on-accent)' : 'var(--text)',
   border: primary ? 'none' : '1px solid var(--border)',
-  marginTop: 10,
+  marginTop: 8,
 });
 
 /** What to hand Claude: where to send the brief, the key, and the shape. */
@@ -97,28 +97,28 @@ export function AssistantSheet() {
     }
   };
 
-  const p: React.CSSProperties = { fontSize: 14.5, color: 'var(--text2)', lineHeight: 1.5, margin: '0 2px 12px' };
+  const p: React.CSSProperties = { fontSize: 15, color: 'var(--text2)', lineHeight: 1.5, margin: '0 2px 12px' };
 
   return (
-    <div style={{ padding: '6px 20px 30px' }}>
-      <div className="display" style={{ fontSize: 30, lineHeight: 1.1, color: 'var(--text)', margin: '6px 2px 12px' }}>{t('Claude’s morning brief')}</div>
+    <div style={{ padding: '8px 20px 32px' }}>
+      <div className="display" style={{ fontSize: 28, lineHeight: 1.1, color: 'var(--text)', margin: '8px 2px 12px' }}>{t('Claude’s morning brief')}</div>
       <div style={p}>{t('If Claude writes you a morning brief on a schedule, it can send it here too. It shows at the top of your morning brief in Orbit, and you can open it from Home any time.')}</div>
 
       {failed && <div style={{ ...p, color: 'var(--danger)' }}>{t('Couldn’t reach Orbit. Check your connection and open this again.')}</div>}
 
       {fresh ? (
         <>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', margin: '6px 2px 8px' }}>{t('Your key')}</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', margin: '8px 2px 8px' }}>{t('Your key')}</div>
           <div
             style={{
               fontFamily: 'var(--font-mono, ui-monospace, monospace)',
-              fontSize: 13.5,
+              fontSize: 13,
               lineHeight: 1.45,
               color: 'var(--text)',
               background: 'var(--bg)',
               border: '1px solid var(--border)',
               borderRadius: 'calc(14px * var(--sq))',
-              padding: '12px 14px',
+              padding: '12px 16px',
               wordBreak: 'break-all',
               userSelect: 'all',
               WebkitUserSelect: 'all',
@@ -137,9 +137,9 @@ export function AssistantSheet() {
           </div>
         </>
       ) : info?.exists ? (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '14px 16px', marginBottom: 4 }}>
-          <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--text)' }}>{t('On')}</div>
-          <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 3, lineHeight: 1.45 }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '16px 16px', marginBottom: 4 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('On')}</div>
+          <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4, lineHeight: 1.45 }}>
             {info.createdAt ? t('Key made {date}', { date: date(info.createdAt, { month: 'short', day: 'numeric' }) }) : ''}
             {' · '}
             {info.lastUsedAt ? t('last brief {ago}', { ago: ago(info.lastUsedAt) }) : t('no brief received yet')}
@@ -155,14 +155,14 @@ export function AssistantSheet() {
             </div>
           )}
           {info.exists && (
-            <div role="button" tabIndex={0} onClick={() => !busy && revoke()} style={{ textAlign: 'center', fontSize: 14.5, fontWeight: 600, color: 'var(--danger)', padding: 14, marginTop: 6, cursor: 'pointer' }}>
+            <div role="button" tabIndex={0} onClick={() => !busy && revoke()} style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: 'var(--danger)', padding: 16, marginTop: 8, cursor: 'pointer' }}>
               {t('Turn off')}
             </div>
           )}
         </>
       )}
 
-      <div style={{ ...p, fontSize: 12.5, color: 'var(--text3)', marginTop: 16, marginBottom: 0 }}>
+      <div style={{ ...p, fontSize: 13, color: 'var(--text3)', marginTop: 16, marginBottom: 0 }}>
         {t('The key can only add a brief. It can’t read anything in your account or change it.')}
       </div>
     </div>
