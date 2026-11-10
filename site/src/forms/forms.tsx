@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import type { Account, AppState, Budget, Counter, FCat, Goal, Habit, Night, Recurring, Todo, TodoList, Txn, WCat, Workout } from '@core/types';
 import { daysLabel, dayKey, fmtClock, money } from '@core/lib/format';
 import { accountBalance } from '@core/lib/ledger';
+import { derive } from '@core/lib/derive';
+import { savedTxnMessage, workoutLoggedMessage } from '@core/lib/endings';
 import { FIN_ICONS, FinIcon } from '@core/lib/iconPaths';
 import { api, type TxnBody } from '../api';
 import { useStore, useData } from '../store';
@@ -108,7 +110,15 @@ export function TxnForm({ txn, preset, onClose }: { txn?: Txn; preset?: { cat?: 
         ...st,
         txns: st.txns.map((x) => (x.id === txn.id ? { ...x, ...body, amount: kind === 'expense' ? -a : txn.adjust ? body.amount : a, review: false } as Txn : x)),
       }));
-    else run(() => api.addTxn(body), kind === 'income' ? t('Income added') : t('Expense added'), onClose);
+    else {
+      // Ends on what the entry changed: what's left to spend a day this
+      // month, worked out with it already in (the same words as the phone).
+      const added = { ...body, id: 'new', amount: kind === 'expense' || kind === 'transfer' ? -a : a, photo: false } as Txn;
+      const at = new Date(body.ts ?? Date.now());
+      const thisMonth = at.getFullYear() === new Date().getFullYear() && at.getMonth() === new Date().getMonth();
+      const safe = kind === 'expense' || kind === 'income' ? derive({ ...s, txns: [...s.txns, added] }, 'Month').safe : null;
+      run(() => api.addTxn(body), savedTxnMessage(kind, safe, thisMonth), onClose);
+    }
   };
 
   const title = txn ? t('Edit transaction') : t('New transaction');
@@ -209,7 +219,7 @@ export function TxnForm({ txn, preset, onClose }: { txn?: Txn; preset?: { cat?: 
         <Field label={t('Note')}>
           <textarea className="textarea" value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('Anything worth remembering')} />
         </Field>
-        {err && <div style={{ color: 'var(--bad)', fontSize: 13 }}>{err}</div>}
+        {err && <div style={{ color: 'var(--bad)', fontSize: 14 }}>{err}</div>}
         <div className="row" style={{ marginTop: 4 }}>
           {txn && <DeleteBtn onClick={() => remove(t('this transaction'), () => api.deleteTxn(txn.id), onClose, (st) => ({ ...st, txns: st.txns.filter((x) => x.id !== txn.id) }))} />}
           <span className="spacer" />
@@ -246,7 +256,7 @@ export function WorkoutForm({ workout, onClose }: { workout?: Workout; onClose: 
     if (!catId || !d) return;
     const base = { catId, dur: Math.round(d), dist: dist.trim() || null, kcal: kcal ? Math.round(Number(kcal)) || null : null, ts: fromLocalInput(when) };
     if (workout) run(() => api.editWorkout(workout.id, { ...base, sets: workout.sets }), t('Saved'), onClose);
-    else run(() => api.addWorkout({ ...base, intensity, note: note.trim() || null }), t('Workout logged'), onClose);
+    else run(() => api.addWorkout({ ...base, intensity, note: note.trim() || null }), workoutLoggedMessage([...s.workouts.map((w) => w.ts), base.ts], base.ts), onClose);
   };
   return (
     <Dialog
@@ -331,7 +341,7 @@ export function NightForm({ night, onClose }: { night?: Night; onClose: () => vo
         <Field label={t('Woke up')}>
           <input className="input" type="time" value={wake} onChange={(e) => setWake(e.target.value)} />
         </Field>
-        <div className="full card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-2)' }}>
+        <div className="full card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-2)' }}>
           <Icon name="sleep" size={18} style={{ color: 'var(--accent)' }} />
           <span className="muted">{t('Time asleep')}</span>
           <span className="spacer" />
@@ -361,7 +371,7 @@ export function WCatForm({ cat, onClose }: { cat?: WCat; onClose: () => void }) 
       onSubmit={save}
       footer={<FormFoot onCancel={onClose} busy={busy} left={cat && <DeleteBtn onClick={() => remove(tData(cat.name), () => api.deleteWCat(cat.id), onClose)} />} />}
     >
-      <div style={{ display: 'grid', gap: 14 }}>
+      <div style={{ display: 'grid', gap: 16 }}>
         <Field label={t('Name')}>
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Running, Gym, Football…')} />
         </Field>
@@ -408,7 +418,7 @@ export function HabitForm({ habit, onClose }: { habit?: Habit; onClose: () => vo
           <input className="input lg" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Read 20 pages, Walk after lunch…')} />
         </Field>
         <Field label={t('Which days')} full hint={daysLabel(days)}>
-          <div className="row" style={{ gap: 6 }}>
+          <div className="row" style={{ gap: 8 }}>
             {Array.from({ length: 7 }, (_, i) => (
               <button key={i} type="button" className={`btn sm${days[i] === '1' ? ' primary' : ''}`} style={{ width: 52 }} onClick={() => flip(i)} aria-pressed={days[i] === '1'}>
                 {date(new Date(2026, 0, 4 + i), { weekday: 'short' })}
@@ -560,7 +570,7 @@ export function ListForm({ list, onClose }: { list?: TodoList; onClose: () => vo
       onSubmit={save}
       footer={<FormFoot onCancel={onClose} busy={busy} left={list && <DeleteBtn onClick={() => remove(tData(list.name), () => api.deleteList(list.id), onClose, undefined, t('Every task in it goes too.'))} />} />}
     >
-      <div style={{ display: 'grid', gap: 14 }}>
+      <div style={{ display: 'grid', gap: 16 }}>
         <Field label={t('Name')}>
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Work, Groceries, Uni…')} />
         </Field>
@@ -837,7 +847,7 @@ export function FcatForm({ cat, onClose }: { cat?: FCat; onClose: () => void }) 
           />
         </Field>
         <Field label={t('Icon')} full>
-          <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
             {FIN_ICONS.map((ic) => (
               <button key={ic} type="button" className={`btn icon${icon === ic ? ' primary' : ''}`} onClick={() => setIcon(ic)} aria-pressed={icon === ic} aria-label={ic}>
                 <FinIcon icon={ic} color="currentColor" size={17} />

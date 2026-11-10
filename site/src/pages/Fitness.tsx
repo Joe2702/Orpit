@@ -43,7 +43,7 @@ function Stat({ label, value, sub }: { label: string; value: React.ReactNode; su
     <div className="card card-pad">
       <div className="stat-label">{label}</div>
       <div className="stat-value">{value}</div>
-      {sub && <div className="faint" style={{ fontSize: 12.5, marginTop: 4 }}>{sub}</div>}
+      {sub && <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>{sub}</div>}
     </div>
   );
 }
@@ -111,7 +111,7 @@ function Workouts() {
             ) : (
               <div className="faint">{t('Nothing in the last 90 days.')}</div>
             )}
-            <div className="row" style={{ flexWrap: 'wrap', gap: 6, marginTop: 14 }}>
+            <div className="row" style={{ flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
               {s.wCats.map((c) => (
                 <button key={c.id} className="badge" style={{ cursor: 'pointer' }} onClick={() => open({ kind: 'wcat', cat: c })} title={t('Edit')}>
                   <ColorDot c={c.color} size={6} />
@@ -161,7 +161,7 @@ function Workouts() {
                   <td>
                     <span className="row">
                       <ColorDot c={cat(w.catId)?.color} />
-                      <span style={{ fontWeight: 540 }}>{tData(cat(w.catId)?.name || w.name)}</span>
+                      <span style={{ fontWeight: 500 }}>{tData(cat(w.catId)?.name || w.name)}</span>
                       {w.source && <span className="badge">{w.source}</span>}
                     </span>
                   </td>
@@ -282,7 +282,7 @@ function Sleep() {
           </div>
         )}
       </div>
-      <div className="faint row" style={{ marginTop: 12, fontSize: 12.5, gap: 6 }}>
+      <div className="faint row" style={{ marginTop: 12, fontSize: 12, gap: 8 }}>
         <Icon name="info" size={14} />
         {t('Nights from Health Connect come in through the phone app.')}
       </div>

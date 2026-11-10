@@ -135,15 +135,15 @@ export function Drawer({ title, sub, onClose, children, actions, wide }: { title
     <>
       <div className="scrim" style={{ background: 'color-mix(in srgb, var(--scrim) 50%, transparent)' }} onMouseDown={onClose} />
       <aside className={`drawer${wide ? ' wide' : ''}`} role="dialog" aria-modal>
-        <div className="dialog-head" style={{ padding: '18px 22px', alignItems: 'flex-start' }}>
+        <div className="dialog-head" style={{ padding: '16px 24px', alignItems: 'flex-start' }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 17, fontWeight: 650, letterSpacing: '-0.015em' }}>{title}</div>
-            {sub && <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>{sub}</div>}
+            <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: '-0.015em' }}>{title}</div>
+            {sub && <div className="muted" style={{ fontSize: 14, marginTop: 2 }}>{sub}</div>}
           </div>
           {actions}
           <Button icon="x" kind="ghost" size="sm" title={t('Close')} onClick={onClose} />
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 22px' }}>{children}</div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>{children}</div>
       </aside>
     </>
   );
@@ -285,8 +285,8 @@ export function Empty({ title, children, action, icon }: { title: string; childr
         </div>
       )}
       <div className="empty-title">{title}</div>
-      {children && <div style={{ fontSize: 13.5, maxWidth: 380, margin: '0 auto' }}>{children}</div>}
-      {action && <div style={{ marginTop: 14 }}>{action}</div>}
+      {children && <div style={{ fontSize: 14, maxWidth: 380, margin: '0 auto' }}>{children}</div>}
+      {action && <div style={{ marginTop: 16 }}>{action}</div>}
     </div>
   );
 }

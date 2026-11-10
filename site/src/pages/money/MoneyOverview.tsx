@@ -47,24 +47,24 @@ export function MoneyOverview() {
         <div className="card card-pad">
           <div className="stat-label">{t('Net worth')}</div>
           <div className="stat-value">{money0(d.netWorth)}</div>
-          <div className="faint" style={{ fontSize: 12.5, marginTop: 4 }}>{tn(s.accounts.length, 'across {n} account', 'across {n} accounts')}</div>
+          <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>{tn(s.accounts.length, 'across {n} account', 'across {n} accounts')}</div>
         </div>
         <div className="card card-pad">
           <div className="stat-label">{t('Spent this month')}</div>
           <div className="stat-value">{money0(d.spentThisMonth)}</div>
-          <div className="faint row" style={{ fontSize: 12.5, marginTop: 4, gap: 6 }}>
+          <div className="faint row" style={{ fontSize: 12, marginTop: 4, gap: 8 }}>
             {d.budgetTotal > 0 ? t('of {amount} budgeted', { amount: money0(d.budgetTotal) }) : <><Delta pct={change(d.spentThisMonth, d.spentPrevMonth)} goodWhenUp={false} /> {t('vs. all of last month')}</>}
           </div>
         </div>
         <div className="card card-pad">
           <div className="stat-label">{t('Came in this month')}</div>
           <div className="stat-value">{money0(d.incThisMonth)}</div>
-          <div className="faint" style={{ fontSize: 12.5, marginTop: 4 }}>{saved >= 0 ? t('{amount} more than went out', { amount: money0(saved) }) : t('{amount} less than went out', { amount: money0(-saved) })}</div>
+          <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>{saved >= 0 ? t('{amount} more than went out', { amount: money0(saved) }) : t('{amount} less than went out', { amount: money0(-saved) })}</div>
         </div>
         <div className="card card-pad">
           <div className="stat-label">{t('Safe to spend')}</div>
           <div className="stat-value">{d.safe ? money0(Math.max(0, d.safe.perDay)) : '—'}</div>
-          <div className="faint" style={{ fontSize: 12.5, marginTop: 4 }}>{d.safe ? t('a day until the month ends, after {amount} of bills', { amount: money0(d.safe.billsLeft) }) : t('Add income or a budget to see this')}</div>
+          <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>{d.safe ? t('a day until the month ends, after {amount} of bills', { amount: money0(d.safe.billsLeft) }) : t('Add income or a budget to see this')}</div>
         </div>
       </div>
 
@@ -104,10 +104,10 @@ export function MoneyOverview() {
             <div key={a.id} className="list-row hover-row click" onClick={() => nav(`/money/transactions?acc=${a.id}`)}>
               <ColorDot c={a.color} />
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="truncate" style={{ display: 'block', fontWeight: 540 }}>{tData(a.name)}</span>
+                <span className="truncate" style={{ display: 'block', fontWeight: 500 }}>{tData(a.name)}</span>
                 <span className="faint" style={{ fontSize: 12 }}>{tData(a.type)}</span>
               </span>
-              <span className="num" style={{ fontWeight: 620, color: a.balance < 0 ? 'var(--bad)' : undefined }}>{money0(a.balance)}</span>
+              <span className="num" style={{ fontWeight: 600, color: a.balance < 0 ? 'var(--bad)' : undefined }}>{money0(a.balance)}</span>
             </div>
           ))}
         </div>

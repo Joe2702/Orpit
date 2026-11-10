@@ -32,8 +32,8 @@ function Gate() {
     );
   if (status === 'error')
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, textAlign: 'center', padding: 24 }}>
-        <div style={{ fontSize: 18, fontWeight: 650 }}>{t('Can’t reach Orbit right now')}</div>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, textAlign: 'center', padding: 24 }}>
+        <div style={{ fontSize: 20, fontWeight: 600 }}>{t('Can’t reach Orbit right now')}</div>
         <div className="muted" style={{ maxWidth: 420 }}>{t('The server may be waking up, which can take up to a minute. Your data is safe.')}</div>
         <Button kind="primary" icon="repeat" onClick={retry}>
           {t('Try again')}

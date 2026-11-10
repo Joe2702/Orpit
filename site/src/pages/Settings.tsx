@@ -52,7 +52,7 @@ export function Settings({ setup }: { setup?: boolean }) {
             </NavLink>
           ))}
         </nav>
-        <div className="card" style={{ padding: '6px 26px 10px' }}>
+        <div className="card" style={{ padding: '8px 24px 8px' }}>
           {section === 'appearance' ? <Appearance /> : section === 'region' ? <Region /> : section === 'trackers' ? <Trackers /> : section === 'security' ? <Security /> : section === 'data' ? <Data /> : <Profile />}
         </div>
       </div>
@@ -63,8 +63,8 @@ export function Settings({ setup }: { setup?: boolean }) {
 const Row = ({ title, sub, children }: { title: string; sub?: React.ReactNode; children: React.ReactNode }) => (
   <div className="setting-row">
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontWeight: 560 }}>{title}</div>
-      {sub && <div className="faint" style={{ fontSize: 13, marginTop: 2 }}>{sub}</div>}
+      <div style={{ fontWeight: 600 }}>{title}</div>
+      {sub && <div className="faint" style={{ fontSize: 14, marginTop: 2 }}>{sub}</div>}
     </div>
     <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>{children}</div>
   </div>
@@ -190,7 +190,7 @@ function Region() {
 
 function ModuleToggles({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
       {MODULES.map(([k, label, sub, icon]) => {
         const on = value.includes(k);
         const flip = () => {
@@ -198,13 +198,13 @@ function ModuleToggles({ value, onChange }: { value: string[]; onChange: (v: str
           if (next.length) onChange(next);
         };
         return (
-          <div key={k} className="card" role="checkbox" aria-checked={on} tabIndex={0} onClick={flip} onKeyDown={(e) => (e.key === ' ' || e.key === 'Enter') && (e.preventDefault(), flip())} style={{ padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'center', cursor: 'pointer', borderColor: on ? 'var(--accent-line)' : undefined, background: on ? 'color-mix(in srgb, var(--accent) 6%, var(--panel))' : undefined }}>
+          <div key={k} className="card" role="checkbox" aria-checked={on} tabIndex={0} onClick={flip} onKeyDown={(e) => (e.key === ' ' || e.key === 'Enter') && (e.preventDefault(), flip())} style={{ padding: '16px 16px', display: 'flex', gap: 12, alignItems: 'center', cursor: 'pointer', borderColor: on ? 'var(--accent-line)' : undefined, background: on ? 'color-mix(in srgb, var(--accent) 6%, var(--panel))' : undefined }}>
             <span style={{ width: 34, height: 34, borderRadius: 9, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: on ? 'var(--accent-soft)' : 'var(--panel-2)', color: on ? 'var(--accent)' : 'var(--text-3)' }}>
               <Icon name={icon} size={17} />
             </span>
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'block', fontWeight: 600 }}>{t(label)}</span>
-              <span className="faint" style={{ fontSize: 12.5 }}>{t(sub)}</span>
+              <span className="faint" style={{ fontSize: 12 }}>{t(sub)}</span>
             </span>
             <Switch on={on} onChange={flip} label={t(label)} />
           </div>
@@ -220,7 +220,7 @@ function Trackers() {
   const value = s.profile.modules || ALL;
   return (
     <div style={{ padding: '16px 0' }}>
-      <div className="muted" style={{ marginBottom: 14 }}>{t('Turn off what you don’t use: it leaves the menus and the overview. Nothing is deleted.')}</div>
+      <div className="muted" style={{ marginBottom: 16 }}>{t('Turn off what you don’t use: it leaves the menus and the overview. Nothing is deleted.')}</div>
       <ModuleToggles value={value} onChange={(v) => save({ modules: v.length === ALL.length ? null : v })} />
     </div>
   );
@@ -278,14 +278,14 @@ function PasswordDialog({ onClose }: { onClose: () => void }) {
       }}
       footer={<FormFoot onCancel={onClose} busy={busy} saveLabel={t('Change password')} />}
     >
-      <div style={{ display: 'grid', gap: 14 }}>
+      <div style={{ display: 'grid', gap: 16 }}>
         <Field label={t('Current password')}>
           <input className="input" type="password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} required />
         </Field>
         <Field label={t('New password')} hint={t('At least 8 characters.')}>
           <input className="input" type="password" autoComplete="new-password" minLength={8} value={next} onChange={(e) => setNext(e.target.value)} required />
         </Field>
-        {err && <div style={{ color: 'var(--bad)', fontSize: 13 }}>{err}</div>}
+        {err && <div style={{ color: 'var(--bad)', fontSize: 14 }}>{err}</div>}
       </div>
     </Dialog>
   );
@@ -365,12 +365,12 @@ function DeleteDialog({ onClose, done }: { onClose: () => void; done: () => void
         </>
       }
     >
-      <div style={{ display: 'grid', gap: 14 }}>
+      <div style={{ display: 'grid', gap: 16 }}>
         <div className="muted">{t('Your habits, workouts, sleep, money and tasks are deleted from Orbit’s server. This can’t be undone.')}</div>
         <Field label={t('Your password, to confirm')}>
           <input className="input" type="password" value={pw} onChange={(e) => setPw(e.target.value)} required />
         </Field>
-        {err && <div style={{ color: 'var(--bad)', fontSize: 13 }}>{err}</div>}
+        {err && <div style={{ color: 'var(--bad)', fontSize: 14 }}>{err}</div>}
       </div>
     </Dialog>
   );
@@ -392,12 +392,12 @@ function Setup() {
   return (
     <div className="page" style={{ maxWidth: 760 }}>
       <div style={{ textAlign: 'center', margin: '24px 0 32px' }}>
-        <h1 className="page-title" style={{ fontSize: 30 }}>{t('Welcome to Orbit, {name}', { name: s.profile.name.split(' ')[0] || '' })}</h1>
-        <div className="page-sub" style={{ fontSize: 15 }}>{t('Two quick choices and you’re in. Both can be changed later in Settings.')}</div>
+        <h1 className="page-title" style={{ fontSize: 28 }}>{t('Welcome to Orbit, {name}', { name: s.profile.name.split(' ')[0] || '' })}</h1>
+        <div className="page-sub" style={{ fontSize: 16 }}>{t('Two quick choices and you’re in. Both can be changed later in Settings.')}</div>
       </div>
-      <div className="label" style={{ marginBottom: 10 }}>{t('What do you want to keep track of?')}</div>
+      <div className="label" style={{ marginBottom: 8 }}>{t('What do you want to keep track of?')}</div>
       <ModuleToggles value={mods} onChange={setMods} />
-      <div className="label" style={{ margin: '24px 0 10px' }}>{t('Your currency')}</div>
+      <div className="label" style={{ margin: '24px 0 8px' }}>{t('Your currency')}</div>
       <select className="select" style={{ maxWidth: 320 }} value={currency} onChange={(e) => setCurrency(e.target.value)}>
         {codes.map((c) => (
           <option key={c} value={c}>
@@ -406,7 +406,7 @@ function Setup() {
         ))}
       </select>
       <div className="row" style={{ marginTop: 32, justifyContent: 'flex-end' }}>
-        <Button kind="primary" onClick={go} style={{ height: 40, padding: '0 22px' }}>
+        <Button kind="primary" onClick={go} style={{ height: 40, padding: '0 24px' }}>
           {t('Start using Orbit')}
         </Button>
       </div>

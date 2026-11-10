@@ -55,16 +55,16 @@ export function Accounts() {
               <div style={{ height: 3, background: paint(a.color) }} />
               <div className="card-pad">
                 <div className="row">
-                  <span style={{ fontWeight: 620 }}>{tData(a.name)}</span>
+                  <span style={{ fontWeight: 600 }}>{tData(a.name)}</span>
                   <span className="badge">{tData(a.type)}</span>
                   <span className="spacer" />
                   <Button size="sm" kind="ghost" icon="edit" title={t('Edit')} onClick={() => open({ kind: 'account', account: a })} />
                 </div>
                 <div className="stat-value" style={{ color: a.balance < 0 ? 'var(--bad)' : undefined }}>{money0(a.balance)}</div>
-                <div className="faint" style={{ fontSize: 12.5, marginTop: 4 }}>
+                <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>
                   {a.smsBalanceTs ? t('Last reported by the bank {when}', { when: date(a.smsBalanceTs, { month: 'short', day: 'numeric' }) }) : tn(moved.length, '{n} transaction this month', '{n} transactions this month')}
                 </div>
-                <div className="row" style={{ marginTop: 14, gap: 8 }}>
+                <div className="row" style={{ marginTop: 16, gap: 8 }}>
                   <Button size="sm" onClick={() => nav(`/money/transactions?acc=${a.id}`)}>{t('Transactions')}</Button>
                   <Button size="sm" kind="ghost" icon="plus" onClick={() => open({ kind: 'txn', preset: { accId: a.id } })}>{t('Add')}</Button>
                 </div>
@@ -105,7 +105,7 @@ export function Budgets() {
         </div>
         <div style={{ flex: 1, maxWidth: 420 }}>
           <div className="stat-label">{tn(left, '{n} day left in the month', '{n} days left in the month')}</div>
-          <div className="bar" style={{ height: 10, marginTop: 14 }}>
+          <div className="bar" style={{ height: 10, marginTop: 16 }}>
             <span style={{ width: `${Math.min(100, (d.budgetSpent / Math.max(1, d.budgetTotal)) * 100)}%` }} />
           </div>
         </div>
@@ -131,12 +131,12 @@ export function Budgets() {
                   <tr key={b.id} className="click" onClick={() => open({ kind: 'budget', budget: s.budgets.find((x) => x.id === b.id) })}>
                     <td>
                       <span className="row">
-                        <span style={{ fontWeight: 560 }}>{tData(b.cat)}</span>
+                        <span style={{ fontWeight: 600 }}>{tData(b.cat)}</span>
                         {b.rollover && <span className="badge" title={t('Unspent money carries over')}>{t('Rolls over')}</span>}
                       </span>
                     </td>
                     <td>
-                      <span className="row" style={{ gap: 10 }}>
+                      <span className="row" style={{ gap: 8 }}>
                         <span className="bar" style={{ flex: 1, height: 8 }}>
                           <span style={{ width: `${Math.min(100, b.pct)}%`, background: over ? 'var(--bad)' : b.pct >= 80 ? 'var(--warn)' : undefined }} />
                         </span>
@@ -146,12 +146,12 @@ export function Budgets() {
                     <td className="r">{money0(b.spent)}</td>
                     <td className="r muted">
                       {money0(b.effLimit)}
-                      {b.carried > 0 && <span className="faint" style={{ display: 'block', fontSize: 11.5 }}>{t('+{amount} carried', { amount: money0(b.carried) })}</span>}
+                      {b.carried > 0 && <span className="faint" style={{ display: 'block', fontSize: 11 }}>{t('+{amount} carried', { amount: money0(b.carried) })}</span>}
                     </td>
                     <td className="r" style={{ color: over ? 'var(--bad)' : undefined, fontWeight: 600 }}>{over ? `−${money0(b.spent - b.effLimit)}` : money0(b.remaining)}</td>
                     <td>
                       {b.willExceed ? <span className="badge warn">{t('Over by month end')}</span> : over ? <span className="badge bad">{t('Over budget')}</span> : <span className="badge good">{t('On track')}</span>}
-                      <button className="link" style={{ marginInlineStart: 10, fontSize: 12.5 }} onClick={(e) => (e.stopPropagation(), nav(`/money/transactions?cat=${encodeURIComponent(b.cat)}&when=month`))}>
+                      <button className="link" style={{ marginInlineStart: 8, fontSize: 12 }} onClick={(e) => (e.stopPropagation(), nav(`/money/transactions?cat=${encodeURIComponent(b.cat)}&when=month`))}>
                         {t('See spending')}
                       </button>
                     </td>
@@ -186,20 +186,20 @@ export function Goals() {
           <div key={g.id} className="card card-pad hover-row" style={{ cursor: 'pointer' }} onClick={() => open({ kind: 'goal', goal: s.goals.find((x) => x.id === g.id) })}>
             <div className="row">
               <ColorDot c={g.color} size={10} />
-              <span style={{ fontWeight: 620, flex: 1 }} className="truncate">{tData(g.name)}</span>
-              <span className="num" style={{ fontWeight: 650 }}>{g.pct}%</span>
+              <span style={{ fontWeight: 600, flex: 1 }} className="truncate">{tData(g.name)}</span>
+              <span className="num" style={{ fontWeight: 600 }}>{g.pct}%</span>
             </div>
-            <div className="bar" style={{ height: 10, margin: '14px 0 10px' }}>
+            <div className="bar" style={{ height: 10, margin: '16px 0 8px' }}>
               <span style={{ width: `${g.pct}%`, background: paint(g.color) }} />
             </div>
-            <div className="row num" style={{ fontSize: 13 }}>
+            <div className="row num" style={{ fontSize: 14 }}>
               <span>
                 <b>{money0(g.current)}</b> <span className="faint">/ {money0(g.target)}</span>
               </span>
               <span className="spacer" />
               <span className="muted">{left > 0 ? t('{amount} to go', { amount: money0(left) }) : t('Reached')}</span>
             </div>
-            <div className="faint" style={{ fontSize: 12.5, marginTop: 8 }}>
+            <div className="faint" style={{ fontSize: 12, marginTop: 8 }}>
               {g.followsName ? t('Follows {account}', { account: tData(g.followsName) }) : t('Updated by hand')}
               {g.dueTs && left > 0 && months && ` · ${t('{amount} a month to make {date}', { amount: money0(left / months), date: date(g.dueTs, { month: 'short', year: 'numeric' }) })}`}
             </div>
@@ -256,7 +256,7 @@ export function Bills() {
                   <td>
                     <span className="row">
                       <Icon name={r.income ? 'arrowDown' : 'repeat'} size={14} style={{ color: r.income ? 'var(--good)' : 'var(--text-3)' }} />
-                      <span style={{ fontWeight: 560 }}>{tData(r.name)}</span>
+                      <span style={{ fontWeight: 600 }}>{tData(r.name)}</span>
                     </span>
                   </td>
                   <td className="muted">{tData(r.cat)}</td>
@@ -272,7 +272,7 @@ export function Bills() {
                       '—'
                     )}
                   </td>
-                  <td className="r" style={{ fontWeight: 620, color: r.income ? 'var(--good)' : undefined }}>{money0(r.amount)}</td>
+                  <td className="r" style={{ fontWeight: 600, color: r.income ? 'var(--good)' : undefined }}>{money0(r.amount)}</td>
                 </tr>
               );
             })}
@@ -311,11 +311,11 @@ export function Categories() {
             {list.map((c) => (
               <tr key={c.id} className="click" onClick={() => nav(`/money/transactions?cat=${encodeURIComponent(c.name)}`)}>
                 <td>
-                  <span className="row" style={{ gap: 10 }}>
+                  <span className="row" style={{ gap: 8 }}>
                     <span style={{ width: 28, height: 28, borderRadius: 7, background: `color-mix(in srgb, ${paint(c.color)} 16%, transparent)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                       <FinIcon icon={c.icon} color={paint(c.color)} size={15} />
                     </span>
-                    <span style={{ fontWeight: 540 }}>{tData(c.name)}</span>
+                    <span style={{ fontWeight: 500 }}>{tData(c.name)}</span>
                   </span>
                 </td>
                 <td className="r muted">{counts.get(c.name) || 0}</td>
