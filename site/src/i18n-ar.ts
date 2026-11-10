@@ -200,7 +200,6 @@ export const AR_SITE: Record<string, string | Plural> = {
   "Counters add things up: pages read, push-ups, glasses of water.": "العدّادات تجمع الأشياء: صفحات مقروءة، تمارين ضغط، أكواب ماء.",
   "Added {n}": "أُضيف {n}",
   "Other amount": "مقدار آخر",
-  "Latest entries": "أحدث الإدخالات",
   "Habits done": "العادات المُتمّة",
   "Sleep a night": "النوم في الليلة",
   "Earlier": "الأقدم",
