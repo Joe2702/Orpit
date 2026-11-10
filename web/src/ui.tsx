@@ -7,9 +7,9 @@ export const S = (s: CSSProperties) => s; // identity helper for readability
 
 export function chip(active: boolean, col: string): CSSProperties {
   return {
-    padding: '10px 16px',
+    padding: '8px 16px',
     borderRadius: 'calc(12px * var(--sq))',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: 600,
     cursor: 'pointer',
     transition: 'all .15s',
@@ -50,6 +50,7 @@ export function BackButton({ onClick }: { onClick: () => void }) {
   return (
     <div role="button" tabIndex={0} aria-label={t('Back')}
       onClick={onClick}
+      className="hit"
       style={{
         width: 38,
         height: 38,
@@ -87,10 +88,10 @@ export function SectionLabel({
   // Sentence case, in the text colour. Small spaced-out capitals over every
   // group is the most recognisable mark of a component-library screen.
   return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '6px 2px 10px', ...style }}>
-      <div style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 650, letterSpacing: '-.01em', color: 'var(--text)' }}>{children}</div>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '8px 2px 8px', ...style }}>
+      <div style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, letterSpacing: '-.01em', color: 'var(--text)' }}>{children}</div>
       {action && (
-        <span tabIndex={0} onClick={action.onClick} role="button" style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer', flex: 'none' }}>
+        <span tabIndex={0} onClick={action.onClick} role="button" className="hit" style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer', flex: 'none' }}>
           {action.label}
         </span>
       )}
@@ -101,12 +102,12 @@ export function SectionLabel({
 export function DetailHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   const { go, back } = useStore();
   return (
-    <div style={{ marginBottom: 18 }}>
+    <div style={{ marginBottom: 16 }}>
       <BackButton onClick={back} />
-      <div className="display" style={{ fontSize: 38, lineHeight: 1.05, color: 'var(--text)', marginTop: 14 }}>
+      <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--text)', marginTop: 16 }}>
         {title}
       </div>
-      {subtitle && <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 4 }}>{subtitle}</div>}
+      {subtitle && <div style={{ fontSize: 15, color: 'var(--text2)', marginTop: 4 }}>{subtitle}</div>}
     </div>
   );
 }
@@ -136,7 +137,7 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
       role="button"
       aria-label={label}
       aria-disabled={!enabled}
-      className={enabled ? 'press92' : undefined}
+      className={enabled ? 'press92 hit' : 'hit'}
       style={{
         width: 40,
         height: 36,
@@ -154,7 +155,7 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
     </div>
   );
   return (
-    <div style={{ marginBottom: 18 }}>
+    <div style={{ marginBottom: 16 }}>
       <div
         role="tablist"
         style={{
@@ -162,7 +163,7 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
           gap: 2,
           background: 'color-mix(in srgb, var(--text) 5%, transparent)',
           borderRadius: 'calc(13px * var(--sq))',
-          padding: 3,
+          padding: 4,
         }}
       >
         {items.map((r) => (
@@ -171,16 +172,17 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
             role="tab"
             aria-selected={range === r}
             onClick={() => setRange(r)}
+            className="hit"
             style={{
               flex: 1,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              // 44px is the smallest reliable touch target. This is the control
-              // people reach for on every stats screen.
+              // 40px on screen; the .hit area takes the touch target to 44px.
+              // This is the control people reach for on every stats screen.
               minHeight: 40,
               borderRadius: 'calc(10px * var(--sq))',
-              fontSize: 13.5,
+              fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
               transition: 'background .2s, color .2s',
@@ -197,8 +199,8 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
         <div style={{ display: 'flex', alignItems: 'center', marginTop: 8 }}>
           {range !== 'All' && navBtn('l', period.hasPrev, () => setRangeOffset(rangeOffset + 1), t('Previous period'))}
           <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }} aria-live="polite">
-            <div style={{ fontSize: 14, fontWeight: 650, color: 'var(--text)', letterSpacing: '-.01em' }}>{period.title}</div>
-            <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>{period.caption}</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', letterSpacing: '-.01em' }}>{period.title}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{period.caption}</div>
           </div>
           {range !== 'All' && navBtn('r', !period.isCurrent, () => setRangeOffset(rangeOffset - 1), t('Next period'))}
         </div>
@@ -229,7 +231,7 @@ export function TrackerAction({ label, onClick }: { color?: string; label: strin
         marginBottom: 16,
         cursor: 'pointer',
         fontSize: 15,
-        fontWeight: 650,
+        fontWeight: 600,
         color: 'var(--indigo)',
         background: 'color-mix(in srgb, var(--indigo) 11%, var(--surface))',
         border: '1px solid color-mix(in srgb, var(--indigo) 18%, transparent)',
@@ -282,7 +284,7 @@ export function Stat({
       </div>
       {/* Labels wrap rather than truncate: at the largest text size a
           three-column row has about 60px per label. */}
-      <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 5, lineHeight: 1.25, overflowWrap: 'break-word' }}>{label}</div>
+      <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4, lineHeight: 1.25, overflowWrap: 'break-word' }}>{label}</div>
     </div>
   );
 }
@@ -336,22 +338,22 @@ export function ChartCard({
   style?: CSSProperties;
 }) {
   return (
-    <Card style={{ padding: '16px 18px 14px', marginBottom: 12, ...style }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-        <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: 'var(--text2)' }}>{title}</div>
+    <Card style={{ padding: '16px 16px 16px', marginBottom: 12, ...style }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <div style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{title}</div>
         {action && (
-          <span tabIndex={0} onClick={action.onClick} role="button" style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
+          <span tabIndex={0} onClick={action.onClick} role="button" className="hit" style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
             {action.label}
           </span>
         )}
       </div>
       {(value != null || note) && (
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-          {value != null && <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.035em', color: 'var(--text)' }}>{value}</div>}
-          {note && <div style={{ fontSize: 12.5, color: 'var(--text2)' }}>{note}</div>}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+          {value != null && <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-.035em', color: 'var(--text)' }}>{value}</div>}
+          {note && <div style={{ fontSize: 13, color: 'var(--text2)' }}>{note}</div>}
         </div>
       )}
-      <div style={{ marginTop: 18 }}>{children}</div>
+      <div style={{ marginTop: 16 }}>{children}</div>
     </Card>
   );
 }
@@ -375,7 +377,7 @@ export function Avatar({
   return (
     <div role="button" tabIndex={0}
       onClick={onClick}
-      className={onClick ? 'press96' : undefined}
+      className={onClick ? 'press96 hit' : undefined}
       style={{
         width: size,
         height: size,
@@ -386,15 +388,14 @@ export function Avatar({
         alignItems: 'center',
         justifyContent: 'center',
         color: 'var(--text)',
-        fontWeight: 650,
+        fontWeight: 600,
         fontSize: size * 0.38,
         flex: 'none',
-        overflow: 'hidden',
         cursor: onClick ? 'pointer' : 'default',
       }}
     >
       {src ? (
-        <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
       ) : (
         avatarInitial(name)
       )}

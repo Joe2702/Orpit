@@ -37,7 +37,7 @@ export function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 18,
+        gap: 16,
         padding: '0 32px',
       }}
     >
@@ -46,7 +46,7 @@ export function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
       <button
         onClick={ask}
         className="press"
-        style={{ marginTop: 8, background: '#f0f0f3', color: '#0c0c0f', border: 'none', height: 52, padding: '0 34px', borderRadius: 'calc(16px * var(--sq))', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}
+        style={{ marginTop: 8, background: '#f0f0f3', color: '#0c0c0f', border: 'none', height: 52, padding: '0 32px', borderRadius: 'calc(16px * var(--sq))', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
       >
         {t('Unlock')}
       </button>

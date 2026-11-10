@@ -51,23 +51,23 @@ export function HabitCalendarSheet() {
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '6px 0 18px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0 16px' }}>
         <span style={{ width: 12, height: 12, borderRadius: '50%', background: col, flex: 'none' }} />
-        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{habit?.name || t('Habit')}</div>
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{habit?.name || t('Habit')}</div>
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
-        <div style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '13px 15px' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: col }}>{count}</div>
-          <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>{t('this month')}</div>
+        <div style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '12px 16px' }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: col }}>{count}</div>
+          <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2 }}>{t('this month')}</div>
         </div>
-        <div style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '13px 15px' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)' }}>{doneDays.size}</div>
-          <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>{t('all time')}</div>
+        <div style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '12px 16px' }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{doneDays.size}</div>
+          <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2 }}>{t('all time')}</div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div role="button" tabIndex={0} aria-label={t('Previous month')} onClick={() => setOffset(offset + 1)} className="press92" style={{ width: 36, height: 36, borderRadius: 'calc(10px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path className="flip-rtl" d="M11 4l-5 5 5 5" /></svg>
         </div>
@@ -77,12 +77,12 @@ export function HabitCalendarSheet() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 6, marginBottom: 6 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 8, marginBottom: 8 }}>
         {WD.map((d, i) => (
           <div key={i} style={{ textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text2)' }}>{d}</div>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 6 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 8 }}>
         {cells.map((day, i) => {
           if (day == null) return <div key={i} />;
           const ds = `${year}-${pad(mo + 1)}-${pad(day)}`;
@@ -120,7 +120,7 @@ export function HabitCalendarSheet() {
         })}
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 16, textAlign: 'center', lineHeight: 1.5 }}>
+      <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 16, textAlign: 'center', lineHeight: 1.5 }}>
         {t('Tap a day to check it off or clear it, including days you forgot to log.')}
       </div>
     </div>

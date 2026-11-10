@@ -40,14 +40,14 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
 
   return (
     <div style={{ padding: '4px 20px 28px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 6px' }}>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '8px 0 8px' }}>
         {t('Report {v}', { v: name.split(' ')[0] })}
       </div>
       <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.6, marginBottom: 20 }}>
         {t('This goes to Orbit for review, along with a copy of your messages. You will stop being partners straight away and will not be matched with each other again.')}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('What happened?')}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{t('What happened?')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
         {REPORT_REASONS.map((r) => {
           const on = reason === r.key;
@@ -61,7 +61,7 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
                 border: `1.5px solid ${on ? 'var(--danger)' : 'var(--border)'}`,
                 background: on ? 'color-mix(in srgb,var(--danger) 9%,transparent)' : 'var(--bg)',
                 color: on ? 'var(--danger)' : 'var(--text)',
-                borderRadius: 'calc(13px * var(--sq))', padding: '13px 14px', fontSize: 14.5, fontWeight: 600, cursor: 'pointer',
+                borderRadius: 'calc(13px * var(--sq))', padding: '12px 16px', fontSize: 15, fontWeight: 600, cursor: 'pointer',
               }}
             >
               {r.label}
@@ -70,7 +70,7 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
         })}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>
         {t('Anything else? (optional)')}
       </div>
       <textarea
@@ -80,8 +80,8 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
         rows={4}
         style={{
           width: '100%', borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)',
-          padding: '13px 15px', fontSize: 15, color: 'var(--text)', outline: 'none', resize: 'none',
-          fontFamily: 'inherit', lineHeight: 1.45, marginBottom: 22,
+          padding: '12px 16px', fontSize: 15, color: 'var(--text)', outline: 'none', resize: 'none',
+          fontFamily: 'inherit', lineHeight: 1.45, marginBottom: 24,
         }}
       />
 
@@ -92,7 +92,7 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
         aria-disabled={!reason}
         style={{
           height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 16, fontWeight: 700, color: '#fff', cursor: reason ? 'pointer' : 'default',
+          fontSize: 15, fontWeight: 700, color: '#fff', cursor: reason ? 'pointer' : 'default',
           background: reason ? 'var(--danger)' : 'color-mix(in srgb,var(--danger) 40%,var(--surface))',
         }}
       >

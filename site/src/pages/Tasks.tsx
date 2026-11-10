@@ -88,13 +88,13 @@ export function Tasks() {
           <div className="menu-sep" style={{ margin: '8px 4px' }} />
           <div className="menu-label">{t('Lists')}</div>
           {s.todoLists.map((l) => side(`/tasks/${l.id}`, <ColorDot c={l.color} size={9} />, tData(l.name), openTodos.filter((x) => x.listId === l.id).length))}
-          {s.todoLists.length === 0 && <div className="faint" style={{ padding: '6px 10px', fontSize: 13 }}>{t('No lists yet')}</div>}
+          {s.todoLists.length === 0 && <div className="faint" style={{ padding: '8px 8px', fontSize: 14 }}>{t('No lists yet')}</div>}
         </nav>
 
         <div className="card">
           <div className="card-head">
             {list && <ColorDot c={list.color} size={10} />}
-            <span className="card-title" style={{ fontSize: 15 }}>{title_}</span>
+            <span className="card-title" style={{ fontSize: 16 }}>{title_}</span>
             <span className="card-sub">{shown.length}</span>
             <span className="spacer" />
             {list && (
@@ -120,7 +120,7 @@ export function Tasks() {
             )}
           </div>
           {target ? (
-            <form onSubmit={(e) => (e.preventDefault(), add())} className="row" style={{ padding: '12px 18px', borderBottom: '1px solid var(--line-soft)', gap: 8 }}>
+            <form onSubmit={(e) => (e.preventDefault(), add())} className="row" style={{ padding: '12px 16px', borderBottom: '1px solid var(--line-soft)', gap: 8 }}>
               <div className="input-wrap" style={{ flex: 1 }}>
                 <Icon name="plus" size={15} />
                 <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={list ? t('Add a task to {list}, press Enter', { list: tData(list.name) }) : t('Add a task, press Enter')} />
@@ -135,7 +135,7 @@ export function Tasks() {
               {t('Work, groceries, uni: lists keep tasks apart.')}
             </Empty>
           )}
-          {target && shown.length === 0 && <div className="faint" style={{ padding: '26px 18px', textAlign: 'center' }}>{view === 'today' ? t('Nothing due today.') : t('Nothing here. Add one above.')}</div>}
+          {target && shown.length === 0 && <div className="faint" style={{ padding: '24px 16px', textAlign: 'center' }}>{view === 'today' ? t('Nothing due today.') : t('Nothing here. Add one above.')}</div>}
           {shown.map((x) => (
             <div key={x.id} className="list-row hover-row" style={{ cursor: 'pointer' }} onClick={() => open({ kind: 'task', task: x })}>
               <Check round on={false} onChange={() => setDone(x, true)} label={x.title} />
@@ -157,7 +157,7 @@ export function Tasks() {
           ))}
           {done.length > 0 && (
             <>
-              <div style={{ padding: '10px 18px', borderTop: '1px solid var(--line-soft)' }}>
+              <div style={{ padding: '8px 16px', borderTop: '1px solid var(--line-soft)' }}>
                 <button className="link" onClick={() => setShowDone(!showDone)}>
                   {showDone ? t('Hide completed') : tn(done.length, 'Show {n} completed', 'Show {n} completed')}
                 </button>

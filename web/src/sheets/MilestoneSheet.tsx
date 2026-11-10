@@ -8,11 +8,11 @@ import { elapsed, formatElapsed } from '../lib/since';
 import { t } from '../i18n';
 
 const label = (text: string) => (
-  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{text}</div>
+  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{text}</div>
 );
 const input: React.CSSProperties = {
   width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)',
-  background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none',
+  background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none',
 };
 const swatch = (c: string, active: boolean): React.CSSProperties => ({
   width: 38, height: 38, borderRadius: '50%', cursor: 'pointer', flex: 'none',
@@ -69,7 +69,7 @@ export function MilestoneSheet() {
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '6px 0 20px' }}>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '8px 0 20px' }}>
         {editId ? t('Edit milestone') : t('Counting since')}
       </div>
 
@@ -108,19 +108,19 @@ export function MilestoneSheet() {
         onChange={(e) => e.target.value && setSince(e.target.value)}
         style={{ ...input, fontWeight: 600 }}
       />
-      <div style={{ fontSize: 13, color: preview ? 'var(--text)' : 'var(--text2)', fontWeight: 600, margin: '10px 2px 20px', minHeight: 18 }}>
+      <div style={{ fontSize: 13, color: preview ? 'var(--text)' : 'var(--text2)', fontWeight: 600, margin: '8px 2px 20px', minHeight: 18 }}>
         {preview}
       </div>
 
       {label(t('Colour'))}
-      <div style={{ display: 'flex', gap: 14, marginBottom: 20, paddingInlineStart: 2 }}>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 20, paddingInlineStart: 2 }}>
         {['indigo', 'teal', 'coral', 'blue', 'emerald', 'warning'].map((c) => (
           <div role="button" tabIndex={0} aria-pressed={color === c} aria-label={c} key={c} onClick={() => setColor(c)} style={{ ...swatch(c, color === c), width: 34, height: 34 }} />
         ))}
       </div>
 
       {label(t('Icon'))}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 9, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 8, marginBottom: 24 }}>
         {CTR_ICONS.map((ic) => (
           <div role="button" tabIndex={0} aria-label={ic} aria-pressed={icon === ic}
             key={ic}
@@ -143,7 +143,7 @@ export function MilestoneSheet() {
         style={{
           background: canSave ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))',
           color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: canSave ? 'pointer' : 'default',
+          justifyContent: 'center', fontSize: 15, fontWeight: 700, cursor: canSave ? 'pointer' : 'default',
         }}
       >
         {editId ? t('Save changes') : t('Start counting')}
@@ -155,7 +155,7 @@ export function MilestoneSheet() {
           style={{
             height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15,
-            fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 10,
+            fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginTop: 8,
           }}
         >
           <IconTrash />{t('Remove')}

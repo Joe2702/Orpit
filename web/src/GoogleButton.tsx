@@ -65,8 +65,8 @@ export function GoogleButton() {
   };
 
   return (
-    <div style={{ marginTop: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '0 0 14px', color: 'var(--text2)', fontSize: 12.5 }}>
+    <div style={{ marginTop: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '0 0 16px', color: 'var(--text2)', fontSize: 13 }}>
         <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
         {t('or')}
         <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
@@ -80,7 +80,7 @@ export function GoogleButton() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 11,
+              gap: 12,
               width: 300,
               height: 48,
               borderRadius: 999,

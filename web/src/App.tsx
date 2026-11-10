@@ -288,9 +288,9 @@ function SheetBody() {
 
 function StatusBar() {
   return (
-    <div style={{ height: 54, flex: 'none', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 30px 9px', zIndex: 60 }}>
+    <div style={{ height: 54, flex: 'none', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 32px 8px', zIndex: 60 }}>
       <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', letterSpacing: '.01em' }}>9:41</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: 'var(--text)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text)' }}>
         <svg width="18" height="12" style={{ display: 'block', fill: 'currentColor' }}>
           <rect x="0" y="8" width="3" height="4" rx="1" />
           <rect x="5" y="5.5" width="3" height="6.5" rx="1" />
@@ -394,7 +394,7 @@ function TabBar({ scroller }: { scroller: React.RefObject<HTMLDivElement | null>
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 3,
+          gap: 4,
           cursor: 'pointer',
           color: active ? 'var(--indigo)' : 'var(--text)',
           textShadow: 'var(--glass-label-glow)',
@@ -404,7 +404,7 @@ function TabBar({ scroller }: { scroller: React.RefObject<HTMLDivElement | null>
         <svg width="22" height="22" viewBox="0 0 24 24" style={{ flex: 'none', fill: 'none', stroke: 'currentColor', strokeWidth: active ? 2.2 : 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
           {path}
         </svg>
-        {!folded && <span style={{ fontSize: 10.5, fontWeight: active ? 680 : 580, letterSpacing: '.01em', whiteSpace: 'nowrap' }}>{label}</span>}
+        {!folded && <span style={{ fontSize: 11, fontWeight: active ? 700 : 500, letterSpacing: '.01em', whiteSpace: 'nowrap' }}>{label}</span>}
       </div>
     );
   };
@@ -412,8 +412,8 @@ function TabBar({ scroller }: { scroller: React.RefObject<HTMLDivElement | null>
   return (
     // The row ignores taps (pointerEvents none) so the space between the
     // capsule and + doesn't block the screen; only the glass is interactive.
-    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 16px 18px', zIndex: 40, pointerEvents: 'none' }}>
-      <div style={{ display: 'flex', alignItems: 'stretch', gap: 10, height: 62 }}>
+    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 16px 16px', zIndex: 40, pointerEvents: 'none' }}>
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: 8, height: 62 }}>
         <div
           ref={capsule}
           role="tablist"
@@ -514,10 +514,10 @@ function PasswordPrompt() {
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
       <div onClick={() => closePassword(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
-      <div className="glass-strong" data-lens="dialog" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease' }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em', textAlign: 'center' }}>{passwordState.title}</div>
+      <div className="glass-strong" data-lens="dialog" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '24px 24px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease' }}>
+        <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em', textAlign: 'center' }}>{passwordState.title}</div>
         {passwordState.message && (
-          <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5, textAlign: 'center' }}>{passwordState.message}</div>
+          <div style={{ fontSize: 15, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5, textAlign: 'center' }}>{passwordState.message}</div>
         )}
         <input
           type="password"
@@ -526,9 +526,9 @@ function PasswordPrompt() {
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && value && closePassword(value)}
           placeholder={t('Your password')}
-          style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginTop: 18 }}
+          style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginTop: 16 }}
         />
-        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <div role="button" tabIndex={0} onClick={() => closePassword(null)} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
             {t('Cancel')}
           </div>
@@ -579,13 +579,13 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
     >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', animation: 'fadeUp .6s ease' }}>
         {/* The mark from the launcher icon, its sun going round while it loads. */}
-        <OrbitMark size={96} spin={!error} style={{ marginBottom: 30 }} />
+        <OrbitMark size={96} spin={!error} style={{ marginBottom: 32 }} />
 
-        <div className="display" style={{ fontSize: 44, lineHeight: 1 }}>{t('Orbit')}</div>
+        <div className="display" style={{ fontSize: 40, lineHeight: 1 }}>{t('Orbit')}</div>
 
         {error ? (
-          <div style={{ textAlign: 'center', marginTop: 18 }}>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,.85)', marginBottom: 14, maxWidth: 270, lineHeight: 1.5 }}>
+          <div style={{ textAlign: 'center', marginTop: 16 }}>
+            <div style={{ fontSize: 15, color: 'rgba(255,255,255,.85)', marginBottom: 16, maxWidth: 270, lineHeight: 1.5 }}>
               {!apiBase
                 ? t('This build has no backend address, so it can never reach the server. It needs to be rebuilt with the backend URL.')
                 : offline
@@ -595,14 +595,14 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
             {/* Which backend this build actually points at. Without it, a build
                 configured with the wrong URL — or none at all — is invisible and
                 looks exactly like a server that won't wake up. */}
-            <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.6)', marginBottom: 16, maxWidth: 280, wordBreak: 'break-all', lineHeight: 1.45 }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,.6)', marginBottom: 16, maxWidth: 280, wordBreak: 'break-all', lineHeight: 1.45 }}>
               {apiBase || t('no backend URL configured')}
             </div>
-            <div role="button" tabIndex={0} onClick={onRetry} className="press" style={{ display: 'inline-flex', background: '#f0f0f3', color: '#0c0c0f', height: 46, padding: '0 26px', borderRadius: 'calc(14px * var(--sq))', alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px -10px rgba(0,0,0,.4)' }}>{t('Try again')}</div>
+            <div role="button" tabIndex={0} onClick={onRetry} className="press" style={{ display: 'inline-flex', background: '#f0f0f3', color: '#0c0c0f', height: 46, padding: '0 24px', borderRadius: 'calc(14px * var(--sq))', alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 10px 24px -10px rgba(0,0,0,.4)' }}>{t('Try again')}</div>
           </div>
         ) : (
           <>
-            <div style={{ width: 120, height: 3, borderRadius: 999, overflow: 'hidden', marginTop: 26, background: 'rgba(255,255,255,.2)' }}>
+            <div style={{ width: 120, height: 3, borderRadius: 999, overflow: 'hidden', marginTop: 24, background: 'rgba(255,255,255,.2)' }}>
               <div style={{ width: '40%', height: '100%', borderRadius: 999, background: '#fff', animation: 'loadBar 1.3s ease-in-out infinite' }} />
             </div>
             {slow && (
@@ -1056,7 +1056,7 @@ export function App() {
   }
 
   const pill = (active: boolean): React.CSSProperties => ({
-    padding: '7px 17px',
+    padding: '8px 16px',
     borderRadius: 999,
     fontSize: 13,
     fontWeight: 600,
@@ -1083,7 +1083,7 @@ export function App() {
         style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', position: 'relative', WebkitOverflowScrolling: 'touch', paddingBottom: showTabs ? 84 : 0 }}
       >
         {pull > 0 && (
-          <div style={{ height: pull, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', fontSize: 12.5, fontWeight: 600 }}>
+          <div style={{ height: pull, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', fontSize: 13, fontWeight: 600 }}>
             {refreshing ? t('Refreshing…') : pull > 64 ? t('Release to refresh') : t('Pull to refresh')}
           </div>
         )}
@@ -1099,8 +1099,13 @@ export function App() {
         </div>
       </div>
 
+      {/* Messages rise from the bottom, just above the tab bar where there is
+          one, so Undo is where the thumb already is and nothing covers a
+          page's title or back button. Taps go straight through to whatever is
+          underneath (a Save button, say) except on Undo itself. With a sheet
+          open the bottom is the sheet's, so they show at the top instead. */}
       {toast && (
-        <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, color: 'var(--text)', padding: '11px 20px', borderRadius: (toast || '').length > 40 ? 'calc(18px * var(--sq))' : 999, fontSize: 14, fontWeight: 600, lineHeight: 1.4, animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, width: 'max-content', maxWidth: 'calc(100% - 32px)', whiteSpace: 'normal' }} className="glass-strong" data-lens="toast">
+        <div style={{ position: 'absolute', ...(sheet ? { top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66 } : { bottom: showTabs ? 92 : 24 }), pointerEvents: 'none', left: 0, right: 0, marginInline: 'auto', zIndex: 95, color: 'var(--text)', padding: '12px 20px', borderRadius: (toast || '').length > 40 ? 'calc(18px * var(--sq))' : 999, fontSize: 15, fontWeight: 600, lineHeight: 1.4, animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 8, width: 'max-content', maxWidth: 'calc(100% - 32px)', whiteSpace: 'normal' }} className="glass-strong" data-lens="toast">
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <path d="M4 9.5l3.4 3.4L14 5" />
           </svg>
@@ -1110,7 +1115,8 @@ export function App() {
               onClick={runUndo}
               role="button"
               aria-label={t('Undo')}
-              style={{ marginInlineStart: 4, paddingInlineStart: 12, borderInlineStart: '1px solid var(--border)', fontWeight: 700, color: 'var(--indigo)', cursor: 'pointer' }}
+              className="hit"
+              style={{ pointerEvents: 'auto',marginInlineStart: 4, paddingInlineStart: 12, borderInlineStart: '1px solid var(--border)', fontWeight: 700, color: 'var(--indigo)', cursor: 'pointer' }}
             >
               {t('Undo')}
             </span>
@@ -1125,7 +1131,7 @@ export function App() {
         <div style={{ position: 'absolute', inset: 0, zIndex: 90, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: mobile ? '0 8px calc(8px + env(safe-area-inset-bottom))' : '0 8px 8px' }}>
           <div onClick={closeSheet} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .25s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
           <div className="glass-strong" data-lens="sheet" style={{ position: 'relative', borderRadius: 'calc(36px * var(--sq))', animation: 'sheetUp .34s cubic-bezier(.22,1,.36,1)', maxHeight: '92%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 2px', flex: 'none' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 2px', flex: 'none' }}>
               <div style={{ width: 38, height: 4, borderRadius: 999, background: 'var(--border)' }} />
             </div>
             <div style={{ overflowY: 'auto', paddingBottom: 4, borderRadius: '0 0 calc(36px * var(--sq)) calc(36px * var(--sq))' }}>
@@ -1140,10 +1146,10 @@ export function App() {
       {exitPrompt && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 98, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
           <div onClick={cancelExit} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
-          <div className="glass-strong" data-lens="dialog" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease', textAlign: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>{t('Exit Orbit?')}</div>
-            <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>{t('Are you sure you want to close the app?')}</div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+          <div className="glass-strong" data-lens="dialog" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '24px 24px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease', textAlign: 'center' }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>{t('Exit Orbit?')}</div>
+            <div style={{ fontSize: 15, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>{t('Are you sure you want to close the app?')}</div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
               <div role="button" tabIndex={0} onClick={cancelExit} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
                 {t('Stay')}
               </div>
@@ -1158,12 +1164,12 @@ export function App() {
       {confirmState && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 99, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
           <div onClick={() => closeConfirm(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
-          <div className="glass-strong" data-lens="dialog" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '26px 22px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease', textAlign: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>{confirmState.title}</div>
+          <div className="glass-strong" data-lens="dialog" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '24px 24px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease', textAlign: 'center' }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>{confirmState.title}</div>
             {confirmState.message && (
-              <div dir="auto" style={{ fontSize: 14, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5, whiteSpace: 'pre-line', overflowWrap: 'anywhere', maxHeight: '50vh', overflowY: 'auto' }}>{confirmState.message}</div>
+              <div dir="auto" style={{ fontSize: 15, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5, whiteSpace: 'pre-line', overflowWrap: 'anywhere', maxHeight: '50vh', overflowY: 'auto' }}>{confirmState.message}</div>
             )}
-            <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+            <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
               <div role="button" tabIndex={0} onClick={() => closeConfirm(false)} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
                 {t('Cancel')}
               </div>
@@ -1220,7 +1226,7 @@ export function App() {
   // Desktop: pretty phone-mockup showcase.
   return (
     <div className="stage">
-      <div style={{ display: 'flex', gap: 4, alignItems: 'center', background: 'rgba(255,255,255,.7)', backdropFilter: 'blur(8px)', borderRadius: 999, padding: 5, boxShadow: '0 2px 12px rgba(20,21,30,.12)' }}>
+      <div style={{ display: 'flex', gap: 4, alignItems: 'center', background: 'rgba(255,255,255,.7)', backdropFilter: 'blur(8px)', borderRadius: 999, padding: 4, boxShadow: '0 2px 12px rgba(20,21,30,.12)' }}>
         <div role="button" tabIndex={0} aria-pressed={theme === 'light'} onClick={() => setTheme('light')} style={pill(theme === 'light')}>{t('Light')}</div>
         <div role="button" tabIndex={0} aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')} style={pill(theme === 'dark')}>{t('Dark')}</div>
         {/* Someone who chose the phone layout on a computer gets back to the desktop site here. */}

@@ -28,6 +28,28 @@ interface Item {
   stay?: boolean;
 }
 
+// What was searched for last, kept on this device. The phone app's search
+// uses the same key, so on one browser the two share their history.
+const RECENT_KEY = 'orbit_recent_searches';
+function readRecent(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+    return Array.isArray(v) ? v.filter((x) => typeof x === 'string').slice(0, 5) : [];
+  } catch {
+    return [];
+  }
+}
+function remember(term: string) {
+  const v = term.trim();
+  if (v.length < 2) return;
+  try {
+    const next = [v, ...readRecent().filter((x) => x.toLowerCase() !== v.toLowerCase())].slice(0, 5);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    /* private mode: nothing is kept */
+  }
+}
+
 const norm = (s: string) =>
   s
     .toLowerCase()
@@ -174,7 +196,7 @@ export function Palette({ initial, onClose, showHelp }: { initial: string; onClo
           alt: `${x.cat} ${tData(x.cat)} ${x.note || ''} ${Math.abs(x.amount)}`,
           icon: 'money',
           hint: (
-            <span className="faint num" style={{ fontSize: 12.5 }}>
+            <span className="faint num" style={{ fontSize: 12 }}>
               {date(x.ts, { month: 'short', day: 'numeric' })} · <b style={{ color: 'var(--text)' }}>{money(x.amount)}</b>
             </span>
           ),
@@ -202,10 +224,20 @@ export function Palette({ initial, onClose, showHelp }: { initial: string; onClo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, q]);
 
+  // Before anything is typed, the last few searches come first: one click
+  // runs one again.
+  const recent = useMemo(() => readRecent(), []);
+  const view: Item[] =
+    words.length || !recent.length
+      ? shown
+      : [...recent.map((r, i): Item => ({ id: `recent${i}`, group: t('Recent searches'), label: r, icon: 'clock', run: () => setQ(r), stay: true })), ...shown];
+
   useEffect(() => setAt(0), [q]);
   useEffect(() => list.current?.querySelector('[data-on="1"]')?.scrollIntoView({ block: 'nearest' }), [at]);
   const run = (it?: Item) => {
     if (!it) return;
+    // A search that led somewhere is worth offering again next time.
+    if (!it.stay) remember(q);
     if (!it.stay) onClose();
     void it.run();
   };
@@ -220,25 +252,25 @@ export function Palette({ initial, onClose, showHelp }: { initial: string; onClo
         aria-modal
         aria-label={t('Search or jump to…')}
         onKeyDown={(e) => {
-          if (e.key === 'ArrowDown') (e.preventDefault(), setAt((i) => Math.min(shown.length - 1, i + 1)));
+          if (e.key === 'ArrowDown') (e.preventDefault(), setAt((i) => Math.min(view.length - 1, i + 1)));
           else if (e.key === 'ArrowUp') (e.preventDefault(), setAt((i) => Math.max(0, i - 1)));
-          else if (e.key === 'Enter') (e.preventDefault(), run(shown[at]));
+          else if (e.key === 'Enter') (e.preventDefault(), run(view[at]));
           else if (e.key === 'Escape') (e.preventDefault(), onClose());
         }}
       >
         <div className="palette-input">
           <Icon name="search" size={18} />
-          <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Search pages, actions, habits, tasks and payments…')} aria-activedescendant={shown[at] ? `pi-${shown[at].id}` : undefined} />
+          <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Search pages, actions, habits, tasks and payments…')} aria-activedescendant={view[at] ? `pi-${view[at].id}` : undefined} />
           <Kbd>Esc</Kbd>
         </div>
         <div className="palette-list" ref={list} role="listbox">
-          {shown.length === 0 && <div className="empty" style={{ padding: 28 }}>{t('Nothing found for “{q}”', { q })}</div>}
-          {shown.map((it, i) => {
+          {view.length === 0 && <div className="empty" style={{ padding: 28 }}>{t('Nothing found for “{q}”', { q })}</div>}
+          {view.map((it, i) => {
             const head = it.group !== last ? it.group : null;
             last = it.group;
             return (
               <React.Fragment key={it.id}>
-                {head && <div className="menu-label" style={{ padding: '10px 10px 4px' }}>{head}</div>}
+                {head && <div className="menu-label" style={{ padding: '8px 8px 4px' }}>{head}</div>}
                 <div id={`pi-${it.id}`} role="option" aria-selected={i === at} data-on={i === at ? '1' : '0'} className={`menu-item${i === at ? ' on' : ''}`} style={{ height: 38 }} onMouseMove={() => i !== at && setAt(i)} onClick={() => run(it)}>
                   <Icon name={it.icon} size={16} style={i === at ? { color: 'var(--accent)' } : undefined} />
                   <span className="truncate" style={{ flex: 1 }}>{it.label}</span>

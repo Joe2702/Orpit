@@ -10,13 +10,13 @@ const btn = (primary: boolean): React.CSSProperties => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontSize: 15.5,
+  fontSize: 15,
   fontWeight: 700,
   cursor: 'pointer',
   background: primary ? 'var(--indigo)' : 'var(--surface)',
   color: primary ? 'var(--on-accent)' : 'var(--text)',
   border: primary ? 'none' : '1px solid var(--border)',
-  marginTop: 10,
+  marginTop: 8,
 });
 
 /**
@@ -94,24 +94,24 @@ export function HealthSheet() {
     showToast(t('Stopped syncing'));
   };
 
-  const P = ({ children }: { children: React.ReactNode }) => <div style={{ fontSize: 14.5, color: 'var(--text2)', lineHeight: 1.55, marginBottom: 12 }}>{children}</div>;
+  const P = ({ children }: { children: React.ReactNode }) => <div style={{ fontSize: 15, color: 'var(--text2)', lineHeight: 1.55, marginBottom: 12 }}>{children}</div>;
   const step = (n: number, text: string) => (
-    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 10 }}>
+    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 8 }}>
       <span style={{ width: 24, height: 24, borderRadius: '50%', flex: 'none', background: 'color-mix(in srgb, var(--indigo) 15%, transparent)', color: 'var(--indigo)', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{n}</span>
-      <span style={{ fontSize: 14.5, color: 'var(--text)', lineHeight: 1.5 }}>{text}</span>
+      <span style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.5 }}>{text}</span>
     </div>
   );
 
   return (
-    <div style={{ padding: '6px 20px 32px' }}>
-      <div className="display" style={{ fontSize: 30, lineHeight: 1.1, color: 'var(--text)', margin: '6px 2px 12px' }}>{t('Sleep and workouts from Fitbit')}</div>
+    <div style={{ padding: '8px 20px 32px' }}>
+      <div className="display" style={{ fontSize: 28, lineHeight: 1.1, color: 'var(--text)', margin: '8px 2px 12px' }}>{t('Sleep and workouts from Fitbit')}</div>
       <P>{t('Fitbit saves your sleep and workouts to Health Connect on this phone. Orbit reads them from there, so you never log them twice. Orbit only reads: it changes nothing in Fitbit or Health Connect.')}</P>
 
       {avail && !avail.ok && (
         <>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '14px 16px', marginBottom: 6 }}>
-            <div style={{ fontSize: 15, fontWeight: 650, color: 'var(--text)' }}>{t('Health Connect isn’t ready on this phone')}</div>
-            <div style={{ fontSize: 13.5, color: 'var(--text2)', marginTop: 4, lineHeight: 1.5 }}>{t('It’s built into Android 14 and later. On older phones, install or update it from the Play Store, then come back.')}</div>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '16px 16px', marginBottom: 8 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Health Connect isn’t ready on this phone')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4, lineHeight: 1.5 }}>{t('It’s built into Android 14 and later. On older phones, install or update it from the Play Store, then come back.')}</div>
           </div>
           <div role="button" tabIndex={0} onClick={() => openHealthSettings()} className="press99" style={btn(true)}>
             {t('Get Health Connect')}
@@ -121,7 +121,7 @@ export function HealthSheet() {
 
       {avail?.ok && !prefs.on && (
         <>
-          <div style={{ margin: '8px 0 14px' }}>
+          <div style={{ margin: '8px 0 16px' }}>
             {step(1, t('In the Fitbit app, open your profile, then settings, and turn on Health Connect.'))}
             {step(2, t('Tap Connect below and allow Sleep and Exercise.'))}
           </div>
@@ -133,23 +133,23 @@ export function HealthSheet() {
 
       {avail?.ok && prefs.on && (
         <>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '14px 16px', margin: '6px 0 6px' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '16px 16px', margin: '8px 0 8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: granted && !granted.sleep && !granted.workouts ? 'var(--danger)' : 'var(--success)' }} />
-              <span style={{ fontSize: 15, fontWeight: 650, color: 'var(--text)' }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                 {granted && !granted.sleep && !granted.workouts ? t('Permission was taken away') : t('Connected')}
               </span>
             </div>
-            <div style={{ fontSize: 13.5, color: 'var(--text2)', marginTop: 4, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4, lineHeight: 1.5 }}>
               {prefs.lastSync ? t('Last synced {when}', { when: ago(prefs.lastSync) }) : t('Not synced yet')}
               {' · '}
               {tn(imported.nights, 'one night', '{n} nights')}, {tn(imported.workouts, 'one workout', '{n} workouts')}
             </div>
             {granted && (!granted.sleep || !granted.workouts) && (granted.sleep || granted.workouts) && (
-              <div style={{ fontSize: 13, color: 'var(--warning)', marginTop: 6 }}>{granted.sleep ? t('Exercise isn’t allowed, so workouts aren’t synced.') : t('Sleep isn’t allowed, so nights aren’t synced.')}</div>
+              <div style={{ fontSize: 13, color: 'var(--warning)', marginTop: 8 }}>{granted.sleep ? t('Exercise isn’t allowed, so workouts aren’t synced.') : t('Sleep isn’t allowed, so nights aren’t synced.')}</div>
             )}
           </div>
-          <div style={{ fontSize: 12.5, color: 'var(--text3)', lineHeight: 1.5, margin: '8px 2px 6px' }}>
+          <div style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.5, margin: '8px 2px 8px' }}>
             {t('Orbit syncs whenever you open it. Sleep quality for an imported night is estimated from its sleep stages; edit the night to change it.')}
           </div>
           <div role="button" tabIndex={0} aria-disabled={busy} onClick={busy ? undefined : () => sync(false)} className="press99" style={{ ...btn(true), opacity: busy ? 0.6 : 1 }}>
@@ -158,10 +158,10 @@ export function HealthSheet() {
           <div role="button" tabIndex={0} onClick={() => openHealthSettings()} className="press99" style={btn(false)}>
             {t('Manage permissions')}
           </div>
-          <div role="button" tabIndex={0} onClick={disconnect} style={{ textAlign: 'center', fontSize: 14, fontWeight: 600, color: 'var(--danger)', marginTop: 16, cursor: 'pointer' }}>
+          <div role="button" tabIndex={0} onClick={disconnect} style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: 'var(--danger)', marginTop: 16, cursor: 'pointer' }}>
             {t('Stop syncing')}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', marginTop: 6 }}>{t('What’s already imported stays.')}</div>
+          <div style={{ fontSize: 13, color: 'var(--text3)', textAlign: 'center', marginTop: 8 }}>{t('What’s already imported stays.')}</div>
         </>
       )}
     </div>

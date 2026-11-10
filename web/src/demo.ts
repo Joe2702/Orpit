@@ -323,7 +323,7 @@ export function installDemo(): void {
     top: 'calc(env(safe-area-inset-top, 0px) + 10px)',
     transform: 'translateX(-50%)',
     zIndex: '1000',
-    padding: '7px 13px',
+    padding: '8px 12px',
     borderRadius: '999px',
     background: 'rgba(19,19,23,.88)',
     color: '#f0f0f3',

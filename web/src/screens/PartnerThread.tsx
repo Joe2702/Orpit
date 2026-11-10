@@ -78,20 +78,20 @@ export function PartnerThread({ module }: { module: string | null }) {
   };
 
   return (
-    <div style={{ padding: '6px 20px 20px', animation: 'fadeIn .35s ease', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '2px 0 18px' }}>
+    <div style={{ padding: '8px 20px 20px', animation: 'fadeIn .35s ease', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '2px 0 16px' }}>
         <BackButton onClick={() => go('partner')} />
-        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>
           {p ? p.name.split(' ')[0] : t('Messages')}
         </div>
       </div>
 
       {notes.length === 0 ? (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', padding: '24px 18px', textAlign: 'center', color: 'var(--text2)', fontSize: 13.5, lineHeight: 1.6 }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', padding: '24px 16px', textAlign: 'center', color: 'var(--text2)', fontSize: 13, lineHeight: 1.6 }}>
           {t('Nothing here yet. A short, specific note lands better than a general one — “you’ve missed two days of workouts” beats “keep going”.')}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
           {notes.map((n) => (
             <Bubble key={n.id} n={n} mine={n.mine} />
           ))}
@@ -100,9 +100,9 @@ export function PartnerThread({ module }: { module: string | null }) {
       )}
 
       {/* Composer */}
-      <div style={{ position: 'sticky', bottom: 0, paddingTop: 14, marginTop: 14 }}>
+      <div style={{ position: 'sticky', bottom: 0, paddingTop: 16, marginTop: 16 }}>
         {addressable.length === 0 ? (
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '14px 16px', fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.55 }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '16px 16px', fontSize: 13, color: 'var(--text2)', lineHeight: 1.55 }}>
             {t('You can’t send anything yet. {name} needs to open a tracker for comments, or you both need to turn on free chat.', {
               name: p ? p.name.split(' ')[0] : t('Your partner'),
             })}
@@ -112,7 +112,7 @@ export function PartnerThread({ module }: { module: string | null }) {
             {/* Where this message is going. Shown always, not just when there is
                 a choice: a note that silently attaches itself to a tracker the
                 sender didn't mean is a small, confusing kind of wrong. */}
-            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8 }}>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
               {addressable.map((a) => {
                 const on = a === to;
                 return (
@@ -121,7 +121,7 @@ export function PartnerThread({ module }: { module: string | null }) {
                     onClick={() => setTo(a)}
                     className="press99"
                     style={{
-                      flex: 'none', fontSize: 12.5, fontWeight: 600, padding: '6px 11px', borderRadius: 999, cursor: 'pointer',
+                      flex: 'none', fontSize: 13, fontWeight: 600, padding: '8px 12px', borderRadius: 999, cursor: 'pointer',
                       border: `1.5px solid ${on ? 'var(--indigo)' : 'var(--border)'}`,
                       color: on ? 'var(--indigo)' : 'var(--text2)',
                       background: on ? 'color-mix(in srgb,var(--indigo) 10%,transparent)' : 'var(--surface)',
@@ -132,7 +132,7 @@ export function PartnerThread({ module }: { module: string | null }) {
                 );
               })}
             </div>
-            <div style={{ display: 'flex', gap: 9, alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value.slice(0, 500))}
@@ -140,7 +140,7 @@ export function PartnerThread({ module }: { module: string | null }) {
                 rows={1}
                 style={{
                   flex: 1, minWidth: 0, minHeight: 48, maxHeight: 120, borderRadius: 'calc(16px * var(--sq))', border: '1px solid var(--border)',
-                  background: 'var(--surface)', padding: '13px 15px', fontSize: 15, color: 'var(--text)', outline: 'none',
+                  background: 'var(--surface)', padding: '12px 16px', fontSize: 15, color: 'var(--text)', outline: 'none',
                   resize: 'none', fontFamily: 'inherit', lineHeight: 1.4,
                 }}
               />
@@ -179,16 +179,16 @@ function Bubble({ n, mine }: { n: PartnerNote; mine: boolean }) {
           borderRadius: 'calc(18px * var(--sq))',
           borderEndEndRadius: mine ? 6 : 18,
           borderEndStartRadius: mine ? 18 : 6,
-          padding: '10px 14px',
+          padding: '8px 16px',
         }}
       >
         {n.module && (
-          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.05em', textTransform: 'uppercase', opacity: mine ? 0.75 : 0.6, marginBottom: 3 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase', opacity: mine ? 0.75 : 0.6, marginBottom: 4 }}>
             {MODULE_LABEL[n.module] ? t(MODULE_LABEL[n.module]) : n.module}
           </div>
         )}
-        <div style={{ fontSize: 14.5, lineHeight: 1.45, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{n.body}</div>
-        <div style={{ fontSize: 10.5, opacity: mine ? 0.7 : 0.55, marginTop: 4, textAlign: 'end' }}>
+        <div style={{ fontSize: 15, lineHeight: 1.45, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{n.body}</div>
+        <div style={{ fontSize: 11, opacity: mine ? 0.7 : 0.55, marginTop: 4, textAlign: 'end' }}>
           {date(n.ts, { hour: 'numeric', minute: '2-digit' })}
         </div>
       </div>

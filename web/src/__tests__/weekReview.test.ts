@@ -24,11 +24,29 @@ describe('week review', () => {
     expect(w.topCat).toBe('Groceries');
     expect([w.habitDone, w.habitPlanned]).toEqual([4, 7]);
     expect(w.weakestHabit).toBe('Read');
+    expect(w.steadyHabit).toBeNull();
     expect(w.workouts).toBe(1);
     expect(w.avgSleep).toBe(7.5);
     // Day by day, oldest first: Talabat 3 days ago, Carrefour 2, Talabat 1.
     expect(w.daily).toEqual([0, 0, 0, 200, 900, 300, 0]);
     expect(w.daily.reduce((a, b) => a + b, 0)).toBe(w.spent);
+  });
+
+  it('names a habit kept on every planned day, the most planned first', () => {
+    const habit = (id: string, name: string, days: string) => ({ id, name, days, archived: false, paused: false, locked: false });
+    const done = (id: string, n: number[]) => n.map((d) => ({ habitId: id, day: dayKey(SUN - d * DAY) }));
+    const s = {
+      txns: [],
+      // Gym three planned days, all done; Read every day, all done; Walk every day, one missed.
+      habits: [habit('g', 'Gym', '0101010'), habit('r', 'Read', '1111111'), habit('w', 'Walk', '1111111')],
+      checkins: [...done('g', [1, 3, 5]), ...done('r', [0, 1, 2, 3, 4, 5, 6]), ...done('w', [0, 1, 2, 3, 4, 5])],
+      workouts: [],
+      nights: [],
+    } as unknown as AppState;
+    expect(summariseWeek(s, SUN).steadyHabit).toBe('Read');
+    // Two planned days isn't much of a week: not named.
+    const light = { ...s, habits: [habit('g', 'Gym', '0100010')], checkins: done('g', [1, 5]) } as unknown as AppState;
+    expect(summariseWeek(light, SUN).steadyHabit).toBeNull();
   });
 
   it('is offered from Saturday noon to the end of Monday', () => {

@@ -44,7 +44,7 @@ function GoogleSignIn() {
   if (!GOOGLE) return null;
   return (
     <>
-      <div className="row" style={{ gap: 12, margin: '6px 0' }}>
+      <div className="row" style={{ gap: 12, margin: '8px 0' }}>
         <span style={{ flex: 1, height: 1, background: 'var(--line)' }} />
         <span className="faint" style={{ fontSize: 12 }}>{t('or')}</span>
         <span style={{ flex: 1, height: 1, background: 'var(--line)' }} />
@@ -73,36 +73,36 @@ function Showcase() {
       </div>
       <div style={{ position: 'relative', marginTop: 'auto', maxWidth: 520 }}>
         <h1 style={{ fontSize: 40, lineHeight: 1.1, letterSpacing: '-0.03em', fontWeight: 700, margin: 0 }}>{t('Your habits, health and money, on the big screen.')}</h1>
-        <p style={{ color: 'rgba(244,244,245,.65)', fontSize: 15.5, lineHeight: 1.6, margin: '16px 0 0' }}>{t('The same account as the Orbit app on your phone. Whatever you log here is on your phone a moment later, and the other way round.')}</p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22, marginTop: 36 }}>
+        <p style={{ color: 'rgba(244,244,245,.65)', fontSize: 16, lineHeight: 1.6, margin: '16px 0 0' }}>{t('The same account as the Orbit app on your phone. Whatever you log here is on your phone a moment later, and the other way round.')}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 36 }}>
           {points.map(([ic, h, p]) => (
             <div key={h}>
-              <div className="row" style={{ gap: 9, fontWeight: 620 }}>
+              <div className="row" style={{ gap: 8, fontWeight: 600 }}>
                 <span style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,.07)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
                   <Icon name={ic} size={15} />
                 </span>
                 {h}
               </div>
-              <div style={{ color: 'rgba(244,244,245,.58)', fontSize: 13, lineHeight: 1.55, marginTop: 7 }}>{p}</div>
+              <div style={{ color: 'rgba(244,244,245,.58)', fontSize: 14, lineHeight: 1.55, marginTop: 8 }}>{p}</div>
             </div>
           ))}
         </div>
       </div>
-      <div aria-hidden style={{ position: 'relative', marginTop: 40, display: 'flex', gap: 14 }}>
+      <div aria-hidden style={{ position: 'relative', marginTop: 40, display: 'flex', gap: 16 }}>
         <div style={{ flex: 1, borderRadius: 12, background: 'rgba(255,255,255,.045)', border: '1px solid rgba(255,255,255,.08)', padding: 16 }}>
-          <div style={{ fontSize: 11.5, color: 'rgba(244,244,245,.55)' }}>{t('Habits this week')}</div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 54, marginTop: 10 }}>
+          <div style={{ fontSize: 11, color: 'rgba(244,244,245,.55)' }}>{t('Habits this week')}</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 54, marginTop: 8 }}>
             {bars.map((b, i) => (
               <span key={i} style={{ flex: 1, height: `${b * 100}%`, borderRadius: '3px 3px 0 0', background: i === 6 ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 50%, transparent)' }} />
             ))}
           </div>
         </div>
         <div style={{ flex: 1, borderRadius: 12, background: 'rgba(255,255,255,.045)', border: '1px solid rgba(255,255,255,.08)', padding: 16 }}>
-          <div style={{ fontSize: 11.5, color: 'rgba(244,244,245,.55)' }}>{t('Left to spend today')}</div>
-          <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginTop: 8 }} className="num">
+          <div style={{ fontSize: 11, color: 'rgba(244,244,245,.55)' }}>{t('Left to spend today')}</div>
+          <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', marginTop: 8 }} className="num">
             {getLang() === 'ar' ? '٨٠٠ ج.م' : 'E£800'}
           </div>
-          <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,.1)', marginTop: 10 }}>
+          <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,.1)', marginTop: 8 }}>
             <div style={{ width: '62%', height: '100%', borderRadius: 3, background: 'var(--accent)' }} />
           </div>
         </div>
@@ -140,12 +140,12 @@ export default function Auth() {
 }
 
 const Head = ({ title, sub }: { title: string; sub?: React.ReactNode }) => (
-  <div style={{ marginBottom: 26 }}>
-    <h2 style={{ fontSize: 26, fontWeight: 680, letterSpacing: '-0.025em', margin: 0 }}>{title}</h2>
-    {sub && <div className="muted" style={{ marginTop: 6 }}>{sub}</div>}
+  <div style={{ marginBottom: 24 }}>
+    <h2 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.025em', margin: 0 }}>{title}</h2>
+    {sub && <div className="muted" style={{ marginTop: 8 }}>{sub}</div>}
   </div>
 );
-const Err = ({ msg }: { msg: string }) => (msg ? <div style={{ color: 'var(--bad)', fontSize: 13 }}>{msg}</div> : null);
+const Err = ({ msg }: { msg: string }) => (msg ? <div style={{ color: 'var(--bad)', fontSize: 14 }}>{msg}</div> : null);
 
 function useSubmit() {
   const [busy, setBusy] = useState(false);
@@ -190,7 +190,7 @@ function SignIn() {
           <span className="row">
             {t('Password')}
             <span className="spacer" />
-            <Link to="/forgot" className="link" style={{ fontSize: 12.5 }}>
+            <Link to="/forgot" className="link" style={{ fontSize: 12 }}>
               {t('Forgot it?')}
             </Link>
           </span>

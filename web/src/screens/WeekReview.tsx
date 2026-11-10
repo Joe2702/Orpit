@@ -33,9 +33,12 @@ export function WeekReview() {
   ].filter((x): x is string => !!x);
 
   // Only true things, and only good ones: a closing line that scolds is the
-  // part of the week people would remember.
+  // part of the week people would remember. Something about the person
+  // (a habit they never dropped) comes before a percentage about the plan.
   const good =
-    habitPct != null && habitPct >= 70
+    w.steadyHabit
+      ? t('You didn’t miss {habit} once this week.', { habit: tData(w.steadyHabit) })
+      : habitPct != null && habitPct >= 70
       ? t('You kept {n}% of your habit plan.', { n: habitPct })
       : w.spentBefore > 0 && diff < 0
         ? t('You spent {amount} less than the week before.', { amount: money0(-diff) })
@@ -51,25 +54,25 @@ export function WeekReview() {
     go('home');
   };
 
-  const section = (title: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', margin: '0 2px 9px' }}>{title}</div>;
+  const section = (title: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', margin: '0 2px 8px' }}>{title}</div>;
 
   return (
-    <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
+    <div style={{ padding: '8px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
         <BackButton onClick={back} />
-        <div className="display" style={{ flex: 1, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>{t('Your week')}</div>
+        <div className="display" style={{ flex: 1, fontSize: 34, lineHeight: 1.1, color: 'var(--text)' }}>{t('Your week')}</div>
       </div>
-      <div style={{ fontSize: 13.5, color: 'var(--text2)', margin: '0 2px 20px' }}>
+      <div style={{ fontSize: 13, color: 'var(--text2)', margin: '0 2px 20px' }}>
         {fmt(w.from)} – {fmt(w.to)}
       </div>
 
       {section(t('Money'))}
-      <Card style={{ padding: '16px 18px', marginBottom: 18, animation: 'cardIn .55s cubic-bezier(.2,.8,.2,1) .05s both' }}>
-        <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)' }}>
+      <Card style={{ padding: '16px 16px', marginBottom: 16, animation: 'cardIn .55s cubic-bezier(.2,.8,.2,1) .05s both' }}>
+        <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)' }}>
           <RollingText text={t('{amount} spent', { amount: money0(w.spent) })} delay={0.15} />
         </div>
         {w.spentBefore > 0 && diff !== 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, color: 'var(--text2)', marginTop: 4, animation: 'storyRise .5s ease .6s both' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', marginTop: 4, animation: 'storyRise .5s ease .6s both' }}>
             <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', transform: diff > 0 ? 'none' : 'rotate(180deg)' }}>
               <path d="M6 10V2M2.5 5.5L6 2l3.5 3.5" />
             </svg>
@@ -78,9 +81,9 @@ export function WeekReview() {
         )}
         {w.spent > 0 && <DayBars daily={w.daily} from={w.from} />}
         {w.topPlaces.length > 0 && (
-          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
             {w.topPlaces.map((p, k) => (
-              <div key={p.name} style={{ position: 'relative', display: 'flex', fontSize: 14, padding: '6px 10px', borderRadius: 10, overflow: 'hidden' }}>
+              <div key={p.name} style={{ position: 'relative', display: 'flex', fontSize: 15, padding: '8px 8px', borderRadius: 10, overflow: 'hidden' }}>
                 {/* Each place's share of the biggest, filling in behind it. */}
                 <span
                   aria-hidden
@@ -108,22 +111,22 @@ export function WeekReview() {
       </Card>
 
       {d.reviewCount > 0 && (
-        <div tabIndex={0} onClick={() => go('freview')} className="press99" role="button" style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '12px 14px', marginBottom: 18, cursor: 'pointer', animation: 'cardIn .55s cubic-bezier(.2,.8,.2,1) .12s both' }}>
-          <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600, color: 'var(--text)' }}>
+        <div tabIndex={0} onClick={() => go('freview')} className="press99" role="button" style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: '12px 16px', marginBottom: 16, cursor: 'pointer', animation: 'cardIn .55s cubic-bezier(.2,.8,.2,1) .12s both' }}>
+          <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
             {tn(d.reviewCount, 'One payment to check', '{n} payments to check')}
           </span>
-          <span style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--indigo)' }}>{t('Check')}</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)' }}>{t('Check')}</span>
         </div>
       )}
 
       {section(t('You'))}
-      <Card style={{ padding: '16px 14px', marginBottom: 18, animation: 'cardIn .55s cubic-bezier(.2,.8,.2,1) .18s both' }}>
+      <Card style={{ padding: '16px 16px', marginBottom: 16, animation: 'cardIn .55s cubic-bezier(.2,.8,.2,1) .18s both' }}>
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${1 + (habitPct != null ? 1 : 0) + (w.avgSleep != null ? 1 : 0)}, minmax(0, 1fr))`, gap: 8, textAlign: 'center' }}>
           {habitPct != null && (
             <div>
               <HabitRing pct={habitPct} />
-              <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--text)', marginTop: 8 }}>{t('Habits')}</div>
-              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>{t('{habitDone} of {habitPlanned} planned', { habitDone: w.habitDone, habitPlanned: w.habitPlanned })}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginTop: 8 }}>{t('Habits')}</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('{habitDone} of {habitPlanned} planned', { habitDone: w.habitDone, habitPlanned: w.habitPlanned })}</div>
             </div>
           )}
           <Stat value={num(w.workouts)} label={t('Workouts')} delay={0.35} />
@@ -132,7 +135,7 @@ export function WeekReview() {
       </Card>
 
       {section(t('One thing for next week'))}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
         {ideas.map((i, k) => (
           <div role="button" tabIndex={0} aria-pressed={pick === i && !own}
             key={i}
@@ -152,15 +155,15 @@ export function WeekReview() {
         onChange={(e) => setOwn(e.target.value)}
         placeholder={t('Or write your own')}
         maxLength={120}
-        style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 22 }}
+        style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 24 }}
       />
 
       {good && (
-        <div style={{ fontSize: 15, color: 'var(--text)', textAlign: 'center', marginBottom: 14 }}>
+        <div style={{ fontSize: 15, color: 'var(--text)', textAlign: 'center', marginBottom: 16 }}>
           <RisingWords text={good} delay={0.6} step={0.05} />
         </div>
       )}
-      <div tabIndex={0} onClick={done} className="press" role="button" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>
+      <div tabIndex={0} onClick={done} className="press" role="button" style={{ background: 'var(--indigo)', color: 'var(--on-accent)', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
         {t('Done')}
       </div>
     </div>
@@ -173,7 +176,7 @@ function DayBars({ daily, from }: { daily: number[]; from: number }) {
   return (
     <div aria-hidden style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 86, marginTop: 16 }}>
       {daily.map((v, k) => (
-        <div key={k} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' }}>
+        <div key={k} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, height: '100%', justifyContent: 'flex-end' }}>
           <div
             style={{
               width: '100%',
@@ -221,7 +224,7 @@ function HabitRing({ pct }: { pct: number }) {
           style={{ transition: 'stroke-dashoffset 1.3s cubic-bezier(.16,1,.3,1)' }}
         />
       </svg>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
         <RollingText text={`${num(pct)}%`} delay={0.25} />
       </div>
     </div>
@@ -232,10 +235,10 @@ function Stat({ value, label, delay }: { value: string; label: string; delay: nu
   return (
     <div>
       {/* "7h 24m" fits at 26px; "٧ س ٢٤ د" needs a little less to stay on one line. */}
-      <div style={{ height: 66, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: value.length > 6 ? 20 : 26, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', whiteSpace: 'nowrap' }}>
+      <div style={{ height: 66, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: value.length > 6 ? 22 : 28, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', whiteSpace: 'nowrap' }}>
         <RollingText text={value} delay={delay} />
       </div>
-      <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--text)', marginTop: 8 }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginTop: 8 }}>{label}</div>
     </div>
   );
 }

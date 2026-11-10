@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore, useData } from '../store';
 import { useOpen } from '../forms/host';
 import { api } from '../api';
 import { enabled } from '@core/lib/modules';
 import { derive } from '@core/lib/derive';
+import { dayCompleteLine } from '@core/lib/dayComplete';
 import { dayKey, greeting, hm, minutes, money, money0, moneyShort, fmtClock } from '@core/lib/format';
 import { dueNow, lastList } from '@core/lib/todos';
 import { assistantUnread } from '@core/lib/assistant';
@@ -16,6 +17,9 @@ import { Icon, type IconName } from '../ui/Icon';
 import { BarChart, RankBars, SleepSchedule, Spark } from '../charts/charts';
 import { addDays, byCategory, change, dailySpend, habitHeatmap, mask, perfectRun, sleepNights, startOfDay, startOfMonth, startOfWeek, streakOf, trainingWeeks } from '../lib/series';
 import { ColorDot } from '../forms/forms';
+
+/** Directions of the sparks thrown off when today's list is finished. */
+const SPARKS = [0, 45, 90, 135, 180, 225, 270, 315];
 
 export function Overview() {
   const s = useData();
@@ -79,8 +83,22 @@ export function Overview() {
   const recent = [...s.txns].sort((a, b) => b.ts - a.ts).slice(0, 7);
   const brief = assistantUnread(s.assistantBrief) ? s.assistantBrief : null;
 
+  // Ticking today's last habit is the high point of the day here, as on the
+  // phone: a banner with a small burst and one true line about the person.
+  // Opening the page on a finished day shows the banner without the burst.
+  const allDone = planned.length > 0 && doneN === planned.length;
+  const dayLine = useMemo(() => dayCompleteLine(s), [s]);
+  const [burst, setBurst] = useState(false);
+  const burstTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(burstTimer.current), []);
+
   const toggle = (habitId: string, dayTs: number) => {
     const key = dayKey(dayTs);
+    if (key === todayKey && !doneToday.has(habitId) && planned.some((h) => h.id === habitId) && doneN === planned.length - 1) {
+      setBurst(true);
+      clearTimeout(burstTimer.current);
+      burstTimer.current = setTimeout(() => setBurst(false), 1600);
+    }
     mutate(
       (st) => {
         const has = st.checkins.some((c) => c.habitId === habitId && c.day === key);
@@ -99,33 +117,47 @@ export function Overview() {
   if (on('habits'))
     kpis.push({ key: 'h', icon: 'habits', label: t('Habits today'), value: planned.length ? t('{done} of {total}', { done: doneN, total: planned.length }) : '—', sub: run > 0 ? tn(run, '{n} perfect day in a row', '{n} perfect days in a row') : t('Nothing missed yet today'), spark: habitSpark, to: '/habits' });
   if (on('finances'))
-    kpis.push({ key: 'm', icon: 'money', label: t('Spent this month'), value: money0(d.spentThisMonth), sub: <span className="row" style={{ gap: 6 }}><Delta pct={change(d.spentThisMonth, spentLastSoFar)} goodWhenUp={false} />{t('vs. this point last month')}</span>, spark: monthCum, to: '/money' });
+    kpis.push({ key: 'm', icon: 'money', label: t('Spent this month'), value: money0(d.spentThisMonth), sub: <span className="row" style={{ gap: 8 }}><Delta pct={change(d.spentThisMonth, spentLastSoFar)} goodWhenUp={false} />{t('vs. this point last month')}</span>, spark: monthCum, to: '/money' });
   if (on('sleep'))
-    kpis.push({ key: 's', icon: 'sleep', label: t('Sleep, last 7 nights'), value: sleep7 != null ? hm(sleep7) : '—', sub: sleep7 != null && sleepPrev != null ? <span className="row" style={{ gap: 6 }}><Delta pct={change(sleep7, sleepPrev)} />{t('vs. the week before')}</span> : t('Average a night'), spark: nights.map((n) => n.hours ?? 0), to: '/fitness/sleep' });
+    kpis.push({ key: 's', icon: 'sleep', label: t('Sleep, last 7 nights'), value: sleep7 != null ? hm(sleep7) : '—', sub: sleep7 != null && sleepPrev != null ? <span className="row" style={{ gap: 8 }}><Delta pct={change(sleep7, sleepPrev)} />{t('vs. the week before')}</span> : t('Average a night'), spark: nights.map((n) => n.hours ?? 0), to: '/fitness/sleep' });
   if (on('workouts'))
-    kpis.push({ key: 'w', icon: 'fitness', label: t('Training this week'), value: minutes(wk.minutes), sub: <span className="row" style={{ gap: 6 }}><Delta pct={change(wk.minutes, prev4)} />{t('vs. your 4-week average')}</span>, spark: weeks.map((w) => w.minutes), to: '/fitness' });
+    kpis.push({ key: 'w', icon: 'fitness', label: t('Training this week'), value: minutes(wk.minutes), sub: <span className="row" style={{ gap: 8 }}><Delta pct={change(wk.minutes, prev4)} />{t('vs. your 4-week average')}</span>, spark: weeks.map((w) => w.minutes), to: '/fitness' });
 
   return (
     <div className="page">
       <div className="page-head">
         <div style={{ flex: 1 }}>
-          <div className="faint" style={{ fontSize: 13, fontWeight: 520 }}>{date(now, { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+          <div className="faint" style={{ fontSize: 14, fontWeight: 500 }}>{date(now, { weekday: 'long', month: 'long', day: 'numeric' })}</div>
           <h1 className="page-title" style={{ fontSize: 28, marginTop: 2 }}>
             {s.profile.name ? t('{greeting}, {name}', { greeting: greeting(), name: s.profile.name.split(' ')[0] }) : greeting()}
           </h1>
         </div>
         {d.safe && on('finances') && (
-          <div className="card" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="card" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
             <Icon name="wallet" size={18} style={{ color: 'var(--accent)' }} />
             <div>
               <div className="faint" style={{ fontSize: 12 }}>{t('Safe to spend today')}</div>
-              <div className="num" style={{ fontWeight: 650, fontSize: 15 }}>
-                {money0(Math.max(0, d.safe.perDay))} <span className="faint" style={{ fontWeight: 500, fontSize: 12.5 }}>· {tn(d.safe.daysLeft, '{n} day left', '{n} days left')}</span>
+              <div className="num" style={{ fontWeight: 600, fontSize: 16 }}>
+                {money0(Math.max(0, d.safe.perDay))} <span className="faint" style={{ fontWeight: 500, fontSize: 12 }}>· {tn(d.safe.daysLeft, '{n} day left', '{n} days left')}</span>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {allDone && on('habits') && (
+        <div className="banner daydone" data-burst={burst ? '' : undefined} role="status" style={{ marginBottom: 16 }}>
+          <span className="daydone-badge" aria-hidden>
+            <Icon name="check" size={14} />
+            {SPARKS.map((a) => (
+              <i key={a} className="daydone-spark" style={{ ['--a' as string]: `${a}deg` }} />
+            ))}
+          </span>
+          <span style={{ flex: 1 }}>
+            <b>{t('Today’s list is done.')}</b> <span className="daydone-line">{dayLine.text}</span>
+          </span>
+        </div>
+      )}
 
       {brief && (
         <div className="banner" style={{ marginBottom: 16, cursor: 'pointer' }} onClick={() => nav('/insights')}>
@@ -151,7 +183,7 @@ export function Overview() {
                 </div>
                 {k.spark && <Spark values={k.spark} width={96} />}
               </div>
-              <div className="faint" style={{ fontSize: 12.5, marginTop: 8 }}>
+              <div className="faint" style={{ fontSize: 12, marginTop: 8 }}>
                 {k.sub}
               </div>
             </div>
@@ -197,7 +229,7 @@ export function Overview() {
                           <td>
                             <span className="row">
                               <ColorDot c={h.color} />
-                              <span className="truncate" style={{ maxWidth: 260, fontWeight: 520 }}>{tData(h.name)}</span>
+                              <span className="truncate" style={{ maxWidth: 260, fontWeight: 500 }}>{tData(h.name)}</span>
                             </span>
                           </td>
                           {days.map((x) => {
@@ -235,7 +267,7 @@ export function Overview() {
               <button className="link" onClick={() => nav('/tasks')}>{t('All tasks')}</button>
             </div>
             <div style={{ flex: 1 }}>
-              {tasks.length === 0 && <div className="faint" style={{ padding: '18px 18px 8px', fontSize: 13.5 }}>{t('Nothing due. A clear day.')}</div>}
+              {tasks.length === 0 && <div className="faint" style={{ padding: '16px 16px 8px', fontSize: 14 }}>{t('Nothing due. A clear day.')}</div>}
               {tasks.map((x) => {
                 const late = x.due && x.due < todayKey;
                 return (
@@ -304,20 +336,20 @@ export function Overview() {
                   />
                 )}
                 {d.budgets.length > 0 && (
-                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--line-soft)', display: 'grid', gap: 10 }}>
+                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line-soft)', display: 'grid', gap: 8 }}>
                     {[...d.budgets]
                       .sort((a, b) => b.pct - a.pct)
                       .slice(0, 3)
                       .map((b) => (
                         <div key={b.id} style={{ cursor: 'pointer' }} onClick={() => nav('/money/budgets')}>
-                          <div className="row" style={{ fontSize: 12.5 }}>
-                            <span style={{ fontWeight: 560 }}>{tData(b.cat)}</span>
+                          <div className="row" style={{ fontSize: 12 }}>
+                            <span style={{ fontWeight: 600 }}>{tData(b.cat)}</span>
                             <span className="spacer" />
                             <span className="num" style={{ color: b.pct >= 100 ? 'var(--bad)' : 'var(--text-2)' }}>
                               {money0(b.spent)} / {money0(b.effLimit)}
                             </span>
                           </div>
-                          <div className="bar" style={{ marginTop: 6 }}>
+                          <div className="bar" style={{ marginTop: 8 }}>
                             <span style={{ width: `${Math.min(100, b.pct)}%`, background: b.pct >= 100 ? 'var(--bad)' : b.pct >= 80 ? 'var(--warn)' : undefined }} />
                           </div>
                         </div>
@@ -391,7 +423,7 @@ export function Overview() {
                           </td>
                           <td>
                             <span className="row">
-                              <span style={{ fontWeight: 560 }}>{x.name}</span>
+                              <span style={{ fontWeight: 600 }}>{x.name}</span>
                               {x.review && <span className="badge accent">{t('Check')}</span>}
                             </span>
                           </td>
@@ -415,7 +447,7 @@ export function Overview() {
                 <button className="link" onClick={() => nav('/money/bills')}>{t('All bills')}</button>
               </div>
               {bills.length === 0 ? (
-                <div className="faint" style={{ padding: 18, fontSize: 13.5 }}>{t('No bills in the next two weeks.')}</div>
+                <div className="faint" style={{ padding: 16, fontSize: 14 }}>{t('No bills in the next two weeks.')}</div>
               ) : (
                 bills.map((b) => {
                   const days = Math.round((startOfDay(b.nextTs!) - today) / 86_400_000);
@@ -423,7 +455,7 @@ export function Overview() {
                     <div key={b.id} className="list-row hover-row click" onClick={() => open({ kind: 'bill', bill: b })}>
                       <Icon name="repeat" size={15} style={{ color: 'var(--text-3)' }} />
                       <span style={{ flex: 1, minWidth: 0 }}>
-                        <span className="truncate" style={{ display: 'block', fontWeight: 540 }}>{tData(b.name)}</span>
+                        <span className="truncate" style={{ display: 'block', fontWeight: 500 }}>{tData(b.name)}</span>
                         <span className="faint" style={{ fontSize: 12 }}>{days <= 0 ? t('Due today') : tn(days, 'In {n} day', 'In {n} days')}</span>
                       </span>
                       <span className="num" style={{ fontWeight: 600, color: b.income ? 'var(--good)' : undefined }}>{money0(b.amount)}</span>

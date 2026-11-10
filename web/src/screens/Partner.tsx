@@ -76,9 +76,9 @@ export function Partner() {
   if (err) {
     return (
       <Shell go={go}>
-        <div style={{ ...card, padding: 20, textAlign: 'center', color: 'var(--text2)', fontSize: 14 }}>
+        <div style={{ ...card, padding: 20, textAlign: 'center', color: 'var(--text2)', fontSize: 15 }}>
           {err}
-          <div role="button" tabIndex={0} onClick={load} className="press99" style={{ marginTop: 14, color: 'var(--indigo)', fontWeight: 700, cursor: 'pointer' }}>
+          <div role="button" tabIndex={0} onClick={load} className="press99" style={{ marginTop: 16, color: 'var(--indigo)', fontWeight: 700, cursor: 'pointer' }}>
             {t('Try again')}
           </div>
         </div>
@@ -88,7 +88,7 @@ export function Partner() {
   if (!st) {
     return (
       <Shell go={go}>
-        <div style={{ ...card, padding: 24, textAlign: 'center', color: 'var(--text2)', fontSize: 14 }}>{t('Loading…')}</div>
+        <div style={{ ...card, padding: 24, textAlign: 'center', color: 'var(--text2)', fontSize: 15 }}>{t('Loading…')}</div>
       </Shell>
     );
   }
@@ -159,11 +159,11 @@ export function Partner() {
   return (
     <Shell go={go}>
       {/* Who */}
-      <div style={{ ...card, padding: '18px 16px', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+      <div style={{ ...card, padding: '16px 16px', display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
         <Avatar name={p.name} src={p.avatar} size={52} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>{p.name}</div>
-          <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2 }}>
+          <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2 }}>
             {t('Partners since {v}', { v: date(p.since, { day: 'numeric', month: 'short' }) })}
           </div>
         </div>
@@ -172,13 +172,13 @@ export function Partner() {
       {/* What they're doing */}
       <SectionLabel>{t('{v}’s week', { v: p.name.split(' ')[0] })}</SectionLabel>
       {shared === 0 ? (
-        <div style={{ ...card, padding: '20px 18px', marginBottom: 22, textAlign: 'center' }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 5 }}>{t('Nothing shared yet')}</div>
-          <div style={{ fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.55 }}>
+        <div style={{ ...card, padding: '20px 16px', marginBottom: 24, textAlign: 'center' }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{t('Nothing shared yet')}</div>
+          <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.55 }}>
             {t('{v} hasn’t opened any trackers to you. Sharing one of yours first is usually what gets it going.', { v: p.name.split(' ')[0] })}</div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 22 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
           {p.cards.map((c) => (
             <TrackerCard
               key={c.module}
@@ -192,11 +192,11 @@ export function Partner() {
 
       {/* Talking */}
       <SectionLabel>{t('Messages')}</SectionLabel>
-      <div style={{ ...card, marginBottom: 22 }}>
+      <div style={{ ...card, marginBottom: 24 }}>
         <div role="button" tabIndex={0}
           onClick={() => go('partnerThread', { module: null })}
           className="pressRow"
-          style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
         >
           <span style={{ width: 36, height: 36, borderRadius: 'calc(10px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
@@ -205,12 +205,12 @@ export function Partner() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Open the conversation')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>
               {p.notes.length ? tn(p.notes.length, '{n} message', '{n} messages') : t('Nothing yet')}
             </div>
           </div>
           {p.unread > 0 && (
-            <span style={{ minWidth: 22, height: 22, padding: '0 6px', borderRadius: 'calc(11px * var(--sq))', background: 'var(--danger)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <span style={{ minWidth: 22, height: 22, padding: '0 8px', borderRadius: 'calc(11px * var(--sq))', background: 'var(--danger)', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
               {p.unread}
             </span>
           )}
@@ -219,11 +219,11 @@ export function Partner() {
         {/* Chat needs both people. Showing whose consent is missing is the
             difference between "off" and "waiting on them", and those feel
             completely different to the person looking at the switch. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px' }}>
           <span style={{ width: 36, flex: 'none' }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Free chat')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>
               {p.chat.open
                 ? t('Open. You can both message freely.')
                 : p.chat.mine
@@ -239,7 +239,7 @@ export function Partner() {
 
       {/* The control that matters */}
       <SectionLabel>{t('What {v} can see', { v: p.name.split(' ')[0] })}</SectionLabel>
-      <div style={{ ...card, marginBottom: 10 }}>
+      <div style={{ ...card, marginBottom: 8 }}>
         {PARTNER_MODULES.map((m, i) => (
           <ShareRow
             key={m}
@@ -250,15 +250,15 @@ export function Partner() {
           />
         ))}
       </div>
-      <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.55, marginBottom: 24, padding: '0 2px' }}>
+      <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.55, marginBottom: 24, padding: '0 2px' }}>
         {t('Changes apply immediately. Turning a tracker off removes it from {v}’s screen the next time it loads. Your finances never include balances or account names at any level — only whether you logged, and what you spent this week.', { v: p.name.split(' ')[0] })}</div>
 
       {/* Leaving */}
-      <div style={{ ...card, marginBottom: 30 }}>
-        <div role="button" tabIndex={0} onClick={busy ? undefined : end} className="pressRow" style={{ padding: '15px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)', fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
+      <div style={{ ...card, marginBottom: 32 }}>
+        <div role="button" tabIndex={0} onClick={busy ? undefined : end} className="pressRow" style={{ padding: '16px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)', fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
           {t('End partnership')}
         </div>
-        <div role="button" tabIndex={0} onClick={() => open('partnerReport' as any, { name: p.name, reload: load })} className="pressRow" style={{ padding: '15px 16px', cursor: 'pointer', fontSize: 15, fontWeight: 600, color: 'var(--danger)' }}>
+        <div role="button" tabIndex={0} onClick={() => open('partnerReport' as any, { name: p.name, reload: load })} className="pressRow" style={{ padding: '16px 16px', cursor: 'pointer', fontSize: 15, fontWeight: 600, color: 'var(--danger)' }}>
           {t('Report {v}', { v: p.name.split(' ')[0] })}
         </div>
       </div>
@@ -268,10 +268,10 @@ export function Partner() {
 
 function Shell({ go, children }: { go: (s: any) => void; children: React.ReactNode }) {
   return (
-    <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
+    <div style={{ padding: '8px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '2px 0 20px' }}>
         <BackButton onClick={() => go('settings')} />
-        <div className="display" style={{ fontSize: 30, lineHeight: 1.1, color: 'var(--text)' }}>
+        <div className="display" style={{ fontSize: 28, lineHeight: 1.1, color: 'var(--text)' }}>
           {t('Accountability partner')}
         </div>
       </div>
@@ -297,14 +297,14 @@ function TrackerCard({ c, notes, onComment }: { c: PartnerCard; notes: number; o
   const meta = MODULE_META[c.module];
   const col = 'var(--indigo)';
   return (
-    <div style={{ ...card, padding: '15px 16px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 13 }}>
+    <div style={{ ...card, padding: '16px 16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
         <span style={{ width: 32, height: 32, borderRadius: 'calc(10px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Glyph name={meta.icon} size={17} color="var(--text2)" />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{meta.label}</div>
-          <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 1 }}>
+          <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>
             {/* Days in the last week, not an unbroken streak: one missed day
                 showed a partner "No streak right now", which reads as failure
                 to the person it describes and to the person reading it. */}
@@ -313,7 +313,7 @@ function TrackerCard({ c, notes, onComment }: { c: PartnerCard; notes: number; o
           </div>
         </div>
         {c.today && (
-          <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.04em', color: col, background: `color-mix(in srgb,${col} 14%,transparent)`, borderRadius: 'calc(6px * var(--sq))', padding: '3px 7px', flex: 'none' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.04em', color: col, background: `color-mix(in srgb,${col} 14%,transparent)`, borderRadius: 'calc(6px * var(--sq))', padding: '4px 8px', flex: 'none' }}>
             {t('TODAY')}
           </span>
         )}
@@ -324,8 +324,8 @@ function TrackerCard({ c, notes, onComment }: { c: PartnerCard; notes: number; o
           The day letters are not decoration: without them the strip says
           somebody missed a day but not which one, and "you skipped Saturday" is
           the sentence a partner can actually act on. */}
-      <div style={{ marginBottom: c.stats?.length || c.level >= 3 ? 13 : 0 }}>
-        <div style={{ display: 'flex', gap: 5 }} aria-label={t('Last seven days, oldest first')}>
+      <div style={{ marginBottom: c.stats?.length || c.level >= 3 ? 12 : 0 }}>
+        <div style={{ display: 'flex', gap: 4 }} aria-label={t('Last seven days, oldest first')}>
           {c.week.map((on, i) => (
             <span
               key={i}
@@ -333,11 +333,11 @@ function TrackerCard({ c, notes, onComment }: { c: PartnerCard; notes: number; o
             />
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 5, marginTop: 4 }} aria-hidden>
+        <div style={{ display: 'flex', gap: 4, marginTop: 4 }} aria-hidden>
           {weekLetters().map((d, i) => (
             <span
               key={i}
-              style={{ flex: 1, textAlign: 'center', fontSize: 9.5, fontWeight: 700, letterSpacing: '.02em',
+              style={{ flex: 1, textAlign: 'center', fontSize: 11, fontWeight: 700, letterSpacing: '.02em',
                        color: i === 6 ? 'var(--text)' : 'var(--text2)', opacity: i === 6 ? 0.9 : 0.55 }}
             >
               {d}
@@ -347,18 +347,18 @@ function TrackerCard({ c, notes, onComment }: { c: PartnerCard; notes: number; o
       </div>
 
       {!!c.stats?.length && (
-        <div style={{ display: 'flex', gap: 20, marginBottom: c.level >= 3 ? 13 : 0 }}>
+        <div style={{ display: 'flex', gap: 20, marginBottom: c.level >= 3 ? 12 : 0 }}>
           {c.stats.map((s) => (
             <div key={s.label} style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 1 }}>{s.label}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
+              <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 1 }}>{s.label}</div>
             </div>
           ))}
         </div>
       )}
 
       {c.level >= 3 && (
-        <div tabIndex={0} onClick={onComment} className="press99" role="button" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, height: 40, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', fontSize: 13.5, fontWeight: 600, color: col, cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={onComment} className="press99" role="button" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 40, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: col, cursor: 'pointer' }}>
           {notes > 0 ? tn(notes, '{n} note', '{n} notes') : t('Leave a note')}
         </div>
       )}
@@ -379,14 +379,14 @@ function ShareRow({
       <div role="button" tabIndex={0}
         onClick={() => setOpenRow((v) => !v)}
         className="pressRow"
-        style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', cursor: 'pointer' }}
+        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', cursor: 'pointer' }}
       >
         <span style={{ width: 34, height: 34, borderRadius: 'calc(10px * var(--sq))', flex: 'none', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Glyph name={meta.icon} size={17} color="var(--text2)" />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{meta.label}</div>
-          <div style={{ fontSize: 12.5, color: level ? col : 'var(--text2)', marginTop: 1, fontWeight: level ? 600 : 400 }}>
+          <div style={{ fontSize: 13, color: level ? col : 'var(--text2)', marginTop: 1, fontWeight: level ? 600 : 400 }}>
             {current.label}
           </div>
         </div>
@@ -396,7 +396,7 @@ function ShareRow({
       </div>
 
       {openRow && (
-        <div style={{ padding: '0 16px 14px 63px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+        <div style={{ padding: '0 16px 16px 64px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {SHARE_LEVELS.map((l) => {
             const on = l.level === level;
             return (
@@ -409,12 +409,12 @@ function ShareRow({
                   border: `1.5px solid ${on ? col : 'var(--border)'}`,
                   background: on ? `color-mix(in srgb,${col} 10%,transparent)` : 'transparent',
                   borderRadius: 'calc(12px * var(--sq))',
-                  padding: '10px 12px',
+                  padding: '8px 12px',
                   cursor: 'pointer',
                 }}
               >
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: on ? col : 'var(--text)' }}>{l.label}</div>
-                <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>{l.blurb}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: on ? col : 'var(--text)' }}>{l.label}</div>
+                <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>{l.blurb}</div>
               </div>
             );
           })}
@@ -437,14 +437,14 @@ function AgeGate({
   if (known) {
     const when = adultOn(known);
     return (
-      <div style={{ ...card, padding: '26px 20px', textAlign: 'center' }}>
-        <div style={{ fontSize: 34, marginBottom: 10 }}>🔒</div>
+      <div style={{ ...card, padding: '24px 20px', textAlign: 'center' }}>
+        <div style={{ fontSize: 34, marginBottom: 8 }}>🔒</div>
         <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{t('Not just yet')}</div>
-        <div style={{ fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.6 }}>
           {t('Accountability partners match you with someone you don’t know, so it’s for members aged 18 and over. You’re {age}.', { age: ageOn(known) })}
           {when && ' ' + t('This unlocks by itself on {date}.', { date: date(when, { day: 'numeric', month: 'long', year: 'numeric' }) })}
         </div>
-        <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 14, lineHeight: 1.55 }}>
+        <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 16, lineHeight: 1.55 }}>
           {t('Everything else in Orbit works exactly the same in the meantime.')}
         </div>
       </div>
@@ -467,9 +467,9 @@ function AgeGate({
   };
 
   return (
-    <div style={{ ...card, padding: '22px 20px' }}>
+    <div style={{ ...card, padding: '24px 20px' }}>
       <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{t('Your date of birth')}</div>
-      <div style={{ fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.6, marginBottom: 18 }}>
+      <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.6, marginBottom: 16 }}>
         {t('Accountability partners match you with someone you don’t know, so it’s limited to members aged 18 and over. Your date of birth is used for that and nothing else — your partner never sees it or your age.')}
       </div>
       <input
@@ -477,9 +477,9 @@ function AgeGate({
         value={dob}
         onChange={(e) => setDob(e.target.value)}
         className="timeField"
-        style={{ width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 16, fontWeight: 600, color: 'var(--text)', outline: 'none', marginBottom: 10 }}
+        style={{ width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, fontWeight: 600, color: 'var(--text)', outline: 'none', marginBottom: 8 }}
       />
-      <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 16 }}>
+      <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 16 }}>
         {t('You can only set this once, so please check it.')} {dob && !ok && <span style={{ color: 'var(--danger)' }}>{t('That date doesn’t look right.')}</span>}
         {adult === false && ok && <span style={{ color: 'var(--text2)' }}>{' ' + t('You’ll be able to use this section when you turn 18.')}</span>}
       </div>
@@ -490,7 +490,7 @@ function AgeGate({
         aria-disabled={!ok}
         style={{
           height: 52, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 15.5, fontWeight: 700, cursor: ok ? 'pointer' : 'default', color: '#fff',
+          fontSize: 15, fontWeight: 700, cursor: ok ? 'pointer' : 'default', color: '#fff',
           background: ok ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))',
         }}
       >
@@ -548,13 +548,13 @@ function Matchmaker({
 
   if (state.queued) {
     return (
-      <div style={{ ...card, padding: '30px 20px', textAlign: 'center' }}>
-        <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
+      <div style={{ ...card, padding: '32px 20px', textAlign: 'center' }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
         <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{t('Looking for someone')}</div>
-        <div style={{ fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.6, marginBottom: 20 }}>
+        <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.6, marginBottom: 20 }}>
           {t('You’ll be matched as soon as somebody compatible is also looking. You can close the app — this keeps going without it.')}
         </div>
-        <div tabIndex={0} onClick={busy ? undefined : cancel} className="press99" role="button" style={{ height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14.5, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={busy ? undefined : cancel} className="press99" role="button" style={{ height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>
           {t('Stop looking')}
         </div>
       </div>
@@ -563,17 +563,17 @@ function Matchmaker({
 
   return (
     <>
-      <div style={{ ...card, padding: '22px 20px', marginBottom: 20 }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+      <div style={{ ...card, padding: '24px 20px', marginBottom: 20 }}>
+        <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
           {t('Someone who notices')}
         </div>
-        <div style={{ fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.65 }}>
+        <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>
           {t('Get matched with another Orbit member. You each choose — tracker by tracker — how much the other can see, from nothing at all up to full stats and notes. You can change any of it, or end the partnership, at any moment.')}
         </div>
       </div>
 
       <SectionLabel>{t('You are')}</SectionLabel>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
         {[
           { k: 'female', l: t('Female') },
           { k: 'male', l: t('Male') },
@@ -584,12 +584,12 @@ function Matchmaker({
           </div>
         ))}
       </div>
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 22, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 24, lineHeight: 1.5 }}>
         {t('Used only to honour other people’s preference. It is never shown on your profile.')}
       </div>
 
       <SectionLabel>{t('Match me with')}</SectionLabel>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
         {[
           { k: 'any', l: t('Anyone') },
           { k: 'female', l: t('Women') },
@@ -600,7 +600,7 @@ function Matchmaker({
           </div>
         ))}
       </div>
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 24, lineHeight: 1.5 }}>
         {want === 'any'
           ? t('Fastest match: anyone who is also open to anyone.')
           : t('A narrower choice can take longer to match.')}
@@ -613,14 +613,14 @@ function Matchmaker({
         aria-disabled={!gender}
         style={{
           height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 16, fontWeight: 700, color: '#fff', cursor: gender ? 'pointer' : 'default', marginBottom: 14,
+          fontSize: 15, fontWeight: 700, color: '#fff', cursor: gender ? 'pointer' : 'default', marginBottom: 16,
           background: gender ? 'var(--indigo)' : 'color-mix(in srgb,var(--indigo) 40%,var(--surface))',
         }}
       >
         {busy ? t('Searching…') : t('Find me a partner')}
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.6, marginBottom: 24 }}>
+      <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.6, marginBottom: 24 }}>
         {t('Your partner sees your name and photo. They never see your email, your date of birth, your account balances or anything you have not switched on. You can report or remove them at any time.')}
       </div>
 
@@ -629,7 +629,7 @@ function Matchmaker({
           onClick={() => open('partnerReport' as any, { name: state.recent!.name, reload })}
           className="pressRow"
           role="button"
-          style={{ ...card, padding: '14px 16px', cursor: 'pointer', fontSize: 13.5, fontWeight: 600, color: 'var(--danger)', textAlign: 'center', marginBottom: 24 }}
+          style={{ ...card, padding: '16px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--danger)', textAlign: 'center', marginBottom: 24 }}
         >
           {t('Report {v}, your last partner', { v: state.recent.name.split(' ')[0] })}</div>
       )}

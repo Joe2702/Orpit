@@ -42,15 +42,15 @@ export function Welcome() {
           tabIndex={0}
           lang={getLang() === 'ar' ? 'en' : 'ar'}
           onClick={() => setLangPref(getLang() === 'ar' ? 'en' : 'ar')}
-          style={{ fontSize: 14.5, fontWeight: 600, color: 'rgba(240,240,243,.75)', padding: '10px 4px', cursor: 'pointer' }}
+          style={{ fontSize: 15, fontWeight: 600, color: 'rgba(240,240,243,.75)', padding: '8px 4px', cursor: 'pointer' }}
         >
           {getLang() === 'ar' ? 'English' : 'العربية'}
         </div>
       </div>
       <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 48 }}>
-        <OrbitMark size={60} style={{ marginBottom: 26 }} />
+        <OrbitMark size={60} style={{ marginBottom: 24 }} />
         <div className="display" style={{ fontSize: 64, lineHeight: 0.95 }}>{t('Orbit')}</div>
-        <div style={{ fontSize: 18, lineHeight: 1.5, marginTop: 14, color: 'rgba(240,240,243,.72)', maxWidth: 300 }}>
+        <div style={{ fontSize: 17, lineHeight: 1.5, marginTop: 16, color: 'rgba(240,240,243,.72)', maxWidth: 300 }}>
           {t('Habits, training, sleep and money, kept in one place.')}
         </div>
       </div>
@@ -59,14 +59,14 @@ export function Welcome() {
           onClick={() => open('signup')}
           className="press"
           role="button"
-          style={{ background: '#f0f0f3', color: '#0c0c0f', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 650, cursor: 'pointer' }}
+          style={{ background: '#f0f0f3', color: '#0c0c0f', height: 54, borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
         >
           {t('Create an account')}
         </div>
         <div tabIndex={0}
           onClick={() => open('signin')}
           role="button"
-          style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: 'rgba(240,240,243,.75)', padding: 15, cursor: 'pointer' }}
+          style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: 'rgba(240,240,243,.75)', padding: 16, cursor: 'pointer' }}
         >
           {t('I already have one')}
         </div>

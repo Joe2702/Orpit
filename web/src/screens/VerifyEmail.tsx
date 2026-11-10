@@ -55,13 +55,13 @@ export function VerifyEmail() {
 
   return (
     <div style={{ padding: '60px 24px', textAlign: 'center', animation: 'fadeIn .35s ease' }}>
-      <div style={{ width: 66, height: 66, borderRadius: '50%', margin: '0 auto 22px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: status === 'ok' ? 'color-mix(in srgb,var(--success) 14%,transparent)' : status === 'bad' ? 'color-mix(in srgb,var(--danger) 12%,transparent)' : 'var(--bg)' }}>
+      <div style={{ width: 66, height: 66, borderRadius: '50%', margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: status === 'ok' ? 'color-mix(in srgb,var(--success) 14%,transparent)' : status === 'bad' ? 'color-mix(in srgb,var(--danger) 12%,transparent)' : 'var(--bg)' }}>
         {icon}
       </div>
-      <div style={{ fontSize: 23, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', marginBottom: 10 }}>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', marginBottom: 8 }}>
         {status === 'working' ? t('Confirming…') : status === 'ok' ? t('Email confirmed') : t('That link didn\'t work')}
       </div>
-      <div style={{ fontSize: 14.5, color: 'var(--text2)', lineHeight: 1.55, maxWidth: 300, margin: '0 auto 28px' }}>
+      <div style={{ fontSize: 15, color: 'var(--text2)', lineHeight: 1.55, maxWidth: 300, margin: '0 auto 28px' }}>
         {status === 'working'
           ? t('One moment.')
           : status === 'ok'
@@ -69,7 +69,7 @@ export function VerifyEmail() {
           : error || t('The link may have expired. Open Orbit and send yourself a fresh one.')}
       </div>
       {status !== 'working' && (
-        <div tabIndex={0} onClick={done} className="press" role="button" style={{ display: 'inline-flex', alignItems: 'center', height: 52, padding: '0 30px', borderRadius: 'calc(16px * var(--sq))', background: 'var(--indigo)', color: 'var(--on-accent)', fontSize: 15.5, fontWeight: 700, cursor: 'pointer' }}>
+        <div tabIndex={0} onClick={done} className="press" role="button" style={{ display: 'inline-flex', alignItems: 'center', height: 52, padding: '0 32px', borderRadius: 'calc(16px * var(--sq))', background: 'var(--indigo)', color: 'var(--on-accent)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
           {t('Open Orbit')}
         </div>
       )}

@@ -206,9 +206,9 @@ export function Transactions() {
             <>
               <span className="card-title num">{tn(rows.length, '{n} entry', '{n} entries')}</span>
               <span className="spacer" />
-              <span className="muted num" style={{ fontSize: 13 }}>
+              <span className="muted num" style={{ fontSize: 14 }}>
                 {t('Out')} <b style={{ color: 'var(--text)' }}>{money0(out_)}</b>
-                <span style={{ margin: '0 10px', color: 'var(--line-2)' }}>|</span>
+                <span style={{ margin: '0 8px', color: 'var(--line-2)' }}>|</span>
                 {t('In')} <b style={{ color: 'var(--good)' }}>{money0(in_)}</b>
               </span>
             </>
@@ -250,7 +250,7 @@ export function Transactions() {
                       </td>
                       <td style={{ maxWidth: 380 }}>
                         <span className="row" style={{ minWidth: 0 }}>
-                          <span className="truncate" style={{ fontWeight: 560 }}>{x.name}</span>
+                          <span className="truncate" style={{ fontWeight: 600 }}>{x.name}</span>
                           {x.review && <span className="badge accent">{x.dupOf ? t('Duplicate?') : t('Check')}</span>}
                           {x.sms && <span className="badge">{t('Bank text')}</span>}
                         </span>
@@ -265,7 +265,7 @@ export function Transactions() {
                       <td className="muted" style={{ whiteSpace: 'nowrap' }}>
                         {transfer ? `${tData(accName[x.accId || ''] || '')} → ${tData(accName[x.toAccId!] || '')}` : x.accId ? tData(accName[x.accId] || '') : '—'}
                       </td>
-                      <td className="r" style={{ fontWeight: 620, color: plus ? 'var(--good)' : undefined }}>
+                      <td className="r" style={{ fontWeight: 600, color: plus ? 'var(--good)' : undefined }}>
                         {plus ? '+' : transfer ? '' : '−'}
                         {money(x.amount)}
                       </td>
@@ -284,7 +284,7 @@ export function Transactions() {
           </div>
         )}
       </div>
-      {s.archive?.txns ? <div className="faint" style={{ fontSize: 12.5, marginTop: 12, textAlign: 'center' }}>{t('The table shows the last 13 months. Export CSV, with no filters on, saves your whole history.')}</div> : null}
+      {s.archive?.txns ? <div className="faint" style={{ fontSize: 12, marginTop: 12, textAlign: 'center' }}>{t('The table shows the last 13 months. Export CSV, with no filters on, saves your whole history.')}</div> : null}
     </>
   );
 }

@@ -98,7 +98,7 @@ export function SwipeRow({
       className="press92"
       role="button"
       aria-label={label}
-      style={{ width: BTN_W, flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, background: color, color: '#fff', fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}
+      style={{ width: BTN_W, flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, background: color, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
     >
       {icon}
       {label}

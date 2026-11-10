@@ -14,10 +14,10 @@ export function Counters() {
   const isEmpty = emptyMode || counters.length === 0;
 
   return (
-    <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+    <div style={{ padding: '8px 20px 28px', animation: 'fadeIn .35s ease' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <BackButton onClick={back} />
-        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>{t('Counters')}</div>
+        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 34, lineHeight: 1.1, color: 'var(--text)' }}>{t('Counters')}</div>
         <span style={{ width: 40, height: 40, borderRadius: 'calc(13px * var(--sq))', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
           <svg width="22" height="22" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path d="M6 4l-1.2 12M11.4 4l-1.2 12M3.6 8h13M2.9 12h13" />
@@ -26,15 +26,15 @@ export function Counters() {
       </div>
 
       {isEmpty ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '52px 16px', gap: 18 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '52px 16px', gap: 16 }}>
           <div style={{ width: 104, height: 104, borderRadius: '50%', border: '2px dashed color-mix(in srgb,var(--indigo) 38%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb,var(--indigo) 7%,transparent)' }}>
             <svg width="42" height="42" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M13 8l-2 26M25 8l-2 26M7 16h26M5 26h26" />
             </svg>
           </div>
           <div>
-            <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)' }}>{t('Count anything')}</div>
-            <div style={{ fontSize: 14, color: 'var(--text2)', marginTop: 6, lineHeight: 1.55, maxWidth: 266 }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>{t('Count anything')}</div>
+            <div style={{ fontSize: 15, color: 'var(--text2)', marginTop: 8, lineHeight: 1.55, maxWidth: 266 }}>
               {t('Pull-ups, pages read, hours of focus. Make a counter and your monthly and yearly totals add up here.')}
             </div>
           </div>
@@ -55,7 +55,7 @@ export function Counters() {
                 {i > 0 && <div style={{ width: 1, background: 'var(--border)' }} />}
                 <div style={{ flex: 1, textAlign: 'center' }}>
                   <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{v}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 3 }}>{l}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>{l}</div>
                 </div>
               </React.Fragment>
             ))}
@@ -71,13 +71,13 @@ export function Counters() {
                   className="press99"
                   style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16, cursor: 'pointer' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 15 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
                     <span style={{ width: 26, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <CIcon icon={c.icon} color="var(--text2)" size={22} />
                     </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{c.name}</div>
-                      <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{c.name}</div>
+                      <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>
                         {c.unit} · {tx.lastTs ? t('last logged {when}', { when: relLabel(tx.lastTs) === t('Today') || relLabel(tx.lastTs) === t('Yesterday') ? relLabel(tx.lastTs).toLowerCase() : relLabel(tx.lastTs) }) : t('nothing logged yet')}
                       </div>
                     </div>
@@ -115,7 +115,7 @@ export function Counters() {
 function TotCell({ value, label }: { value: string; label: string }) {
   return (
     <div style={{ flex: 1, textAlign: 'center' }}>
-      <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.03em', color: 'var(--text)', lineHeight: 1 }}>{value}</div>
       <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>{label}</div>
     </div>
   );
@@ -125,7 +125,7 @@ const ctaBtn: React.CSSProperties = {
   background: 'var(--indigo)',
   color: '#fff',
   height: 52,
-  padding: '0 26px',
+  padding: '0 24px',
   borderRadius: 'calc(16px * var(--sq))',
   display: 'flex',
   alignItems: 'center',

@@ -30,16 +30,16 @@ export function CurrencySheet() {
   const sym = (c: string) => currencySymbol(c, lang).trim();
 
   return (
-    <div style={{ padding: '6px 0 30px', minHeight: '72vh' }}>
+    <div style={{ padding: '8px 0 32px', minHeight: '72vh' }}>
       <div style={{ padding: '0 20px' }}>
-        <div className="display" style={{ fontSize: 30, lineHeight: 1.1, color: 'var(--text)', margin: '6px 2px 8px' }}>{t('Currency')}</div>
-        <div style={{ fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.5, margin: '0 2px 14px' }}>
+        <div className="display" style={{ fontSize: 28, lineHeight: 1.1, color: 'var(--text)', margin: '8px 2px 8px' }}>{t('Currency')}</div>
+        <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, margin: '0 2px 16px' }}>
           {t('Amounts across Orbit show in it. Payments in other currencies are converted at the day’s rate; changing it relabels what you’ve logged rather than converting it.')}
         </div>
       </div>
 
       {/* The search stays put while the list scrolls under it. */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 2, padding: '8px 20px 10px', background: 'var(--glass-bg-strong)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 2, padding: '8px 20px 8px', background: 'var(--glass-bg-strong)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
         <div style={{ position: 'relative' }}>
           <svg width="17" height="17" aria-hidden style={{ position: 'absolute', insetInlineStart: 14, top: 16, fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round' }}>
             <circle cx="7.5" cy="7.5" r="5" />
@@ -52,7 +52,7 @@ export function CurrencySheet() {
             aria-label={t('Search currencies')}
             spellCheck={false}
             autoCorrect="off"
-            style={{ width: '100%', height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', paddingInlineStart: 40, paddingInlineEnd: 14, fontSize: 15.5, color: 'var(--text)', outline: 'none' }}
+            style={{ width: '100%', height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', paddingInlineStart: 40, paddingInlineEnd: 16, fontSize: 15, color: 'var(--text)', outline: 'none' }}
           />
         </div>
       </div>
@@ -60,7 +60,7 @@ export function CurrencySheet() {
       <div style={{ padding: '0 20px' }}>
         {!q.trim() && (
           <>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', margin: '12px 2px 9px' }}>{t('Popular')}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', margin: '12px 2px 8px' }}>{t('Popular')}</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8, marginBottom: 20 }}>
               {POPULAR.map((c, k) => {
                 const on = c === current;
@@ -77,8 +77,8 @@ export function CurrencySheet() {
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      gap: 3,
-                      padding: '11px 4px 9px',
+                      gap: 4,
+                      padding: '12px 4px 8px',
                       borderRadius: 'calc(16px * var(--sq))',
                       cursor: 'pointer',
                       background: on ? 'var(--indigo)' : 'var(--surface)',
@@ -90,18 +90,18 @@ export function CurrencySheet() {
                     }}
                   >
                     <span style={{ fontSize: 22, lineHeight: 1 }}>{currencyFlag(c)}</span>
-                    <span style={{ fontSize: 13.5, fontWeight: 700, marginTop: 2 }}>{c}</span>
-                    <span style={{ fontSize: 11.5, opacity: 0.7, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sym(c)}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, marginTop: 2 }}>{c}</span>
+                    <span style={{ fontSize: 11, opacity: 0.7, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sym(c)}</span>
                   </div>
                 );
               })}
             </div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', margin: '0 2px 9px' }}>{t('All currencies')}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', margin: '0 2px 8px' }}>{t('All currencies')}</div>
           </>
         )}
 
         {found.length === 0 ? (
-          <div style={{ textAlign: 'center', fontSize: 14.5, color: 'var(--text2)', padding: '36px 0' }}>{t('No currency matches “{q}”', { q: q.trim() })}</div>
+          <div style={{ textAlign: 'center', fontSize: 15, color: 'var(--text2)', padding: '36px 0' }}>{t('No currency matches “{q}”', { q: q.trim() })}</div>
         ) : (
           <div role="listbox" aria-label={t('All currencies')} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', overflow: 'hidden', marginTop: q.trim() ? 12 : 0 }}>
             {found.map((c, k) => {
@@ -115,14 +115,14 @@ export function CurrencySheet() {
                   onClick={() => choose(c)}
                   onKeyDown={(e) => e.key === 'Enter' && choose(c)}
                   className="pressRow"
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderTop: k ? '1px solid var(--hairline)' : 'none', cursor: 'pointer' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderTop: k ? '1px solid var(--hairline)' : 'none', cursor: 'pointer' }}
                 >
-                  <span aria-hidden style={{ fontSize: 24, lineHeight: 1, width: 30, textAlign: 'center', flex: 'none' }}>
+                  <span aria-hidden style={{ fontSize: 22, lineHeight: 1, width: 30, textAlign: 'center', flex: 'none' }}>
                     {currencyFlag(c)}
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: on ? 700 : 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currencyName(c, lang)}</div>
-                    <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
+                    <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>
                       <span style={{ direction: 'ltr', unicodeBidi: 'isolate' }}>{c}</span>
                       {sym(c) !== c && <span> · {sym(c)}</span>}
                     </div>

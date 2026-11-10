@@ -112,10 +112,10 @@ export function Insights() {
             <span className="card-title">{brief.title}</span>
             <span className="card-sub">{t('From Claude · {when}', { when: date(brief.ts, { weekday: 'long', hour: 'numeric', minute: '2-digit' }) })}</span>
           </div>
-          <div className="card-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 22 }}>
+          <div className="card-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
             {brief.sections.map((sec, i) => (
               <div key={i}>
-                <div className="label" style={{ marginBottom: 6 }}>{sec.heading}</div>
+                <div className="label" style={{ marginBottom: 8 }}>{sec.heading}</div>
                 <Markdown text={sec.body} size={14} />
               </div>
             ))}
@@ -129,7 +129,7 @@ export function Insights() {
             <div className="card-head">
               <span className="card-title">{c.title}</span>
               <span className="spacer" />
-              <span className="num" style={{ fontWeight: 650, fontSize: 15 }}>{c.value}</span>
+              <span className="num" style={{ fontWeight: 600, fontSize: 16 }}>{c.value}</span>
               <Delta pct={c.delta} goodWhenUp={c.good !== false} />
             </div>
             <div className="card-body">{c.body}</div>
@@ -143,17 +143,17 @@ export function Insights() {
           <span className="card-sub">{t('Patterns across everything you track')}</span>
         </div>
         {found.length === 0 ? (
-          <div className="faint" style={{ padding: 18 }}>{t('Keep logging for a couple of weeks and patterns will show up here.')}</div>
+          <div className="faint" style={{ padding: 16 }}>{t('Keep logging for a couple of weeks and patterns will show up here.')}</div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))' }}>
             {found.slice(0, 12).map((x) => (
-              <div key={x.id} style={{ padding: '16px 18px', borderBottom: '1px solid var(--line-soft)', borderInlineEnd: '1px solid var(--line-soft)', display: 'flex', gap: 12 }}>
+              <div key={x.id} style={{ padding: '16px 16px', borderBottom: '1px solid var(--line-soft)', borderInlineEnd: '1px solid var(--line-soft)', display: 'flex', gap: 12 }}>
                 <span style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--accent-soft)', color: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
                   <Icon name={x.kind === 'alert' ? 'alert' : x.kind === 'record' ? 'sparkle' : x.kind === 'link' ? 'insights' : 'clock'} size={15} />
                 </span>
                 <div>
-                  <div style={{ fontWeight: 560, lineHeight: 1.45 }}>{x.title}</div>
-                  <div className="faint" style={{ fontSize: 12.5, marginTop: 3 }}>{x.detail}</div>
+                  <div style={{ fontWeight: 600, lineHeight: 1.45 }}>{x.title}</div>
+                  <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>{x.detail}</div>
                 </div>
               </div>
             ))}

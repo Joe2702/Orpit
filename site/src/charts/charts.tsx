@@ -363,7 +363,7 @@ export function Heatmap({ weeks, title }: { weeks: HeatCell[][]; title: (c: Heat
               </text>
             ))}
             {[1, 3, 5].map((r) => (
-              <text key={r} x={rtl ? w : 0} y={18 + r * (cell + gap) + cell - 1} textAnchor={rtl ? 'end' : 'start'} style={{ fontSize: 10 }}>
+              <text key={r} x={rtl ? w : 0} y={18 + r * (cell + gap) + cell - 1} textAnchor={rtl ? 'end' : 'start'} style={{ fontSize: 11 }}>
                 {date(new Date(2026, 0, 4 + r), { weekday: 'short' })}
               </text>
             ))}
@@ -395,8 +395,8 @@ export function RankBars({ rows, fmt }: { rows: { key: string; label: React.Reac
   return (
     <div style={{ display: 'grid', gap: 2 }}>
       {rows.map((r) => (
-        <div key={r.key} className={r.onClick ? 'hover-row' : undefined} onClick={r.onClick} style={{ display: 'grid', gridTemplateColumns: 'minmax(110px, 180px) 1fr 96px', alignItems: 'center', gap: 14, padding: '7px 8px', margin: '0 -8px', borderRadius: 7, cursor: r.onClick ? 'pointer' : 'default' }}>
-          <span className="truncate" style={{ fontWeight: 520 }}>
+        <div key={r.key} className={r.onClick ? 'hover-row' : undefined} onClick={r.onClick} style={{ display: 'grid', gridTemplateColumns: 'minmax(110px, 180px) 1fr 96px', alignItems: 'center', gap: 16, padding: '8px 8px', margin: '0 -8px', borderRadius: 7, cursor: r.onClick ? 'pointer' : 'default' }}>
+          <span className="truncate" style={{ fontWeight: 500 }}>
             {r.label}
           </span>
           <span className="bar" style={{ height: 8 }}>
@@ -404,7 +404,7 @@ export function RankBars({ rows, fmt }: { rows: { key: string; label: React.Reac
           </span>
           <span className="num" style={{ textAlign: 'end', fontWeight: 600 }}>
             {fmt(r.value)}
-            {r.sub && <span className="faint" style={{ display: 'block', fontSize: 11.5, fontWeight: 500 }}>{r.sub}</span>}
+            {r.sub && <span className="faint" style={{ display: 'block', fontSize: 11, fontWeight: 500 }}>{r.sub}</span>}
           </span>
         </div>
       ))}

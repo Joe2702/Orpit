@@ -662,3 +662,191 @@ html[lang='ar'] .display {
     opacity: 1;
   }
 }
+
+/* A touch area of at least 44×44 around a control that looks smaller.
+   44pt is the smallest target a thumb hits reliably; the control keeps its
+   size on screen and the invisible ::after takes the extra. The insets only
+   grow an edge that is short of 44px, never shrink one that is already
+   longer, so a wide row keeps its full width. Inline `position` wins over
+   this, so an absolutely placed control stays where it is. */
+.hit {
+  position: relative;
+}
+.hit::after {
+  content: '';
+  position: absolute;
+  top: min(0px, calc(50% - 22px));
+  bottom: min(0px, calc(50% - 22px));
+  left: min(0px, calc(50% - 22px));
+  right: min(0px, calc(50% - 22px));
+}
+
+/* "For you": the day's prompts (the brief, a fresh start, a habit to pick
+   back up, the weekly review) share one short card you swipe through, so they
+   no longer stack up above Today. The next card peeks in from the edge to say
+   there is more. */
+.foryou-track {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  margin: 0 -20px;
+  padding: 0 20px;
+  scroll-padding: 0 20px;
+  scrollbar-width: none;
+}
+.foryou-track::-webkit-scrollbar {
+  display: none;
+}
+.foryou-slide {
+  flex: 0 0 calc(100% - 24px);
+  min-width: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(20px * var(--sq));
+  padding: 12px 16px;
+  cursor: default;
+}
+.foryou-slide[role='button'] {
+  cursor: pointer;
+}
+.foryou-track[data-single] .foryou-slide {
+  flex-basis: 100%;
+}
+.foryou-icon {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: calc(12px * var(--sq));
+  color: var(--indigo);
+  background: color-mix(in srgb, var(--indigo) 14%, transparent);
+}
+.foryou-title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.foryou-text {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text2);
+  margin-top: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.foryou-text.one {
+  display: block;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.foryou-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+.foryou-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--text3);
+  opacity: 0.5;
+  transition: width 0.25s, background 0.25s, opacity 0.25s;
+}
+.foryou-dots span[data-on] {
+  width: 18px;
+  background: var(--indigo);
+  opacity: 1;
+}
+
+/* The day's list, finished. The badge pops in, a ring spreads from it and a
+   few sparks fly out; the line about the person rises in after. Reduced
+   motion (above) cuts all of it to the final frame. */
+.daydone-badge {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--indigo);
+}
+.daydone-spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--indigo) 55%, #fff);
+  opacity: 0;
+  pointer-events: none;
+}
+.daydone {
+  animation: fadeIn 0.3s ease;
+}
+.daydone[data-burst] .daydone-badge {
+  animation: dayPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.daydone[data-burst] .daydone-badge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: dayRing 0.9s ease-out 0.2s both;
+}
+.daydone[data-burst] .daydone-spark {
+  animation: daySpark 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.12s both;
+}
+.daydone[data-burst] .daydone-line {
+  animation: fadeUp 0.5s ease 0.35s both;
+}
+@keyframes dayPop {
+  0% {
+    transform: scale(0.3);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes dayRing {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--indigo) 55%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 16px color-mix(in srgb, var(--indigo) 0%, transparent);
+  }
+}
+@keyframes daySpark {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(-30px) scale(0.5);
+  }
+}

@@ -35,22 +35,22 @@ export function Signin() {
     border: '1px solid var(--border)',
     background: 'var(--surface)',
     padding: '0 16px',
-    fontSize: 16,
+    fontSize: 15,
     color: 'var(--text)',
     outline: 'none',
   };
   const labelStyle: React.CSSProperties = {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: 600,
     color: 'var(--text2)',
     marginBottom: 8,
   };
 
   return (
-    <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', padding: '6px 28px 36px', animation: 'fadeUp .4s ease' }}>
+    <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', padding: '8px 28px 36px', animation: 'fadeUp .4s ease' }}>
       <BackButton onClick={() => go('welcome')} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px 0' }}>
-        <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>
+        <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>
           {signUp ? t('Create your account') : t('Welcome back')}
         </div>
         <div style={{ fontSize: 15, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>
@@ -58,7 +58,7 @@ export function Signin() {
         </div>
 
         {signUp && (
-          <div style={{ marginTop: 30 }}>
+          <div style={{ marginTop: 32 }}>
             <div style={labelStyle}>{t('Name')}</div>
             <input
               value={name}
@@ -85,13 +85,13 @@ export function Signin() {
               className="timeField"
               style={inputStyle}
             />
-            <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 7, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>
               {t('Only used to unlock accountability partners, which is for members aged 18 and over. Never shown to anyone.')}
             </div>
           </div>
         )}
 
-        <div style={{ marginTop: signUp ? 16 : 30 }}>
+        <div style={{ marginTop: signUp ? 16 : 32 }}>
           <div style={labelStyle}>{t('Email')}</div>
           <input
             type="email"
@@ -133,7 +133,7 @@ export function Signin() {
         </div>
 
         {error && (
-          <div style={{ marginTop: 14, fontSize: 13.5, fontWeight: 500, color: 'var(--danger)' }}>{error}</div>
+          <div style={{ marginTop: 16, fontSize: 13, fontWeight: 500, color: 'var(--danger)' }}>{error}</div>
         )}
 
         <div role="button" tabIndex={0}
@@ -147,10 +147,10 @@ export function Signin() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: 600,
             cursor: busy ? 'default' : 'pointer',
-            marginTop: 18,
+            marginTop: 16,
             opacity: busy ? 0.7 : 1,
             boxShadow: '0 8px 20px -10px rgba(40,36,28,.26)',
           }}
@@ -161,7 +161,7 @@ export function Signin() {
         {!signUp && (
           <div role="button" tabIndex={0}
             onClick={() => go('forgot')}
-            style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: '14px 8px 0', cursor: 'pointer' }}
+            style={{ textAlign: 'center', fontSize: 15, color: 'var(--text2)', padding: '16px 8px 0', cursor: 'pointer' }}
           >
             {t('Forgot password?')}
           </div>
@@ -174,7 +174,7 @@ export function Signin() {
           setAuthMode(signUp ? 'signin' : 'signup');
           setError('');
         }}
-        style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: 8, cursor: 'pointer' }}
+        style={{ textAlign: 'center', fontSize: 15, color: 'var(--text2)', padding: 8, cursor: 'pointer' }}
       >
         {signUp ? t('Already have an account? Sign in') : t('New here? Create an account')}
       </div>

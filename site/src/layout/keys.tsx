@@ -73,7 +73,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
     <Dialog title={t('Keyboard shortcuts')} onClose={onClose} wide>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px' }}>
         <div>
-          <div className="label" style={{ marginBottom: 6 }}>{t('Anywhere')}</div>
+          <div className="label" style={{ marginBottom: 8 }}>{t('Anywhere')}</div>
           {row(<><Kbd>{MOD}</Kbd><Kbd>K</Kbd></>, t('Search, jump, run a command'), 'k')}
           {row(<Kbd>/</Kbd>, t('Search'), 's')}
           {row(<Kbd>N</Kbd>, t('Add or log something'), 'n')}
@@ -86,7 +86,7 @@ export function ShortcutHelp({ onClose }: { onClose: () => void }) {
           {row(<Kbd>?</Kbd>, t('This list'), 'q')}
         </div>
         <div>
-          <div className="label" style={{ marginBottom: 6 }}>{t('Go to: press G, then')}</div>
+          <div className="label" style={{ marginBottom: 8 }}>{t('Go to: press G, then')}</div>
           {visiblePlaces(s)
             .filter((p) => p.key)
             .map((p) => row(<Kbd>{p.key!.toUpperCase()}</Kbd>, t(p.label), p.to))}

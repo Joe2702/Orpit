@@ -100,10 +100,10 @@ function HabitList() {
     return (
       <tr key={h.id} className="click" onClick={() => setDetail(h.id)} style={h.archived ? { opacity: 0.6 } : undefined}>
         <td>
-          <span className="row" style={{ gap: 10 }}>
+          <span className="row" style={{ gap: 8 }}>
             <ColorDot c={h.color} size={9} />
             <span style={{ minWidth: 0 }}>
-              <span className="truncate" style={{ display: 'block', fontWeight: 560, maxWidth: 280 }}>{tData(h.name)}</span>
+              <span className="truncate" style={{ display: 'block', fontWeight: 600, maxWidth: 280 }}>{tData(h.name)}</span>
               <span className="faint truncate" style={{ display: 'block', fontSize: 12, maxWidth: 280 }}>{h.cue || daysLabel(h.days)}</span>
             </span>
             {h.paused && <span className="badge">{t('Paused')}</span>}
@@ -142,7 +142,7 @@ function HabitList() {
           {rate == null ? (
             <span className="faint">—</span>
           ) : (
-            <span className="row" style={{ gap: 10 }}>
+            <span className="row" style={{ gap: 8 }}>
               <span className="bar" style={{ flex: 1 }}>
                 <span style={{ width: `${rate * 100}%` }} />
               </span>
@@ -150,7 +150,7 @@ function HabitList() {
             </span>
           )}
         </td>
-        <td className="r">{streak ? <span className="row" style={{ justifyContent: 'flex-end', gap: 5 }}><Icon name="flame" size={14} style={{ color: 'var(--accent)' }} />{num(streak)}</span> : <span className="faint">—</span>}</td>
+        <td className="r">{streak ? <span className="row" style={{ justifyContent: 'flex-end', gap: 4 }}><Icon name="flame" size={14} style={{ color: 'var(--accent)' }} />{num(streak)}</span> : <span className="faint">—</span>}</td>
         <td className="r" style={{ width: 52 }} onClick={(e) => e.stopPropagation()}>
           <Menu
             trigger={(tg) => <Button size="sm" kind="ghost" icon="more" title={t('More')} onClick={tg} />}
@@ -178,7 +178,7 @@ function HabitList() {
           <div key={l} className="card card-pad">
             <div className="stat-label">{l}</div>
             <div className="stat-value">{v}</div>
-            <div className="faint" style={{ fontSize: 12.5, marginTop: 4 }}>{sub}</div>
+            <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>{sub}</div>
           </div>
         ))}
       </div>
@@ -216,7 +216,7 @@ function HabitList() {
           </table>
         </div>
         {archived.length > 0 && (
-          <div style={{ padding: '10px 18px', borderTop: '1px solid var(--line-soft)' }}>
+          <div style={{ padding: '8px 16px', borderTop: '1px solid var(--line-soft)' }}>
             <button className="link" onClick={() => setShowArchived(!showArchived)}>
               {showArchived ? t('Hide archived') : tn(archived.length, 'Show {n} archived habit', 'Show {n} archived habits')}
             </button>
@@ -271,16 +271,16 @@ function HabitDetail({ habit, onClose }: { habit: Habit; onClose: () => void }) 
         </Button>
       }
     >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 22 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 24 }}>
         {stats.map(([l, v]) => (
-          <div key={l} className="card" style={{ padding: '12px 14px', background: 'var(--bg-2)' }}>
+          <div key={l} className="card" style={{ padding: '12px 16px', background: 'var(--bg-2)' }}>
             <div className="faint" style={{ fontSize: 12 }}>{l}</div>
-            <div className="num" style={{ fontSize: 20, fontWeight: 650, marginTop: 2 }}>{v}</div>
+            <div className="num" style={{ fontSize: 20, fontWeight: 600, marginTop: 2 }}>{v}</div>
           </div>
         ))}
       </div>
       {(habit.cue || habit.why) && (
-        <div style={{ display: 'grid', gap: 12, marginBottom: 22 }}>
+        <div style={{ display: 'grid', gap: 12, marginBottom: 24 }}>
           {habit.cue && (
             <div>
               <div className="label">{t('When and where')}</div>
@@ -297,7 +297,7 @@ function HabitDetail({ habit, onClose }: { habit: Habit; onClose: () => void }) 
       )}
       <div className="label" style={{ marginBottom: 8 }}>{t('The last six months')}</div>
       <Heatmap weeks={weeks} title={(c) => (c.share === null ? t('Not planned') : c.share ? t('Done') : t('Missed'))} />
-      <div className="label" style={{ margin: '22px 0 8px' }}>{t('Done, month by month')}</div>
+      <div className="label" style={{ margin: '24px 0 8px' }}>{t('Done, month by month')}</div>
       <BarChart height={180} minTop={100} fmt={(v) => `${Math.round(v)}%`} tipFmt={(v) => (v == null ? '—' : `${v}%`)} data={months.map((m, i) => ({ label: date(m.start, { month: 'short' }), value: m.rate, title: date(m.start, { month: 'long', year: 'numeric' }), now: i === 5 }))} />
     </Drawer>
   );
@@ -337,17 +337,17 @@ function Counters() {
             {s.counters.map((c) => (
               <tr key={c.id} className="click" onClick={() => setDetail(c)}>
                 <td>
-                  <span className="row" style={{ gap: 10 }}>
+                  <span className="row" style={{ gap: 8 }}>
                     <ColorDot c={c.color} size={9} />
-                    <span style={{ fontWeight: 560 }}>{tData(c.name)}</span>
+                    <span style={{ fontWeight: 600 }}>{tData(c.name)}</span>
                     {c.unit && <span className="faint">{tData(c.unit)}</span>}
                   </span>
                 </td>
-                <td className="r" style={{ fontWeight: 650 }}>{num(sum(c.id, today))}</td>
+                <td className="r" style={{ fontWeight: 600 }}>{num(sum(c.id, today))}</td>
                 <td className="r">{num(sum(c.id, monthStart))}</td>
                 <td className="r muted">{num(sum(c.id, 0) + 0)}</td>
                 <td className="r" onClick={(e) => e.stopPropagation()}>
-                  <span className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
+                  <span className="row" style={{ justifyContent: 'flex-end', gap: 8 }}>
                     <Button size="sm" onClick={() => mutate(null, () => api.logCounter(c.id, c.step, Date.now()), t('Added {n}', { n: c.step }))}>
                       +{num(c.step)}
                     </Button>
@@ -372,7 +372,7 @@ function Counters() {
               return { label: date(d0, { day: 'numeric' }), value: s.countLogs.filter((l) => l.counterId === detail.id && l.ts >= d0 && l.ts < addDays(d0, 1)).reduce((a, l) => a + l.amount, 0), title: date(d0, { weekday: 'short', month: 'short', day: 'numeric' }), now: i === 29 };
             })}
           />
-          <div className="label" style={{ margin: '22px 0 8px' }}>{t('Latest entries')}</div>
+          <div className="label" style={{ margin: '24px 0 8px' }}>{t('Latest entries')}</div>
           <div className="card">
             {s.countLogs
               .filter((l) => l.counterId === detail.id)

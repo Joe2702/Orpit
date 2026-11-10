@@ -11,12 +11,12 @@ const inputStyle: React.CSSProperties = {
   border: '1px solid var(--border)',
   background: 'var(--surface)',
   padding: '0 16px',
-  fontSize: 16,
+  fontSize: 15,
   color: 'var(--text)',
   outline: 'none',
 };
 const labelStyle: React.CSSProperties = {
-  fontSize: 13.5,
+  fontSize: 13,
   fontWeight: 600,
   color: 'var(--text2)',
   marginBottom: 8,
@@ -29,10 +29,10 @@ const cta = (busy: boolean): React.CSSProperties => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontSize: 16,
+  fontSize: 15,
   fontWeight: 600,
   cursor: busy ? 'default' : 'pointer',
-  marginTop: 18,
+  marginTop: 16,
   opacity: busy ? 0.7 : 1,
   boxShadow: '0 8px 20px -10px rgba(40,36,28,.26)',
 });
@@ -56,10 +56,10 @@ export function Forgot() {
   };
 
   return (
-    <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', padding: '6px 28px 36px', animation: 'fadeUp .4s ease' }}>
+    <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', padding: '8px 28px 36px', animation: 'fadeUp .4s ease' }}>
       <BackButton onClick={() => go('signin')} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px 0' }}>
-        <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>{t('Reset password')}</div>
+        <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>{t('Reset password')}</div>
         {sent ? (
           <div style={{ fontSize: 15, color: 'var(--text2)', marginTop: 12, lineHeight: 1.6 }}>
             {t('If an account exists for') + ' '}<b style={{ color: 'var(--text)' }}>{email.trim()}</b>{t(', a reset link is on its way. Check your inbox (and spam). The link works for 1 hour.')}
@@ -69,7 +69,7 @@ export function Forgot() {
             <div style={{ fontSize: 15, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>
               {t('Enter your email and we\'ll send you a link to set a new password.')}
             </div>
-            <div style={{ marginTop: 30 }}>
+            <div style={{ marginTop: 32 }}>
               <div style={labelStyle}>{t('Email')}</div>
               <input
                 type="email"
@@ -86,7 +86,7 @@ export function Forgot() {
           </>
         )}
       </div>
-      <div role="button" tabIndex={0} onClick={() => go('signin')} style={{ textAlign: 'center', fontSize: 14, color: 'var(--text2)', padding: 8, cursor: 'pointer' }}>
+      <div role="button" tabIndex={0} onClick={() => go('signin')} style={{ textAlign: 'center', fontSize: 15, color: 'var(--text2)', padding: 8, cursor: 'pointer' }}>
         {t('Back to sign in')}
       </div>
     </div>
@@ -117,16 +117,16 @@ export function Reset() {
   };
 
   return (
-    <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', padding: '6px 28px 36px', animation: 'fadeUp .4s ease' }}>
+    <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column', padding: '8px 28px 36px', animation: 'fadeUp .4s ease' }}>
       <BackButton onClick={() => go('signin')} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px 0' }}>
-        <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>{t('Set a new password')}</div>
+        <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--text)' }}>{t('Set a new password')}</div>
         {!token ? (
           <div style={{ fontSize: 15, color: 'var(--danger)', marginTop: 12 }}>{t('This reset link is invalid. Request a new one.')}</div>
         ) : (
           <>
             <div style={{ fontSize: 15, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>{t('Choose a new password for your account.')}</div>
-            <div style={{ marginTop: 30 }}>
+            <div style={{ marginTop: 32 }}>
               <div style={labelStyle}>{t('New password')}</div>
               <div style={{ position: 'relative' }}>
                 <input
@@ -151,7 +151,7 @@ export function Reset() {
                 </div>
               </div>
             </div>
-            {error && <div style={{ marginTop: 14, fontSize: 13.5, fontWeight: 500, color: 'var(--danger)' }}>{error}</div>}
+            {error && <div style={{ marginTop: 16, fontSize: 13, fontWeight: 500, color: 'var(--danger)' }}>{error}</div>}
             <div role="button" tabIndex={0} onClick={busy ? undefined : submit} className="press" style={cta(busy)}>
               {busy ? t('Saving…') : t('Save new password')}
             </div>

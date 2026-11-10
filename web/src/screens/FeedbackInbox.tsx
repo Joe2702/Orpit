@@ -63,20 +63,20 @@ export function FeedbackInbox() {
   };
 
   return (
-    <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+    <div style={{ padding: '8px 20px 28px', animation: 'fadeIn .35s ease' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <BackButton onClick={() => go('settings')} />
-        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 32, lineHeight: 1.1, color: 'var(--text)' }}>{t('Feedback')}</div>
+        <div className="display" style={{ flex: 1, minWidth: 0, fontSize: 34, lineHeight: 1.1, color: 'var(--text)' }}>{t('Feedback')}</div>
         {unlocked && items && <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{items.length}</div>}
       </div>
 
       {!unlocked ? (
-        <div style={{ padding: '30px 4px' }}>
+        <div style={{ padding: '32px 4px' }}>
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
               <Glyph name="lock" size={38} color="var(--text2)" sw={1.6} />
             </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{t('Enter password')}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{t('Enter password')}</div>
             <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4 }}>{t('This inbox is protected.')}</div>
           </div>
           <input
@@ -86,7 +86,7 @@ export function FeedbackInbox() {
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && submit()}
             placeholder={t('Password')}
-            style={{ width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: `1px solid ${error ? 'var(--danger)' : 'var(--border)'}`, background: 'var(--bg)', padding: '0 16px', fontSize: 16, color: 'var(--text)', outline: 'none', marginBottom: 12 }}
+            style={{ width: '100%', height: 52, borderRadius: 'calc(14px * var(--sq))', border: `1px solid ${error ? 'var(--danger)' : 'var(--border)'}`, background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 12 }}
           />
           {error && <div style={{ fontSize: 13, color: 'var(--danger)', marginBottom: 12, textAlign: 'center' }}>{error}</div>}
           <div role="button" tabIndex={0}
@@ -99,14 +99,14 @@ export function FeedbackInbox() {
         </div>
       ) : (
         <>
-          <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 18 }}>
+          <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 4, marginBottom: 16 }}>
             {([['feedback', `Feedback (${items?.length ?? 0})`], ['crashes', `Crashes (${errors.length})`], ['usage', 'Usage'], ['formats', `Formats (${formats.length})`]] as const).map(([k, label]) => (
               <div tabIndex={0}
                 key={k}
                 onClick={() => setTab(k)}
                 role="tab"
                 aria-selected={tab === k}
-                style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 'calc(11px * var(--sq))', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', ...(tab === k ? { background: 'var(--surface)', color: 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
+                style={{ flex: 1, textAlign: 'center', padding: '8px 0', borderRadius: 'calc(11px * var(--sq))', fontSize: 13, fontWeight: 600, cursor: 'pointer', ...(tab === k ? { background: 'var(--surface)', color: 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
               >
                 {label}
               </div>
@@ -117,18 +117,18 @@ export function FeedbackInbox() {
             // Bank messages people couldn't get read, masked on their phones,
             // for teaching the reader new banks (web/src/lib/smsParse.ts).
             formats.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>{t('No formats sent yet.')}</div>
+              <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--text2)', fontSize: 15 }}>{t('No formats sent yet.')}</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {formats.map((f) => (
                   <div key={f.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16 }}>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', marginBottom: 6 }}>
-                      <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }}>{f.sender}</span>
-                      <span style={{ fontSize: 12, color: 'var(--text2)' }}>{f.reason === 'no-verb' ? t('direction unclear') : t('no amount found')}</span>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', marginBottom: 8 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{f.sender}</span>
+                      <span style={{ fontSize: 13, color: 'var(--text2)' }}>{f.reason === 'no-verb' ? t('direction unclear') : t('no amount found')}</span>
                       <span style={{ flex: 1 }} />
-                      <span style={{ fontSize: 12, color: 'var(--text2)' }}>{timeAgo(new Date(f.createdAt).getTime())}</span>
+                      <span style={{ fontSize: 13, color: 'var(--text2)' }}>{timeAgo(new Date(f.createdAt).getTime())}</span>
                     </div>
-                    <div dir="auto" style={{ fontSize: 13.5, color: 'var(--text)', lineHeight: 1.5, overflowWrap: 'anywhere', fontFamily: 'ui-monospace, monospace' }}>{f.text}</div>
+                    <div dir="auto" style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5, overflowWrap: 'anywhere', fontFamily: 'ui-monospace, monospace' }}>{f.text}</div>
                   </div>
                 ))}
               </div>
@@ -137,7 +137,7 @@ export function FeedbackInbox() {
             <UsagePanel m={metrics} />
           ) : tab === 'crashes' ? (
             errors.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>
+              <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--text2)', fontSize: 15 }}>
                 {t('No crashes reported.')}
               </div>
             ) : (
@@ -145,17 +145,17 @@ export function FeedbackInbox() {
                 {errors.map((e) => (
                   <div key={e.id} style={{ background: 'var(--surface)', border: '1px solid color-mix(in srgb,var(--danger) 25%,var(--border))', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--danger)', background: 'color-mix(in srgb,var(--danger) 13%,transparent)', padding: '3px 9px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '.04em' }}>{t('Crash')}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--danger)', background: 'color-mix(in srgb,var(--danger) 13%,transparent)', padding: '4px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '.04em' }}>{t('Crash')}</span>
                       <span style={{ flex: 1 }} />
-                      <span style={{ fontSize: 12, color: 'var(--text2)' }}>{timeAgo(e.createdAt)}</span>
+                      <span style={{ fontSize: 13, color: 'var(--text2)' }}>{timeAgo(e.createdAt)}</span>
                     </div>
-                    <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.5, wordBreak: 'break-word' }}>{e.message}</div>
+                    <div style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.5, wordBreak: 'break-word' }}>{e.message}</div>
                     {e.stack && (
-                      <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 8, fontFamily: 'var(--font-mono)', whiteSpace: 'pre-wrap', maxHeight: 120, overflow: 'auto', background: 'var(--bg)', borderRadius: 'calc(10px * var(--sq))', padding: 10 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 8, fontFamily: 'var(--font-mono)', whiteSpace: 'pre-wrap', maxHeight: 120, overflow: 'auto', background: 'var(--bg)', borderRadius: 'calc(10px * var(--sq))', padding: 8 }}>
                         {e.stack}
                       </div>
                     )}
-                    <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 10 }}>
+                    <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 8 }}>
                       {t('{email} · build {n}', { email: e.email, n: e.build || '—' })}
                     </div>
                   </div>
@@ -163,7 +163,7 @@ export function FeedbackInbox() {
               </div>
             )
           ) : items && items.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>
+            <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--text2)', fontSize: 15 }}>
               {t('No feedback yet. When your testers send some, it shows up here.')}
             </div>
           ) : (
@@ -175,14 +175,14 @@ export function FeedbackInbox() {
                 key={f.id}
                 style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <span
                     style={{
                       fontSize: 11,
                       fontWeight: 700,
                       color: `var(--${k.color})`,
                       background: `color-mix(in srgb,var(--${k.color}) 13%,transparent)`,
-                      padding: '3px 9px',
+                      padding: '4px 8px',
                       borderRadius: 999,
                       textTransform: 'uppercase',
                       letterSpacing: '.04em',
@@ -191,10 +191,10 @@ export function FeedbackInbox() {
                     {k.label}
                   </span>
                   <span style={{ flex: 1 }} />
-                  <span style={{ fontSize: 12, color: 'var(--text2)' }}>{timeAgo(new Date(f.createdAt).getTime())}</span>
+                  <span style={{ fontSize: 13, color: 'var(--text2)' }}>{timeAgo(new Date(f.createdAt).getTime())}</span>
                 </div>
-                <div style={{ fontSize: 14.5, color: 'var(--text)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.message}</div>
-                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 10 }}>
+                <div style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.message}</div>
+                <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 8 }}>
                   {f.name} · {f.email}
                 </div>
               </div>
@@ -229,19 +229,19 @@ const FEATURE: Record<string, string> = {
  * the usage table: no one's entries are visible here.
  */
 function UsagePanel({ m }: { m: AdminMetrics | null }) {
-  if (!m) return <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text2)', fontSize: 14 }}>{t('Loading…')}</div>;
-  const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16, marginBottom: 14 };
-  const head = (t: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t}</div>;
+  if (!m) return <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--text2)', fontSize: 15 }}>{t('Loading…')}</div>;
+  const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16, marginBottom: 16 };
+  const head = (t: string) => <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{t}</div>;
   const pct = (v: number | null) => (v == null ? '·' : `${v}%`);
   return (
     <>
       <div style={card}>
         {head('Active people')}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
           {([['Today', m.active?.d1], ['7 days', m.active?.d7], ['30 days', m.active?.d30], ['Accounts', m.active?.users]] as const).map(([l, v]) => (
             <div key={l} style={{ flex: 1 }}>
               <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{v ?? 0}</div>
-              <div style={{ fontSize: 12, color: 'var(--text2)' }}>{l}</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)' }}>{l}</div>
             </div>
           ))}
         </div>
@@ -263,14 +263,14 @@ function UsagePanel({ m }: { m: AdminMetrics | null }) {
           ))}
         </div>
         {m.cohorts.length === 0 && <div style={{ fontSize: 13, color: 'var(--text2)' }}>{t('No signups in the last 8 weeks.')}</div>}
-        <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 10, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 8, lineHeight: 1.5 }}>
           {t('Share of each week’s new people who opened the app again the next day, in their second week, and around day 30. Health and fitness apps typically keep 3–8% at day 30.')}
         </div>
       </div>
       <div style={card}>
         {head('Last 30 days')}
         {m.features.map((f) => (
-          <div key={f.name} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '6px 0', borderTop: '1px solid var(--hairline)', fontSize: 13.5 }}>
+          <div key={f.name} style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '8px 0', borderTop: '1px solid var(--hairline)', fontSize: 13 }}>
             <span style={{ flex: 1, color: 'var(--text)' }}>{FEATURE[f.name] || f.name}</span>
             <span style={{ color: 'var(--text2)' }}>{f.users} {f.users === 1 ? 'person' : 'people'}</span>
             <span style={{ color: 'var(--text3)', minWidth: 52, textAlign: 'end' }}>{f.total.toLocaleString('en-US')}×</span>

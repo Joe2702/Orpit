@@ -78,7 +78,7 @@ export function TodoRow({
   const meta: React.ReactNode[] = [];
   if (list)
     meta.push(
-      <span key="l" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+      <span key="l" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
         <span style={{ width: 7, height: 7, borderRadius: '50%', background: `var(--${list.color})`, flex: 'none' }} />
         {list.name}
       </span>
@@ -126,7 +126,7 @@ export function TodoRow({
         <div
           style={{
             fontSize: 15,
-            fontWeight: 550,
+            fontWeight: 500,
             color: done ? 'var(--text3)' : 'var(--text)',
             textDecoration: done ? 'line-through' : 'none',
             lineHeight: 1.35,
@@ -136,7 +136,7 @@ export function TodoRow({
           {x.title}
         </div>
         {meta.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text2)', marginTop: 2, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text2)', marginTop: 2, minWidth: 0 }}>
             {meta.map((m, i) => (
               <React.Fragment key={i}>
                 {i > 0 && <span aria-hidden>·</span>}

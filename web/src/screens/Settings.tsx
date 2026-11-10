@@ -456,7 +456,7 @@ export function Settings() {
   // A row of choices with the chosen one raised. Changing the language or the
   // digits reloads Orbit once, so every date and label comes back in it.
   const segmented = (items: [string, boolean, () => void][], marginBottom = 24, keepDigits = false) => (
-    <div data-digits={keepDigits ? 'keep' : undefined} style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom }}>
+    <div data-digits={keepDigits ? 'keep' : undefined} style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 4, marginBottom }}>
       {items.map(([label, active, onClick]) => (
         <div
           role="button"
@@ -467,9 +467,9 @@ export function Settings() {
           style={{
             flex: 1,
             textAlign: 'center',
-            padding: '9px 0',
+            padding: '8px 0',
             borderRadius: 'calc(11px * var(--sq))',
-            fontSize: 13.5,
+            fontSize: 13,
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'all .2s',
@@ -498,7 +498,7 @@ export function Settings() {
     <div role="button" tabIndex={0}
       onClick={onClick}
       className="pressRow"
-      style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: last ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}
+      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', borderBottom: last ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}
     >
       <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
         {icon}
@@ -509,13 +509,13 @@ export function Settings() {
   );
 
   return (
-    <div style={{ padding: '6px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--text)', marginBottom: 18 }}>{t('Profile')}</div>
+    <div style={{ padding: '8px 20px 28px', animation: 'fadeIn .35s ease' }}>
+      <div className="display" style={{ fontSize: 40, lineHeight: 1.05, color: 'var(--text)', marginBottom: 16 }}>{t('Profile')}</div>
 
       <div role="button" tabIndex={0}
         onClick={() => open('profile')}
         className="press99"
-        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16, display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14, cursor: 'pointer' }}
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16, display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, cursor: 'pointer' }}
       >
         <Avatar name={profile.name} src={profile.avatar} size={54} />
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -537,7 +537,7 @@ export function Settings() {
             {i > 0 && <div style={{ width: 1, background: 'var(--border)' }} />}
             <div style={{ flex: 1, textAlign: 'center' }}>
               <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{v}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 3 }}>{l}</div>
+              <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>{l}</div>
             </div>
           </React.Fragment>
         ))}
@@ -546,7 +546,7 @@ export function Settings() {
       {/* Unverified email. A nudge, never a wall — the account works either
           way; this only makes password recovery possible. */}
       {!profile.emailVerified && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 13, background: 'color-mix(in srgb,var(--warning) 10%,var(--surface))', border: '1px solid color-mix(in srgb,var(--warning) 32%,var(--border))', borderRadius: 'calc(18px * var(--sq))', padding: '15px 16px', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'color-mix(in srgb,var(--warning) 10%,var(--surface))', border: '1px solid color-mix(in srgb,var(--warning) 32%,var(--border))', borderRadius: 'calc(18px * var(--sq))', padding: '16px 16px', marginBottom: 24 }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--warning)', strokeWidth: 1.9, strokeLinejoin: 'round' }} aria-hidden>
               <rect x="1.5" y="3.5" width="16" height="12" rx="2.5" />
@@ -554,8 +554,8 @@ export function Settings() {
             </svg>
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>{t('Confirm your email')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{t('Confirm your email')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2, lineHeight: 1.45 }}>
               {t('So you can reset your password if you ever lose it.')}
             </div>
           </div>
@@ -571,7 +571,7 @@ export function Settings() {
             }}
             className="press92"
             role="button"
-            style={{ flex: 'none', height: 38, padding: '0 15px', borderRadius: 999, background: 'var(--warning)', color: '#fff', display: 'flex', alignItems: 'center', fontSize: 13.5, fontWeight: 700, cursor: 'pointer' }}
+            style={{ flex: 'none', height: 38, padding: '0 16px', borderRadius: 999, background: 'var(--warning)', color: '#fff', display: 'flex', alignItems: 'center', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
           >
             {t('Send link')}
           </div>
@@ -579,7 +579,7 @@ export function Settings() {
       )}
 
       <SectionLabel>{t('Appearance')}</SectionLabel>
-      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 24 }}>
+      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 4, marginBottom: 24 }}>
         {themeSeg.map(([label, val]) => {
           const active = (profile.theme || 'light') === val;
           return (
@@ -589,9 +589,9 @@ export function Settings() {
               style={{
                 flex: 1,
                 textAlign: 'center',
-                padding: '9px 0',
+                padding: '8px 0',
                 borderRadius: 'calc(11px * var(--sq))',
-                fontSize: 13.5,
+                fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'all .2s',
@@ -634,7 +634,7 @@ export function Settings() {
         {MODULE_OPTS.map((m, i) => {
           const on = !profile.modules || profile.modules.includes(m.key);
           return (
-            <div key={m.key} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px 16px', borderBottom: i === MODULE_OPTS.length - 1 ? 'none' : '1px solid var(--border)' }}>
+            <div key={m.key} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', borderBottom: i === MODULE_OPTS.length - 1 ? 'none' : '1px solid var(--border)' }}>
               <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
                 <Glyph name={m.icon} size={19} color="var(--text2)" />
               </span>
@@ -660,25 +660,25 @@ export function Settings() {
           );
         })}
       </div>
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24, paddingInlineStart: 4, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 24, paddingInlineStart: 4, lineHeight: 1.5 }}>
         {t('Hides what you don\'t use. Nothing is deleted.')}
       </div>
 
       <SectionLabel>{t('Accent colour')}</SectionLabel>
       {/* Any colour, from a wheel: the sheet opens on the current one. */}
-      <div role="button" tabIndex={0} onClick={() => open('accent')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', marginBottom: 24, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', cursor: 'pointer' }}>
+      <div role="button" tabIndex={0} onClick={() => open('accent')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 16px', marginBottom: 24, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', cursor: 'pointer' }}>
         <span style={{ width: 38, height: 38, borderRadius: '50%', flex: 'none', background: 'conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--indigo)', border: '2.5px solid var(--surface)' }} />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Pick any colour')}</div>
-          <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Buttons, charts and highlights follow it')}</div>
+          <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('Buttons, charts and highlights follow it')}</div>
         </div>
         <IconChevron />
       </div>
 
       <SectionLabel>{t('Text size')}</SectionLabel>
-      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 3, marginBottom: 24 }}>
+      <div style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 4, marginBottom: 24 }}>
         {([[tk('Small'), 0.9], [tk('Default'), 1], [tk('Large'), 1.1], [tk('Largest'), 1.2]] as const).map(([lbl, v]) => {
           const active = Math.abs((profile.textScale || 1) - v) < 0.01;
           return (
@@ -686,7 +686,7 @@ export function Settings() {
               key={lbl}
               onClick={() => mutateOpt((st) => ({ ...st, profile: { ...st.profile, textScale: v } }), () => api.updateMe({ textScale: v }))}
               role="button"
-              style={{ flex: 1, textAlign: 'center', padding: '9px 0', borderRadius: 'calc(11px * var(--sq))', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(active ? { background: 'var(--surface)', color: 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
+              style={{ flex: 1, textAlign: 'center', padding: '8px 0', borderRadius: 'calc(11px * var(--sq))', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all .2s', ...(active ? { background: 'var(--surface)', color: 'var(--text)', boxShadow: '0 1px 3px rgba(20,21,26,.12)' } : { color: 'var(--text2)' }) }}
             >
               {t(lbl)}
             </div>
@@ -703,7 +703,7 @@ export function Settings() {
           and the morning brief Claude writes (everywhere). */}
       <SectionLabel>{t('Connected apps')}</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
-        <div role="button" tabIndex={0} onClick={() => open('assistant')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} onClick={() => open('assistant')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" viewBox="0 0 22 22" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <path d="M3 15.5h16M6 15.5a5 5 0 0 1 10 0M11 4.5v2.2M4.6 8.1l1.5 1.5M17.4 8.1l-1.5 1.5M7 18.5h8" />
@@ -711,14 +711,14 @@ export function Settings() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Claude')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{assistantSetUp() ? t('Sends your morning brief here') : t('Get Claude’s morning brief in Orbit')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{assistantSetUp() ? t('Sends your morning brief here') : t('Get Claude’s morning brief in Orbit')}</div>
           </div>
           <IconChevron />
         </div>
         {healthSupported() && (
           <>
-            <div style={{ height: 1, background: 'var(--hairline)', marginInlineStart: 53 }} />
-            <div role="button" tabIndex={0} onClick={() => open('health')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
+            <div style={{ height: 1, background: 'var(--hairline)', marginInlineStart: 52 }} />
+            <div role="button" tabIndex={0} onClick={() => open('health')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', cursor: 'pointer' }}>
               <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
                 <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
                   <path d="M2 10.5h3.2l2-4.5 3.4 9 2.2-6 1.4 1.5H18" />
@@ -726,7 +726,7 @@ export function Settings() {
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Fitbit and Health Connect')}</div>
-                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{healthPrefs().on ? t('Syncing your sleep and workouts') : t('Bring in your sleep and workouts')}</div>
+                <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{healthPrefs().on ? t('Syncing your sleep and workouts') : t('Bring in your sleep and workouts')}</div>
               </div>
               <IconChevron />
             </div>
@@ -750,7 +750,7 @@ export function Settings() {
           border
         />
         {profile.reminders && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', borderBottom: '1px solid var(--border)' }}>
             <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
               <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
                 <circle cx="9.5" cy="10" r="7" />
@@ -759,27 +759,27 @@ export function Settings() {
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Reminder time')}</div>
-              <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('End of day works best')}</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('End of day works best')}</div>
             </div>
             <input
               type="time"
               value={profile.reminderTime || '21:00'}
               onChange={(e) => setReminderTime(e.target.value)}
-              style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(12px * var(--sq))', padding: '8px 12px', outline: 'none', fontVariantNumeric: 'tabular-nums' }}
+              style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(12px * var(--sq))', padding: '8px 12px', outline: 'none', fontVariantNumeric: 'tabular-nums' }}
             />
           </div>
         )}
         {profile.reminders && (
-          <div role="button" tabIndex={0} onClick={sendTest} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+          <div role="button" tabIndex={0} onClick={sendTest} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
             <span style={{ width: 36, flex: 'none' }} />
-            <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--indigo)' }}>{t('Send a test notification')}</div>
+            <div style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--indigo)' }}>{t('Send a test notification')}</div>
           </div>
         )}
         {isNative() && (
           <div role="button" tabIndex={0}
             onClick={() => (diag ? setDiagOpen((v) => !v) : runDiagnostics())}
             className="pressRow"
-            style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: diagShown ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: diagShown ? '1px solid var(--border)' : 'none', cursor: 'pointer' }}
           >
             <span style={{ width: 36, flex: 'none', display: 'flex', justifyContent: 'center' }}>
               {diag && (
@@ -787,7 +787,7 @@ export function Settings() {
               )}
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: diag && !diagHealthy ? 'var(--danger)' : 'var(--text2)' }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: diag && !diagHealthy ? 'var(--danger)' : 'var(--text2)' }}>
                 {diagBusy
                   ? t('Checking…')
                   : !diag
@@ -800,33 +800,33 @@ export function Settings() {
                   piece of proof worth showing — it answers the question the
                   panel used to exist for, in one line. */}
               {diag && diagHealthy && diag.nextAt && !diagOpen && (
-                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Next: {nextAt}', { nextAt: diag.nextAt })}</div>
+                <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('Next: {nextAt}', { nextAt: diag.nextAt })}</div>
               )}
               {diag && !diagHealthy && !diagOpen && (
-                <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Tap to see what needs fixing')}</div>
+                <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('Tap to see what needs fixing')}</div>
               )}
             </div>
           </div>
         )}
         {diag && (diagOpen || !diagHealthy) && (
-          <div style={{ padding: '14px 16px', background: 'var(--bg)' }}>
+          <div style={{ padding: '16px 16px', background: 'var(--bg)' }}>
             {[
               [t('Permission to notify'), diag.permission === 'granted', diag.permission],
               [t('Enabled in system settings'), diag.enabled !== false, diag.enabled === null ? t('unknown') : diag.enabled ? t('yes') : t('no')],
               [t('Exact alarms allowed'), diag.exact !== false, diag.exact === null ? t('unknown') : diag.exact ? t('yes') : t('no')],
               [t('Reminders scheduled'), diag.scheduled > 0, String(diag.scheduled)],
             ].map(([label, ok, value]) => (
-              <div key={label as string} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
+              <div key={label as string} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', flex: 'none', background: ok ? 'var(--success)' : 'var(--danger)' }} />
                 <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{label as string}</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{value as string}</span>
               </div>
             ))}
             {diag.nextAt && (
-              <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 6 }}>{t('Next reminder: {nextAt}', { nextAt: diag.nextAt })}</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 8 }}>{t('Next reminder: {nextAt}', { nextAt: diag.nextAt })}</div>
             )}
             {diag.permission !== 'granted' && (
-              <div style={{ fontSize: 12.5, color: 'var(--danger)', marginTop: 10, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 13, color: 'var(--danger)', marginTop: 8, lineHeight: 1.5 }}>
                 {t('Android is blocking notifications for Orbit. Open your phone\'s Settings → Apps → Orbit → Notifications and allow them, then check again.')}
               </div>
             )}
@@ -838,13 +838,13 @@ export function Settings() {
                 }}
                 className="press99"
                 role="button"
-                style={{ marginTop: 10, height: 44, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}
+                style={{ marginTop: 8, height: 44, borderRadius: 'calc(12px * var(--sq))', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}
               >
                 {t('Allow exact alarms so reminders arrive on time')}
               </div>
             )}
             {diag.permission === 'granted' && diag.enabled !== false && diag.scheduled === 0 && (
-              <div style={{ fontSize: 12.5, color: 'var(--warning)', marginTop: 10, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 13, color: 'var(--warning)', marginTop: 8, lineHeight: 1.5 }}>
                 {t('Nothing is scheduled. Turn the daily reminder off and on again to re-schedule it.')}
               </div>
             )}
@@ -852,7 +852,7 @@ export function Settings() {
               onClick={() => runDiagnostics()}
               className="press99"
               role="button"
-              style={{ marginTop: 10, fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}
+              style={{ marginTop: 8, fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}
             >
               {diagBusy ? t('Checking…') : t('Check again')}
             </div>
@@ -872,17 +872,17 @@ export function Settings() {
           border
         />
         {brief.on && isNative() && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', borderBottom: '1px solid var(--border)' }}>
             <span style={{ width: 24, flex: 'none' }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Brief time')}</div>
-              <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('When the notification arrives')}</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('When the notification arrives')}</div>
             </div>
             <input
               type="time"
               value={brief.time}
               onChange={(e) => /^\d{2}:\d{2}$/.test(e.target.value) && saveBrief({ ...brief, time: e.target.value })}
-              style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(12px * var(--sq))', padding: '8px 12px', outline: 'none', fontVariantNumeric: 'tabular-nums' }}
+              style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(12px * var(--sq))', padding: '8px 12px', outline: 'none', fontVariantNumeric: 'tabular-nums' }}
             />
           </div>
         )}
@@ -944,10 +944,10 @@ export function Settings() {
                     onClick={() => ensureNotificationPermission().then(setAlertsOk)}
                     className="pressRow"
                     role="button"
-                    style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                    style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                   >
-                    <div style={{ fontSize: 13.5, fontWeight: 650, color: 'var(--indigo)' }}>{t('Allow payment alerts')}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2, lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)' }}>{t('Allow payment alerts')}</div>
+                    <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2, lineHeight: 1.5 }}>
                       {t('Notifications are off, so a payment your bank tells you about while Orbit is closed won’t show up until you open it.')}
                     </div>
                   </div>
@@ -956,11 +956,11 @@ export function Settings() {
                 {/* No account picker any more: each bank's messages go to that
                     bank's account, made the first time it is seen, so the
                     accounts in Finances are the user's real ones. */}
-                <div style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>
+                <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>
                     {linkedCount ? tn(linkedCount, 'Tracking {n} account', 'Tracking {n} accounts') : t('Accounts are set up for you')}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.5 }}>
+                  <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5 }}>
                     {t('Each bank, card and wallet gets its own account, with the balance your bank last reported. Transfers between them are counted once, not as spending.')}
                   </div>
                 </div>
@@ -968,10 +968,10 @@ export function Settings() {
                 <div role="button" tabIndex={0}
                   onClick={() => !scanning && scanMessages(true)}
                   className="pressRow"
-                  style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                 >
                   <span style={{ width: 36, flex: 'none' }} />
-                  <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--indigo)' }}>
+                  <div style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--indigo)' }}>
                     {scanning ? t('Checking…') : t('Check for new messages now')}
                   </div>
                 </div>
@@ -979,10 +979,10 @@ export function Settings() {
                 <div role="button" tabIndex={0}
                   onClick={() => !scanning && importOlder()}
                   className="pressRow"
-                  style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
                 >
                   <span style={{ width: 36, flex: 'none' }} />
-                  <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--indigo)' }}>{t('Import the past year')}</div>
+                  <div style={{ flex: 1, fontSize: 15, fontWeight: 600, color: 'var(--indigo)' }}>{t('Import the past year')}</div>
                 </div>
 
                 {/* What the last scan actually saw. This is the difference between
@@ -992,16 +992,16 @@ export function Settings() {
                 <div role="button" tabIndex={0}
                   onClick={() => smsInfo && setDiagOpenSms((v) => !v)}
                   className={smsInfo ? 'pressRow' : undefined}
-                  style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)', cursor: smsInfo ? 'pointer' : 'default' }}
+                  style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', cursor: smsInfo ? 'pointer' : 'default' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{t('Last check')}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
+                    <div style={{ fontSize: 13, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
                       {smsInfo ? ago(smsInfo.at) : t('Not yet')}
                     </div>
                   </div>
                   {smsInfo && (
-                    <div style={{ fontSize: 12, color: smsInfo.error ? 'var(--danger)' : 'var(--text2)', marginTop: 4, lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 13, color: smsInfo.error ? 'var(--danger)' : 'var(--text2)', marginTop: 4, lineHeight: 1.5 }}>
                       {smsInfo.error
                         ? smsInfo.error
                         : [
@@ -1013,7 +1013,7 @@ export function Settings() {
                     </div>
                   )}
                   {smsInfo && !smsInfo.error && smsInfo.recent.length > 0 && (
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--indigo)', marginTop: 6 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', marginTop: 8 }}>
                       {diagOpenSms ? t('Hide recent bank messages') : t('Show recent bank messages')}
                     </div>
                   )}
@@ -1021,19 +1021,19 @@ export function Settings() {
                 {diagOpenSms && smsInfo && smsInfo.recent.length > 0 && (
                   <div style={{ padding: '4px 16px 12px', borderBottom: '1px solid var(--border)' }}>
                     {smsInfo.recent.map((r, i) => (
-                      <div key={i} style={{ padding: '9px 0', borderTop: i ? '1px solid var(--border)' : 'none' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.sender}</span>
-                          <span style={{ fontSize: 11.5, fontWeight: 600, color: r.ok ? 'var(--indigo)' : 'var(--text2)', flex: 'none' }}>{t(r.outcome)}</span>
+                      <div key={i} style={{ padding: '8px 0', borderTop: i ? '1px solid var(--border)' : 'none' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.sender}</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: r.ok ? 'var(--indigo)' : 'var(--text2)', flex: 'none' }}>{t(r.outcome)}</span>
                         </div>
-                        <div dir="auto" style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3, lineHeight: 1.45, overflowWrap: 'anywhere' }}>
+                        <div dir="auto" style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4, lineHeight: 1.45, overflowWrap: 'anywhere' }}>
                           {r.snippet}
                         </div>
                         {r.masked && (
                           <div tabIndex={0}
                             onClick={() => shareFormat(r)}
                             role="button"
-                            style={{ fontSize: 12, fontWeight: 650, color: sharedFormats.includes(r.masked) ? 'var(--text3)' : 'var(--indigo)', marginTop: 5, cursor: 'pointer' }}
+                            style={{ fontSize: 13, fontWeight: 600, color: sharedFormats.includes(r.masked) ? 'var(--text3)' : 'var(--indigo)', marginTop: 4, cursor: 'pointer' }}
                           >
                             {sharedFormats.includes(r.masked) ? t('Sent, thank you') : t('Help Orbit read this bank')}
                           </div>
@@ -1047,7 +1047,7 @@ export function Settings() {
 
             {/* Said plainly, and said here rather than buried in a policy page:
                 this is the permission people are most right to be wary of. */}
-            <div style={{ padding: '13px 16px', fontSize: 12, lineHeight: 1.55, color: 'var(--text2)' }}>
+            <div style={{ padding: '12px 16px', fontSize: 13, lineHeight: 1.55, color: 'var(--text2)' }}>
               {t(
                 'Orbit reads only messages from banks and wallets, and only on this phone. The text of your messages is never sent anywhere: it stays on this phone so you can see what each entry was read from. Orbit works out the amount, the shop, the date and which bank on the device, and stores just those. Imported payments are marked SMS so you can check them, and you can edit or delete any of them like anything else.'
               )}
@@ -1079,14 +1079,14 @@ export function Settings() {
           onClick={() => go('achievements')}
           className="pressRow"
           role="button"
-          style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer', borderBottom: '1px solid var(--hairline)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', cursor: 'pointer', borderBottom: '1px solid var(--hairline)' }}
         >
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <Glyph name="trophy" size={19} color="var(--text2)" />
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Achievements')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>
               {t('{earned} of {total} earned', { earned: badgeInfo.earned, total: badgeInfo.total })}
               {badgeInfo.toReveal ? ' · ' + t('{n} to reveal', { n: badgeInfo.toReveal }) : ''}
             </div>
@@ -1096,7 +1096,7 @@ export function Settings() {
         <div role="button" tabIndex={0}
           onClick={() => go('partner')}
           className="pressRow"
-          style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', cursor: 'pointer' }}
         >
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
@@ -1108,12 +1108,12 @@ export function Settings() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Accountability partner')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>
               {partnerHint}
             </div>
           </div>
           {partnerUnread > 0 && (
-            <span style={{ minWidth: 22, height: 22, padding: '0 6px', borderRadius: 'calc(11px * var(--sq))', background: 'var(--danger)', color: '#fff', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', marginInlineEnd: 4 }}>
+            <span style={{ minWidth: 22, height: 22, padding: '0 8px', borderRadius: 'calc(11px * var(--sq))', background: 'var(--danger)', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', marginInlineEnd: 4 }}>
               {partnerUnread}
             </span>
           )}
@@ -1160,7 +1160,7 @@ export function Settings() {
       </div>
 
       <SectionLabel>{t('Data')}</SectionLabel>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 14 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 16 }}>
         <PrefRow
           iconKey="indigo"
           title={t('Share usage counts')}
@@ -1174,7 +1174,7 @@ export function Settings() {
           }
           border
         />
-        <div role="button" tabIndex={0} onClick={exportData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} onClick={exportData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M10 3v9M6.5 8.5L10 12l3.5-3.5M4 14v2h12v-2" />
@@ -1182,11 +1182,11 @@ export function Settings() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Export data')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Download everything as JSON')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('Download everything as JSON')}</div>
           </div>
           <IconChevron />
         </div>
-        <div role="button" tabIndex={0} onClick={importData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderTop: '1px solid var(--border)', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} onClick={importData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', borderTop: '1px solid var(--border)', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <path d="M10 12V3M6.5 6.5L10 3l3.5 3.5M4 14v2h12v-2" />
@@ -1194,11 +1194,11 @@ export function Settings() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Import data')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Restore from an exported file')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('Restore from an exported file')}</div>
           </div>
           <IconChevron />
         </div>
-        <div role="button" tabIndex={0} onClick={resetData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderTop: '1px solid var(--border)', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} onClick={resetData} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', borderTop: '1px solid var(--border)', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--danger)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M4 6h12M8 6V4.5h4V6M6.5 6l.7 10h5.6l.7-10" />
@@ -1206,7 +1206,7 @@ export function Settings() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--danger)' }}>{t('Reset all data')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Erase every entry and start fresh')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('Erase every entry and start fresh')}</div>
           </div>
         </div>
       </div>
@@ -1228,7 +1228,7 @@ export function Settings() {
             border
           />
         )}
-        <div role="button" tabIndex={0} onClick={changePassword} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} onClick={changePassword} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <rect x="4" y="8.5" width="12" height="8" rx="2" />
@@ -1237,11 +1237,11 @@ export function Settings() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Change password')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Without the email round-trip')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('Without the email round-trip')}</div>
           </div>
           <IconChevron />
         </div>
-        <div role="button" tabIndex={0} onClick={signOutOthers} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} onClick={signOutOthers} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <rect x="3" y="4" width="9" height="12" rx="2" />
@@ -1250,7 +1250,7 @@ export function Settings() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Sign out other devices')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Keeps you signed in here')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('Keeps you signed in here')}</div>
           </div>
           <IconChevron />
         </div>
@@ -1258,7 +1258,7 @@ export function Settings() {
 
       <SectionLabel>{t('Support')}</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
-        <div role="button" tabIndex={0} onClick={() => go('privacy')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} onClick={() => go('privacy')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <path d="M10 2.5l6 2.5v5c0 3.4-2.5 6.4-6 7.5-3.5-1.1-6-4.1-6-7.5V5l6-2.5Z" />
@@ -1266,11 +1266,11 @@ export function Settings() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Privacy')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('What Orbit stores, and what it doesn\'t')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('What Orbit stores, and what it doesn\'t')}</div>
           </div>
           <IconChevron />
         </div>
-        <div role="button" tabIndex={0} onClick={() => open('feedback')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer' }}>
+        <div role="button" tabIndex={0} onClick={() => open('feedback')} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', cursor: 'pointer' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
               <path d="M4 4h12v9H8l-4 3.5V4Z" />
@@ -1278,12 +1278,12 @@ export function Settings() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Send feedback')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('Ideas, bugs, or suggestions')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('Ideas, bugs, or suggestions')}</div>
           </div>
           <IconChevron />
         </div>
         {/* The first-run tour, again: shown on this phone only, nothing is reset. */}
-        <div role="button" tabIndex={0} onClick={() => applyState({ ...state!, profile: { ...state!.profile, introDone: false } })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', cursor: 'pointer', borderTop: '1px solid var(--hairline)' }}>
+        <div role="button" tabIndex={0} onClick={() => applyState({ ...state!, profile: { ...state!.profile, introDone: false } })} className="pressRow" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', cursor: 'pointer', borderTop: '1px solid var(--hairline)' }}>
           <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
             <svg width="19" height="19" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <circle cx="10" cy="10" r="7.5" />
@@ -1292,7 +1292,7 @@ export function Settings() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Watch the tour again')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{t('What Orbit does, in a minute')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('What Orbit does, in a minute')}</div>
           </div>
           <IconChevron />
         </div>
@@ -1302,7 +1302,7 @@ export function Settings() {
         onClick={deleteAccount}
         className="press99"
         role="button"
-        style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginBottom: 10 }}
+        style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid color-mix(in srgb,var(--danger) 35%,var(--border))', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--danger)', cursor: 'pointer', marginBottom: 8 }}
       >
         {t('Delete my account')}
       </div>
@@ -1310,7 +1310,7 @@ export function Settings() {
       <div role="button" tabIndex={0}
         onClick={signOut}
         className="press99"
-        style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 15, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}
+        style={{ height: 52, borderRadius: 'calc(16px * var(--sq))', border: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}
       >
         <svg width="19" height="19" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
           <path d="M8 4H4v11h4M12 13l3-3.5L12 6M15 9.5H7" />
@@ -1322,7 +1322,7 @@ export function Settings() {
         onPointerDown={startHold}
         onPointerUp={cancelHold}
         onPointerLeave={cancelHold}
-        style={{ textAlign: 'center', fontSize: 12, color: 'var(--text2)', marginTop: 18, fontFamily: 'var(--font-mono)', userSelect: 'none', cursor: 'default' }}
+        style={{ textAlign: 'center', fontSize: 13, color: 'var(--text2)', marginTop: 16, fontFamily: 'var(--font-mono)', userSelect: 'none', cursor: 'default' }}
       >
         {t('Orbit · build {v} · {v2}', { v: __BUILD_ID__, v2: __BUILT_AT__ })}
       </div>
@@ -1348,13 +1348,13 @@ function PrefRow({
   border?: boolean;
 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '15px 16px', borderBottom: border ? '1px solid var(--border)' : 'none' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px', borderBottom: border ? '1px solid var(--border)' : 'none' }}>
       <span style={{ width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
         {icon}
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{title}</div>
-        <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>{sub}</div>
+        <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{sub}</div>
       </div>
       <div role="switch" tabIndex={0} aria-checked={on} aria-label={title} onClick={onToggle} style={toggleTrack(on)}>
         <div style={toggleKnob(on)} />
@@ -1377,7 +1377,7 @@ function CurrencyButton({ code, onClick }: { code: string; onClick: () => void }
       onClick={onClick}
       aria-label={t('Currency: {name}. Change', { name: currencyName(code, lang) })}
       className="press99"
-      style={{ position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', marginBottom: 24, cursor: 'pointer', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)' }}
+      style={{ position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 16, padding: '16px 16px', marginBottom: 24, cursor: 'pointer', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)' }}
     >
       {/* The flag, large and faint, tucked into the far corner. */}
       <span aria-hidden style={{ position: 'absolute', insetInlineEnd: -8, top: -14, fontSize: 84, lineHeight: 1, opacity: 0.12, transform: 'rotate(-12deg)', pointerEvents: 'none' }}>
@@ -1395,7 +1395,7 @@ function CurrencyButton({ code, onClick }: { code: string; onClick: () => void }
           justifyContent: 'center',
           background: 'radial-gradient(circle at 30% 25%, rgba(255,255,255,.35), transparent 55%), var(--indigo)',
           color: 'var(--on-accent)',
-          fontSize: sym.length > 3 ? 13 : sym.length > 2 ? 15 : 20,
+          fontSize: sym.length > 3 ? 13 : sym.length > 2 ? 15 : 22,
           fontWeight: 700,
           letterSpacing: '-.02em',
           boxShadow: '0 8px 18px -8px var(--indigo), inset 0 1px 0 rgba(255,255,255,.3)',
@@ -1404,12 +1404,12 @@ function CurrencyButton({ code, onClick }: { code: string; onClick: () => void }
         {sym}
       </span>
       <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 16, fontWeight: 650, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currencyName(code, lang)}</div>
-        <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 2 }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currencyName(code, lang)}</div>
+        <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2 }}>
           <span style={{ direction: 'ltr', unicodeBidi: 'isolate' }}>{code}</span> · {t('Tap to change')}
         </div>
       </div>
-      <span aria-hidden style={{ position: 'relative', fontSize: 26, lineHeight: 1 }}>{currencyFlag(code)}</span>
+      <span aria-hidden style={{ position: 'relative', fontSize: 28, lineHeight: 1 }}>{currencyFlag(code)}</span>
       <IconChevron />
     </div>
   );

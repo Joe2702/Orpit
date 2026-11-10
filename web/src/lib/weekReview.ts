@@ -23,6 +23,8 @@ export interface WeekSummary {
   habitPlanned: number;
   /** The habit done least often against its plan, if any fell short. */
   weakestHabit: string | null;
+  /** A habit done on every planned day (three or more) this week, the most planned first. */
+  steadyHabit: string | null;
   workouts: number;
   avgSleep: number | null;
   /** Spending on each of the seven days, oldest first, for the little chart. */
@@ -52,6 +54,7 @@ export function summariseWeek(state: AppState, now: number = Date.now()): WeekSu
   let habitDone = 0;
   let habitPlanned = 0;
   let weakest: { name: string; rate: number } | null = null;
+  let steady: { name: string; planned: number } | null = null;
   const days = Array.from({ length: 7 }, (_, i) => addDays(from, i));
   for (const h of state.habits) {
     if (h.archived || h.paused || h.locked) continue;
@@ -68,6 +71,7 @@ export function summariseWeek(state: AppState, now: number = Date.now()): WeekSu
     habitDone += did;
     const rate = planned ? did / planned : 1;
     if (planned && rate < 1 && (!weakest || rate < weakest.rate)) weakest = { name: h.name, rate };
+    if (planned >= 3 && did === planned && (!steady || planned > steady.planned)) steady = { name: h.name, planned };
   }
 
   const nights = state.nights.filter((n) => inWeek(n.ts));
@@ -81,6 +85,7 @@ export function summariseWeek(state: AppState, now: number = Date.now()): WeekSu
     habitDone,
     habitPlanned,
     weakestHabit: weakest?.name ?? null,
+    steadyHabit: steady?.name ?? null,
     workouts: state.workouts.filter((w) => inWeek(w.ts)).length,
     avgSleep: nights.length ? Math.round((nights.reduce((s, n) => s + n.hours, 0) / nights.length) * 10) / 10 : null,
     daily: days.map((d, i) => Math.round(spendOf(d, i < 6 ? days[i + 1] : to + 1))),

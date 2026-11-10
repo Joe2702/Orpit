@@ -201,6 +201,7 @@ export function Reorderable({ items, onReorder, handleTop = 2 }: { items: Item[]
           >
             <span
               data-drag-handle
+              className="hit"
               role="button"
               tabIndex={0}
               aria-label={t('Move')}

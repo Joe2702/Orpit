@@ -6,6 +6,7 @@ import { SetsEditor } from '../SetsEditor';
 import type { WorkoutSet } from '../types';
 import { StickySave } from '../StickySave';
 import { date, t, tData } from '../i18n';
+import { workoutLoggedMessage } from '../lib/endings';
 
 // Local YYYY-MM-DD (not UTC) for the date input's default.
 function todayISO(): string {
@@ -43,7 +44,8 @@ export function WorkoutSheet() {
         workouts: [...s.workouts, { id: tempId, name: catName, catId: o.catId, dur: o.dur, dist: null, kcal: null, intensity: o.intensity, note: o.note ?? null, sets: payload, ts: o.ts }],
       }),
       () => api.addWorkout({ catId: o.catId, dur: o.dur, dist: null, kcal: null, intensity: o.intensity, note: o.note ?? null, sets: payload, ts: o.ts }),
-      t('Workout logged')
+      // Ends on the week so far, this session included.
+      workoutLoggedMessage([...state!.workouts.map((w) => w.ts), o.ts], o.ts)
     ).catch(() => {});
     closeSheet();
   };
@@ -70,14 +72,14 @@ export function WorkoutSheet() {
   };
 
   const label = (text: string) => (
-    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{text}</div>
+    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{text}</div>
   );
 
   return (
     <div style={{ padding: '4px 20px 32px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '6px 0 20px' }}>
-        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{t('Log workout')}</div>
-        <label style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 7, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 20px' }}>
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)' }}>{t('Log workout')}</div>
+        <label style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '8px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
           <svg width="15" height="15" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <rect x="2" y="3" width="11" height="10" rx="2" />
             <path d="M2 6h11M5 1.5v3M10 1.5v3" />
@@ -98,7 +100,7 @@ export function WorkoutSheet() {
           onClick={repeatLast}
           className="press99"
           role="button"
-          style={{ display: 'flex', alignItems: 'center', gap: 11, background: 'color-mix(in srgb,var(--indigo) 10%,var(--surface))', border: '1px solid color-mix(in srgb,var(--indigo) 30%,var(--border))', borderRadius: 'calc(16px * var(--sq))', padding: '13px 15px', marginBottom: 20, cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'color-mix(in srgb,var(--indigo) 10%,var(--surface))', border: '1px solid color-mix(in srgb,var(--indigo) 30%,var(--border))', borderRadius: 'calc(16px * var(--sq))', padding: '12px 16px', marginBottom: 20, cursor: 'pointer' }}
         >
           <span style={{ width: 34, height: 34, borderRadius: 'calc(11px * var(--sq))', flex: 'none', background: 'color-mix(in srgb,var(--indigo) 16%,transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
@@ -106,8 +108,8 @@ export function WorkoutSheet() {
             </svg>
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>{t('Repeat last workout')}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--text2)', marginTop: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{t('Repeat last workout')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>
               {tData(lastCatName)} · {t('{n} min', { n: last.dur })}
               {last.intensity ? ` · ${tData(last.intensity)}` : ''}
             </div>
@@ -115,11 +117,11 @@ export function WorkoutSheet() {
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{t('Category')}</span>
         <span role="button" tabIndex={0} onClick={() => open('wcats')} style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>{t('Manage')}</span>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 22 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
         {cats.map((c) => (
           <div role="button" tabIndex={0} aria-pressed={catId === c.id} key={c.id} onClick={() => setCatId(c.id)} style={chip(catId === c.id, `var(--${c.color})`)}>
             {tData(c.name)}
@@ -128,13 +130,13 @@ export function WorkoutSheet() {
       </div>
 
       {label(t('Duration'))}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: 16, marginBottom: 22 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(16px * var(--sq))', padding: 16, marginBottom: 24 }}>
         <div role="button" tabIndex={0} aria-label={t('5 minutes less')} onClick={() => setDur(Math.max(5, dur - 5))} className="press92" style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none' }}>
           <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--text)', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M5 10h10" /></svg>
         </div>
         <div style={{ textAlign: 'center', minWidth: 96 }}>
           <span style={{ fontSize: 40, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{dur}</span>
-          <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text2)' }}>{' ' + t('min')}</span>
+          <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text2)' }}>{' ' + t('min')}</span>
         </div>
         <div role="button" tabIndex={0} aria-label={t('5 minutes more')} onClick={() => setDur(dur + 5)} className="press92" style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none', boxShadow: '0 6px 12px -6px rgba(40,36,28,.20)' }}>
           <svg width="20" height="20" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M10 5v10M5 10h10" /></svg>
@@ -142,7 +144,7 @@ export function WorkoutSheet() {
       </div>
 
       {label(t('Intensity'))}
-      <div style={{ display: 'flex', gap: 9, marginBottom: 22 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
         {['Easy', 'Moderate', 'Hard'].map((lvl) => (
           <div role="button" tabIndex={0} aria-pressed={intensity === lvl} key={lvl} onClick={() => setIntensity(lvl)} style={{ ...chip(intensity === lvl, 'var(--indigo)'), flex: 1, textAlign: 'center' }}>
             {tData(lvl)}
@@ -163,7 +165,7 @@ export function WorkoutSheet() {
                 }}
                 className="pressRow"
                 role="button"
-                style={{ padding: '9px 14px', borderRadius: 999, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', border: '1.5px solid color-mix(in srgb,var(--indigo) 40%,var(--border))', background: 'color-mix(in srgb,var(--indigo) 9%,transparent)', color: 'var(--indigo)' }}
+                style={{ padding: '8px 16px', borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1.5px solid color-mix(in srgb,var(--indigo) 40%,var(--border))', background: 'color-mix(in srgb,var(--indigo) 9%,transparent)', color: 'var(--indigo)' }}
               >
                 {t.name}
               </div>
@@ -173,7 +175,7 @@ export function WorkoutSheet() {
       )}
 
       {label(t('Sets & reps (optional)'))}
-      <div style={{ marginBottom: 22 }}>
+      <div style={{ marginBottom: 24 }}>
         <SetsEditor sets={sets} onChange={setSets} />
       </div>
 
@@ -183,10 +185,10 @@ export function WorkoutSheet() {
         onChange={(e) => setNote(e.target.value)}
         placeholder={t('e.g. knee felt better today')}
         maxLength={200}
-        style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 22 }}
+        style={{ width: '100%', height: 50, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', padding: '0 16px', fontSize: 15, color: 'var(--text)', outline: 'none', marginBottom: 24 }}
       />
 
-      <div tabIndex={0} onClick={saveTemplate} className="pressRow" role="button" style={{ textAlign: 'center', fontSize: 13, fontWeight: 600, color: 'var(--text2)', padding: 10, marginBottom: 8, cursor: 'pointer' }}>
+      <div tabIndex={0} onClick={saveTemplate} className="pressRow" role="button" style={{ textAlign: 'center', fontSize: 13, fontWeight: 600, color: 'var(--text2)', padding: 8, marginBottom: 8, cursor: 'pointer' }}>
         {t('Save this as a preset')}
       </div>
 

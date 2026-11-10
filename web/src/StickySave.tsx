@@ -42,7 +42,7 @@ export function StickySave({
 }) {
   return (
     <>
-    <div style={{ position: 'sticky', bottom, zIndex: 5, marginTop: 10 }}>
+    <div style={{ position: 'sticky', bottom, zIndex: 5, marginTop: 8 }}>
       {/* Whatever scrolls under the button has to read as behind it, not as
           part of it. A blur does that over any backdrop; a solid fade cannot,
           because the page background is `--app-bg` — itself a radial gradient,
@@ -79,7 +79,7 @@ export function StickySave({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 16,
+          fontSize: 15,
           fontWeight: 700,
           letterSpacing: '-.01em',
           cursor: enabled ? 'pointer' : 'default',
