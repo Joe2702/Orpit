@@ -50,6 +50,7 @@ export function BackButton({ onClick }: { onClick: () => void }) {
   return (
     <div role="button" tabIndex={0} aria-label={t('Back')}
       onClick={onClick}
+      className="hit"
       style={{
         width: 38,
         height: 38,
@@ -90,7 +91,7 @@ export function SectionLabel({
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '6px 2px 10px', ...style }}>
       <div style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 650, letterSpacing: '-.01em', color: 'var(--text)' }}>{children}</div>
       {action && (
-        <span tabIndex={0} onClick={action.onClick} role="button" style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer', flex: 'none' }}>
+        <span tabIndex={0} onClick={action.onClick} role="button" className="hit" style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer', flex: 'none' }}>
           {action.label}
         </span>
       )}
@@ -136,7 +137,7 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
       role="button"
       aria-label={label}
       aria-disabled={!enabled}
-      className={enabled ? 'press92' : undefined}
+      className={enabled ? 'press92 hit' : 'hit'}
       style={{
         width: 40,
         height: 36,
@@ -171,13 +172,14 @@ export function RangeSeg({ period }: { period?: { title: string; caption: string
             role="tab"
             aria-selected={range === r}
             onClick={() => setRange(r)}
+            className="hit"
             style={{
               flex: 1,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              // 44px is the smallest reliable touch target. This is the control
-              // people reach for on every stats screen.
+              // 40px on screen; the .hit area takes the touch target to 44px.
+              // This is the control people reach for on every stats screen.
               minHeight: 40,
               borderRadius: 'calc(10px * var(--sq))',
               fontSize: 13.5,
@@ -340,7 +342,7 @@ export function ChartCard({
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: 'var(--text2)' }}>{title}</div>
         {action && (
-          <span tabIndex={0} onClick={action.onClick} role="button" style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
+          <span tabIndex={0} onClick={action.onClick} role="button" className="hit" style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
             {action.label}
           </span>
         )}
@@ -375,7 +377,7 @@ export function Avatar({
   return (
     <div role="button" tabIndex={0}
       onClick={onClick}
-      className={onClick ? 'press96' : undefined}
+      className={onClick ? 'press96 hit' : undefined}
       style={{
         width: size,
         height: size,
@@ -389,12 +391,11 @@ export function Avatar({
         fontWeight: 650,
         fontSize: size * 0.38,
         flex: 'none',
-        overflow: 'hidden',
         cursor: onClick ? 'pointer' : 'default',
       }}
     >
       {src ? (
-        <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
       ) : (
         avatarInitial(name)
       )}

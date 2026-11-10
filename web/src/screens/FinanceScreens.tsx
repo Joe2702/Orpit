@@ -216,6 +216,37 @@ export function FAddTx() {
         <span style={{ fontSize: 30, fontWeight: 600, color: 'var(--text2)', verticalAlign: 'top', lineHeight: 1.7 }}>{moneySymbol().trim()}</span>
         <span style={{ fontSize: 56, fontWeight: 700, letterSpacing: '-.03em', color: income ? 'var(--indigo)' : isTransfer ? 'var(--indigo)' : 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{amount === '' ? '0' : amount}</span>
       </div>
+      {/* Which account, right under the amount: it used to sit below the
+          category grid, under the floating Save button, so it took a scroll
+          past Save to check it. A transfer keeps its From and To lists below. */}
+      {!isTransfer && accounts.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: -4, marginBottom: 20 }}>
+          <label className="press96" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 8, height: 44, maxWidth: '100%', padding: '0 16px', borderRadius: 999, background: 'var(--surface)', border: '1px solid var(--border)', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>
+            <span aria-hidden style={{ width: 8, height: 8, borderRadius: '50%', flex: 'none', background: `var(--${fromAcc?.color || 'indigo'})` }} />
+            <span style={{ color: 'var(--text2)', fontWeight: 500, flex: 'none' }}>{income ? t('To') : t('From')}</span>
+            <span style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tData(fromAcc?.name || '')}</span>
+            {accounts.length > 1 && (
+              <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'var(--text2)', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+                <path d="M4.5 7l4.5 4.5L13.5 7" />
+              </svg>
+            )}
+            {/* The phone's own picker, laid invisibly over the pill. */}
+            <select
+              value={accId}
+              onChange={(e) => pickFrom(e.target.value)}
+              aria-label={t('Account')}
+              disabled={accounts.length < 2}
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', fontSize: 16 }}
+            >
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {tData(a.name)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 22 }}>
         {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'].map((k) => (
           <div role="button" tabIndex={0} aria-label={k === 'del' ? t('Delete digit') : k === '.' ? t('Decimal point') : k} key={k} onClick={() => press(k)} style={{ height: 50, borderRadius: 'calc(14px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, fontWeight: 600, color: 'var(--text)', cursor: 'pointer', background: 'var(--bg)' }}>
@@ -278,18 +309,18 @@ export function FAddTx() {
           )}
         </div>
       )}
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{isTransfer ? t('From') : t('Account')}</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 22 }}>
-        {accounts.map((a) => (
-          <div role="button" tabIndex={0} aria-pressed={accId === a.id} key={a.id} onClick={() => pickFrom(a.id)} style={chip(accId === a.id, `var(--${a.color})`)}>{tData(a.name)}</div>
-        ))}
-      </div>
       {isTransfer && (
         <>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('From')}</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
+            {accounts.map((a) => (
+              <div role="button" tabIndex={0} aria-pressed={accId === a.id} key={a.id} onClick={() => pickFrom(a.id)} style={{ ...chip(accId === a.id, `var(--${a.color})`), minHeight: 44, display: 'flex', alignItems: 'center' }}>{tData(a.name)}</div>
+            ))}
+          </div>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 10 }}>{t('To')}</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginBottom: 10 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
             {accounts.filter((a) => a.id !== accId).map((a) => (
-              <div role="button" tabIndex={0} aria-pressed={toAccId === a.id} key={a.id} onClick={() => pickTo(a.id)} style={chip(toAccId === a.id, `var(--${a.color})`)}>{tData(a.name)}</div>
+              <div role="button" tabIndex={0} aria-pressed={toAccId === a.id} key={a.id} onClick={() => pickTo(a.id)} style={{ ...chip(toAccId === a.id, `var(--${a.color})`), minHeight: 44, display: 'flex', alignItems: 'center' }}>{tData(a.name)}</div>
             ))}
           </div>
           {/* The one thing worth saying about transfers, said once, where the

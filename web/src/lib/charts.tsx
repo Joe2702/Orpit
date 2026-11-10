@@ -380,6 +380,9 @@ export function BarChart({
                 tabIndex={tappable ? 0 : undefined}
                 key={i}
                 onClick={tappable ? () => (sel === i && canOpen(i) ? onOpen!(i) : setSel(sel === i ? null : i)) : undefined}
+                // A week's seven bars sit 44px apart, so each can take a full
+                // 44px to tap. Denser charts can't without the areas overlapping.
+                className={tappable && n <= 8 ? 'hit' : undefined}
                 style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', alignItems: 'flex-end', cursor: interactive && !future ? 'pointer' : 'default' }}
                 aria-label={`${b.name}: ${future ? t('not yet') : format(v!)}`}
               >

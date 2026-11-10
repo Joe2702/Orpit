@@ -1099,8 +1099,13 @@ export function App() {
         </div>
       </div>
 
+      {/* Messages rise from the bottom, just above the tab bar where there is
+          one, so Undo is where the thumb already is and nothing covers a
+          page's title or back button. Taps go straight through to whatever is
+          underneath (a Save button, say) except on Undo itself. With a sheet
+          open the bottom is the sheet's, so they show at the top instead. */}
       {toast && (
-        <div style={{ position: 'absolute', top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66, left: '50%', transform: 'translateX(-50%)', zIndex: 95, color: 'var(--text)', padding: '11px 20px', borderRadius: (toast || '').length > 40 ? 'calc(18px * var(--sq))' : 999, fontSize: 14, fontWeight: 600, lineHeight: 1.4, animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, width: 'max-content', maxWidth: 'calc(100% - 32px)', whiteSpace: 'normal' }} className="glass-strong" data-lens="toast">
+        <div style={{ position: 'absolute', ...(sheet ? { top: mobile ? 'calc(env(safe-area-inset-top) + 14px)' : 66 } : { bottom: showTabs ? 92 : 24 }), pointerEvents: 'none', left: 0, right: 0, marginInline: 'auto', zIndex: 95, color: 'var(--text)', padding: '11px 20px', borderRadius: (toast || '').length > 40 ? 'calc(18px * var(--sq))' : 999, fontSize: 14, fontWeight: 600, lineHeight: 1.4, animation: 'fadeUp .3s ease', display: 'flex', alignItems: 'center', gap: 9, width: 'max-content', maxWidth: 'calc(100% - 32px)', whiteSpace: 'normal' }} className="glass-strong" data-lens="toast">
           <svg width="18" height="18" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
             <path d="M4 9.5l3.4 3.4L14 5" />
           </svg>
@@ -1110,7 +1115,8 @@ export function App() {
               onClick={runUndo}
               role="button"
               aria-label={t('Undo')}
-              style={{ marginInlineStart: 4, paddingInlineStart: 12, borderInlineStart: '1px solid var(--border)', fontWeight: 700, color: 'var(--indigo)', cursor: 'pointer' }}
+              className="hit"
+              style={{ pointerEvents: 'auto',marginInlineStart: 4, paddingInlineStart: 12, borderInlineStart: '1px solid var(--border)', fontWeight: 700, color: 'var(--indigo)', cursor: 'pointer' }}
             >
               {t('Undo')}
             </span>

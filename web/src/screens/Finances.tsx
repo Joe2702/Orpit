@@ -96,7 +96,7 @@ export function Finances() {
       <Card style={{ padding: '18px 18px 14px', marginBottom: 18 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
           <div style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: 'var(--text2)' }}>{t('Net worth')}</div>
-          <span tabIndex={0} onClick={() => go('faccounts')} role="button" style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
+          <span tabIndex={0} onClick={() => go('faccounts')} role="button" className="hit" style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer' }}>
             {tn(d.accounts.length, '{n} account', '{n} accounts')}
           </span>
         </div>
@@ -239,7 +239,9 @@ export function Finances() {
                 <div style={{ fontSize: 11, color: 'var(--text2)' }}>{t('spent')}</div>
               </div>
             </div>
-            <div style={{ flex: '1 1 150px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Each row is a full 44px to tap: five categories 30px apart
+                put the wrong one under a thumb. */}
+            <div style={{ flex: '1 1 150px', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               {d.fCatSegs.map((s) => (
                 <div
                   key={s.label}
@@ -248,7 +250,7 @@ export function Finances() {
                   aria-label={t('{label}: {amount}. See payments', { label: s.label, amount: moneyShort(s.value) })}
                   onClick={() => openSpending(wholePeriod, s.label)}
                   className="pressRow"
-                  style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer', margin: '-5px -6px', padding: '5px 6px', borderRadius: 8 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', minHeight: 44, margin: '0 -6px', padding: '0 6px', borderRadius: 8 }}
                 >
                   <span style={{ width: 9, height: 9, borderRadius: 3, flex: 'none', background: s.color }} />
                   <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tData(s.label)}</span>
@@ -263,7 +265,7 @@ export function Finances() {
 
       {d.topPlaces.length > 1 && (
         <ChartCard title={t('Top places')}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {d.topPlaces.map((p, i) => {
               const pct = Math.max(4, Math.round((p.total / d.topPlaces[0].total) * 100));
               return (
@@ -274,7 +276,7 @@ export function Finances() {
                   aria-label={t('{name}: {amount}. See payments', { name: p.name, amount: moneyShort(p.total) })}
                   onClick={() => openSpending({ ...wholePeriod, title: `${p.name} · ${P.caption}`, place: merchantKey(p.name) })}
                   className="pressRow"
-                  style={{ cursor: 'pointer', margin: '-5px -6px', padding: '5px 6px', borderRadius: 8 }}
+                  style={{ cursor: 'pointer', margin: '-8px -6px', padding: '8px 6px', borderRadius: 8 }}
                 >
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                     <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 550, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>

@@ -23,7 +23,7 @@ function Arrow() {
 /** Tracker card heading: the whole row opens the tracker; the chart below stays tappable on its own. */
 function Head({ title, value, onClick }: { title: string; value?: React.ReactNode; onClick: () => void }) {
   return (
-    <div tabIndex={0} onClick={onClick} role="button" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, cursor: 'pointer' }}>
+    <div tabIndex={0} onClick={onClick} role="button" className="hit" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, cursor: 'pointer' }}>
       <span style={title_}>{title}</span>
       {value != null && <span style={statRight}>{value}</span>}
       <Arrow />
@@ -84,7 +84,7 @@ export function Analytics() {
                   onClick={() => open('habitcal', { habitId: hb.id })}
                   className="pressRow"
                   role="button"
-                  style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 2px', cursor: 'pointer', borderBottom: '1px solid var(--hairline)' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, minHeight: 44, padding: '12px 2px', cursor: 'pointer', borderBottom: '1px solid var(--hairline)' }}
                 >
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: `var(--${hb.color})`, flex: 'none' }} />
                   <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 550, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tData(hb.name)}</span>
