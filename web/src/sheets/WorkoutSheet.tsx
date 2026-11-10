@@ -6,6 +6,7 @@ import { SetsEditor } from '../SetsEditor';
 import type { WorkoutSet } from '../types';
 import { StickySave } from '../StickySave';
 import { date, t, tData } from '../i18n';
+import { workoutLoggedMessage } from '../lib/endings';
 
 // Local YYYY-MM-DD (not UTC) for the date input's default.
 function todayISO(): string {
@@ -43,7 +44,8 @@ export function WorkoutSheet() {
         workouts: [...s.workouts, { id: tempId, name: catName, catId: o.catId, dur: o.dur, dist: null, kcal: null, intensity: o.intensity, note: o.note ?? null, sets: payload, ts: o.ts }],
       }),
       () => api.addWorkout({ catId: o.catId, dur: o.dur, dist: null, kcal: null, intensity: o.intensity, note: o.note ?? null, sets: payload, ts: o.ts }),
-      t('Workout logged')
+      // Ends on the week so far, this session included.
+      workoutLoggedMessage([...state!.workouts.map((w) => w.ts), o.ts], o.ts)
     ).catch(() => {});
     closeSheet();
   };

@@ -11,8 +11,6 @@ export const AR_SITE: Record<string, string | Plural> = {
   "Deleted": "حُذف",
   "Enter an amount above zero.": "أدخل مبلغًا أكبر من صفر.",
   "Pick two different accounts.": "اختر حسابين مختلفين.",
-  "Income added": "أُضيف الدخل",
-  "Expense added": "أُضيف المصروف",
   "New transaction": "معاملة جديدة",
   "This may be the same payment as “{name}” you typed in.": "قد تكون هذه الدفعة نفسها «{name}» التي أدخلتها بنفسك.",
   "Imported from a bank message. Check the category and amount.": "مستوردة من رسالة بنك. تحقّق من الفئة والمبلغ.",

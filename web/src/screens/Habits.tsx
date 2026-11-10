@@ -10,9 +10,8 @@ import { Reorderable } from '../Reorderable';
 import { api } from '../api';
 import { Glyph } from '../lib/appIcons';
 import { t, tData, tn } from '../i18n';
+import { FORMED } from '../lib/dayComplete';
 
-/** Repetitions to automaticity, on average (Lally et al., 2010: median 66 days). */
-const FORMED = 66;
 
 export function Habits() {
   const { open, mutate } = useStore();

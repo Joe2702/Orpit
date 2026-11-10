@@ -11,7 +11,9 @@ import { SwipeRow } from '../SwipeRow';
 import { StickySave } from '../StickySave';
 import { ReceiptField, ReceiptPicker } from '../Receipt';
 import { useEntryActions } from '../lib/entryActions';
-import type { Txn } from '../types';
+import type { AppState, Txn } from '../types';
+import { derive } from '../lib/derive';
+import { savedTxnMessage } from '../lib/endings';
 import { isRefund } from '../lib/money';
 import { merchantKey } from '../lib/merchants';
 import { smsText } from '../lib/smsSync';
@@ -146,15 +148,25 @@ export function FAddTx() {
     // in the background. Waiting on a sleepy free-tier host made saving feel
     // broken even though it always worked.
     const tempId = 'tmp_' + Date.now();
+    const apply = (s: AppState): AppState => ({
+      ...s,
+      txns: edit
+        ? s.txns.map((t) => (t.id === edit.id ? { ...t, ...body, amount: signed, ts, review: false, auto: false } : t))
+        : [...s.txns, { id: tempId, name, cat, amount: signed, income: body.income, accId, toAccId: body.toAccId, adjust: false, note: note.trim() || null, photo: !!newPhoto, ts }],
+    });
+    // A new entry ends on what it changed: what's left to spend a day, worked
+    // out with this entry already in.
+    const ended = () => {
+      const now = new Date();
+      const when = new Date(ts);
+      const thisMonth = when.getFullYear() === now.getFullYear() && when.getMonth() === now.getMonth();
+      const kind = isTransfer ? 'transfer' : isRef ? 'refund' : income ? 'income' : 'expense';
+      return savedTxnMessage(kind, kind === 'expense' || kind === 'income' ? derive(apply(state!), 'Month').safe : null, thisMonth);
+    };
     mutateOpt(
-      (s) => ({
-        ...s,
-        txns: edit
-          ? s.txns.map((t) => (t.id === edit.id ? { ...t, ...body, amount: signed, ts, review: false, auto: false } : t))
-          : [...s.txns, { id: tempId, name, cat, amount: signed, income: body.income, accId, toAccId: body.toAccId, adjust: false, note: note.trim() || null, photo: !!newPhoto, ts }],
-      }),
+      apply,
       () => (edit ? api.editTxn(edit.id, body) : api.addTxn({ ...body, ...(newPhoto ? { photo: newPhoto } : {}) })),
-      edit ? t('Transaction updated') : t('Transaction saved')
+      edit ? t('Transaction updated') : ended()
     ).catch(() => {});
     go('ftxns', screenData?.back ?? null);
 

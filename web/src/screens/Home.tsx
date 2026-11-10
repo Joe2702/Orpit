@@ -4,6 +4,7 @@ import { useData } from '../hooks';
 import { api } from '../api';
 import { greeting, minutes, hm, money0, moneyShort, cNum, counterTotals, dayKey, relLabel, listSep } from '../lib/format';
 import { missedRun } from '../lib/comeback';
+import { dayCompleteLine } from '../lib/dayComplete';
 import { reviewDue, currentIntention } from '../lib/weekReview';
 import { briefDue, hasBriefData } from '../lib/brief';
 import { assistantUnread } from '../lib/assistant';
@@ -67,6 +68,8 @@ const iconCell: React.CSSProperties = { width: 24, flex: 'none', display: 'flex'
 const headBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer', flex: 'none' };
 
 const FRESH_KEY = 'orbit_fresh_dismissed';
+/** Directions of the little sparks thrown off when the day's list is finished. */
+const SPARKS = [0, 45, 90, 135, 180, 225, 270, 315];
 
 /** Today's fresh-start card, if there is one and it hasn't been dismissed. */
 function useFreshStart(openReport: (k: 'week' | 'month' | 'year', offset?: number) => void) {
@@ -106,6 +109,12 @@ export function Home() {
   const todaysHabits = h.habits.filter((hb) => !hb.paused && (hb.days || '1111111')[dow] === '1');
   const doneCount = todaysHabits.filter((x) => x.done).length;
   const allDone = todaysHabits.length > 0 && doneCount === todaysHabits.length;
+  // What to say when the list is done: something true about the person,
+  // from their own record (see lib/dayComplete).
+  const dayLine = React.useMemo(() => dayCompleteLine(state!), [state]);
+  const [burst, setBurst] = React.useState(false);
+  const burstTimer = React.useRef<ReturnType<typeof setTimeout>>(undefined);
+  React.useEffect(() => () => clearTimeout(burstTimer.current), []);
 
   // ---- Fresh start ----
   // People take up goals at temporal landmarks: a new week, a new month (Dai,
@@ -125,6 +134,11 @@ export function Home() {
     // open loop is the moment worth marking.
     const finishing = !!target && !target.done && doneCount === todaysHabits.length - 1;
     haptic(finishing ? [14, 70, 28] : 12);
+    if (finishing) {
+      setBurst(true);
+      clearTimeout(burstTimer.current);
+      burstTimer.current = setTimeout(() => setBurst(false), 1600);
+    }
     mutateOpt((s) => {
       const has = s.checkins.some((c) => c.habitId === id && c.day === key);
       return {
@@ -230,11 +244,22 @@ export function Home() {
               <div style={{ height: '100%', width: `${(doneCount / todaysHabits.length) * 100}%`, background: 'var(--indigo)', transition: 'width .45s cubic-bezier(.2,.8,.2,1)' }} />
             </div>
             {allDone && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid var(--hairline)', animation: 'fadeIn .3s ease' }}>
-                <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', flex: 'none' }}>
-                  <path d="M4.5 10.5l3.5 3.5 7.5-8" />
-                </svg>
-                <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Today’s list is done.')}</span>
+              // The high point of the day in the app. Finishing the list right
+              // here gets the burst; opening the app on a finished day just
+              // shows the row, so it never turns into a fanfare on every launch.
+              <div className="daydone" data-burst={burst ? '' : undefined} role="status" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--hairline)' }}>
+                <span className="daydone-badge" aria-hidden>
+                  <svg width="16" height="16" viewBox="0 0 20 20" style={{ fill: 'none', stroke: 'var(--on-accent)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+                    <path d="M4.5 10.5l3.5 3.5 7.5-8" />
+                  </svg>
+                  {SPARKS.map((a) => (
+                    <i key={a} className="daydone-spark" style={{ ['--a' as string]: `${a}deg` }} />
+                  ))}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Today’s list is done.')}</div>
+                  <div className="daydone-line" style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2 }}>{dayLine.text}</div>
+                </div>
               </div>
             )}
             {todaysHabits.map((hb) => (

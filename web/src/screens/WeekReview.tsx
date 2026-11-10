@@ -33,9 +33,12 @@ export function WeekReview() {
   ].filter((x): x is string => !!x);
 
   // Only true things, and only good ones: a closing line that scolds is the
-  // part of the week people would remember.
+  // part of the week people would remember. Something about the person
+  // (a habit they never dropped) comes before a percentage about the plan.
   const good =
-    habitPct != null && habitPct >= 70
+    w.steadyHabit
+      ? t('You didn’t miss {habit} once this week.', { habit: tData(w.steadyHabit) })
+      : habitPct != null && habitPct >= 70
       ? t('You kept {n}% of your habit plan.', { n: habitPct })
       : w.spentBefore > 0 && diff < 0
         ? t('You spent {amount} less than the week before.', { amount: money0(-diff) })
