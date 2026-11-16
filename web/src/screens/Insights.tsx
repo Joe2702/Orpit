@@ -38,7 +38,7 @@ export function Insights() {
           <div style={{ fontSize: 15, color: 'var(--text2)', lineHeight: 1.6, maxWidth: 300, margin: '0 auto' }}>
             {ready
               ? t('Your numbers look steady, with no strong patterns yet. Keep logging and check back.')
-              : t('Log for about a week and Orbit will start finding links, like how training affects your sleep, or sleep your spending.')}
+              : t('Log for about a week and Orpit will start finding links, like how training affects your sleep, or sleep your spending.')}
           </div>
         </div>
       ) : (

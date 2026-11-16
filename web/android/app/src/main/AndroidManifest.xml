@@ -20,7 +20,7 @@
          others) save them. Read only, and only asked for when the person
          connects it in Profile. The Health Connect plugin declares read and
          write for every kind of health data; Play makes an app justify each
-         one, so everything Orbit doesn't read is removed here. -->
+         one, so everything Orpit doesn't read is removed here. -->
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />

@@ -86,7 +86,7 @@ export function Budgets() {
     return (
       <div className="card">
         <Empty icon="pie" title={t('No budgets yet')} action={<Button kind="primary" icon="plus" onClick={() => open({ kind: 'budget' })}>{t('New budget')}</Button>}>
-          {t('Give a category a monthly limit and Orbit warns you while there’s still time to change course.')}
+          {t('Give a category a monthly limit and Orpit warns you while there’s still time to change course.')}
         </Empty>
       </div>
     );

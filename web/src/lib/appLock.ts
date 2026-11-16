@@ -2,7 +2,7 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 import { t } from '../i18n';
 
 // App lock: asks for the phone's own fingerprint, face or screen-lock PIN when
-// Orbit opens, and again when it comes back after a while away. A setting of
+// Orpit opens, and again when it comes back after a while away. A setting of
 // this phone, not of the account: a second phone has its own lock.
 
 interface OrbitLockPlugin {
@@ -47,7 +47,7 @@ export async function lockAvailable(): Promise<boolean> {
 
 export async function unlock(reason?: string): Promise<boolean> {
   try {
-    return (await OrbitLock.unlock({ reason: reason ?? t('Your money and habits are behind this.'), title: t('Unlock Orbit') })).ok;
+    return (await OrbitLock.unlock({ reason: reason ?? t('Your money and habits are behind this.'), title: t('Unlock Orpit') })).ok;
   } catch {
     return false;
   }

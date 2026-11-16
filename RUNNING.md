@@ -1,7 +1,7 @@
-# Orbit — running the app
+# Orpit — running the app
 
-This repo contains a production implementation of the **Orbit** life-tracking
-app that was prototyped in `project/Orbit.dc.html` (see `chats/` for the design
+This repo contains a production implementation of the **Orpit** life-tracking
+app that was prototyped in `project/Orpit.dc.html` (see `chats/` for the design
 history). It is split into:
 
 - **`web/`** — the app UI: React + TypeScript + Vite. Pixel-recreates the

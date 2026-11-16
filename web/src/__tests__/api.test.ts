@@ -20,7 +20,7 @@ beforeEach(() => {
   noteReachable(true);
 });
 
-describe('requests while Orbit is waking up', () => {
+describe('requests while Orpit is waking up', () => {
   it('queues a log on a 503 instead of losing it', async () => {
     // The readiness gate answers 503 while the database wakes. The request
     // never reached the handler, so the entry is as safe to defer as with no
@@ -51,7 +51,7 @@ describe('requests while Orbit is waking up', () => {
     }) as any;
     const err = await api.getState().catch((e) => e);
     expect(err.message).not.toMatch(/fetch/i);
-    expect(err.message).toMatch(/reach Orbit/);
+    expect(err.message).toMatch(/reach Orpit/);
   });
 });
 

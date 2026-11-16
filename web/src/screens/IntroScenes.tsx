@@ -684,7 +684,7 @@ export function MoneyVisual() {
         'CIB',
         'Your card ending 1234 was charged EGP 245.00 at TALABAT.'
       )}
-      {/* What Orbit made of it. */}
+      {/* What Orpit made of it. */}
       <div style={{ position: 'absolute', left: 0, right: 0, top: 104, borderRadius: 20, background: 'var(--card)', border: '1px solid var(--card-line)', padding: '6px 0' }}>
         {k >= 2 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 14px', animation: 'popIn .5s cubic-bezier(.3,1.4,.5,1) both' }}>

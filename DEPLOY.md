@@ -1,4 +1,4 @@
-# Deploying Orbit online (free)
+# Deploying Orpit online (free)
 
 The app is one deployable web service (the backend serves the frontend and
 creates its database tables on boot). You need two free things:

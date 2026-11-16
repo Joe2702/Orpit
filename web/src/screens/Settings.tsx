@@ -106,7 +106,7 @@ export function Settings() {
   const [smsInfo, setSmsInfo] = React.useState<SmsDiag | null>(smsDiag());
   const [diagOpenSms, setDiagOpenSms] = React.useState(false);
 
-  // A bank whose messages Orbit can't read gets fixed by seeing the format.
+  // A bank whose messages Orpit can't read gets fixed by seeing the format.
   // Only ever by choice, one message at a time, and only after showing the
   // user exactly what will be sent: digits and names masked out.
   const [sharedFormats, setSharedFormats] = React.useState<string[]>([]);
@@ -114,7 +114,7 @@ export function Settings() {
     if (!r.masked || sharedFormats.includes(r.masked)) return;
     const ok = await confirm({
       title: t('Send this format?'),
-      message: t('This is exactly what will be sent, with numbers and names hidden, so Orbit can learn to read {sender}:\n\n{masked}', { sender: r.sender, masked: r.masked }),
+      message: t('This is exactly what will be sent, with numbers and names hidden, so Orpit can learn to read {sender}:\n\n{masked}', { sender: r.sender, masked: r.masked }),
       confirmLabel: t('Send'),
     });
     if (!ok) return;
@@ -162,7 +162,7 @@ export function Settings() {
     const ok = await confirm({
       title: t('Import older messages?'),
       message:
-        t('Orbit will look back a year for bank messages it has not read yet. Payments already imported will not be added twice.'),
+        t('Orpit will look back a year for bank messages it has not read yet. Payments already imported will not be added twice.'),
       confirmLabel: t('Import'),
     });
     if (!ok) return;
@@ -230,7 +230,7 @@ export function Settings() {
     if (!(await unlock(t('Turn on app lock')))) return;
     setLockEnabled(true);
     setLockOn(true);
-    showToast(t('Orbit will ask to unlock when it opens'));
+    showToast(t('Orpit will ask to unlock when it opens'));
   };
 
   // Usage counts are on unless turned off; turning them off also tells the
@@ -454,7 +454,7 @@ export function Settings() {
   };
 
   // A row of choices with the chosen one raised. Changing the language or the
-  // digits reloads Orbit once, so every date and label comes back in it.
+  // digits reloads Orpit once, so every date and label comes back in it.
   const segmented = (items: [string, boolean, () => void][], marginBottom = 24, keepDigits = false) => (
     <div data-digits={keepDigits ? 'keep' : undefined} style={{ display: 'flex', gap: 2, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'calc(14px * var(--sq))', padding: 4, marginBottom }}>
       {items.map(([label, active, onClick]) => (
@@ -711,7 +711,7 @@ export function Settings() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Claude')}</div>
-            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{assistantSetUp() ? t('Sends your morning brief here') : t('Get Claude’s morning brief in Orbit')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{assistantSetUp() ? t('Sends your morning brief here') : t('Get Claude’s morning brief in Orpit')}</div>
           </div>
           <IconChevron />
         </div>
@@ -827,7 +827,7 @@ export function Settings() {
             )}
             {diag.permission !== 'granted' && (
               <div style={{ fontSize: 13, color: 'var(--danger)', marginTop: 8, lineHeight: 1.5 }}>
-                {t('Android is blocking notifications for Orbit. Open your phone\'s Settings → Apps → Orbit → Notifications and allow them, then check again.')}
+                {t('Android is blocking notifications for Orpit. Open your phone\'s Settings → Apps → Orpit → Notifications and allow them, then check again.')}
               </div>
             )}
             {diag.permission === 'granted' && diag.exact === false && (
@@ -948,7 +948,7 @@ export function Settings() {
                   >
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--indigo)' }}>{t('Allow payment alerts')}</div>
                     <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2, lineHeight: 1.5 }}>
-                      {t('Notifications are off, so a payment your bank tells you about while Orbit is closed won’t show up until you open it.')}
+                      {t('Notifications are off, so a payment your bank tells you about while Orpit is closed won’t show up until you open it.')}
                     </div>
                   </div>
                 )}
@@ -1035,7 +1035,7 @@ export function Settings() {
                             role="button"
                             style={{ fontSize: 13, fontWeight: 600, color: sharedFormats.includes(r.masked) ? 'var(--text3)' : 'var(--indigo)', marginTop: 4, cursor: 'pointer' }}
                           >
-                            {sharedFormats.includes(r.masked) ? t('Sent, thank you') : t('Help Orbit read this bank')}
+                            {sharedFormats.includes(r.masked) ? t('Sent, thank you') : t('Help Orpit read this bank')}
                           </div>
                         )}
                       </div>
@@ -1049,7 +1049,7 @@ export function Settings() {
                 this is the permission people are most right to be wary of. */}
             <div style={{ padding: '12px 16px', fontSize: 13, lineHeight: 1.55, color: 'var(--text2)' }}>
               {t(
-                'Orbit reads only messages from banks and wallets, and only on this phone. The text of your messages is never sent anywhere: it stays on this phone so you can see what each entry was read from. Orbit works out the amount, the shop, the date and which bank on the device, and stores just those. Imported payments are marked SMS so you can check them, and you can edit or delete any of them like anything else.'
+                'Orpit reads only messages from banks and wallets, and only on this phone. The text of your messages is never sent anywhere: it stays on this phone so you can see what each entry was read from. Orpit works out the amount, the shop, the date and which bank on the device, and stores just those. Imported payments are marked SMS so you can check them, and you can edit or delete any of them like anything else.'
               )}
               {/* The keyless rate feeds ask for credit where their rates are used. */}
               <div style={{ marginTop: 8, color: 'var(--text3)' }}>
@@ -1217,7 +1217,7 @@ export function Settings() {
           <PrefRow
             iconKey="indigo"
             title={t('App lock')}
-            sub={t('Fingerprint, face or your phone\'s PIN to open Orbit')}
+            sub={t('Fingerprint, face or your phone\'s PIN to open Orpit')}
             on={lockOn}
             onToggle={toggleLock}
             icon={
@@ -1266,7 +1266,7 @@ export function Settings() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Privacy')}</div>
-            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('What Orbit stores, and what it doesn\'t')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('What Orpit stores, and what it doesn\'t')}</div>
           </div>
           <IconChevron />
         </div>
@@ -1292,7 +1292,7 @@ export function Settings() {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Watch the tour again')}</div>
-            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('What Orbit does, in a minute')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{t('What Orpit does, in a minute')}</div>
           </div>
           <IconChevron />
         </div>
@@ -1324,7 +1324,7 @@ export function Settings() {
         onPointerLeave={cancelHold}
         style={{ textAlign: 'center', fontSize: 13, color: 'var(--text2)', marginTop: 16, fontFamily: 'var(--font-mono)', userSelect: 'none', cursor: 'default' }}
       >
-        {t('Orbit · build {v} · {v2}', { v: __BUILD_ID__, v2: __BUILT_AT__ })}
+        {t('Orpit · build {v} · {v2}', { v: __BUILD_ID__, v2: __BUILT_AT__ })}
       </div>
     </div>
   );

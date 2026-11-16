@@ -1,6 +1,6 @@
 // AUTO-GENERATED from schema.sql — the app runs this on startup to create tables.
 export const SCHEMA_SQL = `
--- Orbit schema. Safe to run repeatedly.
+-- Orpit schema. Safe to run repeatedly.
 
 CREATE TABLE IF NOT EXISTS users (
   id            BIGSERIAL PRIMARY KEY,
@@ -585,7 +585,7 @@ CREATE TABLE IF NOT EXISTS health_ignored (
   PRIMARY KEY (user_id, ext_id)
 );
 
--- ===== A brief written by an assistant (Claude), delivered into Orbit =====
+-- ===== A brief written by an assistant (Claude), delivered into Orpit =====
 -- A scheduled assistant posts its morning brief here with a key the person
 -- made in the app. Only the key's hash is kept, one key per person; the
 -- newest fourteen briefs are kept and older ones dropped.

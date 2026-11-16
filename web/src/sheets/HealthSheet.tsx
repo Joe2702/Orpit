@@ -105,7 +105,7 @@ export function HealthSheet() {
   return (
     <div style={{ padding: '8px 20px 32px' }}>
       <div className="display" style={{ fontSize: 28, lineHeight: 1.1, color: 'var(--text)', margin: '8px 2px 12px' }}>{t('Sleep and workouts from Fitbit')}</div>
-      <P>{t('Fitbit saves your sleep and workouts to Health Connect on this phone. Orbit reads them from there, so you never log them twice. Orbit only reads: it changes nothing in Fitbit or Health Connect.')}</P>
+      <P>{t('Fitbit saves your sleep and workouts to Health Connect on this phone. Orpit reads them from there, so you never log them twice. Orpit only reads: it changes nothing in Fitbit or Health Connect.')}</P>
 
       {avail && !avail.ok && (
         <>
@@ -150,7 +150,7 @@ export function HealthSheet() {
             )}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.5, margin: '8px 2px 8px' }}>
-            {t('Orbit syncs whenever you open it. Sleep quality for an imported night is estimated from its sleep stages; edit the night to change it.')}
+            {t('Orpit syncs whenever you open it. Sleep quality for an imported night is estimated from its sleep stages; edit the night to change it.')}
           </div>
           <div role="button" tabIndex={0} aria-disabled={busy} onClick={busy ? undefined : () => sync(false)} className="press99" style={{ ...btn(true), opacity: busy ? 0.6 : 1 }}>
             {busy ? t('Syncing…') : t('Sync now')}

@@ -145,7 +145,7 @@ interface StoreCtx {
   // Offline logging: how many writes are waiting, and whether we have a link.
   pendingCount: number;
   online: boolean;
-  /** Why we're not online: the phone has no connection, or Orbit isn't answering. */
+  /** Why we're not online: the phone has no connection, or Orpit isn't answering. */
   connection: Connectivity;
   isSyncing: boolean;
   sync: () => Promise<void>;
@@ -611,7 +611,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     };
   }, [sync]);
 
-  // While the phone is connected but Orbit isn't answering, keep asking — on a
+  // While the phone is connected but Orpit isn't answering, keep asking — on a
   // short fuse at first, since the usual cause is a cold start measured in
   // seconds, then backing off. The probe hits an endpoint that never touches
   // the database. The moment it answers, the queue drains.

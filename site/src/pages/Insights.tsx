@@ -14,7 +14,7 @@ import { Icon } from '../ui/Icon';
 import { BarChart } from '../charts/charts';
 import { addDays, change, counts, plannedOn, startOfDay } from '../lib/series';
 
-// How a week, month or year went, against the one before; what Orbit noticed
+// How a week, month or year went, against the one before; what Orpit noticed
 // across everything; and Claude's brief when there is one.
 
 interface Totals {
@@ -139,7 +139,7 @@ export function Insights() {
 
       <div className="card">
         <div className="card-head">
-          <span className="card-title">{t('What Orbit noticed')}</span>
+          <span className="card-title">{t('What Orpit noticed')}</span>
           <span className="card-sub">{t('Patterns across everything you track')}</span>
         </div>
         {found.length === 0 ? (

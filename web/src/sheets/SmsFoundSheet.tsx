@@ -38,7 +38,7 @@ export function SmsFoundSheet() {
 
       {f.review > 0 && (
         <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 20 }}>
-          {tn(f.review, 'One needs a quick look: Orbit wasn’t sure what it was.', '{n} need a quick look: Orbit wasn’t sure what they were.')}
+          {tn(f.review, 'One needs a quick look: Orpit wasn’t sure what it was.', '{n} need a quick look: Orpit wasn’t sure what they were.')}
         </div>
       )}
 

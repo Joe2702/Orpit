@@ -29,7 +29,7 @@ export function MoneyOverview() {
     return (
       <div className="card">
         <Empty icon="wallet" title={t('Start with an account')} action={<Button kind="primary" icon="plus" onClick={() => open({ kind: 'account' })}>{t('New account')}</Button>}>
-          {t('Add your bank, cash or wallet with what’s in it now, then log what you spend. On Android, Orbit can read your bank texts for you.')}
+          {t('Add your bank, cash or wallet with what’s in it now, then log what you spend. On Android, Orpit can read your bank texts for you.')}
         </Empty>
       </div>
     );

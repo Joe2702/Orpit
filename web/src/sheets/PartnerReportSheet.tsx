@@ -44,7 +44,7 @@ export function PartnerReportSheet({ name, reload }: { name: string; reload: () 
         {t('Report {v}', { v: name.split(' ')[0] })}
       </div>
       <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.6, marginBottom: 20 }}>
-        {t('This goes to Orbit for review, along with a copy of your messages. You will stop being partners straight away and will not be matched with each other again.')}
+        {t('This goes to Orpit for review, along with a copy of your messages. You will stop being partners straight away and will not be matched with each other again.')}
       </div>
 
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{t('What happened?')}</div>

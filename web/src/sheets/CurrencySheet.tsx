@@ -34,7 +34,7 @@ export function CurrencySheet() {
       <div style={{ padding: '0 20px' }}>
         <div className="display" style={{ fontSize: 28, lineHeight: 1.1, color: 'var(--text)', margin: '8px 2px 8px' }}>{t('Currency')}</div>
         <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, margin: '0 2px 16px' }}>
-          {t('Amounts across Orbit show in it. Payments in other currencies are converted at the day’s rate; changing it relabels what you’ve logged rather than converting it.')}
+          {t('Amounts across Orpit show in it. Payments in other currencies are converted at the day’s rate; changing it relabels what you’ve logged rather than converting it.')}
         </div>
       </div>
 

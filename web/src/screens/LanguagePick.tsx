@@ -5,7 +5,7 @@ import { reducedMotion } from '../Motion';
 import { phoneLang, setLangPref } from '../i18n';
 
 /**
- * The very first screen: which language Orbit should speak. Asked before
+ * The very first screen: which language Orpit should speak. Asked before
  * anything else, so everything after it (sign-up, the tour, the app) is
  * already in that language and the right way round. Written in both
  * languages, since we don't know which one the reader has yet. Shown once:

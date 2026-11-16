@@ -4,7 +4,7 @@ import { probeServer } from './api';
 import { t, tn } from './i18n';
 
 // A slim status line shown only when something needs saying: the phone has no
-// connection, Orbit isn't answering, or writes are still waiting to go out.
+// connection, Orpit isn't answering, or writes are still waiting to go out.
 //
 // This exists so offline never reads as data loss. Without it, entries logged
 // on the metro look identical to entries that silently failed — and the second
@@ -35,7 +35,7 @@ export function SyncStatus() {
       : t('Anything you log is saved on this phone');
   } else if (connection === 'unreachable') {
     tone = 'var(--text3)';
-    title = t('Reconnecting to Orbit');
+    title = t('Reconnecting to Orpit');
     detail = waiting
       ? tn(pendingCount, '{n} entry saved here · will sync automatically', '{n} entries saved here · will sync automatically')
       : t('Anything you log is saved on this phone');

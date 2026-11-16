@@ -1,13 +1,13 @@
-# Orbit — Privacy Policy
+# Orpit — Privacy Policy
 
 _Last updated: 31 October 2026_
 
-Orbit is a personal life-tracking app. This policy explains, in plain language,
+Orpit is a personal life-tracking app. This policy explains, in plain language,
 what the app stores, why, and what control you have over it.
 
-## Who runs Orbit
+## Who runs Orpit
 
-Orbit is operated by the app's developer. For any privacy question or request,
+Orpit is operated by the app's developer. For any privacy question or request,
 contact: **youssif_mohammed@aucegypt.edu**
 
 ## What we store
@@ -61,8 +61,8 @@ contact: **youssif_mohammed@aucegypt.edu**
 - To convert payments made in another currency, the server downloads daily
   exchange rates from public rate services. No information about you or your
   payments is sent to them.
-- If Orbit can't read your bank's messages, you can choose to send one so it
-  can learn the format: Profile → Bank messages → Last check → "Help Orbit read
+- If Orpit can't read your bank's messages, you can choose to send one so it
+  can learn the format: Profile → Bank messages → Last check → "Help Orpit read
   this bank". Before anything is sent you see exactly what goes: the message
   with every number replaced and names removed. Nothing is ever sent this way
   without that step.
@@ -71,32 +71,32 @@ contact: **youssif_mohammed@aucegypt.edu**
   Android's own settings. Entries already imported stay until you delete them.
 
 **Sleep and workouts from Health Connect (optional, Android only)**
-- If you turn it on in Profile → Connected apps, Orbit asks Android for
+- If you turn it on in Profile → Connected apps, Orpit asks Android for
   permission to read, from Health Connect, your sleep sessions, exercise
   sessions, and the distance and calories burned during them. Health Connect
   is where apps like Fitbit save that data on your phone.
-- Orbit reads only those, only while you use the app, and the first time only
+- Orpit reads only those, only while you use the app, and the first time only
   the last 30 days. It saves them as your own nights and workouts: when you
   slept and woke, how long you were asleep, a quality estimated from your
   sleep stages, the kind of exercise, its time, duration, distance and
   calories, and which app recorded it.
-- Orbit never writes to Health Connect, reads nothing else from it, and never
+- Orpit never writes to Health Connect, reads nothing else from it, and never
   shares this data or uses it for advertising. It is used only to show your
-  sleep and training in Orbit.
-- Orbit's use of information received from Health Connect adheres to the
+  sleep and training in Orpit.
+- Orpit's use of information received from Health Connect adheres to the
   Health Connect Permissions policy, including the Limited Use requirements.
-- Stop at any time in Profile → Connected apps, or remove Orbit's access in
+- Stop at any time in Profile → Connected apps, or remove Orpit's access in
   Health Connect's settings. What was already imported stays until you
   delete it.
 
 **A morning brief from Claude (optional)**
 - If you make a key in Profile → Connected apps → Claude and give it to your
-  own Claude scheduled task, that task can send Orbit the morning brief it
-  wrote for you. Orbit stores the brief's title, headings and text, and when it
+  own Claude scheduled task, that task can send Orpit the morning brief it
+  wrote for you. Orpit stores the brief's title, headings and text, and when it
   arrived, and keeps your 14 most recent. It shows them only to you.
-- Orbit keeps only a fingerprint (hash) of the key, never the key itself. The
+- Orpit keeps only a fingerprint (hash) of the key, never the key itself. The
   key can only add a brief: it can't read or change anything in your account.
-- Data goes one way: Orbit sends nothing to Claude or to Anthropic.
+- Data goes one way: Orpit sends nothing to Claude or to Anthropic.
 - Turn it off in Profile → Connected apps → Claude, which stops the key working
   at once. Briefs are deleted with Reset all data and with your account.
 
@@ -173,10 +173,10 @@ secure, so please use a strong, unique password.
 
 ## Children
 
-Orbit is not directed at children under 13, and we do not knowingly collect
+Orpit is not directed at children under 13, and we do not knowingly collect
 their data.
 
 ## Changes
 
 If this policy changes materially, the date at the top will be updated. Your
-continued use of Orbit after a change means you accept the updated policy.
+continued use of Orpit after a change means you accept the updated policy.

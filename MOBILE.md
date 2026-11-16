@@ -1,6 +1,6 @@
-# Orbit as a real native app (Capacitor)
+# Orpit as a real native app (Capacitor)
 
-Orbit's web frontend (`web/`) is wrapped with [Capacitor](https://capacitorjs.com)
+Orpit's web frontend (`web/`) is wrapped with [Capacitor](https://capacitorjs.com)
 so it installs and runs like a normal phone app — no browser, no URL bar, its
 own icon, and it can be submitted to the Google Play Store and Apple App Store.
 
@@ -41,7 +41,7 @@ Then, to build the app:
 4. When it finishes (~5–8 min), open the run and download the **orbit-android-apk**
    artifact. Inside is `app-debug.apk`.
 5. Send that APK to your Android phone, open it, and allow "install from unknown
-   sources." Orbit installs like any app.
+   sources." Orpit installs like any app.
 
 > Tip: set the backend URL once as a repo **Variable** named `VITE_API_BASE`
 > (Settings → Secrets and variables → Actions → Variables) and every push to

@@ -445,7 +445,7 @@ function AgeGate({
           {when && ' ' + t('This unlocks by itself on {date}.', { date: date(when, { day: 'numeric', month: 'long', year: 'numeric' }) })}
         </div>
         <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 16, lineHeight: 1.55 }}>
-          {t('Everything else in Orbit works exactly the same in the meantime.')}
+          {t('Everything else in Orpit works exactly the same in the meantime.')}
         </div>
       </div>
     );
@@ -568,7 +568,7 @@ function Matchmaker({
           {t('Someone who notices')}
         </div>
         <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>
-          {t('Get matched with another Orbit member. You each choose — tracker by tracker — how much the other can see, from nothing at all up to full stats and notes. You can change any of it, or end the partnership, at any moment.')}
+          {t('Get matched with another Orpit member. You each choose — tracker by tracker — how much the other can see, from nothing at all up to full stats and notes. You can change any of it, or end the partnership, at any moment.')}
         </div>
       </div>
 

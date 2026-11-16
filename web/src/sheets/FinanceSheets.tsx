@@ -119,7 +119,7 @@ export function AccountSheet() {
         {!editId
           ? t('What\'s in this account right now.')
           : diff === 0
-            ? t('What\'s in this account right now. Change it to match your bank and Orbit records the difference.')
+            ? t('What\'s in this account right now. Change it to match your bank and Orpit records the difference.')
             : t('Adds a {v}{amount} correction dated today, so you can see what changed. It won\'t count as spending or income.', { v: diff > 0 ? '+' : '−', amount: money(Math.abs(diff)) })}
         {editId && current?.smsBalanceTs != null && diff === 0 && (
           <> {' ' + t('Your bank last reported {amount}, {date}.', { amount: money(current.smsBalance || 0), date: ago(current.smsBalanceTs) })}</>

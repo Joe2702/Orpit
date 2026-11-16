@@ -53,9 +53,9 @@ export function Shell() {
   return (
     <>
       <header className="topbar">
-        <NavLink to="/" className="brand" aria-label="Orbit">
+        <NavLink to="/" className="brand" aria-label="Orpit">
           <span className="brand-mark" />
-          Orbit
+          Orpit
         </NavLink>
         <nav style={{ display: 'flex', alignItems: 'center' }}>
           {top.map((p) => (

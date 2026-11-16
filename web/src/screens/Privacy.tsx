@@ -7,19 +7,19 @@ import { t } from '../i18n';
 // stores require the policy to be reachable without leaving the product).
 const SECTIONS: { title: string; body: string }[] = [
   {
-    title: t('What Orbit stores'),
+    title: t('What Orpit stores'),
     body: t('Your email and name, a hashed password (never the original), and the entries you create: habits, check-ins, workouts, sleep, transactions, budgets, goals and counters, plus your settings, like theme, currency and reminder time.'),
   },
   {
     title: t('Bank messages (optional)'),
-    body: t('If you turn on Import from SMS, Orbit reads messages from banks and wallets on your phone, never from phone numbers, and ignores one-time passcodes. The text stays on your phone. Only what was read from it is saved to your account: the amount, shop, date, which bank, the last four digits of the card, and the balance the bank reported. Recent bank messages are kept on the phone so you can see where an entry came from. Turn it off any time in Profile.'),
+    body: t('If you turn on Import from SMS, Orpit reads messages from banks and wallets on your phone, never from phone numbers, and ignores one-time passcodes. The text stays on your phone. Only what was read from it is saved to your account: the amount, shop, date, which bank, the last four digits of the card, and the balance the bank reported. Recent bank messages are kept on the phone so you can see where an entry came from. Turn it off any time in Profile.'),
   },
   {
     title: t('Why'),
     body: t('Only to run the app: to sign you in, save and sync your entries across devices, show your statistics and reports, and send the daily reminder if you turn it on.'),
   },
   {
-    title: t('What Orbit does NOT do'),
+    title: t('What Orpit does NOT do'),
     body: t('No advertising or third-party analytics SDKs. No location tracking. No access to your contacts, photos or other apps. Your data is never sold or shared with advertisers.'),
   },
   {
@@ -28,7 +28,7 @@ const SECTIONS: { title: string; body: string }[] = [
   },
   {
     title: t('Usage counts'),
-    body: t('How many times a day features are used, like "opened the app" or "checked a habit", so we can see whether Orbit helps people keep going. Never what you entered. Turn it off in Profile → Data, which also deletes what was counted.'),
+    body: t('How many times a day features are used, like "opened the app" or "checked a habit", so we can see whether Orpit helps people keep going. Never what you entered. Turn it off in Profile → Data, which also deletes what was counted.'),
   },
   {
     title: t('Who processes it'),
@@ -58,7 +58,7 @@ export function Privacy() {
       </div>
 
       <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 16, lineHeight: 1.5 }}>
-        {t('The short version of how Orbit handles your data.')}
+        {t('The short version of how Orpit handles your data.')}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

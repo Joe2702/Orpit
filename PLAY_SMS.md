@@ -1,6 +1,6 @@
 # Getting the SMS permission through Google Play review
 
-Orbit reads bank and wallet messages (`READ_SMS`) and is told when one arrives
+Orpit reads bank and wallet messages (`READ_SMS`) and is told when one arrives
 (`RECEIVE_SMS`). Play treats both as restricted: an app may use them only for
 an approved core purpose, declared in Play Console, and an undeclared or
 unapproved app is rejected or removed. Personal money-management apps that
@@ -36,9 +36,9 @@ spending from bank and wallet transaction messages).
 
 **Describe how the app uses the permission** (paste):
 
-> Orbit is a personal finance and habit tracker. Its money tracking is built on
+> Orpit is a personal finance and habit tracker. Its money tracking is built on
 > the transaction alerts banks and mobile wallets send by SMS: when the user
-> turns on "Import from SMS", Orbit reads messages from bank and wallet sender
+> turns on "Import from SMS", Orpit reads messages from bank and wallet sender
 > IDs (never from phone numbers), extracts the amount, merchant, date, account
 > and reported balance on the device, and records them as transactions in the
 > user's accounts, so their spending, budgets and account balances stay up to
@@ -58,14 +58,14 @@ transaction alerts.
 
 ## 3. Demo video (about 45 seconds, screen recording on a real phone)
 
-1. Open Orbit → Profile → Bank messages → Import from SMS. Pause on the
+1. Open Orpit → Profile → Bank messages → Import from SMS. Pause on the
    explanation screen so its text is readable.
 2. Tap Continue → Android's permission prompt → Allow.
 3. The first scan finishes: "N payments added". Open Finances: accounts per
    bank with "Bank said · just now".
-4. From a second phone or a bank test, receive a transaction SMS while Orbit is
+4. From a second phone or a bank test, receive a transaction SMS while Orpit is
    open: the payment appears within a few seconds.
-5. Close Orbit, receive another: the notification with the amount appears; tap
+5. Close Orpit, receive another: the notification with the amount appears; tap
    it and the payment is in the list.
 6. Open the entry → Show message: the source text, shown on the device only.
 7. Profile → Bank messages → switch off.
@@ -78,8 +78,8 @@ Upload it unlisted to YouTube and paste the link into the form.
 > Habits, workouts, sleep and money. Spending tracked from your bank SMS.
 
 **Full description, first paragraph:**
-> Orbit keeps your habits, training, sleep and money in one place. Turn on bank
-> messages and Orbit tracks your spending automatically: every card payment,
+> Orpit keeps your habits, training, sleep and money in one place. Turn on bank
+> messages and Orpit tracks your spending automatically: every card payment,
 > transfer and salary alert from your bank or wallet becomes a transaction in
 > the right account, with the balance your bank reported. The messages are
 > read on your phone and their text never leaves it.
@@ -92,7 +92,7 @@ review screen.
 | Question | Answer |
 | --- | --- |
 | Does the app collect or share user data? | Collects; does not share. |
-| **Messages → SMS or MMS** | Collected. **Optional**, user-initiated. Bank messages are read on the device and their text is never sent, *except* when the person taps "Help Orbit read this bank" and confirms a masked copy (every digit replaced, names removed). Purpose: App functionality. Not shared. Declaring it is the honest answer; leaving it out is what gets apps pulled. |
+| **Messages → SMS or MMS** | Collected. **Optional**, user-initiated. Bank messages are read on the device and their text is never sent, *except* when the person taps "Help Orpit read this bank" and confirms a masked copy (every digit replaced, names removed). Purpose: App functionality. Not shared. Declaring it is the honest answer; leaving it out is what gets apps pulled. |
 | Messages → Other in-app messages | Collected. Optional (accountability-partner chat, and feedback). App functionality. |
 | **Financial info → Purchase history** | Collected. Optional (only if the user turns on bank messages or enters transactions). Purpose: App functionality. |
 | **Financial info → Other financial info** (account names, last four digits, balances) | Collected. Optional. App functionality. |
@@ -121,5 +121,5 @@ Publishing is blocked while a declaration is unresolved, so have a plan:
 - Ship the Play build **without** the two SMS permissions (a build flag that
   removes them from the manifest and hides the setting), and keep offering the
   full APK directly from the website for people who want automatic tracking.
-- Longer term: a "share to Orbit" option (select a bank message → Share →
-  Orbit) needs no SMS permission at all, and could stand in on the Play build.
+- Longer term: a "share to Orpit" option (select a bank message → Share →
+  Orpit) needs no SMS permission at all, and could stand in on the Play build.

@@ -5,7 +5,7 @@ import { accentFor, hexToHsv, hsvToHex, isHex, type Hsv } from '../lib/color';
 import { t } from '../i18n';
 
 const SIZE = 248;
-// Orbit's own indigo, for "back to the original".
+// Orpit's own indigo, for "back to the original".
 const DEFAULT = '#3d4ed8';
 // The old preset names, as colours, so a choice made before the wheel opens on it.
 const PRESET: Record<string, string> = { indigo: '#3d4ed8', text: '#3a3a44', blue: '#3b72e0', teal: '#1f9d8c', emerald: '#23926a', rose: '#cf4a5f' };
@@ -148,7 +148,7 @@ export function AccentSheet() {
         }}
         style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text2)', padding: 8, cursor: 'pointer' }}
       >
-        {t('Back to Orbit’s indigo')}
+        {t('Back to Orpit’s indigo')}
       </div>
     </div>
   );

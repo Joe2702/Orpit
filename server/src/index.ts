@@ -315,7 +315,7 @@ async function sendMail(tag: string, to: string, subject: string, htmlContent: s
       method: 'POST',
       headers: { 'api-key': key, 'Content-Type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({
-        sender: { email: from, name: 'Orbit' },
+        sender: { email: from, name: 'Orpit' },
         to: [{ email: to }],
         subject,
         htmlContent,
@@ -348,7 +348,7 @@ const sendResetEmail = (to: string, link: string, ar = false) =>
     ? sendMail(
         'reset',
         to,
-        'إعادة تعيين كلمة مرور Orbit',
+        'إعادة تعيين كلمة مرور Orpit',
         mailWrap(
           true,
           `<p>اضغط الزر لتعيين كلمة مرور جديدة. ينتهي هذا الرابط خلال ساعة.</p>
@@ -359,7 +359,7 @@ const sendResetEmail = (to: string, link: string, ar = false) =>
     : sendMail(
         'reset',
         to,
-        'Reset your Orbit password',
+        'Reset your Orpit password',
         mailWrap(
           false,
           `<p>Tap the button to set a new password. This link expires in 1 hour.</p>
@@ -497,19 +497,19 @@ app.post(
     const sent = await sendMail(
       'verify',
       u.email,
-      ar ? 'أكّد بريدك الإلكتروني في Orbit' : 'Confirm your email for Orbit',
+      ar ? 'أكّد بريدك الإلكتروني في Orpit' : 'Confirm your email for Orpit',
       ar
         ? mailWrap(
             true,
             `<p>أكّد هذا العنوان لتتمكن من استعادة حسابك إن نسيت كلمة المرور.</p>
         ${mailButton(link, 'تأكيد البريد', true)}
-        <p style="color:#807a70;font-size:13px">ينتهي هذا الرابط خلال 24 ساعة. إن لم تسجّل في Orbit، يمكنك تجاهل هذه الرسالة.</p>`
+        <p style="color:#807a70;font-size:13px">ينتهي هذا الرابط خلال 24 ساعة. إن لم تسجّل في Orpit، يمكنك تجاهل هذه الرسالة.</p>`
           )
         : mailWrap(
             false,
             `<p>Confirm this address so you can recover your account if you ever forget your password.</p>
         ${mailButton(link, 'Confirm email')}
-        <p style="color:#807a70;font-size:13px">This link expires in 24 hours. If you didn't sign up for Orbit, you can ignore this email.</p>`
+        <p style="color:#807a70;font-size:13px">This link expires in 24 hours. If you didn't sign up for Orpit, you can ignore this email.</p>`
           )
     );
     if (!sent) return res.status(503).json({ error: "Email isn't set up on the server yet" });
@@ -2103,8 +2103,8 @@ app.delete(
 
 // ---------------- A brief from an assistant ----------------
 // Someone's scheduled assistant (Claude, running their morning brief) posts
-// the finished brief here, and Orbit shows it at the top of its own brief.
-// The assistant proves who it's for with a key the person made in Orbit:
+// the finished brief here, and Orpit shows it at the top of its own brief.
+// The assistant proves who it's for with a key the person made in Orpit:
 // shown once, kept only as a hash, replaced or revoked from Profile.
 
 const keyInfo = (uid: number) =>
@@ -2184,7 +2184,7 @@ app.post(
 
 // ---------------- Sleep and workouts from Health Connect ----------------
 // The phone reads what Fitbit (or another app) saved to Health Connect and
-// sends it here, already shaped as Orbit entries. Each keeps its Health
+// sends it here, already shaped as Orpit entries. Each keeps its Health
 // Connect id, so syncing the same week again adds nothing. What someone
 // logged by hand for the same night or the same hour wins over an import,
 // and an import they deleted stays deleted.
@@ -2291,7 +2291,7 @@ app.post(
       'SELECT COUNT(*)::int AS n, COALESCE(MAX(sort), -1) + 1 AS m FROM todo_lists WHERE user_id = $1',
       [uid]
     );
-    if (n!.n >= MAX_LISTS) return res.status(400).json({ error: 'That’s as many lists as Orbit keeps' });
+    if (n!.n >= MAX_LISTS) return res.status(400).json({ error: 'That’s as many lists as Orpit keeps' });
     await query('INSERT INTO todo_lists (user_id, name, color, icon, sort) VALUES ($1,$2,$3,$4,$5)', [uid, b.name, b.color, b.icon, n!.m]);
     res.json(await buildState(uid));
   })
@@ -2665,7 +2665,7 @@ app.post(
   wrap(async (req, res) => {
     const uid = req.userId!;
     const d = req.body?.data;
-    if (!d || typeof d !== 'object') return res.status(400).json({ error: 'That file does not look like an Orbit export' });
+    if (!d || typeof d !== 'object') return res.status(400).json({ error: 'That file does not look like an Orpit export' });
 
     const num = (v: unknown, def = 0) => (Number.isFinite(Number(v)) ? Number(v) : def);
     const str = (v: unknown, def = '') => (typeof v === 'string' ? v : def);
@@ -2827,7 +2827,7 @@ app.post(
       try {
         await webpush.sendNotification(
           JSON.parse(s.sub),
-          JSON.stringify({ title: 'Orbit', body: 'Reminders are on 🎉 This is a test.', url: '/' })
+          JSON.stringify({ title: 'Orpit', body: 'Reminders are on 🎉 This is a test.', url: '/' })
         );
         sent++;
       } catch (e: any) {
@@ -2865,10 +2865,10 @@ app.post(
         method: 'POST',
         headers: { 'api-key': key, 'Content-Type': 'application/json', accept: 'application/json' },
         body: JSON.stringify({
-          sender: { email: to, name: 'Orbit' },
+          sender: { email: to, name: 'Orpit' },
           to: [{ email: to }],
           replyTo: u?.email ? { email: u.email } : undefined,
-          subject: `Orbit ${kind} from ${u?.name || 'a user'}`,
+          subject: `Orpit ${kind} from ${u?.name || 'a user'}`,
           textContent: `From: ${u?.name || 'user'} <${u?.email || 'unknown'}>\nType: ${kind}\n\n${message}`,
         }),
       }).catch(() => {});
@@ -3197,14 +3197,14 @@ const sendDeletionEmail = (to: string, link: string, ar: boolean) =>
   sendMail(
     'delete',
     to,
-    ar ? 'تأكيد حذف حسابك في Orbit' : 'Confirm deleting your Orbit account',
+    ar ? 'تأكيد حذف حسابك في Orpit' : 'Confirm deleting your Orpit account',
     mailWrap(
       ar,
       ar
-        ? `<p>طلب أحدهم حذف حساب Orbit المرتبط بهذا البريد. إن كنت أنت، اضغط الزر وأكّد. ينتهي الرابط خلال ساعة.</p>
+        ? `<p>طلب أحدهم حذف حساب Orpit المرتبط بهذا البريد. إن كنت أنت، اضغط الزر وأكّد. ينتهي الرابط خلال ساعة.</p>
       ${mailButton(link, 'تأكيد حذف الحساب', true)}
       <p style="color:#807a70;font-size:13px">إن لم تطلب ذلك، تجاهل هذه الرسالة وسيبقى حسابك كما هو.</p>`
-        : `<p>Someone asked to delete the Orbit account for this address. If it was you, tap the button and confirm. The link expires in 1 hour.</p>
+        : `<p>Someone asked to delete the Orpit account for this address. If it was you, tap the button and confirm. The link expires in 1 hour.</p>
       ${mailButton(link, 'Delete my account')}
       <p style="color:#807a70;font-size:13px">If you didn't ask for this, ignore this email and your account stays as it is.</p>`
     )
@@ -3332,7 +3332,7 @@ async function runReminders() {
       if (r.last_sent === localDay) continue;
       const body = REMINDER_MESSAGES[dayOfYear(now) % REMINDER_MESSAGES.length];
       try {
-        await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title: 'Orbit', body, url: '/' }));
+        await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title: 'Orpit', body, url: '/' }));
       } catch (e: any) {
         if (e?.statusCode === 404 || e?.statusCode === 410) {
           await query('DELETE FROM push_subs WHERE endpoint = $1', [r.endpoint]);
@@ -3499,7 +3499,7 @@ async function migrate(attempt = 1): Promise<void> {
 function start() {
   // Listen first, always. Even with the database down the health endpoint
   // answers, so the problem is visible instead of looking like a hang.
-  app.listen(PORT, () => console.log(`Orbit API listening on port ${PORT}`));
+  app.listen(PORT, () => console.log(`Orpit API listening on port ${PORT}`));
   console.log(pushReady ? 'Daily reminders: ON' : 'Daily reminders: OFF (set VAPID_PRIVATE to enable)');
   migrate();
   setInterval(runReminders, 60 * 1000);

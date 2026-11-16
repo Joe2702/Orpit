@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Creates Orbit's Play upload key and stores it as the four GitHub secrets the
+# Creates Orpit's Play upload key and stores it as the four GitHub secrets the
 # release build reads (see RELEASE.md). Run it once, on your own computer:
 #
 #   bash scripts/make-release-key.sh
@@ -33,7 +33,7 @@ fi
 
 PASS="$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | cut -c1-28)"
 "$KEYTOOL" -genkeypair -keystore "$KEY" -alias orbit -keyalg RSA -keysize 2048 -validity 10000 \
-  -storepass "$PASS" -keypass "$PASS" -dname "CN=Orbit, O=Orbit, C=EG" >/dev/null
+  -storepass "$PASS" -keypass "$PASS" -dname "CN=Orpit, O=Orpit, C=EG" >/dev/null
 printf 'Keystore: orbit-release.keystore\nAlias: orbit\nPassword (store and key): %s\n' "$PASS" > "$OUT/password.txt"
 chmod 600 "$KEY" "$OUT/password.txt"
 echo "Created $KEY"

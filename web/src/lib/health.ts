@@ -6,9 +6,9 @@ import type { AppState } from '../types';
 // Sleep and workouts from Health Connect.
 //
 // Fitbit (and Samsung Health, Google Fit, Garmin…) save sleep and exercise to
-// Health Connect on the phone. With the person's permission Orbit reads them
+// Health Connect on the phone. With the person's permission Orpit reads them
 // from there and saves them as its own nights and workouts, so nothing gets
-// logged twice. Orbit only reads: it never writes to Health Connect.
+// logged twice. Orpit only reads: it never writes to Health Connect.
 //
 // Each entry keeps its Health Connect id, so syncing the same week again adds
 // nothing (the server checks), a night or workout already logged by hand wins,
@@ -56,7 +56,7 @@ const ASLEEP = ['asleep', 'light', 'deep', 'rem'];
 const minutesIn = (stages: SleepStage[], kinds: string[]) => stages.filter((s) => kinds.includes(s.stage)).reduce((a, s) => a + (s.durationMinutes || 0), 0);
 
 /**
- * Health Connect has no quality score, and Orbit's nights carry one, so it's
+ * Health Connect has no quality score, and Orpit's nights carry one, so it's
  * estimated from what the tracker measured: enough sleep (7–9 hours), how
  * little of the night was spent awake, and how much was deep or REM sleep.
  * Without stages, length alone sets it, and modestly. Editing the night
@@ -81,7 +81,7 @@ const hourOf = (ms: number) => {
 };
 
 /**
- * A Health Connect sleep session as an Orbit night. Naps (under three hours
+ * A Health Connect sleep session as an Orpit night. Naps (under three hours
  * asleep) are left out: a night's average shouldn't count an afternoon doze.
  */
 export function nightFrom(s: HealthSample): ImportNight | null {
@@ -104,7 +104,7 @@ export function nightFrom(s: HealthSample): ImportNight | null {
   };
 }
 
-// What each kind of exercise is called in Orbit, and words that find the
+// What each kind of exercise is called in Orpit, and words that find the
 // person's own category for it ("Run", "Cycling", "Football"…).
 const KINDS: { types: string[]; name: string; keys: string[] }[] = [
   { types: ['running', 'runningTreadmill', 'trackAndField'], name: 'Run', keys: ['run', 'jog'] },
@@ -134,7 +134,7 @@ const KINDS: { types: string[]; name: string; keys: string[] }[] = [
 /** Every name an import can carry, for the Arabic dictionary. */
 export const IMPORT_NAMES = [...KINDS.map((k) => k.name), 'Workout'];
 
-/** A Health Connect exercise session as an Orbit workout. */
+/** A Health Connect exercise session as an Orpit workout. */
 export function workoutFrom(w: HcWorkout, cats: { id: string; name: string }[]): ImportWorkout | null {
   if (!w.platformId) return null;
   const start = Date.parse(w.startDate);

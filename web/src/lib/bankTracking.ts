@@ -33,7 +33,7 @@ export function useStartBankTracking() {
       return false;
     }
     if (!st.granted) {
-      showToast(t('Orbit needs permission to read your bank messages'));
+      showToast(t('Orpit needs permission to read your bank messages'));
       return false;
     }
     track('bank_on');

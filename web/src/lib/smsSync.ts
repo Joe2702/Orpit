@@ -99,7 +99,7 @@ export async function smsStatus(): Promise<{ available: boolean; granted: boolea
 export const SMS_DISCLOSURE = {
   title: t('Track payments from bank messages?'),
   message: t(
-    'Orbit will read text messages from banks and wallets on this phone (never messages from phone numbers) and turn payment alerts into transactions, including new ones as they arrive. The message text stays on your phone. Only what Orbit reads from it is saved to your account: the amount, the shop, the date, which bank, the last four digits of the card and the balance. You can turn this off any time.'
+    'Orpit will read text messages from banks and wallets on this phone (never messages from phone numbers) and turn payment alerts into transactions, including new ones as they arrive. The message text stays on your phone. Only what Orpit reads from it is saved to your account: the amount, the shop, the date, which bank, the last four digits of the card and the balance. You can turn this off any time.'
   ),
   confirmLabel: t('Continue'),
 };

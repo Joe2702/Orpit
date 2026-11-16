@@ -1,5 +1,5 @@
 // A morning brief written by the person's assistant (Claude) and delivered
-// into Orbit with a key they made in the app.
+// into Orpit with a key they made in the app.
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
