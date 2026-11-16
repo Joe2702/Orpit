@@ -1,4 +1,4 @@
-# Launching Orbit on Google Play: the checklist
+# Launching Orpit on Google Play: the checklist
 
 Everything from "no developer account" to "live in the store", in order. Each
 step says where its details are. Two steps wait on Google and nothing makes
@@ -44,7 +44,7 @@ never put it in the repo. Details: [`RELEASE.md`](RELEASE.md).
       `app-release.aab` inside is what Play takes.
 
 ### 5. Create the app in Play Console
-- [ ] **Create app**: name `Orbit: Habits, Money & Sleep`, default language
+- [ ] **Create app**: name `Orpit: Habits, Money & Sleep`, default language
       English (United States), **App**, **Free**, accept the declarations.
 - [ ] The package name comes from the first upload: `com.orbit.app`. It can
       never change.
@@ -63,13 +63,13 @@ never put it in the repo. Details: [`RELEASE.md`](RELEASE.md).
 | Content rating | Take the questionnaire. Category: *Utility / Productivity*. Users can interact with each other: **yes** (partner chat; there is reporting). No violence, gambling, location sharing or purchases. |
 | Target audience | **18 and over** only. The partner feature is 18+, and an adults-only audience keeps the app out of the Families programme. |
 | News app | No |
-| Health apps | Pick the fitness / activity tracking and sleep tracking categories if listed. Orbit is not a medical device and makes no medical claims. |
-| Health Connect | Orbit reads (never writes) five kinds of data: **Sleep**, **Exercise**, **Distance**, **Active calories burned** and **Total calories burned**. For each, the reason is the same: *"to show the person's sleep and workouts, recorded by their fitness tracker, in Orbit's sleep and training views, so they don't have to log them by hand."* It's off until the person connects it in Profile → Connected apps. The privacy policy's "Sleep and workouts from Health Connect" section covers it, including the Limited Use statement Google asks for. Every other Health Connect permission the plugin declares is removed in `AndroidManifest.xml`. |
-| Financial features | Orbit only tracks money: it holds none, moves none, lends nothing and trades nothing. If the form has a budgeting or money-management option, pick it; otherwise "my app doesn't provide financial features". |
+| Health apps | Pick the fitness / activity tracking and sleep tracking categories if listed. Orpit is not a medical device and makes no medical claims. |
+| Health Connect | Orpit reads (never writes) five kinds of data: **Sleep**, **Exercise**, **Distance**, **Active calories burned** and **Total calories burned**. For each, the reason is the same: *"to show the person's sleep and workouts, recorded by their fitness tracker, in Orpit's sleep and training views, so they don't have to log them by hand."* It's off until the person connects it in Profile → Connected apps. The privacy policy's "Sleep and workouts from Health Connect" section covers it, including the Limited Use statement Google asks for. Every other Health Connect permission the plugin declares is removed in `AndroidManifest.xml`. |
+| Financial features | Orpit only tracks money: it holds none, moves none, lends nothing and trades nothing. If the form has a budgeting or money-management option, pick it; otherwise "my app doesn't provide financial features". |
 | Data safety | Row by row from [`PLAY_SMS.md` §5](PLAY_SMS.md#5-data-safety-form). Deletion URL: `https://orbit-x3z7.onrender.com/delete-account` |
 | Government app | No |
 | Sensitive permissions: SMS | The Permissions Declaration Form and the demo video: [`PLAY_SMS.md` §2–3](PLAY_SMS.md). |
-| Exact alarms | Orbit asks for `SCHEDULE_EXACT_ALARM` (the one the person grants), not `USE_EXACT_ALARM`, so no declaration is needed. If asked: reminders at a time the person chose. |
+| Exact alarms | Orpit asks for `SCHEDULE_EXACT_ALARM` (the one the person grants), not `USE_EXACT_ALARM`, so no declaration is needed. If asked: reminders at a time the person chose. |
 
 ### 8. A login for Google's reviewers
 - [ ] Sign up in the app with an email you control (for example
@@ -84,7 +84,7 @@ never put it in the repo. Details: [`RELEASE.md`](RELEASE.md).
 
 ### 9. Internal testing (the same day, no review wait)
 - [ ] Testing → **Internal testing** → create a release → upload the `.aab`,
-      paste the release notes. Add yourself as a tester and install Orbit
+      paste the release notes. Add yourself as a tester and install Orpit
       **from the Play Store link**.
 - [ ] **Google Sign-In will fail on this build until you do this:** Play
       re-signs the app with its own key. Copy the *App signing key* SHA-1 from

@@ -1,6 +1,6 @@
 import React from 'react';
 
-// Finance-category icon path sets (ported from the Orbit design).
+// Finance-category icon path sets (ported from the Orpit design).
 const FIN: Record<string, string[]> = {
   food: ['M5 3v7M5 3a2 2 0 0 0-2 2v2a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2M5 10v9M15 3c-1.7 0-3 2-3 4.5S13.3 12 15 12m0-9v16'],
   car: ['M4 12l1.5-4.5A2 2 0 0 1 7.4 6h5.2a2 2 0 0 1 1.9 1.5L16 12M4 12h12v4H4zM6 16v1.5M14 16v1.5', 'M6.5 12h0M13.5 12h0'],

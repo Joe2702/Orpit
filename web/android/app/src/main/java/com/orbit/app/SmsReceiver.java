@@ -164,7 +164,7 @@ public class SmsReceiver extends BroadcastReceiver {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
             String context = in ? null : monthLine(ctx, amount, ar);
-            String text = sender + (ar ? " · اضغط لإضافتها إلى Orbit" : " · tap to add it to Orbit");
+            String text = sender + (ar ? " · اضغط لإضافتها إلى Orpit" : " · tap to add it to Orpit");
             NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CHANNEL)
                 .setSmallIcon(R.drawable.ic_stat_orbit)
                 .setContentTitle((in ? (ar ? "أموال واردة · " : "Money in · ") : (ar ? "دفعة · " : "Payment · ")) + amount)

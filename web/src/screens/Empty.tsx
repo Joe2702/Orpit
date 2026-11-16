@@ -19,7 +19,7 @@ export function HomeEmpty() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{todayStr()}</div>
-          <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-.025em', marginTop: 4, color: 'var(--text)' }}>{t('Welcome to Orbit')}</div>
+          <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-.025em', marginTop: 4, color: 'var(--text)' }}>{t('Welcome to Orpit')}</div>
         </div>
         <div style={{ width: 46, height: 46, borderRadius: '50%', background: 'var(--indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--on-accent)', fontWeight: 700, fontSize: 17 }}>
           {avatarInitial(state!.profile.name)}

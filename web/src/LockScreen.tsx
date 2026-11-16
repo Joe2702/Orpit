@@ -26,7 +26,7 @@ export function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={t('Orbit is locked')}
+      aria-label={t('Orpit is locked')}
       style={{
         position: 'fixed',
         inset: 0,
@@ -42,7 +42,7 @@ export function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
       }}
     >
       <OrbitMark size={60} />
-      <div className="display" style={{ fontSize: 34 }}>{t('Orbit is locked')}</div>
+      <div className="display" style={{ fontSize: 34 }}>{t('Orpit is locked')}</div>
       <button
         onClick={ask}
         className="press"

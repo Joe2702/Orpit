@@ -9,7 +9,7 @@ import { isRTL, t } from '../i18n';
 import './intro.css';
 
 /**
- * The first-run tour: what Orbit is, and the handful of things worth knowing
+ * The first-run tour: what Orpit is, and the handful of things worth knowing
  * on day one, each shown by a small live demonstration that you can then try
  * yourself. Skippable from any scene, swipeable, and it asks for nothing: no
  * permission prompt appears until someone taps a feature that needs one.
@@ -116,7 +116,7 @@ export function Intro() {
 
   const copy: Record<SceneKey, { title: string; body: string }> = {
     hello: {
-      title: firstName ? t('Hi {name}, welcome to Orbit', { name: firstName }) : t('Welcome to Orbit'),
+      title: firstName ? t('Hi {name}, welcome to Orpit', { name: firstName }) : t('Welcome to Orpit'),
       body: t('Your habits, training, sleep and money in one place, so you can see how each one moves the others.'),
     },
     plus: { title: t('Log anything with +'), body: t('Tap + at the bottom for a workout, a night’s sleep, a payment, a task or a habit. A couple of taps and it’s saved.') },
@@ -126,7 +126,7 @@ export function Intro() {
     money: {
       title: t('Money, sorted'),
       body: smsSupported()
-        ? t('Orbit can read your bank’s payment alerts and log spending by itself, leaving out declined payments. Turn it on in Finances when you’re ready. The messages never leave your phone.')
+        ? t('Orpit can read your bank’s payment alerts and log spending by itself, leaving out declined payments. Turn it on in Finances when you’re ready. The messages never leave your phone.')
         : t('Log a payment in seconds. Budgets and what’s safe to spend today keep up by themselves.'),
     },
     insights: { title: t('Watch it add up'), body: t('Trends in Analytics, a story of every week, month and year, and a one-minute brief each morning.') },
@@ -147,7 +147,7 @@ export function Intro() {
       className="intro-root"
       role="dialog"
       aria-modal
-      aria-label={t('Welcome to Orbit')}
+      aria-label={t('Welcome to Orpit')}
       onPointerDown={onDown}
       onPointerMove={onMove}
       onPointerUp={onUp}
@@ -236,7 +236,7 @@ export function Intro() {
           style={{ position: 'relative', overflow: 'hidden', flex: 1, height: 56, borderRadius: 999, background: '#f2f2f5', color: '#0c0c0f', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 14px 34px -12px color-mix(in srgb, var(--indigo) 70%, transparent)' }}
         >
           <span key={`b${last ? 'l' : i === 0 ? 'f' : 'n'}`} style={{ animation: still ? undefined : 'rise .35s ease both' }}>
-            {last ? t('Start using Orbit') : i === 0 ? t('Show me around') : t('Next')}
+            {last ? t('Start using Orpit') : i === 0 ? t('Show me around') : t('Next')}
           </span>
           {/* The flip sits on a wrapper: the nudge animation would override it on the arrow itself. */}
           <span className="flip-rtl" style={{ display: 'flex' }}>

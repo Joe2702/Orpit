@@ -80,7 +80,7 @@ async function request<T>(path: string, opts: RequestInit = {}, opId?: string): 
       headers: {
         'Content-Type': 'application/json',
         // So the server writes its emails in the app's language.
-        'X-Orbit-Lang': getLang(),
+        'X-Orpit-Lang': getLang(),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(id ? { 'x-orbit-op-id': id } : {}),
         ...(opts.headers || {}),
@@ -165,7 +165,7 @@ export interface FeedbackItem {
 }
 
 /**
- * Is Orbit's server up and serving? Asks the health endpoint, which answers
+ * Is Orpit's server up and serving? Asks the health endpoint, which answers
  * without touching the database — so probing every few seconds while the
  * server is unreachable costs nothing and never keeps a metered database
  * awake. Records the answer either way.
@@ -412,7 +412,7 @@ export const api = {
     request<AppState>(`/milestones/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteMilestone: (id: string) => request<AppState>(`/milestones/${id}`, { method: 'DELETE' }),
 
-  // Sleep and workouts read from Health Connect, saved as Orbit entries.
+  // Sleep and workouts read from Health Connect, saved as Orpit entries.
   healthImport: (b: { nights: unknown[]; workouts: unknown[] }) =>
     request<AppState & { imported?: { nights: number; workouts: number; skipped: number } }>('/health/import', { method: 'POST', body: JSON.stringify(b) }),
 

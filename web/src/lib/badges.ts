@@ -109,8 +109,8 @@ export const BADGES: BadgeDef[] = [
   { id: 'x5', name: t('Devotee'), desc: t('500 total entries'), icon: 'planet', color: 'indigo', metric: 'entries', goal: 500 },
   { id: 'x6', name: t('Regular'), desc: t('Active on 30 different days'), icon: 'calendar', color: 'teal', metric: 'activeDays', goal: 30 },
   { id: 'x7', name: t('Picture Perfect'), desc: t('Add a profile photo'), icon: 'camera', color: 'coral', metric: 'avatar', goal: 1 },
-  { id: 'x8', name: t('Loyal'), desc: t('30 days with Orbit'), icon: 'medal', color: 'warning', metric: 'memberDays', goal: 30 },
-  { id: 'x9', name: t('Veteran'), desc: t('180 days with Orbit'), icon: 'crown', color: 'warning', metric: 'memberDays', goal: 180 },
+  { id: 'x8', name: t('Loyal'), desc: t('30 days with Orpit'), icon: 'medal', color: 'warning', metric: 'memberDays', goal: 30 },
+  { id: 'x9', name: t('Veteran'), desc: t('180 days with Orpit'), icon: 'crown', color: 'warning', metric: 'memberDays', goal: 180 },
 ];
 
 export function computeBadges(state: AppState): Badge[] {

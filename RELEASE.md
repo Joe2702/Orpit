@@ -1,4 +1,4 @@
-# Shipping Orbit to the Google Play Store
+# Shipping Orpit to the Google Play Store
 
 > The whole launch, step by step and in order, is in
 > [`PLAY_LAUNCH.md`](PLAY_LAUNCH.md). This file is the detail on keys and builds.

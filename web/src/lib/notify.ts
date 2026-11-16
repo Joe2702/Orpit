@@ -72,7 +72,7 @@ export async function snoozeDaily(): Promise<void> {
       notifications: [
         {
           id: SNOOZE_ID,
-          title: t('Orbit'),
+          title: t('Orpit'),
           body: t('How did today go?'),
           schedule: { at: new Date(Date.now() + 60 * 60 * 1000), allowWhileIdle: true },
           channelId: CHANNEL_ID,
@@ -165,7 +165,7 @@ async function scheduleDaily(time: string, remaining = -1): Promise<void> {
     notifications: [
       {
         id: REMINDER_ID,
-        title: t('Orbit'),
+        title: t('Orpit'),
         body: reminderBody(remaining),
         schedule: { on: { hour, minute }, allowWhileIdle: true },
         channelId: CHANNEL_ID,
@@ -187,7 +187,7 @@ async function scheduleWeekly(): Promise<void> {
     notifications: [
       {
         id: WEEKLY_ID,
-        title: t('Your week on Orbit'),
+        title: t('Your week on Orpit'),
         body: t('A minute to look back, and one thing to aim for next week.'),
         extra: { screen: 'weekreview' },
         // weekday 1 = Sunday in the plugin's schedule format.
@@ -283,8 +283,8 @@ export async function scheduleExtras(
 // The morning brief: one notification per morning for the next two weeks,
 // each with its own line (that day's habits, a bill due that day). Written
 // ahead because a scheduled notification can't change its words when it
-// fires; every time Orbit opens they're written again from the latest data.
-// Someone who doesn't open Orbit for two weeks stops getting them, which is
+// fires; every time Orpit opens they're written again from the latest data.
+// Someone who doesn't open Orpit for two weeks stops getting them, which is
 // the right point to stop.
 const BRIEF_BASE = 4000;
 const BRIEF_SPAN = 100;
@@ -328,7 +328,7 @@ export async function syncReminders(enabled: boolean, time: string, remaining = 
       return;
     }
     const { ln } = await LN();
-    // Only ever checks. This runs whenever the app opens, and Orbit never asks
+    // Only ever checks. This runs whenever the app opens, and Orpit never asks
     // for a permission the person didn't tap something for: permission comes
     // from turning reminders on (enableReminders), not from opening the app.
     if ((await ln.checkPermissions()).display !== 'granted') return;
@@ -524,7 +524,7 @@ export async function sendTestNotification(): Promise<'sent' | 'denied' | 'error
         notifications: [
           {
             id: TEST_ID,
-            title: t('Orbit'),
+            title: t('Orpit'),
             body: t('Test notification. Your reminders are working.'),
             schedule: { at: new Date(Date.now() + 1500) },
             channelId: CHANNEL_ID,

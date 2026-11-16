@@ -49,7 +49,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
           onClick={() => window.location.reload()}
           style={{ background: '#fff', color: '#4a45a6', height: 50, padding: '0 32px', borderRadius: 'calc(15px * var(--sq))', display: 'flex', alignItems: 'center', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
         >
-          {t('Reload Orbit')}
+          {t('Reload Orpit')}
         </div>
       </div>
     );

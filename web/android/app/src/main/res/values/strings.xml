@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Orbit</string>
-    <string name="title_activity_main">Orbit</string>
+    <string name="app_name">Orpit</string>
+    <string name="title_activity_main">Orpit</string>
     <string name="package_name">com.orbit.app</string>
     <string name="custom_url_scheme">com.orbit.app</string>
     <!-- Home-screen shortcut labels (long-press the app icon). -->
@@ -14,11 +14,11 @@
     <string name="widget_no_data">Tap to log</string>
     <string name="widget_description">Today\'s progress and one-tap logging</string>
     <string name="widget_stats_description">A number worth glancing at, on your home screen</string>
-    <string name="widget_habits_label">Orbit · Habits</string>
-    <string name="widget_workouts_label">Orbit · Workouts</string>
-    <string name="widget_sleep_label">Orbit · Sleep</string>
-    <string name="widget_finance_label">Orbit · Finances</string>
-    <string name="widget_summary_label">Orbit · Summary</string>
-    <!-- Shown when someone asks, from Health Connect, why Orbit reads their data. -->
+    <string name="widget_habits_label">Orpit · Habits</string>
+    <string name="widget_workouts_label">Orpit · Workouts</string>
+    <string name="widget_sleep_label">Orpit · Sleep</string>
+    <string name="widget_finance_label">Orpit · Finances</string>
+    <string name="widget_summary_label">Orpit · Summary</string>
+    <!-- Shown when someone asks, from Health Connect, why Orpit reads their data. -->
     <string name="health_connect_privacy_policy_url">https://orbit-x3z7.onrender.com/privacy</string>
 </resources>

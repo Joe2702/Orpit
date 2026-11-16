@@ -37,7 +37,7 @@ async function req<T = AppState>(path: string, method = 'GET', body?: unknown, h
       method,
       headers: {
         'Content-Type': 'application/json',
-        'X-Orbit-Lang': getLang(),
+        'X-Orpit-Lang': getLang(),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },

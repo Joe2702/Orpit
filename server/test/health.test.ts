@@ -1,5 +1,5 @@
 // Sleep and workouts read from Health Connect (where Fitbit saves them) and
-// sent to the server as Orbit entries.
+// sent to the server as Orpit entries.
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';

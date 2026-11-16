@@ -588,7 +588,7 @@ export function parseAll(messages: SmsMessage[], home = 'EGP'): ParsedSms[] {
 // Sharing a format the reader doesn't know
 
 /**
- * A bank message with everything personal taken out, for the "help Orbit read
+ * A bank message with everything personal taken out, for the "help Orpit read
  * this bank" button: every digit becomes 9 (amounts, dates, card and phone
  * numbers keep their shape, which is what the reader needs), links and emails
  * go, and a name after "to", "from", "Dear" and their Arabic equivalents

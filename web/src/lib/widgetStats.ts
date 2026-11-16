@@ -132,7 +132,7 @@ export function buildPanels(s: AppState, now: number = Date.now()): Record<strin
   };
 
   const summary: WidgetPanel = {
-    title: t('Orbit'),
+    title: t('Orpit'),
     value: tx.due ? `${tx.done}/${tx.due}` : '—',
     caption: tx.due ? t('habits done today') : t('no habits due today'),
     rows: [

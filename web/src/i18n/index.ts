@@ -1,4 +1,4 @@
-// Orbit speaks English and Arabic.
+// Orpit speaks English and Arabic.
 //
 // English is written inline where it's used and is its own key: t('Save').
 // Arabic lives in ./ar.ts and is fetched only when Arabic is chosen, so an
@@ -181,7 +181,7 @@ export function tn(n: number, one: string, other: string, vars?: Vars): string {
 }
 
 /**
- * A name that is stored data but came from Orbit, not the person: starter
+ * A name that is stored data but came from Orpit, not the person: starter
  * categories, habits and workout types ("Food", "Drink water", "Push"). They
  * stay English underneath, because the bank-message reader files payments by
  * those names; only what's shown changes. Names people typed come back as typed.

@@ -15,12 +15,12 @@ three places.
 
 ## 1) Create the OAuth credentials (Google Cloud Console)
 
-1. Go to **console.cloud.google.com** → create a project (e.g. "Orbit"), or pick one.
+1. Go to **console.cloud.google.com** → create a project (e.g. "Orpit"), or pick one.
 2. **APIs & Services → OAuth consent screen** → choose **External** → fill app
    name, your email → **Save**. (While testing you can leave it in "Testing"
    mode and add your testers' Google emails under "Test users".)
 3. **APIs & Services → Credentials → Create credentials → OAuth client ID:**
-   - **Application type: Web application** → name it "Orbit Web" → Create.
+   - **Application type: Web application** → name it "Orpit Web" → Create.
      **Copy this Client ID** (looks like `1234-abc.apps.googleusercontent.com`).
      This is the one you'll paste everywhere below — the **Web client ID**.
    - Create credentials **again → OAuth client ID → Application type: Android:**

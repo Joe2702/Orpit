@@ -23,7 +23,7 @@ them.
 **App name** (30 max)
 
 ```
-Orbit: Habits, Money & Sleep
+Orpit: Habits, Money & Sleep
 ```
 
 **Short description** (80 max)
@@ -35,9 +35,9 @@ Habits, workouts, sleep and money. Spending tracked from your bank SMS.
 **Full description** (4,000 max)
 
 ```
-Orbit keeps your habits, training, sleep and money in one place.
+Orpit keeps your habits, training, sleep and money in one place.
 
-Turn on bank messages and Orbit tracks your spending for you. Every card payment, transfer and salary alert from your bank or mobile wallet becomes a transaction in the right account, with the balance your bank reported. The messages are read on your phone, and their text never leaves it.
+Turn on bank messages and Orpit tracks your spending for you. Every card payment, transfer and salary alert from your bank or mobile wallet becomes a transaction in the right account, with the balance your bank reported. The messages are read on your phone, and their text never leaves it.
 
 MONEY
 • Spending from bank and wallet messages, or added by hand in a few taps
@@ -67,7 +67,7 @@ ACCOUNTABILITY PARTNER (optional, 18+)
 
 PRIVATE BY DEFAULT
 • No ads, no third-party analytics, and your data is never sold
-• Lock Orbit with your fingerprint or phone PIN
+• Lock Orpit with your fingerprint or phone PIN
 • Export everything, or delete your account at any time
 
 In English and Arabic, with a full right-to-left layout.
@@ -86,7 +86,7 @@ The first release: habits, workouts, sleep and money in one app, with spending t
 **App name**
 
 ```
-Orbit: العادات والمال والنوم
+Orpit: العادات والمال والنوم
 ```
 
 **Short description**
@@ -98,9 +98,9 @@ Orbit: العادات والمال والنوم
 **Full description**
 
 ```
-يجمع Orbit عاداتك وتمارينك ونومك وأموالك في مكان واحد.
+يجمع Orpit عاداتك وتمارينك ونومك وأموالك في مكان واحد.
 
-فعّل رسائل البنك ويتتبّع Orbit إنفاقك بدلًا منك. كل دفعة بالبطاقة وكل تحويل وكل إشعار براتبك من بنكك أو محفظتك يتحول إلى معاملة في الحساب الصحيح، مع الرصيد الذي أبلغ عنه البنك. تُقرأ الرسائل على هاتفك، ولا يغادره نصها أبدًا.
+فعّل رسائل البنك ويتتبّع Orpit إنفاقك بدلًا منك. كل دفعة بالبطاقة وكل تحويل وكل إشعار براتبك من بنكك أو محفظتك يتحول إلى معاملة في الحساب الصحيح، مع الرصيد الذي أبلغ عنه البنك. تُقرأ الرسائل على هاتفك، ولا يغادره نصها أبدًا.
 
 المال
 • الإنفاق من رسائل البنوك والمحافظ، أو تضيفه بنفسك في لمسات قليلة
@@ -130,7 +130,7 @@ Orbit: العادات والمال والنوم
 
 خاص من البداية
 • بلا إعلانات، وبلا أدوات تحليل لأطراف ثالثة، ولا تُباع بياناتك أبدًا
-• اقفل Orbit ببصمتك أو رمز هاتفك
+• اقفل Orpit ببصمتك أو رمز هاتفك
 • صدّر كل بياناتك، أو احذف حسابك في أي وقت
 
 بالعربية والإنجليزية، مع واجهة كاملة من اليمين إلى اليسار.

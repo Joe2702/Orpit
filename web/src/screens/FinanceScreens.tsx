@@ -481,7 +481,7 @@ export function FTxns() {
 }
 
 // ================= To review =================
-// Imported entries Orbit wasn't sure about: a shop it didn't know, money in
+// Imported entries Orpit wasn't sure about: a shop it didn't know, money in
 // from someone, a foreign charge converted at a rough rate. Each shows the
 // message it came from, so the answer is usually one tap.
 export function FReview() {
@@ -542,14 +542,14 @@ export function FReview() {
         <div style={{ textAlign: 'center', padding: '48px 24px' }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>{t('All checked')}</div>
           <div style={{ fontSize: 15, color: 'var(--text2)', lineHeight: 1.55 }}>
-            {t('When Orbit isn’t sure what a payment from your bank was, it will wait here for you.')}
+            {t('When Orpit isn’t sure what a payment from your bank was, it will wait here for you.')}
           </div>
         </div>
       ) : (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
             <div style={{ flex: 1, fontSize: 13, color: 'var(--text2)', lineHeight: 1.5 }}>
-              {t('Read from your bank messages. Pick what each one was, and Orbit remembers the shop.')}
+              {t('Read from your bank messages. Pick what each one was, and Orpit remembers the shop.')}
             </div>
             {items.length > 1 && (
               <div tabIndex={0} onClick={() => looksRight(items.map((t) => t.id))} role="button" className="press99" style={{ flex: 'none', fontSize: 13, fontWeight: 600, color: 'var(--indigo)', cursor: 'pointer', padding: '8px 2px' }}>

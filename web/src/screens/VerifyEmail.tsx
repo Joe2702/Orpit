@@ -66,11 +66,11 @@ export function VerifyEmail() {
           ? t('One moment.')
           : status === 'ok'
           ? t('You can now reset your password by email if you ever need to.')
-          : error || t('The link may have expired. Open Orbit and send yourself a fresh one.')}
+          : error || t('The link may have expired. Open Orpit and send yourself a fresh one.')}
       </div>
       {status !== 'working' && (
         <div tabIndex={0} onClick={done} className="press" role="button" style={{ display: 'inline-flex', alignItems: 'center', height: 52, padding: '0 32px', borderRadius: 'calc(16px * var(--sq))', background: 'var(--indigo)', color: 'var(--on-accent)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
-          {t('Open Orbit')}
+          {t('Open Orpit')}
         </div>
       )}
     </div>

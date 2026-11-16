@@ -330,7 +330,7 @@ function Data() {
         <Button size="sm" onClick={() => csv('sleep')}>{t('Sleep')}</Button>
         <Button size="sm" onClick={() => csv('habits')}>{t('Habits')}</Button>
       </Row>
-      <Row title={t('Bring back an export')} sub={t('Adds what’s missing from an Orbit JSON file. Never deletes anything.')}>
+      <Row title={t('Bring back an export')} sub={t('Adds what’s missing from an Orpit JSON file. Never deletes anything.')}>
         <input ref={file} type="file" accept="application/json,.json" hidden onChange={(e) => e.target.files?.[0] && restore(e.target.files[0])} />
         <Button size="sm" icon="upload" onClick={() => file.current?.click()}>{t('Choose file')}</Button>
       </Row>
@@ -366,7 +366,7 @@ function DeleteDialog({ onClose, done }: { onClose: () => void; done: () => void
       }
     >
       <div style={{ display: 'grid', gap: 16 }}>
-        <div className="muted">{t('Your habits, workouts, sleep, money and tasks are deleted from Orbit’s server. This can’t be undone.')}</div>
+        <div className="muted">{t('Your habits, workouts, sleep, money and tasks are deleted from Orpit’s server. This can’t be undone.')}</div>
         <Field label={t('Your password, to confirm')}>
           <input className="input" type="password" value={pw} onChange={(e) => setPw(e.target.value)} required />
         </Field>
@@ -392,7 +392,7 @@ function Setup() {
   return (
     <div className="page" style={{ maxWidth: 760 }}>
       <div style={{ textAlign: 'center', margin: '24px 0 32px' }}>
-        <h1 className="page-title" style={{ fontSize: 28 }}>{t('Welcome to Orbit, {name}', { name: s.profile.name.split(' ')[0] || '' })}</h1>
+        <h1 className="page-title" style={{ fontSize: 28 }}>{t('Welcome to Orpit, {name}', { name: s.profile.name.split(' ')[0] || '' })}</h1>
         <div className="page-sub" style={{ fontSize: 16 }}>{t('Two quick choices and you’re in. Both can be changed later in Settings.')}</div>
       </div>
       <div className="label" style={{ marginBottom: 8 }}>{t('What do you want to keep track of?')}</div>
@@ -407,7 +407,7 @@ function Setup() {
       </select>
       <div className="row" style={{ marginTop: 32, justifyContent: 'flex-end' }}>
         <Button kind="primary" onClick={go} style={{ height: 40, padding: '0 24px' }}>
-          {t('Start using Orbit')}
+          {t('Start using Orpit')}
         </Button>
       </div>
     </div>

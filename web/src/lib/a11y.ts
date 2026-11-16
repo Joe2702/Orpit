@@ -1,4 +1,4 @@
-// Many tappable things in Orbit are styled <div>s marked role="button" or
+// Many tappable things in Orpit are styled <div>s marked role="button" or
 // role="switch". A real <button> answers Enter and Space by itself; these need
 // telling, so a keyboard, switch-access or TalkBack-with-keyboard user can
 // press them too.

@@ -35,7 +35,7 @@ export function FeedbackSheet() {
     <div style={{ padding: '4px 20px 32px' }}>
       <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: '8px 0 8px' }}>{t('Send feedback')}</div>
       <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.5 }}>
-        {t('Ideas, bugs, or anything on your mind. It goes straight to the person who builds Orbit.')}
+        {t('Ideas, bugs, or anything on your mind. It goes straight to the person who builds Orpit.')}
       </div>
 
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>{t('Type')}</div>

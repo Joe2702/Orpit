@@ -2,7 +2,7 @@
 //
 // The list of codes is fixed here, so it doesn't depend on what the phone's
 // browser knows. Names and symbols come from the phone (Intl), in English or
-// Arabic, with the code itself as the fallback; the five Orbit always had keep
+// Arabic, with the code itself as the fallback; the five Orpit always had keep
 // the symbols people already know from it.
 
 export const CODES = (
@@ -20,7 +20,7 @@ export const POPULAR = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED', 'KWD', 'QAR'];
 const SET = new Set(CODES);
 export const isCurrency = (c: unknown): c is string => typeof c === 'string' && SET.has(c);
 
-// The symbols Orbit has always used for these.
+// The symbols Orpit has always used for these.
 const EN_SYMBOL: Record<string, string> = { EGP: 'E£', USD: '$', EUR: '€', GBP: '£', SAR: 'SR ' };
 // In Arabic the pound is ج.م and the riyal ر.س, written after the figure.
 const AR_SYMBOL: Record<string, string> = { EGP: 'ج.م', SAR: 'ر.س', USD: '$', EUR: '€', GBP: '£' };

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Generate Orbit's launcher icons, splash screens and store icon.
+Generate Orpit's launcher icons, splash screens and store icon.
 
 The mark: one orbit, seen from above. A faint full ring is the path; a bright
 trail sweeps most of the way round it and ends in a warm dot, the sun coming
 up on the day. It reads as an orbit at any size (the faint ring closes the
 circle, so it's never a letter C) and as a day coming full circle, which is
-what Orbit is for.
+what Orpit is for.
 
 Everything is drawn per pixel with numpy at 4x and shrunk, so the trail's fade
 is smooth and every edge is clean.

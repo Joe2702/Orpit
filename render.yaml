@@ -1,4 +1,4 @@
-# Render Blueprint — deploys the whole Orbit app (frontend + backend) as one free web service.
+# Render Blueprint — deploys the whole Orpit app (frontend + backend) as one free web service.
 # In Render: New → Blueprint → connect this repo. You'll be asked for DATABASE_URL.
 services:
   - type: web

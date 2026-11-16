@@ -70,7 +70,7 @@ export function Finances() {
         <Card style={{ padding: '16px 16px', marginBottom: 16 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Track spending automatically')}</div>
           <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, marginTop: 4 }}>
-            {t('Orbit can turn the payment alerts your bank and wallet send into entries, with each account’s real balance. No typing.')}
+            {t('Orpit can turn the payment alerts your bank and wallet send into entries, with each account’s real balance. No typing.')}
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
             <div tabIndex={0}
@@ -187,7 +187,7 @@ export function Finances() {
           <span style={{ width: 26, height: 26, borderRadius: '50%', flex: 'none', background: 'var(--indigo)', color: 'var(--on-accent)', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontVariantNumeric: 'tabular-nums' }}>{d.reviewCount > 99 ? '99' : d.reviewCount}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{tn(d.reviewCount, 'One payment to check', '{n} payments to check')}</div>
-            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{tn(d.reviewCount, 'Orbit wasn’t sure what it was', 'Orbit wasn’t sure what these were')}</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{tn(d.reviewCount, 'Orpit wasn’t sure what it was', 'Orpit wasn’t sure what these were')}</div>
           </div>
           <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ flex: 'none', fill: 'none', stroke: 'var(--text3)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path className="flip-rtl" d="M7 4l5 5-5 5" />

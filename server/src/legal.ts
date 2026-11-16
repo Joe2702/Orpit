@@ -9,7 +9,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 //
 // Google Play requires two URLs that work for someone who has never installed
 // the app and has no account: a privacy policy, and — for any app that lets you
-// create an account — a page explaining how to delete it. Orbit's in-app privacy
+// create an account — a page explaining how to delete it. Orpit's in-app privacy
 // screen doesn't satisfy either, because it sits behind the sign-in wall.
 //
 // These are deliberately plain server-rendered HTML rather than SPA routes: a
@@ -38,7 +38,7 @@ function page(title: string, body: string, lang: Lang = 'en'): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)} · Orbit</title>
+<title>${esc(title)} · Orpit</title>
 <style>
   :root { color-scheme: light dark; }
   body {
@@ -73,7 +73,7 @@ function page(title: string, body: string, lang: Lang = 'en'): string {
 <body>
 <a class="lang" href="?lang=${ar ? 'en' : 'ar'}" lang="${ar ? 'en' : 'ar'}">${ar ? 'English' : 'العربية'}</a>
 ${body}
-<div class="foot">Orbit · <a href="/privacy${q}">${ar ? 'سياسة الخصوصية' : 'Privacy policy'}</a> · <a href="/delete-account${q}">${ar ? 'حذف حسابك' : 'Delete your account'}</a> · <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></div>
+<div class="foot">Orpit · <a href="/privacy${q}">${ar ? 'سياسة الخصوصية' : 'Privacy policy'}</a> · <a href="/delete-account${q}">${ar ? 'حذف حسابك' : 'Delete your account'}</a> · <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></div>
 </body>
 </html>`;
 }
@@ -171,8 +171,8 @@ function privacyHtml(lang: Lang = 'en'): string {
     }
   }
   // The policy must never 404 — an unreachable privacy URL fails Play review.
-  return `<h1>Orbit — Privacy Policy</h1>
-<p>Orbit stores only the account details you provide (email, name, password hash)
+  return `<h1>Orpit — Privacy Policy</h1>
+<p>Orpit stores only the account details you provide (email, name, password hash)
 and the entries you create: habits, workouts, sleep, transactions, budgets, goals
 and counters. It contains no advertising or analytics SDKs, does not track your
 location, and does not read your contacts, photos, or data from other apps. Your
@@ -183,16 +183,16 @@ entirely from Profile → Data. For any privacy request, contact
 }
 
 const DELETE_EN = `
-<h1>Deleting your Orbit account</h1>
-<p class="meta">Orbit · com.orbit.app</p>
+<h1>Deleting your Orpit account</h1>
+<p class="meta">Orpit · com.orbit.app</p>
 
-<p>You can delete your Orbit account and everything in it at any time, from the
+<p>You can delete your Orpit account and everything in it at any time, from the
 app or from this page.</p>
 
 <h2>From the app</h2>
 <div class="box">
   <ul>
-    <li>Open Orbit and sign in.</li>
+    <li>Open Orpit and sign in.</li>
     <li>Go to <strong>Profile</strong> (the last tab).</li>
     <li>Scroll to the end and tap <strong>Delete my account</strong>.</li>
     <li>Confirm, then enter your password. The account is deleted straight away
@@ -227,7 +227,7 @@ and confirm, and the account is deleted. The link works for one hour.</p>
   <li><strong>Feedback or support messages</strong> you chose to send are kept so
       the conversation makes sense. Ask and they will be removed too.</li>
 </ul>
-<p>Nothing is retained for advertising or profiling, because Orbit does neither.</p>
+<p>Nothing is retained for advertising or profiling, because Orpit does neither.</p>
 
 <h2>Want your data first?</h2>
 <p>Deletion cannot be undone. Before you delete, you can download everything as a
@@ -239,15 +239,15 @@ prove the account is yours.</p>
 `;
 
 const DELETE_AR = `
-<h1>حذف حسابك في Orbit</h1>
-<p class="meta">Orbit · com.orbit.app</p>
+<h1>حذف حسابك في Orpit</h1>
+<p class="meta">Orpit · com.orbit.app</p>
 
-<p>يمكنك حذف حسابك في Orbit وكل ما فيه في أي وقت، من التطبيق أو من هذه الصفحة.</p>
+<p>يمكنك حذف حسابك في Orpit وكل ما فيه في أي وقت، من التطبيق أو من هذه الصفحة.</p>
 
 <h2>من التطبيق</h2>
 <div class="box">
   <ul>
-    <li>افتح Orbit وسجّل الدخول.</li>
+    <li>افتح Orpit وسجّل الدخول.</li>
     <li>اذهب إلى <strong>حسابي</strong> (آخر تبويب).</li>
     <li>انزل إلى النهاية واضغط <strong>حذف حسابي</strong>.</li>
     <li>أكّد، ثم أدخل كلمة المرور. يُحذف الحساب فورًا ويُسجَّل خروجك.</li>
@@ -280,7 +280,7 @@ const DELETE_AR = `
   <li><strong>الملاحظات أو رسائل الدعم</strong> التي اخترت إرسالها تبقى ليظل سياق
       المحادثة مفهومًا. اطلب حذفها وستُحذف أيضًا.</li>
 </ul>
-<p>لا يُحتفظ بشيء لأغراض الإعلانات أو التنميط، لأن Orbit لا يفعل أيًا منهما.</p>
+<p>لا يُحتفظ بشيء لأغراض الإعلانات أو التنميط، لأن Orpit لا يفعل أيًا منهما.</p>
 
 <h2>تريد بياناتك أولًا؟</h2>
 <p>لا يمكن التراجع عن الحذف. قبل الحذف يمكنك تنزيل كل شيء في ملف JSON من التطبيق:
@@ -297,20 +297,20 @@ export function deletionPages(lang: Lang) {
   const q = ar ? '?lang=ar' : '';
   return {
     sent: ar
-      ? `<h1>تحقق من بريدك</h1><p>إن كان هناك حساب في Orbit بهذا البريد، فقد أرسلنا إليه رابطًا لحذفه. الرابط صالح لمدة ساعة.</p><p>لم يصلك شيء؟ تحقق من مجلد الرسائل غير المرغوبة، أو <a href="/delete-account${q}">حاول مرة أخرى</a>.</p>`
-      : `<h1>Check your email</h1><p>If there's an Orbit account with that address, we've sent it a link to delete it. The link works for one hour.</p><p>Nothing arrived? Look in your spam folder, or <a href="/delete-account${q}">try again</a>.</p>`,
+      ? `<h1>تحقق من بريدك</h1><p>إن كان هناك حساب في Orpit بهذا البريد، فقد أرسلنا إليه رابطًا لحذفه. الرابط صالح لمدة ساعة.</p><p>لم يصلك شيء؟ تحقق من مجلد الرسائل غير المرغوبة، أو <a href="/delete-account${q}">حاول مرة أخرى</a>.</p>`
+      : `<h1>Check your email</h1><p>If there's an Orpit account with that address, we've sent it a link to delete it. The link works for one hour.</p><p>Nothing arrived? Look in your spam folder, or <a href="/delete-account${q}">try again</a>.</p>`,
     confirm: (email: string, token: string) =>
       ar
-        ? `<h1>حذف هذا الحساب؟</h1><p>سيُحذف حساب Orbit المرتبط بـ <strong dir="ltr">${esc(email)}</strong> وكل ما فيه نهائيًا. لا يمكن التراجع عن ذلك.</p>
+        ? `<h1>حذف هذا الحساب؟</h1><p>سيُحذف حساب Orpit المرتبط بـ <strong dir="ltr">${esc(email)}</strong> وكل ما فيه نهائيًا. لا يمكن التراجع عن ذلك.</p>
 <form method="post" action="/delete-account/confirm?lang=ar"><input type="hidden" name="token" value="${esc(token)}"><button class="danger" type="submit">حذف الحساب نهائيًا</button></form>`
-        : `<h1>Delete this account?</h1><p>The Orbit account for <strong>${esc(email)}</strong> and everything in it will be deleted permanently. This can't be undone.</p>
+        : `<h1>Delete this account?</h1><p>The Orpit account for <strong>${esc(email)}</strong> and everything in it will be deleted permanently. This can't be undone.</p>
 <form method="post" action="/delete-account/confirm"><input type="hidden" name="token" value="${esc(token)}"><button class="danger" type="submit">Delete the account permanently</button></form>`,
     invalid: ar
       ? `<h1>انتهت صلاحية هذا الرابط</h1><p>الرابط صالح لمدة ساعة ولمرة واحدة. <a href="/delete-account${q}">اطلب رابطًا جديدًا</a>.</p>`
       : `<h1>This link has expired</h1><p>Links work once, for one hour. <a href="/delete-account${q}">Ask for a new one</a>.</p>`,
     done: ar
-      ? `<h1>تم حذف حسابك</h1><p>أُزيل حسابك في Orbit وكل ما فيه. يمكنك إزالة التطبيق من هاتفك أيضًا.</p>`
-      : `<h1>Your account has been deleted</h1><p>Your Orbit account and everything in it are gone. You can remove the app from your phone too.</p>`,
+      ? `<h1>تم حذف حسابك</h1><p>أُزيل حسابك في Orpit وكل ما فيه. يمكنك إزالة التطبيق من هاتفك أيضًا.</p>`
+      : `<h1>Your account has been deleted</h1><p>Your Orpit account and everything in it are gone. You can remove the app from your phone too.</p>`,
   };
 }
 

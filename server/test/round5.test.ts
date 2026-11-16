@@ -31,7 +31,7 @@ test('privacy and deletion pages work without an account, in English and Arabic'
   assert.match(ar, /<html lang="ar" dir="rtl">/);
   assert.match(ar, /سياسة الخصوصية/);
   const byHeader = await (await fetch(`${server.base}/delete-account`, { headers: { 'accept-language': 'ar-EG,ar;q=0.9' } })).text();
-  assert.match(byHeader, /حذف حسابك في Orbit/);
+  assert.match(byHeader, /حذف حسابك في Orpit/);
   const del = await (await fetch(`${server.base}/delete-account`)).text();
   assert.match(del, /action="\/delete-account\/request"/);
 });

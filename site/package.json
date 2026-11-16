@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Orbit on a computer: the desktop website. Shares the phone app's calculations (web/src) but none of its screens.",
+  "description": "Orpit on a computer: the desktop website. Shares the phone app's calculations (web/src) but none of its screens.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit -p . && vite build",

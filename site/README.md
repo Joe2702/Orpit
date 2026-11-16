@@ -1,4 +1,4 @@
-# Orbit on a computer
+# Orpit on a computer
 
 The desktop website: its own design, layout and pages, built for a big screen,
 a mouse and a keyboard. Phones keep the phone app (`web/`), which is also what

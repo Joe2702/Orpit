@@ -1,10 +1,10 @@
-// Minimal service worker — makes Orbit installable, serves the app shell
+// Minimal service worker — makes Orpit installable, serves the app shell
 // offline, and shows daily reminder push notifications.
 const CACHE = 'orbit-shell-v2';
 
 // Daily reminder push → show a warm notification.
 self.addEventListener('push', (e) => {
-  let data = { title: 'Orbit', body: 'Time to log your day 🌙', url: '/' };
+  let data = { title: 'Orpit', body: 'Time to log your day 🌙', url: '/' };
   try {
     if (e.data) data = { ...data, ...e.data.json() };
   } catch (_) {}

@@ -23,10 +23,10 @@ const btn = (primary: boolean): React.CSSProperties => ({
 /** What to hand Claude: where to send the brief, the key, and the shape. */
 export function claudeSetup(key: string, base: string = API_BASE || window.location.origin): string {
   return [
-    'After writing the morning brief, also deliver it to my Orbit app:',
+    'After writing the morning brief, also deliver it to my Orpit app:',
     '',
     `POST ${base}/api/assistant/brief`,
-    `Header  X-Orbit-Key: ${key}`,
+    `Header  X-Orpit-Key: ${key}`,
     'Header  Content-Type: application/json',
     'Body    {"title": "Morning brief", "sections": [{"heading": "Today\'s post", "body": "Markdown text"}, …]}',
     '',
@@ -36,9 +36,9 @@ export function claudeSetup(key: string, base: string = API_BASE || window.locat
 }
 
 /**
- * Claude's morning brief, delivered into Orbit. A key the person makes here
+ * Claude's morning brief, delivered into Orpit. A key the person makes here
  * lets their scheduled Claude task post the brief it wrote; it shows at the
- * top of Orbit's brief. The key is shown once, then only when it was made.
+ * top of Orpit's brief. The key is shown once, then only when it was made.
  */
 export function AssistantSheet() {
   const { confirm, showToast, haptic } = useStore();
@@ -102,9 +102,9 @@ export function AssistantSheet() {
   return (
     <div style={{ padding: '8px 20px 32px' }}>
       <div className="display" style={{ fontSize: 28, lineHeight: 1.1, color: 'var(--text)', margin: '8px 2px 12px' }}>{t('Claude’s morning brief')}</div>
-      <div style={p}>{t('If Claude writes you a morning brief on a schedule, it can send it here too. It shows at the top of your morning brief in Orbit, and you can open it from Home any time.')}</div>
+      <div style={p}>{t('If Claude writes you a morning brief on a schedule, it can send it here too. It shows at the top of your morning brief in Orpit, and you can open it from Home any time.')}</div>
 
-      {failed && <div style={{ ...p, color: 'var(--danger)' }}>{t('Couldn’t reach Orbit. Check your connection and open this again.')}</div>}
+      {failed && <div style={{ ...p, color: 'var(--danger)' }}>{t('Couldn’t reach Orpit. Check your connection and open this again.')}</div>}
 
       {fresh ? (
         <>
@@ -128,7 +128,7 @@ export function AssistantSheet() {
           >
             {fresh}
           </div>
-          <div style={{ ...p, fontSize: 13, marginTop: 8 }}>{t('This is the only time Orbit shows it. Copy it into your Claude task now; if it’s lost, make a new one.')}</div>
+          <div style={{ ...p, fontSize: 13, marginTop: 8 }}>{t('This is the only time Orpit shows it. Copy it into your Claude task now; if it’s lost, make a new one.')}</div>
           <div role="button" tabIndex={0} onClick={() => copy(claudeSetup(fresh), t('Copied. Paste it to Claude.'))} className="press" style={btn(true)}>
             {t('Copy instructions for Claude')}
           </div>

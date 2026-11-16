@@ -13,7 +13,7 @@ import { reducedMotion } from '../Motion';
 // pages, and it made the app look like one.
 export function Welcome() {
   const { go, setAuthMode } = useStore();
-  // The first time Orbit opens, before anything else: which language.
+  // The first time Orpit opens, before anything else: which language.
   if (langPref() === 'auto') return <LanguagePick />;
   const open = (mode: 'signup' | 'signin') => {
     setAuthMode(mode);
@@ -49,7 +49,7 @@ export function Welcome() {
       </div>
       <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 48 }}>
         <OrbitMark size={60} style={{ marginBottom: 24 }} />
-        <div className="display" style={{ fontSize: 64, lineHeight: 0.95 }}>{t('Orbit')}</div>
+        <div className="display" style={{ fontSize: 64, lineHeight: 0.95 }}>{t('Orpit')}</div>
         <div style={{ fontSize: 17, lineHeight: 1.5, marginTop: 16, color: 'rgba(240,240,243,.72)', maxWidth: 300 }}>
           {t('Habits, training, sleep and money, kept in one place.')}
         </div>

@@ -12,12 +12,12 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 /**
- * App lock: the phone's own unlock, asked for by Orbit.
+ * App lock: the phone's own unlock, asked for by Orpit.
  *
  * Uses the system prompt, so whatever the phone is set up with works:
- * fingerprint, face, or the screen-lock PIN, pattern or password. Orbit never
+ * fingerprint, face, or the screen-lock PIN, pattern or password. Orpit never
  * sees or stores any of it; it only learns whether the person passed. No PIN
- * of Orbit's own, either: one more code to forget is how people get locked out
+ * of Orpit's own, either: one more code to forget is how people get locked out
  * of their own data.
  */
 @CapacitorPlugin(name = "OrbitLock")
@@ -39,7 +39,7 @@ public class OrbitLock extends Plugin {
     @PluginMethod
     public void unlock(PluginCall call) {
         final String reason = call.getString("reason", "Your money and habits are behind this.");
-        final String title = call.getString("title", "Unlock Orbit");
+        final String title = call.getString("title", "Unlock Orpit");
         getActivity().runOnUiThread(() -> {
             try {
                 BiometricPrompt prompt = new BiometricPrompt(

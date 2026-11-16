@@ -118,7 +118,7 @@ export function StoryReport({ kind, offset = 0, onClose }: { kind: 'week' | 'mon
   // Share the report as a short text card: the native sheet on the app, the
   // Web Share API (or clipboard) on the web.
   const share = async () => {
-    const title = kind === 'week' ? t('My week on Orbit') : kind === 'year' ? t('My year on Orbit') : t('My month on Orbit');
+    const title = kind === 'week' ? t('My week on Orpit') : kind === 'year' ? t('My year on Orpit') : t('My month on Orpit');
     const lines = slides.filter((s) => s.value).map((s) => `${s.headline}: ${s.value}`);
     const text = `${title}\n\n${lines.join('\n')}`;
     try {

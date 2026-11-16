@@ -1,4 +1,4 @@
-// Formatting helpers ported 1:1 from the Orbit prototype. Everything a person
+// Formatting helpers ported 1:1 from the Orpit prototype. Everything a person
 // reads goes through ../i18n, so dates, digits and units follow the language.
 import { date, getLang, num, t, tn } from '../i18n';
 import { currencySymbol, isCurrency } from './currencies';

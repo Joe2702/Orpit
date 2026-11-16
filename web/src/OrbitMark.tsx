@@ -1,6 +1,6 @@
 import React from 'react';
 
-// Orbit's mark, the same drawing as the launcher icon (tools/make-icons.py):
+// Orpit's mark, the same drawing as the launcher icon (tools/make-icons.py):
 // a faint full orbit, a trail sweeping most of the way round it, and a warm
 // sun at its head. Drawn with CSS rather than SVG because a fade that follows
 // a curve is one conic gradient here and impossible to do smoothly in SVG.

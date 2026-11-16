@@ -154,7 +154,7 @@ export function clearCache(): void {
 
 // Connectivity, as two separate facts.
 //
-// "Is this phone connected?" and "is Orbit's server answering?" are different
+// "Is this phone connected?" and "is Orpit's server answering?" are different
 // questions, and the app used to merge them into one flag. The merge had two
 // visible consequences:
 //
@@ -251,14 +251,14 @@ export const queuedMessage = (): string =>
  * people — "That password is incorrect" is the right thing to show.
  */
 export function serverMessage(status: number): string {
-  if (status === 502 || status === 503 || status === 504) return 'Orbit is waking up. Try again in a few seconds.';
+  if (status === 502 || status === 503 || status === 504) return 'Orpit is waking up. Try again in a few seconds.';
   return 'Something went wrong on our side. Please try again.';
 }
 
 export const networkMessage = (): string =>
   connectivity() === 'offline'
     ? 'No connection. Try again when you’re back online.'
-    : 'Couldn’t reach Orbit. Please try again in a moment.';
+    : 'Couldn’t reach Orpit. Please try again in a moment.';
 
 /** Status codes that mean "not serving yet", not "your request was wrong". */
 export const isUnavailable = (status: number): boolean => status === 502 || status === 503 || status === 504;

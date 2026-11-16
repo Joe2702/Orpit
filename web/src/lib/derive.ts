@@ -435,7 +435,7 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
     .filter((p) => p.total > 0 && p.name !== p.cat)
     .sort((a, b) => b.total - a.total)
     .slice(0, 5);
-  /** Imported entries Orbit wasn't sure about, waiting for a look. */
+  /** Imported entries Orpit wasn't sure about, waiting for a look. */
   const reviewCount = state.txns.filter((t) => t.review).length;
   const incSums: Record<string, number> = {};
   Tr.filter((t) => isIncome(t)).forEach((t) => (incSums[t.cat] = (incSums[t.cat] || 0) + t.amount));

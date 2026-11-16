@@ -581,7 +581,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
         {/* The mark from the launcher icon, its sun going round while it loads. */}
         <OrbitMark size={96} spin={!error} style={{ marginBottom: 32 }} />
 
-        <div className="display" style={{ fontSize: 40, lineHeight: 1 }}>{t('Orbit')}</div>
+        <div className="display" style={{ fontSize: 40, lineHeight: 1 }}>{t('Orpit')}</div>
 
         {error ? (
           <div style={{ textAlign: 'center', marginTop: 16 }}>
@@ -589,7 +589,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
               {!apiBase
                 ? t('This build has no backend address, so it can never reach the server. It needs to be rebuilt with the backend URL.')
                 : offline
-                  ? t('You\'re offline. Orbit needs a connection the first time you open it on a device. After that it works without one.')
+                  ? t('You\'re offline. Orpit needs a connection the first time you open it on a device. After that it works without one.')
                   : t('Couldn\'t reach the server. It sleeps when unused, so the first open of the day can take up to a minute.')}
             </div>
             {/* Which backend this build actually points at. Without it, a build
@@ -621,7 +621,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 
 export function App() {
   const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, open, mutateOpt, booting, bootError, retryBoot, go, back, confirmState, closeConfirm, passwordState, report, closeReport, applyState, showToast } = useStore();
-  // Dark until an account says otherwise: Orbit starts dark, and the
+  // Dark until an account says otherwise: Orpit starts dark, and the
   // theme can be changed in Profile.
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('dark');
 
@@ -880,7 +880,7 @@ export function App() {
   }, [authed]);
 
   // ---- Sleep and workouts from Health Connect ----
-  // Quietly, when Orbit opens or comes back to the front, at most every 15
+  // Quietly, when Orpit opens or comes back to the front, at most every 15
   // minutes. A failed sync says nothing: the next open tries again, and the
   // Fitbit screen in Profile shows when it last worked.
   const healthBusy = useRef(false);
@@ -1002,7 +1002,7 @@ export function App() {
 
   // ---- Android hardware "Back" button handling ----
   // Back should navigate inside the app; only at the top level does it ask
-  // "exit Orbit?" — like a real installed app, instead of instantly closing.
+  // "exit Orpit?" — like a real installed app, instead of instantly closing.
   const [exitPrompt, setExitPrompt] = useState(false);
   const nav = useRef({ screen, sheet, authed, report });
   nav.current = { screen, sheet, authed, report };
@@ -1147,7 +1147,7 @@ export function App() {
         <div style={{ position: 'absolute', inset: 0, zIndex: 98, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
           <div onClick={cancelExit} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .2s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
           <div className="glass-strong" data-lens="dialog" style={{ position: 'relative', borderRadius: 'calc(24px * var(--sq))', padding: '24px 24px 20px', width: '100%', maxWidth: 320, animation: 'fadeUp .25s ease', textAlign: 'center' }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>{t('Exit Orbit?')}</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.01em' }}>{t('Exit Orpit?')}</div>
             <div style={{ fontSize: 15, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>{t('Are you sure you want to close the app?')}</div>
             <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
               <div role="button" tabIndex={0} onClick={cancelExit} className="press" style={{ flex: 1, height: 48, borderRadius: 'calc(14px * var(--sq))', border: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}>

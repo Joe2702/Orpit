@@ -69,11 +69,11 @@ function Showcase() {
       <div aria-hidden style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px)', backgroundSize: '44px 44px', maskImage: 'radial-gradient(70% 60% at 50% 40%, #000, transparent)' }} />
       <div className="brand" style={{ position: 'relative', color: '#fff' }}>
         <span className="brand-mark" style={{ borderColor: '#fff' }} />
-        Orbit
+        Orpit
       </div>
       <div style={{ position: 'relative', marginTop: 'auto', maxWidth: 520 }}>
         <h1 style={{ fontSize: 40, lineHeight: 1.1, letterSpacing: '-0.03em', fontWeight: 700, margin: 0 }}>{t('Your habits, health and money, on the big screen.')}</h1>
-        <p style={{ color: 'rgba(244,244,245,.65)', fontSize: 16, lineHeight: 1.6, margin: '16px 0 0' }}>{t('The same account as the Orbit app on your phone. Whatever you log here is on your phone a moment later, and the other way round.')}</p>
+        <p style={{ color: 'rgba(244,244,245,.65)', fontSize: 16, lineHeight: 1.6, margin: '16px 0 0' }}>{t('The same account as the Orpit app on your phone. Whatever you log here is on your phone a moment later, and the other way round.')}</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 36 }}>
           {points.map(([ic, h, p]) => (
             <div key={h}>
@@ -156,7 +156,7 @@ function useSubmit() {
     try {
       await fn();
     } catch (e) {
-      setErr(e instanceof Error && e.message !== 'offline' ? e.message : t('Can’t reach Orbit. Check your connection and try again.'));
+      setErr(e instanceof Error && e.message !== 'offline' ? e.message : t('Can’t reach Orpit. Check your connection and try again.'));
     }
     setBusy(false);
   };
@@ -181,7 +181,7 @@ function SignIn() {
       }}
       style={{ display: 'grid', gap: 16 }}
     >
-      <Head title={t('Welcome back')} sub={t('Sign in to your Orbit account.')} />
+      <Head title={t('Welcome back')} sub={t('Sign in to your Orpit account.')} />
       <Field label={t('Email')}>
         <input className="input lg" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
       </Field>
@@ -204,7 +204,7 @@ function SignIn() {
       </Button>
       <GoogleSignIn />
       <div className="muted" style={{ textAlign: 'center', marginTop: 8 }}>
-        {t('New to Orbit?')}{' '}
+        {t('New to Orpit?')}{' '}
         <Link to="/signup" className="link">
           {t('Create an account')}
         </Link>
@@ -343,7 +343,7 @@ function Verify() {
       />
       {state !== 'wait' && (
         <Link to={status === 'in' ? '/' : '/signin'} className="btn primary" style={{ width: '100%', height: 42 }}>
-          {status === 'in' ? t('Go to Orbit') : t('Sign in')}
+          {status === 'in' ? t('Go to Orpit') : t('Sign in')}
         </Link>
       )}
     </div>

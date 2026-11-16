@@ -7,7 +7,7 @@
 // more towards the rim, always inward), and the red, green and blue channels
 // are pulled by slightly different amounts.
 //
-// Chromium draws SVG backdrop filters, and Orbit runs on Android's Chromium
+// Chromium draws SVG backdrop filters, and Orpit runs on Android's Chromium
 // WebView. Elsewhere, on low-memory phones, and when the phone asks for less
 // transparency, the glass keeps its plain frosted blur from the stylesheet.
 
