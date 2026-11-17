@@ -234,7 +234,9 @@ export function niceMax(v: number): number {
 
 function useSelection(n: number) {
   const [sel, setSel] = React.useState<number | null>(null);
-  React.useEffect(() => setSel(null), [n]);
+  React.useEffect(() => {
+    setSel(null);
+  }, [n]);
   return [sel, setSel] as const;
 }
 
