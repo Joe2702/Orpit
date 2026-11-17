@@ -33,11 +33,14 @@ import { dayKey } from './lib/format';
 import { updateWidget } from './lib/widget';
 import { syncSms, removeDeclined, smsEnabled, ensureLiveSms, onSmsArrived, SMS_CHANGED } from './lib/smsSync';
 import { isRTL, t, tn } from './i18n';
+import { loadFresh } from './lib/freshVersion';
 
 // Screens and sheets that aren't needed to open the app and log something load
 // when first used, so a cold start parses less. A few seconds after launch the
 // rest are fetched anyway (see warmLazyScreens), so they're instant when
 // tapped and, on the website, cached for offline use like everything else.
+// The screens go through loadFresh (a tab open across an update reloads into
+// the new version); the warm-up doesn't, so it never reloads by itself.
 const LOAD = {
   FinanceScreens: () => import('./screens/FinanceScreens'),
   Achievements: () => import('./screens/Achievements'),
@@ -79,59 +82,59 @@ const LOAD = {
 function warmLazyScreens(): void {
   Object.values(LOAD).forEach((load) => load().catch(() => {}));
 }
-const FAddTx = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FAddTx })));
-const FTxns = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FTxns })));
-const FBudgets = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FBudgets })));
-const FGoals = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FGoals })));
-const FAccounts = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FAccounts })));
-const FRecurring = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FRecurring })));
-const FCats = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FCats })));
-const FInsights = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FInsights })));
-const FReview = lazy(() => LOAD.FinanceScreens().then((m) => ({ default: m.FReview })));
-const Welcome = lazy(() => LOAD.Welcome().then((m) => ({ default: m.Welcome })));
-const Signin = lazy(() => LOAD.Signin().then((m) => ({ default: m.Signin })));
-const Forgot = lazy(() => LOAD.ForgotReset().then((m) => ({ default: m.Forgot })));
-const Reset = lazy(() => LOAD.ForgotReset().then((m) => ({ default: m.Reset })));
-const Analytics = lazy(() => LOAD.Analytics().then((m) => ({ default: m.Analytics })));
-const Settings = lazy(() => LOAD.Settings().then((m) => ({ default: m.Settings })));
-const Counters = lazy(() => LOAD.Counters().then((m) => ({ default: m.Counters })));
-const Achievements = lazy(() => LOAD.Achievements().then((m) => ({ default: m.Achievements })));
-const FeedbackInbox = lazy(() => LOAD.FeedbackInbox().then((m) => ({ default: m.FeedbackInbox })));
-const Privacy = lazy(() => LOAD.Privacy().then((m) => ({ default: m.Privacy })));
-const Insights = lazy(() => LOAD.Insights().then((m) => ({ default: m.Insights })));
-const Search = lazy(() => LOAD.Search().then((m) => ({ default: m.Search })));
-const VerifyEmail = lazy(() => LOAD.VerifyEmail().then((m) => ({ default: m.VerifyEmail })));
-const StoryReport = lazy(() => LOAD.StoryReport().then((m) => ({ default: m.StoryReport })));
-const Intro = lazy(() => LOAD.Intro().then((m) => ({ default: m.Intro })));
-const Partner = lazy(() => LOAD.Partner().then((m) => ({ default: m.Partner })));
-const PartnerThread = lazy(() => LOAD.PartnerThread().then((m) => ({ default: m.PartnerThread })));
-const WeekReview = lazy(() => LOAD.WeekReview().then((m) => ({ default: m.WeekReview })));
-const Brief = lazy(() => LOAD.Brief().then((m) => ({ default: m.Brief })));
-const CounterSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m.CounterSheet })));
-const CountLogSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m.CountLogSheet })));
-const CountPickSheet = lazy(() => LOAD.CounterSheets().then((m) => ({ default: m.CountPickSheet })));
-const MilestoneSheet = lazy(() => LOAD.MilestoneSheet().then((m) => ({ default: m.MilestoneSheet })));
-const TodoSheet = lazy(() => LOAD.TodoSheets().then((m) => ({ default: m.TodoSheet })));
-const HealthSheet = lazy(() => LOAD.HealthSheet().then((m) => ({ default: m.HealthSheet })));
-const AccentSheet = lazy(() => LOAD.AccentSheet().then((m) => ({ default: m.AccentSheet })));
-const AssistantSheet = lazy(() => LOAD.AssistantSheet().then((m) => ({ default: m.AssistantSheet })));
-const CurrencySheet = lazy(() => LOAD.CurrencySheet().then((m) => ({ default: m.CurrencySheet })));
-const TodoListSheet = lazy(() => LOAD.TodoSheets().then((m) => ({ default: m.TodoListSheet })));
-const Todos = lazy(() => LOAD.Todos().then((m) => ({ default: m.Todos })));
-const TodoList = lazy(() => LOAD.TodoList().then((m) => ({ default: m.TodoList })));
-const AccountSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.AccountSheet })));
-const FcatSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.FcatSheet })));
-const BudgetSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.BudgetSheet })));
-const GoalSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.GoalSheet })));
-const RecurringSheet = lazy(() => LOAD.FinanceSheets().then((m) => ({ default: m.RecurringSheet })));
-const SmsFoundSheet = lazy(() => LOAD.SmsFoundSheet().then((m) => ({ default: m.SmsFoundSheet })));
-const WCatsSheet = lazy(() => LOAD.CategorySheets().then((m) => ({ default: m.WCatsSheet })));
-const WCatSheet = lazy(() => LOAD.CategorySheets().then((m) => ({ default: m.WCatSheet })));
-const ProfileSheet = lazy(() => LOAD.ProfileSheet().then((m) => ({ default: m.ProfileSheet })));
-const FeedbackSheet = lazy(() => LOAD.FeedbackSheet().then((m) => ({ default: m.FeedbackSheet })));
-const HabitCalendarSheet = lazy(() => LOAD.HabitCalendarSheet().then((m) => ({ default: m.HabitCalendarSheet })));
-const CatchUpSheet = lazy(() => LOAD.CatchUpSheet().then((m) => ({ default: m.CatchUpSheet })));
-const PartnerReportSheet = lazy(() => LOAD.PartnerReportSheet().then((m) => ({ default: m.PartnerReportSheet })));
+const FAddTx = lazy(loadFresh(() => LOAD.FinanceScreens().then((m) => ({ default: m.FAddTx }))));
+const FTxns = lazy(loadFresh(() => LOAD.FinanceScreens().then((m) => ({ default: m.FTxns }))));
+const FBudgets = lazy(loadFresh(() => LOAD.FinanceScreens().then((m) => ({ default: m.FBudgets }))));
+const FGoals = lazy(loadFresh(() => LOAD.FinanceScreens().then((m) => ({ default: m.FGoals }))));
+const FAccounts = lazy(loadFresh(() => LOAD.FinanceScreens().then((m) => ({ default: m.FAccounts }))));
+const FRecurring = lazy(loadFresh(() => LOAD.FinanceScreens().then((m) => ({ default: m.FRecurring }))));
+const FCats = lazy(loadFresh(() => LOAD.FinanceScreens().then((m) => ({ default: m.FCats }))));
+const FInsights = lazy(loadFresh(() => LOAD.FinanceScreens().then((m) => ({ default: m.FInsights }))));
+const FReview = lazy(loadFresh(() => LOAD.FinanceScreens().then((m) => ({ default: m.FReview }))));
+const Welcome = lazy(loadFresh(() => LOAD.Welcome().then((m) => ({ default: m.Welcome }))));
+const Signin = lazy(loadFresh(() => LOAD.Signin().then((m) => ({ default: m.Signin }))));
+const Forgot = lazy(loadFresh(() => LOAD.ForgotReset().then((m) => ({ default: m.Forgot }))));
+const Reset = lazy(loadFresh(() => LOAD.ForgotReset().then((m) => ({ default: m.Reset }))));
+const Analytics = lazy(loadFresh(() => LOAD.Analytics().then((m) => ({ default: m.Analytics }))));
+const Settings = lazy(loadFresh(() => LOAD.Settings().then((m) => ({ default: m.Settings }))));
+const Counters = lazy(loadFresh(() => LOAD.Counters().then((m) => ({ default: m.Counters }))));
+const Achievements = lazy(loadFresh(() => LOAD.Achievements().then((m) => ({ default: m.Achievements }))));
+const FeedbackInbox = lazy(loadFresh(() => LOAD.FeedbackInbox().then((m) => ({ default: m.FeedbackInbox }))));
+const Privacy = lazy(loadFresh(() => LOAD.Privacy().then((m) => ({ default: m.Privacy }))));
+const Insights = lazy(loadFresh(() => LOAD.Insights().then((m) => ({ default: m.Insights }))));
+const Search = lazy(loadFresh(() => LOAD.Search().then((m) => ({ default: m.Search }))));
+const VerifyEmail = lazy(loadFresh(() => LOAD.VerifyEmail().then((m) => ({ default: m.VerifyEmail }))));
+const StoryReport = lazy(loadFresh(() => LOAD.StoryReport().then((m) => ({ default: m.StoryReport }))));
+const Intro = lazy(loadFresh(() => LOAD.Intro().then((m) => ({ default: m.Intro }))));
+const Partner = lazy(loadFresh(() => LOAD.Partner().then((m) => ({ default: m.Partner }))));
+const PartnerThread = lazy(loadFresh(() => LOAD.PartnerThread().then((m) => ({ default: m.PartnerThread }))));
+const WeekReview = lazy(loadFresh(() => LOAD.WeekReview().then((m) => ({ default: m.WeekReview }))));
+const Brief = lazy(loadFresh(() => LOAD.Brief().then((m) => ({ default: m.Brief }))));
+const CounterSheet = lazy(loadFresh(() => LOAD.CounterSheets().then((m) => ({ default: m.CounterSheet }))));
+const CountLogSheet = lazy(loadFresh(() => LOAD.CounterSheets().then((m) => ({ default: m.CountLogSheet }))));
+const CountPickSheet = lazy(loadFresh(() => LOAD.CounterSheets().then((m) => ({ default: m.CountPickSheet }))));
+const MilestoneSheet = lazy(loadFresh(() => LOAD.MilestoneSheet().then((m) => ({ default: m.MilestoneSheet }))));
+const TodoSheet = lazy(loadFresh(() => LOAD.TodoSheets().then((m) => ({ default: m.TodoSheet }))));
+const HealthSheet = lazy(loadFresh(() => LOAD.HealthSheet().then((m) => ({ default: m.HealthSheet }))));
+const AccentSheet = lazy(loadFresh(() => LOAD.AccentSheet().then((m) => ({ default: m.AccentSheet }))));
+const AssistantSheet = lazy(loadFresh(() => LOAD.AssistantSheet().then((m) => ({ default: m.AssistantSheet }))));
+const CurrencySheet = lazy(loadFresh(() => LOAD.CurrencySheet().then((m) => ({ default: m.CurrencySheet }))));
+const TodoListSheet = lazy(loadFresh(() => LOAD.TodoSheets().then((m) => ({ default: m.TodoListSheet }))));
+const Todos = lazy(loadFresh(() => LOAD.Todos().then((m) => ({ default: m.Todos }))));
+const TodoList = lazy(loadFresh(() => LOAD.TodoList().then((m) => ({ default: m.TodoList }))));
+const AccountSheet = lazy(loadFresh(() => LOAD.FinanceSheets().then((m) => ({ default: m.AccountSheet }))));
+const FcatSheet = lazy(loadFresh(() => LOAD.FinanceSheets().then((m) => ({ default: m.FcatSheet }))));
+const BudgetSheet = lazy(loadFresh(() => LOAD.FinanceSheets().then((m) => ({ default: m.BudgetSheet }))));
+const GoalSheet = lazy(loadFresh(() => LOAD.FinanceSheets().then((m) => ({ default: m.GoalSheet }))));
+const RecurringSheet = lazy(loadFresh(() => LOAD.FinanceSheets().then((m) => ({ default: m.RecurringSheet }))));
+const SmsFoundSheet = lazy(loadFresh(() => LOAD.SmsFoundSheet().then((m) => ({ default: m.SmsFoundSheet }))));
+const WCatsSheet = lazy(loadFresh(() => LOAD.CategorySheets().then((m) => ({ default: m.WCatsSheet }))));
+const WCatSheet = lazy(loadFresh(() => LOAD.CategorySheets().then((m) => ({ default: m.WCatSheet }))));
+const ProfileSheet = lazy(loadFresh(() => LOAD.ProfileSheet().then((m) => ({ default: m.ProfileSheet }))));
+const FeedbackSheet = lazy(loadFresh(() => LOAD.FeedbackSheet().then((m) => ({ default: m.FeedbackSheet }))));
+const HabitCalendarSheet = lazy(loadFresh(() => LOAD.HabitCalendarSheet().then((m) => ({ default: m.HabitCalendarSheet }))));
+const CatchUpSheet = lazy(loadFresh(() => LOAD.CatchUpSheet().then((m) => ({ default: m.CatchUpSheet }))));
+const PartnerReportSheet = lazy(loadFresh(() => LOAD.PartnerReportSheet().then((m) => ({ default: m.PartnerReportSheet }))));
 
 
 const APP_SCREENS = ['home', 'workouts', 'habits', 'sleep', 'finances', 'analytics', 'settings', 'counters', 'achievements'];

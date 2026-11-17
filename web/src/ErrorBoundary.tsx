@@ -1,10 +1,12 @@
 import React from 'react';
 import { OrbitMark } from './OrbitMark';
 import { reportError } from './lib/crash';
+import { isStaleFileError, loadNewVersion } from './lib/freshVersion';
 import { t } from './i18n';
 
 interface State {
   err: Error | null;
+  reloading?: boolean;
 }
 
 /**
@@ -19,11 +21,14 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
   }
 
   componentDidCatch(err: Error) {
+    // A file from an older version: load the new one (once) instead.
+    if (isStaleFileError(err) && loadNewVersion()) return this.setState({ reloading: true });
     reportError(err);
   }
 
   render() {
     if (!this.state.err) return this.props.children;
+    if (this.state.reloading) return null;
     return (
       <div
         style={{

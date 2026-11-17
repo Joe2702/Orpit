@@ -508,7 +508,7 @@ export function CountLogForm({ counter, onClose }: { counter: Counter; onClose: 
 
 /* ---------------- Tasks ---------------- */
 
-export function TaskForm({ task, listId, onClose }: { task?: Todo; listId?: string; onClose: () => void }) {
+export function TaskForm({ task, listId, onClose, onNewList }: { task?: Todo; listId?: string; onClose: () => void; onNewList?: () => void }) {
   const s = useData();
   const { busy, run } = useSave();
   const remove = useRemove();
@@ -527,10 +527,25 @@ export function TaskForm({ task, listId, onClose }: { task?: Todo; listId?: stri
       title={task ? t('Edit task') : t('New task')}
       onClose={onClose}
       onSubmit={save}
-      footer={<FormFoot onCancel={onClose} busy={busy} left={task && <DeleteBtn onClick={() => remove(t('this task'), () => api.deleteTodo(task.id), onClose, (st) => ({ ...st, todos: st.todos.filter((x) => x.id !== task.id) }))} />} />}
+      footer={
+        s.todoLists.length === 0 ? (
+          // Nothing to save into yet: the way forward is making a list.
+          <>
+            <span className="spacer" />
+            <Button kind="ghost" onClick={onClose}>{t('Cancel')}</Button>
+            {onNewList && (
+              <Button kind="primary" icon="plus" onClick={onNewList}>
+                {t('New list')}
+              </Button>
+            )}
+          </>
+        ) : (
+          <FormFoot onCancel={onClose} busy={busy} left={task && <DeleteBtn onClick={() => remove(t('this task'), () => api.deleteTodo(task.id), onClose, (st) => ({ ...st, todos: st.todos.filter((x) => x.id !== task.id) }))} />} />
+        )
+      }
     >
       {s.todoLists.length === 0 ? (
-        <div className="muted">{t('Make a list first, in Tasks.')}</div>
+        <div className="muted">{t('Tasks go in lists. Make your first list, then add tasks to it.')}</div>
       ) : (
         <div className="form-grid">
           <Field label={t('Task')} full>

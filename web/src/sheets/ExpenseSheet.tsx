@@ -16,7 +16,7 @@ function todayISO(): string {
 }
 
 export function ExpenseSheet() {
-  const { state, closeSheet, mutateOpt, haptic } = useStore();
+  const { state, closeSheet, mutateOpt, haptic, showToast } = useStore();
   const [kind, setKind] = useState<'expense' | 'income'>('expense');
   const [amount, setAmount] = useState('');
   const [exCat, setExCat] = useState('Food');
@@ -41,7 +41,8 @@ export function ExpenseSheet() {
 
   const save = () => {
     const amt = parseFloat(amount || '0');
-    if (!amt) return;
+    // Say why nothing happened, rather than a Save button that seems dead.
+    if (!amt) return showToast(t('Add an amount'));
     haptic();
     const ts = new Date(`${day}T12:00:00`).getTime();
     const accId = state!.accounts[0]?.id ?? null;

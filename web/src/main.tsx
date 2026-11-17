@@ -8,9 +8,11 @@ import './fonts-arabic.css';
 import './theme.css';
 import { initI18n, installDigitShaper } from './i18n';
 import { installCrashReporter } from './lib/crash';
+import { installUpdateReload } from './lib/freshVersion';
 import { installKeyActivation } from './lib/a11y';
 
 installKeyActivation();
+installUpdateReload();
 
 // Labels and month names are read as modules load, so the language is settled
 // first and the app is imported after it.
