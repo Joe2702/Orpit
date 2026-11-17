@@ -11,7 +11,7 @@ import webpush from 'web-push';
 
 import type { PoolClient } from 'pg';
 import { pool, query, one, tx } from './db.js';
-import { pickView } from './view.js';
+import { pickView, isFileRequest } from './view.js';
 import { signToken, requireAuth, type AuthedRequest } from './auth.js';
 import { seedUser } from './seed.js';
 import { buildState } from './state.js';
@@ -186,7 +186,9 @@ app.post(
   wrap(async (req, res) => {
     const email = String(req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '');
-    const name = String(req.body.name || '').trim() || 'Alex Rivera';
+    // The name is optional. Without one the apps greet people without a name
+    // ("Welcome to Orpit"), never with a stand-in name that isn't theirs.
+    const name = String(req.body.name || '').trim().slice(0, 80);
     // Date of birth, taken at sign-up because it is the only moment everyone
     // passes through. Not required: refusing to create an account over it would
     // cost more real users than the one feature it gates is worth, and anyone
@@ -3292,6 +3294,8 @@ if (existsSync(webDist)) {
   app.use(express.static(webDist, { index: false }));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
+    // A file that isn't there (an old version's script, say) is a 404, never the page.
+    if (isFileRequest(req.path)) return res.status(404).set('Cache-Control', 'no-store').type('text/plain').send('Not found');
     const view = hasSite ? pickView({ cookie: req.headers.cookie, ua: req.headers['user-agent'], chMobile: req.headers['sec-ch-ua-mobile'] as string | undefined }) : 'phone';
     res.setHeader('Vary', 'User-Agent, Sec-CH-UA-Mobile, Cookie');
     res.setHeader('Cache-Control', 'no-cache');

@@ -123,6 +123,27 @@ export function Overview() {
   if (on('workouts'))
     kpis.push({ key: 'w', icon: 'fitness', label: t('Training this week'), value: minutes(wk.minutes), sub: <span className="row" style={{ gap: 8 }}><Delta pct={change(wk.minutes, prev4)} />{t('vs. your 4-week average')}</span>, spark: weeks.map((w) => w.minutes), to: '/fitness' });
 
+  const finOn = on('finances');
+  const showCounters = on('counters') && s.counters.length > 0;
+  const nothingOn = !['habits', 'finances', 'sleep', 'workouts', 'todos'].some(on) && !showCounters;
+  const counterRows = (
+    <>
+      {s.counters.slice(0, 4).map((c) => {
+        const v = s.countLogs.filter((l) => l.counterId === c.id && l.ts >= today).reduce((a, l) => a + l.amount, 0);
+        return (
+          <div key={c.id} className="list-row">
+            <ColorDot c={c.color} />
+            <span className="truncate" style={{ flex: 1 }}>{tData(c.name)}</span>
+            <span className="num" style={{ fontWeight: 600 }}>
+              {v} <span className="faint" style={{ fontWeight: 500, fontSize: 12 }}>{tData(c.unit)}</span>
+            </span>
+            <Button size="sm" onClick={() => mutate(null, () => api.logCounter(c.id, c.step, Date.now()))}>+{c.step}</Button>
+          </div>
+        );
+      })}
+    </>
+  );
+
   return (
     <div className="page">
       <div className="page-head">
@@ -463,28 +484,35 @@ export function Overview() {
                   );
                 })
               )}
-              {on('counters') && s.counters.length > 0 && (
+              {showCounters && finOn && (
                 <>
                   <div className="card-head" style={{ borderTop: '1px solid var(--line-soft)' }}>
                     <span className="card-title">{t('Counters today')}</span>
                   </div>
-                  {s.counters.slice(0, 4).map((c) => {
-                    const v = s.countLogs.filter((l) => l.counterId === c.id && l.ts >= today).reduce((a, l) => a + l.amount, 0);
-                    return (
-                      <div key={c.id} className="list-row">
-                        <ColorDot c={c.color} />
-                        <span className="truncate" style={{ flex: 1 }}>{tData(c.name)}</span>
-                        <span className="num" style={{ fontWeight: 600 }}>
-                          {v} <span className="faint" style={{ fontWeight: 500, fontSize: 12 }}>{tData(c.unit)}</span>
-                        </span>
-                        <Button size="sm" onClick={() => mutate(null, () => api.logCounter(c.id, c.step, Date.now()))}>+{c.step}</Button>
-                      </div>
-                    );
-                  })}
+                  {counterRows}
                 </>
               )}
             </div>
           </>
+        )}
+
+        {/* Counters live in the money column; without it they get a card of their own. */}
+        {showCounters && !finOn && (
+          <div className="card c12">
+            <div className="card-head">
+              <span className="card-title">{t('Counters today')}</span>
+              <span className="spacer" />
+              <button className="link" onClick={() => nav('/habits/counters')}>{t('Counters')}</button>
+            </div>
+            {counterRows}
+          </div>
+        )}
+        {nothingOn && (
+          <div className="card c12">
+            <Empty icon="settings" title={t('Nothing to show here yet')} action={<Button kind="primary" onClick={() => nav('/settings/trackers')}>{t('What you track')}</Button>}>
+              {t('Turn on a tracker in Settings and its summary shows up here.')}
+            </Empty>
+          </div>
         )}
       </div>
     </div>

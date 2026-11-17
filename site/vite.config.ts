@@ -8,7 +8,11 @@ import { fileURLToPath } from 'node:url';
 //
 // Built files go under /d/ so they can sit next to the phone app's /assets/
 // on the same server without either overwriting the other.
+// Crash reports say which build they came from, as the phone app's do.
+const BUILD = process.env.VITE_BUILD_ID || process.env.GITHUB_RUN_NUMBER || process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'dev';
+
 export default defineConfig({
+  define: { __BUILD_ID__: JSON.stringify(String(BUILD)) },
   plugins: [react()],
   resolve: {
     alias: { '@core': fileURLToPath(new URL('../web/src', import.meta.url)) },

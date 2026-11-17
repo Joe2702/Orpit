@@ -656,10 +656,20 @@ export function FBudgets() {
   const { d } = useData();
   const { state } = useStore();
   const totalPct = d.budgetTotal > 0 ? Math.min(100, Math.round((d.budgetSpent / d.budgetTotal) * 100)) : 0;
+  const newBudget = () => open('budget', { cat: state!.fcats.find((c) => c.kind === 'expense')?.name || 'Food' });
   return (
     <div style={{ padding: '8px 20px 28px', animation: 'fadeIn .35s ease' }}>
-      <Header title={t('Budgets')} action={<AddBtn onClick={() => open('budget', { cat: state!.fcats.find((c) => c.kind === 'expense')?.name || 'Food' })} />} />
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16, marginBottom: 16 }}>
+      <Header title={t('Budgets')} action={<AddBtn onClick={newBudget} />} />
+      {d.budgets.length === 0 && (
+        <EmptyList
+          icon="M12 3a9 9 0 1 0 9 9h-9z M14 3.3A9 9 0 0 1 20.7 10H14z"
+          title={t('No budgets yet')}
+          body={t('Give a category a monthly limit and Orpit warns you while there’s still time to change course.')}
+          cta={t('New budget')}
+          onClick={newBudget}
+        />
+      )}
+      {d.budgets.length > 0 && <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: 16, marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>{t('This month')}</span>
           <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{t('{amount} of {amount2}', { amount: money(d.budgetSpent), amount2: money(d.budgetTotal) })}</span>
@@ -667,7 +677,7 @@ export function FBudgets() {
         <div style={{ height: 10, borderRadius: 999, background: 'var(--bg)', overflow: 'hidden' }}>
           <div style={{ height: '100%', borderRadius: 999, background: 'var(--indigo)', width: `${totalPct}%` }} />
         </div>
-      </div>
+      </div>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {d.budgets.map((b) => {
           const fc = fcatByName(state!.fcats, b.cat);
@@ -703,6 +713,28 @@ export function FBudgets() {
   );
 }
 
+// An empty money list says what it's for and offers the first one, the same
+// words the website uses.
+function EmptyList({ icon, title, body, cta, onClick }: { icon: string; title: string; body: string; cta: string; onClick: () => void }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '48px 16px', gap: 16 }}>
+      <div style={{ width: 96, height: 96, borderRadius: '50%', border: '2px dashed color-mix(in srgb,var(--indigo) 38%,var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb,var(--indigo) 7%,transparent)' }}>
+        <svg width="40" height="40" viewBox="0 0 24 24" style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+          <path d={icon} />
+        </svg>
+      </div>
+      <div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>{title}</div>
+        <div style={{ fontSize: 15, color: 'var(--text2)', marginTop: 8, lineHeight: 1.55, maxWidth: 280 }}>{body}</div>
+      </div>
+      <div role="button" tabIndex={0} onClick={onClick} className="press" style={{ background: 'var(--indigo)', color: '#fff', height: 52, padding: '0 24px', borderRadius: 'calc(16px * var(--sq))', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+        <svg width="19" height="19" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.4, strokeLinecap: 'round' }}><path d="M10 4v11M4 9.5h11" /></svg>
+        {cta}
+      </div>
+    </div>
+  );
+}
+
 // ================= Goals =================
 export function FGoals() {
   const { open } = useStore();
@@ -710,6 +742,15 @@ export function FGoals() {
   return (
     <div style={{ padding: '8px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <Header title={t('Savings goals')} action={<AddBtn onClick={() => open('goal')} />} />
+      {d.goals.length === 0 && (
+        <EmptyList
+          icon="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M12 12h.01"
+          title={t('No savings goals yet')}
+          body={t('Something you’re saving for. Link it to an account and it fills up on its own.')}
+          cta={t('New goal')}
+          onClick={() => open('goal')}
+        />
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {d.goals.map((g) => (
           <div role="button" tabIndex={0} key={g.id} onClick={() => open('goal', { id: g.id, name: g.name, target: g.target, current: g.current, color: g.color, dueTs: g.dueTs, accId: g.accId ?? null })} className="press99" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '16px 16px', cursor: 'pointer' }}>
@@ -794,7 +835,7 @@ export function FRecurring() {
   return (
     <div style={{ padding: '8px 20px 28px', animation: 'fadeIn .35s ease' }}>
       <Header title={t('Recurring')} action={<AddBtn onClick={() => open('recurring')} />} />
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '16px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {d.recurring.length > 0 && <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', padding: '16px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text2)' }}>{t('Bills a month')}</span>
         <span style={{ textAlign: 'end' }}>
           <span style={{ display: 'block', fontSize: 22, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{money(Math.round(d.recurringMonthly))}</span>
@@ -802,7 +843,7 @@ export function FRecurring() {
             <span style={{ display: 'block', fontSize: 13, color: 'var(--indigo)', marginTop: 2 }}>{t('+{amount} coming in', { amount: money(Math.round(d.recurringIncomeMonthly)) })}</span>
           )}
         </span>
-      </div>
+      </div>}
       {found.length > 0 && (
         <>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', margin: '0 2px 8px' }}>{t('Found in your payments')}</div>
@@ -823,7 +864,16 @@ export function FRecurring() {
           </div>
         </>
       )}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+      {d.recurring.length === 0 && (
+        <EmptyList
+          icon="M17 2l4 4-4 4 M3 11V9a3 3 0 0 1 3-3h15 M7 22l-4-4 4-4 M21 13v2a3 3 0 0 1-3 3H3"
+          title={t('No repeating payments yet')}
+          body={t('Rent, subscriptions, your salary: anything that comes round on a schedule. Safe-to-spend counts on them.')}
+          cta={t('New repeating payment')}
+          onClick={() => open('recurring')}
+        />
+      )}
+      {d.recurring.length > 0 && <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         {d.recurring.map((r) => {
           const fc = fcatByName(state!.fcats, r.cat);
           // What paid it last: the bank's own message, or the schedule. And
@@ -850,7 +900,7 @@ export function FRecurring() {
             </div>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 }

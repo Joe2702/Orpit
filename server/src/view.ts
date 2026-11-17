@@ -14,3 +14,13 @@ export function pickView(h: { cookie?: string; ua?: string; chMobile?: string })
   if (h.chMobile === '?0' && !MOBILE.test(h.ua || '')) return 'desktop';
   return MOBILE.test(h.ua || '') ? 'phone' : 'desktop';
 }
+
+// Missing files get a real "not found". Answering a request for an old script
+// with the app's page instead is what left a tab opened before an update
+// with an empty window: the browser can't run a page as a script.
+const FILE = /\.(?:m?js|css|map|png|jpe?g|gif|svg|ico|webp|avif|woff2?|ttf|otf|json|webmanifest|txt|xml|wasm)$/i;
+
+/** True when a request is for a file (a script, a style, an icon) rather than a page. */
+export function isFileRequest(path: string): boolean {
+  return path.startsWith('/d/') || path.startsWith('/assets/') || FILE.test(path);
+}

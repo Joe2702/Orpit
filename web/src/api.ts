@@ -1,6 +1,7 @@
 import type { AppState, WorkoutSet, PartnerState } from './types';
 import type { SmsRow } from './lib/ledger';
 import { track, type UsageName } from './lib/usage';
+import { serverError } from './lib/serverError';
 
 export interface AdminMetrics {
   active: { d1: number; d7: number; d30: number; users: number } | null;
@@ -117,7 +118,7 @@ async function request<T>(path: string, opts: RequestInit = {}, opId?: string): 
       msg = t('That didn’t work ({status})', { status: String(res.status) });
       try {
         const body = await res.json();
-        if (body?.error) msg = body.error;
+        if (body?.error) msg = serverError(String(body.error));
       } catch {
         /* ignore */
       }

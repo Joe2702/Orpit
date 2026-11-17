@@ -1,4 +1,5 @@
 import type { AppState } from '../types';
+import { t } from '../i18n';
 
 // Offline logging.
 //
@@ -251,14 +252,14 @@ export const queuedMessage = (): string =>
  * people — "That password is incorrect" is the right thing to show.
  */
 export function serverMessage(status: number): string {
-  if (status === 502 || status === 503 || status === 504) return 'Orpit is waking up. Try again in a few seconds.';
-  return 'Something went wrong on our side. Please try again.';
+  if (status === 502 || status === 503 || status === 504) return t('Orpit is waking up. Try again in a few seconds.');
+  return t('Something went wrong on our side. Please try again.');
 }
 
 export const networkMessage = (): string =>
   connectivity() === 'offline'
-    ? 'No connection. Try again when you’re back online.'
-    : 'Couldn’t reach Orpit. Please try again in a moment.';
+    ? t('No connection. Try again when you’re back online.')
+    : t('Couldn’t reach Orpit. Please try again in a moment.');
 
 /** Status codes that mean "not serving yet", not "your request was wrong". */
 export const isUnavailable = (status: number): boolean => status === 502 || status === 503 || status === 504;

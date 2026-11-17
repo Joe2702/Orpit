@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pickView } from '../src/view';
+import { pickView, isFileRequest } from '../src/view';
 
 const MAC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15';
 const WIN = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
@@ -19,4 +19,11 @@ test('a chosen layout wins over the guess, either way', () => {
   assert.equal(pickView({ ua: WIN, cookie: 'a=1; orbit_view=phone' }), 'phone');
   assert.equal(pickView({ ua: IPHONE, cookie: 'orbit_view=desktop; b=2' }), 'desktop');
   assert.equal(pickView({ ua: WIN, cookie: 'not_orbit_view=phone' }), 'desktop');
+});
+
+test('a missing file is not answered with the app page', () => {
+  for (const p of ['/d/Habits-DsgCMTQD.js', '/assets/index-abc.css', '/d/inter.woff2', '/icon-512.png', '/robots.txt', '/old.js.map'])
+    assert.equal(isFileRequest(p), true, p);
+  for (const p of ['/', '/money', '/money/transactions', '/settings/profile', '/signin', '/tasks/12', '/reset'])
+    assert.equal(isFileRequest(p), false, p);
 });

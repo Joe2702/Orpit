@@ -53,10 +53,17 @@ self.addEventListener('fetch', (e) => {
   e.respondWith(
     fetch(e.request)
       .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
+        // Only good answers are kept: a "not found" kept here would come back offline.
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
+        }
         return res;
       })
-      .catch(() => caches.match(e.request).then((r) => r || caches.match('/')))
+      // Offline: what was kept, and for a page the app itself. A script is never
+      // answered with the page, which a browser can't run.
+      .catch(() =>
+        caches.match(e.request).then((r) => r || (e.request.mode === 'navigate' ? caches.match('/') : Response.error()))
+      )
   );
 });

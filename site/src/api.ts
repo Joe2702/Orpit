@@ -3,6 +3,8 @@
 
 import type { AppState, WorkoutSet } from '@core/types';
 import { getLang } from './i18n';
+import { serverError } from '@core/lib/serverError';
+import { serverMessage } from '@core/lib/offline';
 
 const TOKEN = 'orbit_token';
 const BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
@@ -52,7 +54,7 @@ async function req<T = AppState>(path: string, method = 'GET', body?: unknown, h
   } catch {
     data = null;
   }
-  if (!res.ok) throw new ApiError(res.status, (data && data.error) || `HTTP ${res.status}`);
+  if (!res.ok) throw new ApiError(res.status, data && data.error ? serverError(String(data.error)) : serverMessage(res.status));
   return data as T;
 }
 

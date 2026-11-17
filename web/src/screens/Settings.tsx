@@ -519,7 +519,7 @@ export function Settings() {
       >
         <Avatar name={profile.name} src={profile.avatar} size={54} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>{profile.name}</div>
+          <div style={{ fontSize: 17, fontWeight: 700, color: profile.name ? 'var(--text)' : 'var(--text2)' }}>{profile.name || t('Add your name')}</div>
           <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{profile.email}</div>
         </div>
         <svg width="20" height="20" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>

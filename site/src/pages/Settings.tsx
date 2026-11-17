@@ -392,7 +392,7 @@ function Setup() {
   return (
     <div className="page" style={{ maxWidth: 760 }}>
       <div style={{ textAlign: 'center', margin: '24px 0 32px' }}>
-        <h1 className="page-title" style={{ fontSize: 28 }}>{t('Welcome to Orpit, {name}', { name: s.profile.name.split(' ')[0] || '' })}</h1>
+        <h1 className="page-title" style={{ fontSize: 28 }}>{s.profile.name.trim() ? t('Welcome to Orpit, {name}', { name: s.profile.name.trim().split(/\s+/)[0] }) : t('Welcome to Orpit')}</h1>
         <div className="page-sub" style={{ fontSize: 16 }}>{t('Two quick choices and you’re in. Both can be changed later in Settings.')}</div>
       </div>
       <div className="label" style={{ marginBottom: 8 }}>{t('What do you want to keep track of?')}</div>

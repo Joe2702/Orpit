@@ -4,6 +4,11 @@ import { one } from './db.js';
 
 const SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
+// The fallback is in this public repository, so on a real server anyone could
+// sign a login with it. Say so loudly in the logs if it's ever in use there.
+if (!process.env.JWT_SECRET && (process.env.RENDER || process.env.NODE_ENV === 'production'))
+  console.error('[security] JWT_SECRET is not set: sign-ins use a public default. Set JWT_SECRET in the host’s environment.');
+
 export interface AuthedRequest extends Request {
   userId?: number;
 }

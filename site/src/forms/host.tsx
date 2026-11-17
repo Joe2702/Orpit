@@ -38,7 +38,7 @@ export function FormHost({ children }: { children: React.ReactNode }) {
       {o?.kind === 'habit' && <HabitForm habit={o.habit} onClose={close} />}
       {o?.kind === 'counter' && <CounterForm counter={o.counter} onClose={close} />}
       {o?.kind === 'countlog' && <CountLogForm counter={o.counter} onClose={close} />}
-      {o?.kind === 'task' && <TaskForm task={o.task} listId={o.listId} onClose={close} />}
+      {o?.kind === 'task' && <TaskForm task={o.task} listId={o.listId} onClose={close} onNewList={() => setOpen({ kind: 'list' })} />}
       {o?.kind === 'list' && <ListForm list={o.list} onClose={close} />}
       {o?.kind === 'account' && <AccountForm account={o.account} onClose={close} />}
       {o?.kind === 'budget' && <BudgetForm budget={o.budget} onClose={close} />}
