@@ -70,24 +70,33 @@ contact: **youssif_mohammed@aucegypt.edu**
   turn it off at any time in Profile → Bank messages, or revoke the permission in
   Android's own settings. Entries already imported stay until you delete them.
 
-**Sleep and workouts from Health Connect (optional, Android only)**
+**Steps, sleep and workouts from Health Connect (optional, Android only)**
 - If you turn it on in Profile → Connected apps, Orpit asks Android for
-  permission to read, from Health Connect, your sleep sessions, exercise
-  sessions, and the distance and calories burned during them. Health Connect
-  is where apps like Fitbit save that data on your phone.
-- Orpit reads only those, only while you use the app, and the first time only
-  the last 30 days. It saves them as your own nights and workouts: when you
-  slept and woke, how long you were asleep, a quality estimated from your
-  sleep stages, the kind of exercise, its time, duration, distance and
-  calories, and which app recorded it.
+  permission to read, from Health Connect, your steps, your sleep sessions,
+  your exercise sessions, and the distance and calories burned during them.
+  Health Connect is where apps like Samsung Health, Google Fit and Fitbit
+  save that data on your phone.
+- Steps are saved as one total a day (and which app counted most of them),
+  for the Steps habit and its chart. Sleep and exercise are saved as your own
+  nights and workouts: when you slept and woke, how long you were asleep, a
+  quality estimated from your sleep stages, the kind of exercise, its time,
+  duration, distance and calories, and which app recorded it. The first time,
+  Orpit reads only the last 30 days.
+- If you leave step notifications on and allow it, Orpit also reads today's
+  step total in the background, about every 15 minutes, to tell you when
+  you're a quarter, half and three quarters of the way to your goal, and when
+  you reach it. That count stays on your phone, except on the day you reach
+  your goal, when that day's total is sent to Orpit's server to tick your
+  Steps habit. Turn the notifications off in the Steps screen, or remove the
+  background permission in Health Connect's settings, and it stops.
 - Orpit never writes to Health Connect, reads nothing else from it, and never
   shares this data or uses it for advertising. It is used only to show your
-  sleep and training in Orpit.
+  steps, sleep and training in Orpit.
 - Orpit's use of information received from Health Connect adheres to the
   Health Connect Permissions policy, including the Limited Use requirements.
 - Stop at any time in Profile → Connected apps, or remove Orpit's access in
   Health Connect's settings. What was already imported stays until you
-  delete it.
+  delete it, or delete your account.
 
 **A morning brief from Claude (optional)**
 - If you make a key in Profile → Connected apps → Claude and give it to your
