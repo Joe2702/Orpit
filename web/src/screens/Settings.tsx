@@ -699,7 +699,8 @@ export function Settings() {
       <SectionLabel>{t('Currency')}</SectionLabel>
       <CurrencyButton code={profile.currency || 'EGP'} onClick={() => open('currency')} />
 
-      {/* Sleep and workouts from Fitbit, by way of Health Connect (Android),
+      {/* Steps, sleep and workouts from the person's health app, by way of
+          Health Connect (Android),
           and the morning brief Claude writes (everywhere). */}
       <SectionLabel>{t('Connected apps')}</SectionLabel>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(20px * var(--sq))', boxShadow: 'var(--shadow)', overflow: 'hidden', marginBottom: 24 }}>
@@ -725,8 +726,8 @@ export function Settings() {
                 </svg>
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Fitbit and Health Connect')}</div>
-                <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{healthPrefs().on ? t('Syncing your sleep and workouts') : t('Bring in your sleep and workouts')}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('Health app')}</div>
+                <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 1 }}>{healthPrefs().on ? t('Syncing your steps, sleep and workouts') : t('Steps, sleep and workouts from Samsung Health, Google Fit, Fitbit…')}</div>
               </div>
               <IconChevron />
             </div>

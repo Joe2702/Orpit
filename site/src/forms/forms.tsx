@@ -394,6 +394,9 @@ export function HabitForm({ habit, onClose }: { habit?: Habit; onClose: () => vo
   const [cue, setCue] = useState(habit?.cue || '');
   const [why, setWhy] = useState(habit?.why || '');
   const [paused, setPaused] = useState(!!habit?.paused);
+  // The Steps habit's daily goal; it ticks itself when the phone counts that many.
+  const steps = habit?.auto === 'steps';
+  const [goal, setGoal] = useState(String(habit?.goal || 8000));
   const flip = (i: number) => {
     const next = days.split('');
     next[i] = next[i] === '1' ? '0' : '1';
@@ -401,7 +404,8 @@ export function HabitForm({ habit, onClose }: { habit?: Habit; onClose: () => vo
   };
   const save = () => {
     if (!name.trim()) return;
-    const body = { name: name.trim(), color, target: daysLabel(days), days, cue: cue.trim() || null, why: why.trim() || null, reminderTime: habit?.reminderTime ?? null, paused, archived: habit?.archived ?? false };
+    const g = Math.round(Number(goal));
+    const body = { name: name.trim(), color, target: daysLabel(days), days, cue: cue.trim() || null, why: why.trim() || null, reminderTime: habit?.reminderTime ?? null, paused, archived: habit?.archived ?? false, ...(steps && g >= 500 && g <= 100_000 ? { goal: g } : {}) };
     if (habit) run(() => api.editHabit(habit.id, body), t('Saved'), onClose, (st) => ({ ...st, habits: st.habits.map((h) => (h.id === habit.id ? { ...h, ...body } : h)) }));
     else run(() => api.addHabit(body), t('Habit added'), onClose);
   };
@@ -417,6 +421,11 @@ export function HabitForm({ habit, onClose }: { habit?: Habit; onClose: () => vo
         <Field label={t('Habit')} full>
           <input className="input lg" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Read 20 pages, Walk after lunch…')} />
         </Field>
+        {steps && (
+          <Field label={t('Daily step goal')} full hint={t('Your phone counts the steps; reaching the goal ticks this habit for the day.')}>
+            <input className="input num" type="number" inputMode="numeric" min={500} max={100000} step={500} value={goal} onChange={(e) => setGoal(e.target.value)} style={{ maxWidth: 200 }} />
+          </Field>
+        )}
         <Field label={t('Which days')} full hint={daysLabel(days)}>
           <div className="row" style={{ gap: 8 }}>
             {Array.from({ length: 7 }, (_, i) => (

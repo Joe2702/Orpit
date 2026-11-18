@@ -3,12 +3,13 @@ import type { HealthSample, Workout as HcWorkout, SleepStage, HealthPlugin } fro
 import { api } from '../api';
 import type { AppState } from '../types';
 
-// Sleep and workouts from Health Connect.
+// Steps, sleep and workouts from Health Connect.
 //
-// Fitbit (and Samsung Health, Google Fit, Garmin…) save sleep and exercise to
-// Health Connect on the phone. With the person's permission Orpit reads them
-// from there and saves them as its own nights and workouts, so nothing gets
-// logged twice. Orpit only reads: it never writes to Health Connect.
+// Samsung Health, Google Fit, Fitbit, Garmin and the rest save steps, sleep
+// and exercise to Health Connect on the phone. With the person's permission
+// Orpit reads them from there: steps a day (lib/steps.ts), and nights and
+// workouts saved as its own entries, so nothing gets logged twice. Orpit only
+// reads: it never writes to Health Connect.
 //
 // Each entry keeps its Health Connect id, so syncing the same week again adds
 // nothing (the server checks), a night or workout already logged by hand wins,
@@ -207,22 +208,58 @@ export async function healthAvailable(): Promise<{ ok: boolean; reason?: string 
   }
 }
 
-const READ = ['sleep', 'workouts', 'distance', 'calories', 'totalCalories'] as const;
+const READ = ['steps', 'sleep', 'workouts', 'distance', 'calories', 'totalCalories'] as const;
 
-/** Ask Health Connect for permission. Returns what was allowed. */
-export async function connectHealth(): Promise<{ sleep: boolean; workouts: boolean }> {
+export interface HealthGrant {
+  steps: boolean;
+  sleep: boolean;
+  workouts: boolean;
+}
+const grantOf = (ok: string[]): HealthGrant => ({ steps: ok.includes('steps'), sleep: ok.includes('sleep'), workouts: ok.includes('workouts') });
+
+/**
+ * Ask Health Connect for permission. Returns what was allowed. Someone who
+ * connected before steps were read is asked only for what's new: Health
+ * Connect leaves out what's already allowed.
+ */
+export async function connectHealth(): Promise<HealthGrant> {
   const { h } = await plugin();
   const r = await h.requestAuthorization({ read: [...READ] });
-  return { sleep: r.readAuthorized.includes('sleep'), workouts: r.readAuthorized.includes('workouts') };
+  return grantOf(r.readAuthorized);
 }
 
-export async function healthGranted(): Promise<{ sleep: boolean; workouts: boolean }> {
+export async function healthGranted(): Promise<HealthGrant> {
   try {
     const { h } = await plugin();
     const r = await h.checkAuthorization({ read: [...READ] });
-    return { sleep: r.readAuthorized.includes('sleep'), workouts: r.readAuthorized.includes('workouts') };
+    return grantOf(r.readAuthorized);
   } catch {
-    return { sleep: false, workouts: false };
+    return { steps: false, sleep: false, workouts: false };
+  }
+}
+
+/** Steps a day from `start` to now, as Health Connect totals them (apps merged). */
+export async function readDailySteps(start: number, now: number): Promise<{ day: number; count: number }[]> {
+  const { h } = await plugin();
+  const r = await h.queryAggregated({ dataType: 'steps', startDate: new Date(start).toISOString(), endDate: new Date(now).toISOString(), bucket: 'day', aggregation: 'sum' });
+  return r.samples.map((s) => ({ day: Date.parse(s.startDate), count: Math.max(0, Math.round(s.values?.sum ?? s.value ?? 0)) })).filter((s) => Number.isFinite(s.day));
+}
+
+/** Which app counted most of today's steps ("Samsung Health"), when it can tell. */
+export async function mainStepSource(start: number, now: number): Promise<string | null> {
+  try {
+    const { h } = await plugin();
+    const r = await h.readSamples({ dataType: 'steps', startDate: new Date(start).toISOString(), endDate: new Date(now).toISOString(), limit: 500 });
+    const by = new Map<string, number>();
+    for (const s of r.samples) {
+      const name = sourceLabel(s.sourceName || s.sourceId);
+      by.set(name, (by.get(name) || 0) + (s.value || 0));
+    }
+    let best: string | null = null;
+    for (const [name, n] of by) if (!best || n > by.get(best)!) best = name;
+    return best;
+  } catch {
+    return null;
   }
 }
 

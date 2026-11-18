@@ -244,6 +244,8 @@ export const AR_SITE: Record<string, string | Plural> = {
   "In {n} days": { one: "بعد يوم واحد", two: "بعد يومين", few: "بعد {n} أيام", many: "بعد {n} يومًا", other: "بعد {n} يوم" },
   "Counters today": "العدّادات اليوم",
   "Nothing to show here yet": "لا شيء لعرضه هنا بعد",
+  "Daily step goal": "هدف الخطوات اليومي",
+  "Your phone counts the steps; reaching the goal ticks this habit for the day.": "يعدّ هاتفك الخطوات، وبلوغ الهدف يُنجز هذه العادة لذلك اليوم.",
   "Turn on a tracker in Settings and its summary shows up here.": "فعّل أحد المتتبِّعات من الإعدادات وسيظهر ملخصه هنا.",
   "These follow your account, on the website and on your phone.": "تتبع حسابك، على الموقع وعلى هاتفك.",
   "Photo updated": "حُدّثت الصورة",

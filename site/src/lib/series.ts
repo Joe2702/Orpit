@@ -5,6 +5,7 @@
 import type { AppState, Habit, Txn } from '@core/types';
 import { dayKey } from '@core/lib/format';
 import { isSpend, isIncome } from '@core/lib/money';
+import { habitFrom } from '@core/lib/derive';
 
 const DAY = 86_400_000;
 export const startOfDay = (ts: number) => new Date(ts).setHours(0, 0, 0, 0);
@@ -63,11 +64,13 @@ export function habitHeatmap(state: AppState, weeks = 26, now = Date.now(), only
     if (!byDay.has(c.day)) byDay.set(c.day, new Set());
     byDay.get(c.day)!.add(c.habitId);
   }
+  // A habit is planned only from the day it was added (or filled in from).
+  const from = new Map(habits.map((h) => [h.id, habitFrom(h, state.checkins.filter((c) => c.habitId === h.id).map((c) => c.day)) ?? -Infinity]));
   return Array.from({ length: weeks }, (_, w) =>
     Array.from({ length: 7 }, (_, k) => {
       const day = addDays(first, w * 7 + k);
       if (day > today) return { day, share: null, future: true };
-      const planned = habits.filter((h) => plannedOn(h, day));
+      const planned = habits.filter((h) => plannedOn(h, day) && day >= from.get(h.id)!);
       if (!planned.length) return { day, share: null, future: false };
       const done = byDay.get(dayKey(day));
       return { day, share: planned.filter((h) => done?.has(h.id)).length / planned.length, future: false };

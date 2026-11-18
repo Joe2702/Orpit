@@ -18,7 +18,9 @@ export type ShortcutScreen = 'habits' | 'workouts' | 'sleep' | 'finances';
 /** Where a deep link wants to go: log something, or open a screen. */
 export type ShortcutTarget =
   | { kind: 'log'; action: ShortcutAction }
-  | { kind: 'screen'; screen: ShortcutScreen };
+  | { kind: 'screen'; screen: ShortcutScreen }
+  // A step notification: today's steps.
+  | { kind: 'steps' };
 
 /** `orbit://log/workout` → 'workout'. Anything unrecognised is ignored. */
 export function parseShortcut(url: string | null | undefined): ShortcutAction | null {
@@ -39,6 +41,7 @@ export function parseScreen(url: string | null | undefined): ShortcutScreen | nu
 
 /** Both link shapes, in the order they are tried. */
 export function parseTarget(url: string | null | undefined): ShortcutTarget | null {
+  if (url && /^orbit:\/\/open\/steps\b/i.test(url.trim())) return { kind: 'steps' };
   const action = parseShortcut(url);
   if (action) return { kind: 'log', action };
   const screen = parseScreen(url);
