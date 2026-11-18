@@ -613,6 +613,7 @@ app.patch(
         if (e.code === '23505') return res.status(409).json({ error: 'That email is taken' });
         throw e;
       }
+      if (keys.some((k) => k === 'reminders' || k === 'reminder_time' || k === 'reminder_tz')) forgetReminders();
     }
     res.json(await buildState(uid));
   })
@@ -2796,6 +2797,7 @@ app.post(
        ON CONFLICT (endpoint) DO UPDATE SET user_id = EXCLUDED.user_id, sub = EXCLUDED.sub, last_sent = NULL`,
       [sub.endpoint, uid, JSON.stringify(sub)]
     );
+    forgetReminders();
     res.json({ ok: true });
   })
 );
@@ -2808,6 +2810,7 @@ app.post(
   requireAuth,
   wrap(async (req, res) => {
     await query('DELETE FROM push_subs WHERE user_id = $1', [req.userId!]);
+    forgetReminders();
     res.json({ ok: true });
   })
 );
@@ -3306,24 +3309,36 @@ if (existsSync(webDist)) {
 const PORT = Number(process.env.PORT) || 4000;
 
 // Every minute, fire due daily reminders (each at the user's local time).
+//
+// The schedule is kept in memory, not read from the database every minute: a
+// managed Postgres bills for the time it's awake, and a query a minute would
+// hold it awake around the clock whenever this server is up. It's read again
+// when someone changes their reminder or subscribes a device (forgetReminders),
+// and every few hours regardless. A reminder that comes due is checked against
+// the database before it's sent, so a stale copy can never send one that was
+// turned off or belongs to a deleted account.
+type ReminderRow = { reminder_time: string; reminder_tz: string | null; endpoint: string; sub: string; last_sent: string | null };
+const REMINDER_SQL = `SELECT u.reminder_time, u.reminder_tz, p.endpoint, p.sub, p.last_sent
+       FROM users u JOIN push_subs p ON p.user_id = u.id
+       WHERE u.reminders = TRUE AND u.reminder_time IS NOT NULL`;
+let reminderCache: { rows: ReminderRow[]; at: number } | null = null;
+const REMINDER_REFRESH = 6 * 60 * 60 * 1000;
+/** Someone's reminder settings or devices changed: read the schedule again next minute. */
+function forgetReminders() {
+  reminderCache = null;
+}
+
 async function runReminders() {
   if (!pushReady || !dbReady) return;
   try {
-    const rows = await query<{
-      reminder_time: string;
-      reminder_tz: string | null;
-      endpoint: string;
-      sub: string;
-      last_sent: string | null;
-    }>(
-      `SELECT u.reminder_time, u.reminder_tz, p.endpoint, p.sub, p.last_sent
-       FROM users u JOIN push_subs p ON p.user_id = u.id
-       WHERE u.reminders = TRUE AND u.reminder_time IS NOT NULL`
-    );
+    if (!reminderCache || Date.now() - reminderCache.at > REMINDER_REFRESH) {
+      reminderCache = { rows: await query<ReminderRow>(REMINDER_SQL), at: Date.now() };
+    }
+    const rows = reminderCache.rows;
     if (!rows.length) return;
     const now = new Date();
-    for (const r of rows) {
-      const tz = r.reminder_tz || 'UTC';
+    for (const cached of rows) {
+      const tz = cached.reminder_tz || 'UTC';
       let localHM: string;
       let localDay: string;
       try {
@@ -3332,8 +3347,12 @@ async function runReminders() {
       } catch {
         continue; // bad timezone string
       }
-      if (localHM !== r.reminder_time) continue;
-      if (r.last_sent === localDay) continue;
+      if (localHM !== cached.reminder_time) continue;
+      if (cached.last_sent === localDay) continue;
+      cached.last_sent = localDay;
+      // Due by the copy; the database has the final say.
+      const r = await one<ReminderRow>(`${REMINDER_SQL} AND p.endpoint = $1`, [cached.endpoint]);
+      if (!r || r.reminder_time !== cached.reminder_time || r.last_sent === localDay) continue;
       const body = REMINDER_MESSAGES[dayOfYear(now) % REMINDER_MESSAGES.length];
       try {
         await webpush.sendNotification(JSON.parse(r.sub), JSON.stringify({ title: 'Orpit', body, url: '/' }));
@@ -3512,9 +3531,12 @@ function start() {
   const pruneOps = () =>
     query("DELETE FROM client_ops WHERE created_at < now() - interval '7 days'").catch(() => {});
   setInterval(() => dbReady && pruneOps(), 6 * 60 * 60 * 1000);
-  // Post due recurring transactions on boot, then hourly.
+  // Post due recurring transactions on boot, then every six hours. Due dates
+  // are days, not hours, so this is soon enough, and the database (billed for
+  // the time it's awake) is woken four times a day rather than twenty-four.
+  // An import of bank messages runs it straight away for that person anyway.
   runRecurring();
-  setInterval(() => runRecurring(), 60 * 60 * 1000);
+  setInterval(() => runRecurring(), 6 * 60 * 60 * 1000);
 }
 
 start();
