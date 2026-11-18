@@ -13,7 +13,7 @@ import type { PoolClient } from 'pg';
 import { pool, query, one, tx } from './db.js';
 import { pickView, isFileRequest } from './view.js';
 import { signToken, requireAuth, type AuthedRequest } from './auth.js';
-import { seedUser } from './seed.js';
+import { seedUser, STEP_GOAL } from './seed.js';
 import { buildState } from './state.js';
 import { fetchRates } from './fx.js';
 import { SCHEMA_SQL } from './schema.js';
@@ -439,10 +439,10 @@ app.get(
   requireAuth,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    const [profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs, todoLists, todos, assistantBriefs] =
+    const [profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs, todoLists, todos, assistantBriefs, steps] =
       await Promise.all([
         one('SELECT name, email, (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt" FROM users WHERE id = $1', [uid]),
-        query('SELECT id::text, name, color, target, days, why, paused, archived FROM habits WHERE user_id = $1 ORDER BY sort, id', [uid]),
+        query('SELECT id::text, name, color, target, days, why, paused, archived, auto, goal FROM habits WHERE user_id = $1 ORDER BY sort, id', [uid]),
         query(`SELECT habit_id::text AS "habitId", to_char(day, 'YYYY-MM-DD') AS day FROM habit_checkins WHERE user_id = $1 ORDER BY day`, [uid]),
         query('SELECT id::text, name, color FROM workout_categories WHERE user_id = $1 ORDER BY sort, id', [uid]),
         query(`SELECT id::text, name, category_id::text AS "catId", dur, dist, kcal, intensity, note, sets, ${TS('ts')} FROM workouts WHERE user_id = $1 ORDER BY ts`, [uid]),
@@ -460,9 +460,10 @@ app.get(
           [uid]
         ),
         query(`SELECT title, sections, ${TS('created_at')} FROM assistant_briefs WHERE user_id = $1 ORDER BY created_at`, [uid]),
+        query(`SELECT to_char(day, 'YYYY-MM-DD') AS day, count, source FROM steps WHERE user_id = $1 ORDER BY day`, [uid]),
       ]);
     res.json({
-      profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs, todoLists, todos, assistantBriefs,
+      profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs, todoLists, todos, assistantBriefs, steps,
       exportedAt: new Date().toISOString(),
     });
   })
@@ -625,18 +626,34 @@ app.post(
   requireAuth,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    const name = String(req.body.name || '').trim();
+    const steps = req.body.auto === 'steps';
+    const name = String(req.body.name || (steps ? 'Steps' : '')).trim();
     if (!name) return res.status(400).json({ error: 'Name required' });
-    const color = String(req.body.color || 'teal');
+    const color = String(req.body.color || (steps ? 'emerald' : 'teal'));
     const target = String(req.body.target || 'Daily');
     const days = /^[01]{7}$/.test(req.body.days) ? req.body.days : '1111111';
+    const why = req.body.why ? String(req.body.why).slice(0, 300) : null;
+    const cue = req.body.cue ? String(req.body.cue).trim().slice(0, 120) || null : null;
+    const rt = /^\d{2}:\d{2}$/.test(req.body.reminderTime) ? req.body.reminderTime : null;
+    if (steps) {
+      // Bringing the Steps habit back (there's only ever one). It starts today.
+      await tx(async (c) => {
+        const has = await c.query(`SELECT 1 FROM habits WHERE user_id = $1 AND auto = 'steps'`, [uid]);
+        if (has.rowCount) return;
+        await c.query(
+          `INSERT INTO habits (user_id, name, color, target, days, sort, why, reminder_time, cue, auto, goal)
+           VALUES ($1,$2,$3,$4,$5,-1,$6,$7,$8,'steps',$9)`,
+          [uid, name, color, target, days, why, rt, cue, stepGoal(req.body.goal)]
+        );
+        await c.query(`UPDATE steps SET ticked = FALSE WHERE user_id = $1 AND day >= CURRENT_DATE - 1`, [uid]);
+        await autoTickSteps(c, uid);
+      });
+      return res.json(await buildState(uid));
+    }
     const max = await one<{ m: number }>(
       'SELECT COALESCE(MAX(sort), -1) + 1 AS m FROM habits WHERE user_id = $1',
       [uid]
     );
-    const why = req.body.why ? String(req.body.why).slice(0, 300) : null;
-    const cue = req.body.cue ? String(req.body.cue).trim().slice(0, 120) || null : null;
-    const rt = /^\d{2}:\d{2}$/.test(req.body.reminderTime) ? req.body.reminderTime : null;
     await query(
       'INSERT INTO habits (user_id, name, color, target, days, sort, why, reminder_time, cue) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
       [uid, name, color, target, days, max!.m, why, rt, cue]
@@ -652,8 +669,8 @@ app.patch(
     const uid = req.userId!;
     const name = String(req.body.name || '').trim();
     if (!name) return res.status(400).json({ error: 'Name required' });
-    const owned = await one<{ locked: boolean }>(
-      'SELECT locked FROM habits WHERE id = $1 AND user_id = $2',
+    const owned = await one<{ locked: boolean; auto: string | null; goal: number | null }>(
+      'SELECT locked, auto, goal FROM habits WHERE id = $1 AND user_id = $2',
       [req.params.id, uid]
     );
     if (!owned) return res.status(404).json({ error: 'Habit not found' });
@@ -664,12 +681,18 @@ app.patch(
     const rt = /^\d{2}:\d{2}$/.test(req.body.reminderTime) ? req.body.reminderTime : null;
     const paused = !!req.body.paused;
     const archived = !!req.body.archived;
-    await query(
-      `UPDATE habits SET name = $1, color = $2, target = $3, days = $4, why = $5,
-              reminder_time = $6, paused = $7, archived = $8, cue = $9
-       WHERE id = $10 AND user_id = $11`,
-      [name, String(req.body.color || 'teal'), String(req.body.target || 'Daily'), days, why, rt, paused, archived, cue, req.params.id, uid]
-    );
+    // Only the Steps habit has a goal; keep it unless a new one was sent.
+    const goal = owned.auto === 'steps' ? (req.body.goal === undefined ? owned.goal : stepGoal(req.body.goal)) : null;
+    await tx(async (c) => {
+      await c.query(
+        `UPDATE habits SET name = $1, color = $2, target = $3, days = $4, why = $5,
+                reminder_time = $6, paused = $7, archived = $8, cue = $9, goal = $10
+         WHERE id = $11 AND user_id = $12`,
+        [name, String(req.body.color || 'teal'), String(req.body.target || 'Daily'), days, why, rt, paused, archived, cue, goal, req.params.id, uid]
+      );
+      // A lower goal can already be met today.
+      if (owned.auto === 'steps') await autoTickSteps(c, uid);
+    });
     res.json(await buildState(uid));
   })
 );
@@ -720,6 +743,75 @@ app.post(
       );
     }
     res.json(await buildState(uid));
+  })
+);
+
+// ---------------- Steps ----------------
+// The phone reads each day's step total from Health Connect (where Google
+// Fit, Samsung Health, Fitbit and the rest save them, merged so nothing is
+// counted twice) and sends it here. A day that reaches the Steps habit's goal
+// ticks the habit, once: a check-in the person takes back stays taken back.
+
+/** A step goal someone could mean: whole steps, 500 to 100,000. */
+function stepGoal(v: unknown): number {
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) && n >= 500 && n <= 100_000 ? n : STEP_GOAL;
+}
+
+/**
+ * Tick the Steps habit for every day whose steps reached its goal and that
+ * hasn't had its chance yet. Only from the day the habit was added: syncing a
+ * month of history mustn't rewrite weeks that were already scored.
+ */
+async function autoTickSteps(c: PoolClient, uid: number): Promise<string[]> {
+  const h = (
+    await c.query<{ id: string; goal: number | null; days: string; paused: boolean; archived: boolean }>(
+      `SELECT id::text, goal, days, paused, archived FROM habits WHERE user_id = $1 AND auto = 'steps' ORDER BY id LIMIT 1`,
+      [uid]
+    )
+  ).rows[0];
+  if (!h || h.paused || h.archived || !h.goal) return [];
+  const due = (
+    await c.query<{ day: string }>(
+      `SELECT to_char(s.day, 'YYYY-MM-DD') AS day FROM steps s, habits h
+       WHERE s.user_id = $1 AND h.id = $2 AND NOT s.ticked AND s.count >= $3 AND s.day >= h.created_at::date`,
+      [uid, h.id, h.goal]
+    )
+  ).rows;
+  const ticked: string[] = [];
+  for (const { day } of due) {
+    // Only on a day the habit is planned for (Sun..Sat mask).
+    if (h.days[new Date(`${day}T12:00:00Z`).getUTCDay()] === '1') {
+      const r = await c.query('INSERT INTO habit_checkins (habit_id, user_id, day) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING', [h.id, uid, day]);
+      if (r.rowCount) ticked.push(day);
+    }
+    await c.query('UPDATE steps SET ticked = TRUE WHERE user_id = $1 AND day = $2', [uid, day]);
+  }
+  return ticked;
+}
+
+app.post(
+  '/api/steps',
+  requireAuth,
+  rateLimit('steps', 240, 60 * 60 * 1000),
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const rows: any[] = Array.isArray(req.body.days) ? req.body.days.slice(0, 62) : [];
+    const days = rows
+      .map((r) => ({ day: String(r?.day || ''), count: Math.round(Number(r?.count)), source: r?.source ? String(r.source).slice(0, 40) : null }))
+      .filter((r) => /^\d{4}-\d{2}-\d{2}$/.test(r.day) && Number.isFinite(r.count) && r.count >= 0 && r.count <= 200_000);
+    const ticked = await tx(async (c) => {
+      for (const d of days)
+        await c.query(
+          `INSERT INTO steps (user_id, day, count, source) VALUES ($1,$2,$3,$4)
+           ON CONFLICT (user_id, day) DO UPDATE SET count = EXCLUDED.count, source = COALESCE(EXCLUDED.source, steps.source), updated_at = now()`,
+          [uid, d.day, d.count, d.source]
+        );
+      return autoTickSteps(c, uid);
+    });
+    // The phone's background check only needs to know it landed.
+    if (req.query.lean) return res.json({ ok: true, ticked });
+    res.json({ ...(await buildState(uid)), ticked });
   })
 );
 
@@ -2559,6 +2651,8 @@ app.post(
       await c.query('DELETE FROM goals WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM fcats WHERE user_id = $1', [uid]);
       await c.query('DELETE FROM accounts WHERE user_id = $1', [uid]);
+      // The health app still has them; the next sync brings recent days back.
+      await c.query('DELETE FROM steps WHERE user_id = $1', [uid]);
       await seedUser(c, uid);
     });
     res.json(await buildState(uid));
@@ -3485,6 +3579,16 @@ async function migrate(attempt = 1): Promise<void> {
       `INSERT INTO habits (user_id, name, color, target, days, locked, sort)
        SELECT u.id, 'Daily Check-In', 'indigo', 'Daily', '1111111', TRUE, -1 FROM users u
        WHERE NOT EXISTS (SELECT 1 FROM habits h WHERE h.user_id = u.id AND h.locked = TRUE)`
+    );
+    // And the Steps habit, once per account: removing it is a choice that sticks.
+    await pool.query(
+      `WITH added AS (
+         UPDATE users SET steps_habit_added = TRUE WHERE steps_habit_added = FALSE RETURNING id
+       )
+       INSERT INTO habits (user_id, name, color, target, days, sort, auto, goal)
+       SELECT a.id, 'Steps', 'emerald', 'Daily', '1111111', -1, 'steps', $1 FROM added a
+       WHERE NOT EXISTS (SELECT 1 FROM habits h WHERE h.user_id = a.id AND h.auto = 'steps')`,
+      [STEP_GOAL]
     );
     dbReady = true;
     dbError = null;

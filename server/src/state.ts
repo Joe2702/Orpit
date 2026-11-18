@@ -28,7 +28,8 @@ export async function buildState(userId: number) {
 
   const habitsQ = query(
     `SELECT id::text, name, color, target, locked, days, paused, archived, why, cue,
-            reminder_time AS "reminderTime"
+            reminder_time AS "reminderTime", auto, goal,
+            to_char(created_at, 'YYYY-MM-DD') AS since
      FROM habits WHERE user_id = $1 ORDER BY locked DESC, sort, id`,
     [userId]
   );
@@ -112,6 +113,13 @@ export async function buildState(userId: number) {
      ORDER BY created_at DESC LIMIT 1`,
     [userId]
   );
+  // Steps a day from the phone's health app, for the Steps habit and charts.
+  const stepsQ = query(
+    `SELECT to_char(day, 'YYYY-MM-DD') AS day, count, source
+     FROM steps WHERE user_id = $1 AND day > (now() - interval '400 days')::date ORDER BY day`,
+    [userId]
+  );
+
   const todoListsQ = query(
     `SELECT id::text, name, color, icon FROM todo_lists WHERE user_id = $1 ORDER BY sort, id`,
     [userId]
@@ -232,6 +240,7 @@ export async function buildState(userId: number) {
     todoLists,
     todos,
     assistantBrief,
+    steps,
   ] = await Promise.all([
     profileQ,
     habitsQ,
@@ -254,6 +263,7 @@ export async function buildState(userId: number) {
     todoListsQ,
     todosQ,
     assistantQ,
+    stepsQ,
   ]);
 
   // claimed_badges is stored as a JSON string; hand the client a real array.
@@ -317,6 +327,7 @@ export async function buildState(userId: number) {
     todoLists,
     todos,
     assistantBrief: assistantBrief ?? null,
+    steps,
     archive,
   };
 }
