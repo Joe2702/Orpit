@@ -233,7 +233,9 @@ export function Palette({ initial, onClose, showHelp }: { initial: string; onClo
       : [...recent.map((r, i): Item => ({ id: `recent${i}`, group: t('Recent searches'), label: r, icon: 'clock', run: () => setQ(r), stay: true })), ...shown];
 
   useEffect(() => setAt(0), [q]);
-  useEffect(() => list.current?.querySelector('[data-on="1"]')?.scrollIntoView({ block: 'nearest' }), [at]);
+  useEffect(() => {
+    list.current?.querySelector('[data-on="1"]')?.scrollIntoView({ block: 'nearest' });
+  }, [at]);
   const run = (it?: Item) => {
     if (!it) return;
     // A search that led somewhere is worth offering again next time.
