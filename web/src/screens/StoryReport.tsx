@@ -26,7 +26,9 @@ export function StoryReport({ kind, offset = 0, onClose }: { kind: 'week' | 'mon
   const [dragging, setDragging] = useState(false);
   const [closing, setClosing] = useState(false);
   const still = reducedMotion();
-  useEffect(() => track('report_view'), []);
+  useEffect(() => {
+    track('report_view');
+  }, []);
   const slide = slides[i];
 
   const close = useCallback(() => {

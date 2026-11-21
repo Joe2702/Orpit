@@ -25,6 +25,7 @@ import { syncReminders, scheduleExtras, listenForNotificationActions, snoozeDail
 import { briefSchedule, hasBriefData } from './lib/brief';
 import { OrbitMark } from './OrbitMark';
 import { syncDue, syncHealth } from './lib/health';
+import { configureStepAlerts, milestoneToast, reportSteps, stepPrefs, stepsDue, stepsHabit, syncSteps } from './lib/steps';
 import { accentFor, isHex } from './lib/color';
 import { startLiquid } from './lib/liquid';
 import { connectivity, subscribe as subscribeConnectivity } from './lib/offline';
@@ -32,7 +33,7 @@ import { listenForShortcuts, type ShortcutTarget } from './lib/shortcuts';
 import { dayKey } from './lib/format';
 import { updateWidget } from './lib/widget';
 import { syncSms, removeDeclined, smsEnabled, ensureLiveSms, onSmsArrived, SMS_CHANGED } from './lib/smsSync';
-import { isRTL, t, tn } from './i18n';
+import { isRTL, num, t, tn } from './i18n';
 import { loadFresh } from './lib/freshVersion';
 
 // Screens and sheets that aren't needed to open the app and log something load
@@ -70,6 +71,7 @@ const LOAD = {
   MilestoneSheet: () => import('./sheets/MilestoneSheet'),
   TodoSheets: () => import('./sheets/TodoSheets'),
   HealthSheet: () => import('./sheets/HealthSheet'),
+  StepsSheet: () => import('./sheets/StepsSheet'),
   AccentSheet: () => import('./sheets/AccentSheet'),
   AssistantSheet: () => import('./sheets/AssistantSheet'),
   CurrencySheet: () => import('./sheets/CurrencySheet'),
@@ -116,6 +118,7 @@ const CountPickSheet = lazy(loadFresh(() => LOAD.CounterSheets().then((m) => ({ 
 const MilestoneSheet = lazy(loadFresh(() => LOAD.MilestoneSheet().then((m) => ({ default: m.MilestoneSheet }))));
 const TodoSheet = lazy(loadFresh(() => LOAD.TodoSheets().then((m) => ({ default: m.TodoSheet }))));
 const HealthSheet = lazy(loadFresh(() => LOAD.HealthSheet().then((m) => ({ default: m.HealthSheet }))));
+const StepsSheet = lazy(loadFresh(() => LOAD.StepsSheet().then((m) => ({ default: m.StepsSheet }))));
 const AccentSheet = lazy(loadFresh(() => LOAD.AccentSheet().then((m) => ({ default: m.AccentSheet }))));
 const AssistantSheet = lazy(loadFresh(() => LOAD.AssistantSheet().then((m) => ({ default: m.AssistantSheet }))));
 const CurrencySheet = lazy(loadFresh(() => LOAD.CurrencySheet().then((m) => ({ default: m.CurrencySheet }))));
@@ -252,6 +255,8 @@ function SheetBody() {
       return <TodoSheet />;
     case 'health':
       return <HealthSheet />;
+    case 'steps':
+      return <StepsSheet />;
     case 'accent':
       return <AccentSheet />;
     case 'assistant':
@@ -623,7 +628,7 @@ function Splash({ error, onRetry }: { theme: 'light' | 'dark'; error: boolean; o
 }
 
 export function App() {
-  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, open, mutateOpt, booting, bootError, retryBoot, go, back, confirmState, closeConfirm, passwordState, report, closeReport, applyState, showToast } = useStore();
+  const { ready, authed, state, screen, sheet, toast, toastUndo, runUndo, closeSheet, open, mutateOpt, booting, bootError, retryBoot, go, back, confirmState, closeConfirm, passwordState, report, closeReport, applyState, showToast, haptic } = useStore();
   // Dark until an account says otherwise: Orpit starts dark, and the
   // theme can be changed in Profile.
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('dark');
@@ -882,16 +887,42 @@ export function App() {
     };
   }, [authed]);
 
-  // ---- Sleep and workouts from Health Connect ----
-  // Quietly, when Orpit opens or comes back to the front, at most every 15
-  // minutes. A failed sync says nothing: the next open tries again, and the
-  // Fitbit screen in Profile shows when it last worked.
+  // ---- Steps, sleep and workouts from Health Connect ----
+  // Quietly, when Orpit opens or comes back to the front: steps every couple
+  // of minutes, nights and workouts at most every 15. A failed sync says
+  // nothing: the next open tries again, and the health app screen in Profile
+  // shows when it last worked.
   const healthBusy = useRef(false);
+  const stepsBusy = useRef(false);
   useEffect(() => {
     if (!authed) return;
     const run = () => {
       const cur = liveState.current;
-      if (!cur || healthBusy.current || document.visibilityState !== 'visible' || !syncDue()) return;
+      if (!cur || document.visibilityState !== 'visible') return;
+      // Steps: every couple of minutes, so the count on screen is current. A
+      // quarter of the goal reached since the last look gets a toast here
+      // (the phone's notification is for when Orpit is closed).
+      if (!stepsBusy.current && stepsDue()) {
+        stepsBusy.current = true;
+        syncSteps()
+          .then(async (r) => {
+            if (!r) return;
+            applyState(r.state);
+            const h = stepsHabit(r.state);
+            if (!h?.goal) return;
+            const m = await reportSteps(dayKey(), r.today, h.goal);
+            const msg = stepPrefs().notify ? milestoneToast(m, r.today, h.goal, (n) => num(n)) : null;
+            if (msg) {
+              if (m === 100) haptic([14, 70, 28]);
+              showToast(msg);
+            }
+          })
+          .catch(() => {})
+          .finally(() => {
+            stepsBusy.current = false;
+          });
+      }
+      if (healthBusy.current || !syncDue()) return;
       healthBusy.current = true;
       syncHealth(cur)
         .then((r) => {
@@ -911,7 +942,15 @@ export function App() {
       clearTimeout(first);
       document.removeEventListener('visibilitychange', run);
     };
-  }, [authed, applyState, showToast]);
+  }, [authed, applyState, showToast, haptic]);
+
+  // The background step check follows the Steps habit's goal, the language,
+  // the notification switch and the sign-in; configureStepAlerts only passes
+  // on a change.
+  const stepHabit = state ? stepsHabit(state) : undefined;
+  useEffect(() => {
+    configureStepAlerts(authed ? liveState.current : null);
+  }, [authed, stepHabit?.goal, stepHabit?.paused, !!stepHabit]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Reminder action buttons ----
   // "Done" on a habit reminder checks that habit off for today; "Snooze" pushes
@@ -945,10 +984,17 @@ export function App() {
   // A cold start arrives before the session is restored, so the action waits
   // for `ready` rather than firing at a screen that isn't mounted yet.
   const [shortcut, setShortcut] = useState<ShortcutTarget | null>(null);
-  useEffect(() => listenForShortcuts(setShortcut), []);
+  useEffect(() => {
+    return listenForShortcuts(setShortcut);
+  }, []);
   useEffect(() => {
     if (!shortcut || !ready || !authed) return;
     setShortcut(null);
+    if (shortcut.kind === 'steps') {
+      go('home');
+      open('steps');
+      return;
+    }
     if (shortcut.kind === 'screen') {
       // Tapping an analytics widget lands on the screen it summarises.
       go(shortcut.screen);
@@ -1011,7 +1057,9 @@ export function App() {
   nav.current = { screen, sheet, authed, report };
 
   // Liquid glass: every element marked data-lens gets its bent rim.
-  useEffect(() => startLiquid(document.body), []);
+  useEffect(() => {
+    return startLiquid(document.body);
+  }, []);
   const rootScreens = ['home', 'welcome', 'signin'];
 
   useEffect(() => {

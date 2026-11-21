@@ -599,3 +599,24 @@ CREATE TABLE IF NOT EXISTS assistant_briefs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS assistant_briefs_user ON assistant_briefs(user_id, created_at DESC);
+
+-- Steps, from the phone's health app (Google Fit, Samsung Health, Fitbit…
+-- through Health Connect). The phone sends each day's total; Health Connect
+-- has already merged the apps so nothing is counted twice.
+CREATE TABLE IF NOT EXISTS steps (
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  day        DATE NOT NULL,
+  count      INT NOT NULL,
+  source     TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, day)
+);
+-- Set once the day has had its chance to tick the Steps habit, so a check-in
+-- the person takes back stays taken back on the next sync.
+ALTER TABLE steps ADD COLUMN IF NOT EXISTS ticked BOOLEAN NOT NULL DEFAULT FALSE;
+-- A habit Orpit ticks itself: auto = 'steps' is done the day the step count
+-- reaches goal. Like Daily Check-In it's added for everyone, but it can be
+-- removed, and steps_habit_added keeps a removed one from coming back.
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS auto TEXT;
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS goal INT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS steps_habit_added BOOLEAN NOT NULL DEFAULT FALSE;

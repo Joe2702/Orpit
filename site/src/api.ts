@@ -63,7 +63,7 @@ export interface Auth {
   state: AppState;
 }
 type Id = string;
-export type HabitBody = { name: string; color: string; target: string; days: string; why?: string | null; cue?: string | null; reminderTime?: string | null; paused?: boolean; archived?: boolean };
+export type HabitBody = { name: string; color: string; target: string; days: string; why?: string | null; cue?: string | null; reminderTime?: string | null; paused?: boolean; archived?: boolean; goal?: number };
 export type TxnBody = { name: string; cat: string; amount: number; income: boolean; refund?: boolean; accId?: string | null; toAccId?: string | null; adjust?: boolean; note?: string | null; ts?: number };
 
 export const api = {

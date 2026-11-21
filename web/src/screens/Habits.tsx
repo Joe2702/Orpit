@@ -4,17 +4,19 @@ import { useData } from '../hooks';
 import { Ring, Heat } from '../lib/charts';
 import { Card, DetailHeader, RangeSeg, SectionLabel } from '../ui';
 import { dayLetter, dayName } from '../lib/period';
-import { daysLabel } from '../lib/format';
+import { dayKey, daysLabel } from '../lib/format';
 import { IconPencil } from '../icons';
 import { Reorderable } from '../Reorderable';
 import { api } from '../api';
 import { Glyph } from '../lib/appIcons';
-import { t, tData, tn } from '../i18n';
+import { num, t, tData, tn } from '../i18n';
+import { STEP_GOAL, stepsOn } from '../lib/steps';
+import { StepsIcon } from '../StepsHabitRow';
 import { FORMED } from '../lib/dayComplete';
 
 
 export function Habits() {
-  const { open, mutate } = useStore();
+  const { open, mutate, state } = useStore();
   const { h } = useData();
   const todayDow = new Date().getDay();
 
@@ -29,7 +31,7 @@ export function Habits() {
     const strength = Math.min(1, hb.total / FORMED);
     return (
       <div role="button" tabIndex={0}
-        onClick={() => !hb.locked && open('habit', { id: hb.id, name: hb.name, color: hb.color, target: hb.target, days: hb.days, why: hb.why, cue: hb.cue, paused: hb.paused, reminderTime: hb.reminderTime })}
+        onClick={() => (hb.auto === 'steps' ? open('steps') : !hb.locked && open('habit', { id: hb.id, name: hb.name, color: hb.color, target: hb.target, days: hb.days, why: hb.why, cue: hb.cue, paused: hb.paused, reminderTime: hb.reminderTime }))}
         className={hb.locked ? undefined : 'press99'}
         style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'calc(18px * var(--sq))', boxShadow: 'var(--shadow)', padding: '16px 16px', cursor: hb.locked ? 'default' : 'pointer', opacity: hb.paused ? 0.6 : 1 }}
       >
@@ -41,7 +43,10 @@ export function Habits() {
               {hb.paused && <span style={{ fontSize: 11, color: 'var(--warning)', fontWeight: 600, marginInlineStart: 8, padding: '2px 8px', borderRadius: 'calc(6px * var(--sq))', background: 'color-mix(in srgb,var(--warning) 14%,transparent)' }}>{t('Paused')}</span>}
             </div>
             <div style={{ fontSize: 13, color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 1, minWidth: 0 }}>
-              <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{hb.cue || daysLabel(hb.days)}</span>
+              <span style={{ minWidth: 0, overflowWrap: 'anywhere', fontVariantNumeric: hb.auto === 'steps' ? 'tabular-nums' : undefined }}>
+                {/* The Steps habit says how today is going; it ticks itself. */}
+                {hb.auto === 'steps' ? t('{n} of {goal} steps today', { n: num(stepsOn(state!, dayKey())?.count ?? 0), goal: num(hb.goal || STEP_GOAL) }) : hb.cue || daysLabel(hb.days)}
+              </span>
               {/* A habit with its own reminder says so here. The setting lived
                   only at the bottom of the edit sheet, so there was no way to
                   tell which habits would actually nudge you — and no reason to
@@ -69,7 +74,9 @@ export function Habits() {
               </div>
             )}
           </div>
-          {hb.locked ? (
+          {hb.auto === 'steps' ? (
+            <StepsIcon size={16} color="var(--text2)" />
+          ) : hb.locked ? (
             <svg width="15" height="15" style={{ fill: 'none', stroke: 'var(--text2)', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }} aria-hidden>
               <rect x="3" y="6.5" width="9" height="6.5" rx="1.5" />
               <path d="M5 6.5V5a2.5 2.5 0 0 1 5 0v1.5" />

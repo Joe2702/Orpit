@@ -22,6 +22,8 @@ import { enabled } from '../lib/modules';
 import { CIcon } from '../lib/iconPaths';
 import { elapsed, formatElapsed } from '../lib/since';
 import { date, getLang, t, tData, tn } from '../i18n';
+import { StepsHabitRow } from '../StepsHabitRow';
+import { STEP_GOAL, stepsOn } from '../lib/steps';
 
 
 /** ↑/↓ vs the previous week. `lowerIsBetter` flips the colour (e.g. spending). */
@@ -262,7 +264,9 @@ export function Home() {
                 </div>
               </div>
             )}
-            {todaysHabits.map((hb) => (
+            {todaysHabits.map((hb) => hb.auto === 'steps' ? (
+              <StepsHabitRow key={hb.id} done={hb.done} total={hb.total} goal={hb.goal || STEP_GOAL} count={stepsOn(state!, dayKey())?.count ?? 0} onOpen={() => open('steps')} />
+            ) : (
               <div tabIndex={0} key={hb.id} onClick={() => toggleHabit(hb.id)} role="checkbox" aria-checked={hb.done} aria-label={tData(hb.name)} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 16px', borderBottom: '1px solid var(--hairline)', cursor: 'pointer' }}>
                 <div
                   style={{

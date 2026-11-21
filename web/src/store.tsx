@@ -85,6 +85,7 @@ export type SheetKind =
   | 'accent'
   | 'assistant'
   | 'currency'
+  | 'steps'
   | null;
 
 interface StoreCtx {

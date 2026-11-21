@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
 
 // Play refuses any upload whose versionCode it has seen before, so a hardcoded
 // number means exactly one release, ever. CI passes its run number — which only
@@ -50,6 +51,10 @@ android {
             }
         }
     }
+    // Kotlin targets the same Java version capacitor.build.gradle sets.
+    kotlinOptions {
+        jvmTarget = '21'
+    }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
@@ -75,6 +80,12 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     // App lock: the system fingerprint/face/PIN prompt (OrbitLock).
     implementation "androidx.biometric:biometric:1.1.0"
+    // Step notifications: today's steps from Health Connect, checked every 15
+    // minutes while Orpit is closed (StepsWorker).
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.4.21"
+    implementation 'androidx.health.connect:connect-client:1.1.0'
+    implementation 'androidx.work:work-runtime-ktx:2.10.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0'
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"

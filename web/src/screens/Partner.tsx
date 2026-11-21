@@ -47,7 +47,9 @@ export function Partner() {
   const { go, showToast, confirm, haptic, open } = useStore();
   const [st, setSt] = React.useState<PartnerState | null>(null);
   const [busy, setBusy] = React.useState(false);
-  React.useEffect(() => track('partner_open'), []);
+  React.useEffect(() => {
+    track('partner_open');
+  }, []);
   const [err, setErr] = React.useState<string | null>(null);
 
   const load = React.useCallback(async () => {

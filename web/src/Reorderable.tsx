@@ -25,7 +25,9 @@ interface Item {
 export function Reorderable({ items, onReorder, handleTop = 2 }: { items: Item[]; onReorder: (ids: string[]) => void; handleTop?: number }) {
   const idsKey = items.map((i) => i.id).join('|');
   const [order, setOrder] = useState<string[]>(items.map((i) => i.id));
-  useEffect(() => setOrder(items.map((i) => i.id)), [idsKey]);
+  useEffect(() => {
+    setOrder(items.map((i) => i.id));
+  }, [idsKey]);
 
   const byId = new Map(items.map((i) => [i.id, i.node]));
   const containerRef = useRef<HTMLDivElement>(null);

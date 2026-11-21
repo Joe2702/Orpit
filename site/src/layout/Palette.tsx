@@ -232,8 +232,15 @@ export function Palette({ initial, onClose, showHelp }: { initial: string; onClo
       ? shown
       : [...recent.map((r, i): Item => ({ id: `recent${i}`, group: t('Recent searches'), label: r, icon: 'clock', run: () => setQ(r), stay: true })), ...shown];
 
-  useEffect(() => setAt(0), [q]);
-  useEffect(() => list.current?.querySelector('[data-on="1"]')?.scrollIntoView({ block: 'nearest' }), [at]);
+  useEffect(() => {
+    setAt(0);
+  }, [q]);
+  // A block body on purpose: newer browsers return a Promise from
+  // scrollIntoView, and an effect that returns it hands React a "cleanup" that
+  // isn't a function, which crashed the whole site on the next hover.
+  useEffect(() => {
+    list.current?.querySelector('[data-on="1"]')?.scrollIntoView({ block: 'nearest' });
+  }, [at]);
   const run = (it?: Item) => {
     if (!it) return;
     // A search that led somewhere is worth offering again next time.
