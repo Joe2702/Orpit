@@ -229,10 +229,10 @@ export function StepsSheet() {
                 cy={SIZE / 2}
                 r={R}
                 transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
-                style={{ fill: 'none', stroke: 'var(--indigo)', strokeWidth: W, strokeLinecap: 'round', strokeDasharray: `${C * pct} ${C}`, transition: 'stroke-dasharray .8s cubic-bezier(.2,.8,.2,1)' }}
+                style={{ fill: 'none', stroke: reached ? 'var(--success)' : 'var(--indigo)', strokeWidth: W, strokeLinecap: 'round', strokeDasharray: `${C * pct} ${C}`, transition: 'stroke-dasharray .8s cubic-bezier(.2,.8,.2,1), stroke .4s' }}
               />
-              {/* The quarter marks the notifications fire at. */}
-              {[0.25, 0.5, 0.75].map((p) => {
+              {/* The quarter marks the notifications fire at, until the goal closes the ring. */}
+              {!reached && [0.25, 0.5, 0.75].map((p) => {
                 const { x, y } = at(p);
                 const passed = pct >= p;
                 return <circle key={p} cx={x} cy={y} r={4} style={{ fill: passed ? 'var(--on-accent)' : 'var(--surface)', stroke: passed ? 'none' : 'var(--text3)', strokeWidth: 1.5 }} />;

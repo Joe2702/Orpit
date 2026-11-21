@@ -34,6 +34,12 @@ export function StepsHabitRow({ done, total, goal, count, onOpen }: { done: bool
             />
           )}
         </svg>
+        {/* Footprints in the middle, so a part-filled circle reads as steps and not as loading. */}
+        {!done && (
+          <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <StepsIcon size={12} color={pct > 0 ? 'var(--indigo)' : 'var(--text3)'} />
+          </span>
+        )}
         {done && (
           <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden style={{ position: 'absolute', left: 6, top: 6, fill: 'none', stroke: 'var(--surface)', strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
             <path d="M4 9l3.2 3.2L13.5 5.5" />

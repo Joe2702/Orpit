@@ -141,7 +141,7 @@ export function HealthSheet() {
       <P>{t('Your health app saves your steps, sleep and workouts to Health Connect on this phone. Orpit reads them from there: steps tick your Steps habit, and nights and workouts come in without logging them twice. Orpit only reads; it changes nothing in your apps.')}</P>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
         {APPS.map((a) => (
-          <span key={a} style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', padding: '4px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface)' }}>
+          <span key={a} style={{ fontSize: 13, fontWeight: 500, color: 'var(--text2)', padding: '4px 12px', borderRadius: 999, background: 'var(--hairline)' }}>
             {a}
           </span>
         ))}
