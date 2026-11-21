@@ -66,6 +66,10 @@ export interface HabitDerived {
   cue: string | null;
   /** This habit's own reminder time (HH:MM), or null for the daily one. */
   reminderTime: string | null;
+  /** 'steps' for the habit Orpit ticks from the step count. */
+  auto: string | null;
+  /** Its daily step goal. */
+  goal: number | null;
   // One 0/1 per *scheduled* weekday in the current week (Sun→Sat order);
   // 1 = checked in that day, 0 = missed or still upcoming. Length equals the
   // number of days the habit is assigned per week.
@@ -89,6 +93,22 @@ function scheduledStats(mask: string, set: Set<string>, start: number, until: nu
     }
   }
   return { scheduled, done };
+}
+
+/**
+ * The first day a habit is scored: the day it was added, or an earlier day
+ * someone filled in by hand. Without it, adding a habit (or Orpit adding Steps)
+ * marked every past week as missing one, and could break a streak that was
+ * fairly earned. Unknown for states from before habits were dated.
+ */
+export function habitFrom(h: { since?: string }, set: Iterable<string>): number | null {
+  if (!h.since) return null;
+  let first = new Date(`${h.since}T00:00:00`).getTime();
+  for (const d of set) {
+    const t = new Date(`${d}T00:00:00`).getTime();
+    if (t < first) first = t;
+  }
+  return Number.isFinite(first) ? first : null;
 }
 
 // The current week's scheduled days as 0/1, Sun→Sat; upcoming days stay 0.
@@ -118,6 +138,10 @@ export function deriveHabits(state: AppState, range: Range, offset = 0, now: num
   const byHabit = new Map<string, Set<string>>();
   state.habits.forEach((h) => byHabit.set(h.id, new Set()));
   state.checkins.forEach((c) => byHabit.get(c.habitId)?.add(c.day));
+  const fromOf = new Map(state.habits.map((h) => [h.id, habitFrom(h, byHabit.get(h.id)!)]));
+  // Scheduled vs done for one habit, never counting days before it existed.
+  const statsOf = (h: { id: string; days: string }, start: number, until: number) =>
+    scheduledStats(h.days, byHabit.get(h.id)!, Math.max(start, fromOf.get(h.id) ?? start), until);
 
   const habits: HabitDerived[] = live.map((h) => {
     const set = byHabit.get(h.id)!;
@@ -143,6 +167,8 @@ export function deriveHabits(state: AppState, range: Range, offset = 0, now: num
       why: h.why,
       cue: h.cue ?? null,
       reminderTime: h.reminderTime,
+      auto: h.auto ?? null,
+      goal: h.goal ?? null,
       total: set.size, // total days ever completed
       streak,
       weekSlots: wk.slots,
@@ -202,16 +228,15 @@ export function deriveHabits(state: AppState, range: Range, offset = 0, now: num
     weekPlanned = 0;
   // Per habit too, so a list under the period can show each one's share.
   const rangeByHabit: Record<string, { done: number; scheduled: number }> = {};
-  live.forEach((h) => (rangeByHabit[h.id] = scheduledStats(h.days, byHabit.get(h.id)!, rangeStart, rangeUntil)));
+  live.forEach((h) => (rangeByHabit[h.id] = statsOf(h, rangeStart, rangeUntil)));
   counted.forEach((h) => {
-    const set = byHabit.get(h.id)!;
     const r = rangeByHabit[h.id];
     rangeDone += r.done;
     rangeTotal += r.scheduled;
-    const w = scheduledStats(h.days, set, weekStart, tomorrow);
+    const w = statsOf(h, weekStart, tomorrow);
     weekDone += w.done;
     weekTotal += w.scheduled;
-    weekPlanned += scheduledStats(h.days, set, weekStart, weekEnd).scheduled;
+    weekPlanned += statsOf(h, weekStart, weekEnd).scheduled;
   });
   const rangePct = rangeTotal ? Math.round((rangeDone / rangeTotal) * 100) : 0;
   const habitPct = weekTotal ? Math.round((weekDone / weekTotal) * 100) : 0;
@@ -226,7 +251,7 @@ export function deriveHabits(state: AppState, range: Range, offset = 0, now: num
     let sched = 0,
       done = 0;
     counted.forEach((hb) => {
-      const r = scheduledStats(hb.days, byHabit.get(hb.id)!, t, addDays(t, 1));
+      const r = statsOf(hb, t, addDays(t, 1));
       sched += r.scheduled;
       done += r.done;
     });
@@ -243,7 +268,7 @@ export function deriveHabits(state: AppState, range: Range, offset = 0, now: num
     let done = 0,
       sched = 0;
     counted.forEach((h) => {
-      const r = scheduledStats(h.days, byHabit.get(h.id)!, ws, until);
+      const r = statsOf(h, ws, until);
       done += r.done;
       sched += r.scheduled;
     });

@@ -16,17 +16,22 @@
          above, so Android asks once for both. -->
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
 
-    <!-- Sleep and workouts from Health Connect, where the Fitbit app (and
-         others) save them. Read only, and only asked for when the person
-         connects it in Profile. The Health Connect plugin declares read and
-         write for every kind of health data; Play makes an app justify each
-         one, so everything Orpit doesn't read is removed here. -->
+    <!-- Steps, sleep and workouts from Health Connect, where Samsung Health,
+         Google Fit, Fitbit and others save them. Read only, and only asked
+         for when the person connects it in Profile. The Health Connect plugin
+         declares read and write for every kind of health data; Play makes an
+         app justify each one, so everything Orpit doesn't read is removed
+         here. -->
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <!-- Reading today's steps while Orpit is closed (StepsWorker), for the
+         notifications at 25%, 50%, 75% and 100% of the goal. Asked for
+         separately, and only when those notifications are on. -->
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
     <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
-    <uses-permission android:name="android.permission.health.READ_STEPS" tools:node="remove" />
     <uses-permission android:name="android.permission.health.WRITE_STEPS" tools:node="remove" />
     <uses-permission android:name="android.permission.health.WRITE_DISTANCE" tools:node="remove" />
     <uses-permission android:name="android.permission.health.WRITE_ACTIVE_CALORIES_BURNED" tools:node="remove" />

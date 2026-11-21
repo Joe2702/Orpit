@@ -94,6 +94,20 @@ export interface Habit {
   /** When and where it happens: "after my morning coffee". Optional. */
   cue?: string | null;
   reminderTime: string | null; // optional per-habit reminder (HH:MM)
+  /** 'steps': ticked by Orpit when the day's steps reach `goal` (from the phone's health app). */
+  auto?: string | null;
+  /** The daily step goal, for the Steps habit. */
+  goal?: number | null;
+  /** The day the habit was added (YYYY-MM-DD). It isn't scored before then. */
+  since?: string;
+}
+
+/** One day's steps from the phone's health app. */
+export interface StepDay {
+  day: string; // YYYY-MM-DD
+  count: number;
+  /** The app that counted them, when the phone knows (Samsung Health, Google Fit…). */
+  source: string | null;
 }
 
 export interface Checkin {
@@ -334,6 +348,8 @@ export interface AppState {
   todoLists: TodoList[];
   todos: Todo[];
   wTemplates: WTemplate[];
+  /** Steps a day, for the last 400 days. Optional so older states still load. */
+  steps?: StepDay[];
   /**
    * The newest morning brief the person's assistant (Claude) delivered with
    * their key, if one came in the last day and a half. Optional so states

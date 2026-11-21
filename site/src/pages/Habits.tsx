@@ -90,7 +90,9 @@ function HabitList() {
     );
 
   const setFlag = (h: Habit, patch: Partial<Habit>, done: string) => {
-    const body = { name: h.name, color: h.color, target: h.target, days: h.days, why: h.why, cue: h.cue ?? null, reminderTime: h.reminderTime, paused: h.paused, archived: h.archived, ...patch };
+    // Pausing or archiving keeps the Steps habit's goal: the server keeps it when none is sent.
+    const { goal: _goal, auto: _auto, since: _since, ...flags } = patch;
+    const body = { name: h.name, color: h.color, target: h.target, days: h.days, why: h.why, cue: h.cue ?? null, reminderTime: h.reminderTime, paused: h.paused, archived: h.archived, ...flags };
     mutate((st) => ({ ...st, habits: st.habits.map((x) => (x.id === h.id ? { ...x, ...patch } : x)) }), () => api.editHabit(h.id, body), done);
   };
 

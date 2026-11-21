@@ -144,6 +144,10 @@ export interface HabitBody {
   reminderTime?: string | null;
   paused?: boolean;
   archived?: boolean;
+  /** The Steps habit's daily goal; ignored for any other habit. */
+  goal?: number;
+  /** 'steps' brings the Steps habit back (there's only ever one). */
+  auto?: 'steps';
 }
 
 export interface ClientErrorItem {
@@ -412,6 +416,11 @@ export const api = {
   editMilestone: (id: string, b: { name: string; since: string; color: string; icon: string }) =>
     request<AppState>(`/milestones/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteMilestone: (id: string) => request<AppState>(`/milestones/${id}`, { method: 'DELETE' }),
+
+  // Each day's steps from Health Connect; a day that reaches the goal ticks
+  // the Steps habit (the days it ticked come back in `ticked`).
+  syncSteps: (days: { day: string; count: number; source?: string | null }[]) =>
+    request<AppState & { ticked?: string[] }>('/steps', { method: 'POST', body: JSON.stringify({ days }) }),
 
   // Sleep and workouts read from Health Connect, saved as Orpit entries.
   healthImport: (b: { nights: unknown[]; workouts: unknown[] }) =>

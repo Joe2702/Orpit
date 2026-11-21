@@ -1,5 +1,8 @@
 import type { PoolClient } from 'pg';
 
+/** The daily step goal a new Steps habit starts with; anyone can change it. */
+export const STEP_GOAL = 8000;
+
 /**
  * Seed a freshly-created user with a *clean* starting point:
  * a few starter habits (with NO history), the structural categories and one
@@ -13,6 +16,16 @@ export async function seedUser(c: PoolClient, userId: number) {
      VALUES ($1,$2,$3,$4,$5,TRUE,$6)`,
     [userId, 'Daily Check-In', 'indigo', 'Daily', '1111111', -1]
   );
+
+  // --- Steps: ticked by Orpit when the day's steps reach the goal (from the
+  // phone's health app). Added for everyone like Daily Check-In, but it can be
+  // removed, and the flag stops it coming back once it has been.
+  await c.query(
+    `INSERT INTO habits (user_id, name, color, target, days, sort, auto, goal)
+     VALUES ($1,'Steps','emerald','Daily','1111111',-1,'steps',$2)`,
+    [userId, STEP_GOAL]
+  );
+  await c.query('UPDATE users SET steps_habit_added = TRUE WHERE id = $1', [userId]);
 
   // --- Starter habits (no check-ins → empty heatmap) ---
   const habits = [
