@@ -945,7 +945,9 @@ export function App() {
   // A cold start arrives before the session is restored, so the action waits
   // for `ready` rather than firing at a screen that isn't mounted yet.
   const [shortcut, setShortcut] = useState<ShortcutTarget | null>(null);
-  useEffect(() => listenForShortcuts(setShortcut), []);
+  useEffect(() => {
+    return listenForShortcuts(setShortcut);
+  }, []);
   useEffect(() => {
     if (!shortcut || !ready || !authed) return;
     setShortcut(null);
@@ -1011,7 +1013,9 @@ export function App() {
   nav.current = { screen, sheet, authed, report };
 
   // Liquid glass: every element marked data-lens gets its bent rim.
-  useEffect(() => startLiquid(document.body), []);
+  useEffect(() => {
+    return startLiquid(document.body);
+  }, []);
   const rootScreens = ['home', 'welcome', 'signin'];
 
   useEffect(() => {
