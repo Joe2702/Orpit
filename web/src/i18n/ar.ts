@@ -35,6 +35,8 @@ export const AR: Dict = {
   "Couldn't reach the server. It sleeps when unused, so the first open of the day can take up to a minute.": "تعذّر الوصول إلى الخادم. إنه يتوقف عند عدم الاستخدام، لذا قد يستغرق أول فتح في اليوم حتى دقيقة.",
   "no backend URL configured": "لم يُضبط عنوان الخادم",
   "Try again": "حاول مرة أخرى",
+  "From {from} to {to}. Highest {high} ({when}), lowest {low} ({when2}).": "من {from} إلى {to}. الأعلى {high} ({when})، والأدنى {low} ({when2}).",
+  "No data yet": "لا بيانات بعد",
   "You're offline. Waiting for a connection.": "أنت غير متصل. في انتظار الاتصال.",
   "Waking up the server. This can take about 30 seconds after a quiet spell.": "جارٍ تشغيل الخادم. قد يستغرق ذلك نحو 30 ثانية بعد فترة هدوء.",
   "Removed {n} declined payments: the bank said they didn’t go through": { one: "حُذفت دفعة مرفوضة: البنك قال إنها لم تتم", two: "حُذفت دفعتان مرفوضتان: البنك قال إنهما لم تتما", few: "حُذفت {n} دفعات مرفوضة: البنك قال إنها لم تتم", many: "حُذفت {n} دفعة مرفوضة: البنك قال إنها لم تتم", other: "حُذفت {n} دفعة مرفوضة: البنك قال إنها لم تتم" },

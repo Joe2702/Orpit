@@ -331,6 +331,7 @@ export function Overview() {
               <div className="card-body">
                 <BarChart
                   height={300}
+                  label={t('Spending, last 30 days')}
                   data={spend30.map((x, i) => ({ label: date(x.day, { day: 'numeric' }), value: x.amount, title: date(x.day, { weekday: 'short', month: 'short', day: 'numeric' }), now: i === spend30.length - 1 }))}
                   fmt={moneyShort}
                   tipFmt={(v) => money0(v || 0)}
@@ -401,7 +402,7 @@ export function Overview() {
               </Button>
             </div>
             <div className="card-body">
-              <SleepSchedule nights={nights} clock={fmtClock} />
+              <SleepSchedule nights={nights} clock={fmtClock} label={t('Bedtimes, last two weeks')} />
             </div>
           </div>
         )}
@@ -417,6 +418,7 @@ export function Overview() {
             <div className="card-body">
               <BarChart
                 height={220}
+                label={t('Training, minutes per week')}
                 data={weeks.map((w, i) => ({ label: i === weeks.length - 1 ? t('This week') : date(w.start, { month: 'short', day: 'numeric' }), value: w.minutes, title: t('Week of {date}', { date: date(w.start, { month: 'short', day: 'numeric' }) }), now: i === weeks.length - 1 }))}
                 tipFmt={(v) => minutes(v || 0)}
                 refLine={prev4 ? { value: prev4, label: t('4-week avg') } : undefined}

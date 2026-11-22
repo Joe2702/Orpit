@@ -6,7 +6,7 @@ import { api } from '../api';
 import { enabled } from '@core/lib/modules';
 import { dayKey, money } from '@core/lib/format';
 import { t, tData, getLang, setLangPref, date } from '../i18n';
-import { Kbd } from '../ui/kit';
+import { Kbd, useFocusTrap } from '../ui/kit';
 import { Icon, type IconName } from '../ui/Icon';
 import { saveCsv, type ExportKind } from '../lib/exports';
 import { plannedOn } from '../lib/series';
@@ -80,6 +80,10 @@ export function Palette({ initial, onClose, showHelp }: { initial: string; onClo
   const [at, setAt] = useState(0);
   const list = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
+  // Tab stays in the search box while it's open, and closing it puts focus
+  // back where it was.
+  const box = useRef<HTMLDivElement>(null);
+  useFocusTrap(box, () => input.current);
   const on = (m: string) => enabled(s, m);
   const ar = getLang() === 'ar';
   useEffect(() => {
@@ -251,6 +255,7 @@ export function Palette({ initial, onClose, showHelp }: { initial: string; onClo
     <>
       <div className="scrim" onMouseDown={onClose} />
       <div
+        ref={box}
         className="palette"
         role="dialog"
         aria-modal
@@ -264,10 +269,21 @@ export function Palette({ initial, onClose, showHelp }: { initial: string; onClo
       >
         <div className="palette-input">
           <Icon name="search" size={18} />
-          <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Search pages, actions, habits, tasks and payments…')} aria-activedescendant={view[at] ? `pi-${view[at].id}` : undefined} />
+          <input
+            ref={input}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t('Search pages, actions, habits, tasks and payments…')}
+            role="combobox"
+            aria-label={t('Search or jump to…')}
+            aria-expanded
+            aria-controls="palette-list"
+            aria-autocomplete="list"
+            aria-activedescendant={view[at] ? `pi-${view[at].id}` : undefined}
+          />
           <Kbd>Esc</Kbd>
         </div>
-        <div className="palette-list" ref={list} role="listbox">
+        <div className="palette-list" id="palette-list" ref={list} role="listbox" aria-label={t('Results')}>
           {view.length === 0 && <div className="empty" style={{ padding: 28 }}>{t('Nothing found for “{q}”', { q })}</div>}
           {view.map((it, i) => {
             const head = it.group !== last ? it.group : null;

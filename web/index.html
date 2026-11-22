@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <!-- Zoom stays allowed: people who need bigger text pinch to get it. (The
+         Android app's own web view has pinch zoom off; see zoomEnabled in
+         Capacitor, which defaults to false.) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Orpit</title>
     <meta name="description" content="Habits, training, sleep and money in one place." />
     <link rel="manifest" href="/manifest.webmanifest" />

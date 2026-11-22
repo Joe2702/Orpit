@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon, type IconName } from './Icon';
 import { t, isRTL } from '../i18n';
@@ -7,6 +7,60 @@ import { t, isRTL } from '../i18n';
 // portal, closes on Esc and on a click outside, and gives focus back.
 
 const portal = (node: React.ReactNode) => createPortal(node, document.body);
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+// Open overlays, newest last: only the top one keeps hold of Tab.
+const traps: HTMLElement[] = [];
+
+/**
+ * While an overlay is open, Tab and Shift+Tab go round what's inside it and
+ * never wander to the page behind; when it closes, focus goes back to what
+ * opened it. `first` picks what to focus on opening (the overlay itself if
+ * nothing is given).
+ */
+export function useFocusTrap(ref: React.RefObject<HTMLElement | null>, first?: () => HTMLElement | null | undefined) {
+  // What had focus before the overlay existed, taken while it first renders:
+  // by the time effects run, a field marked autoFocus inside it has already
+  // taken focus, and that's not where it should go back to.
+  const opener = useRef<HTMLElement | null | undefined>(undefined);
+  if (opener.current === undefined) opener.current = document.activeElement as HTMLElement | null;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const back = opener.current;
+    traps.push(el);
+    if (!el.contains(document.activeElement)) (first?.() || el).focus();
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || traps[traps.length - 1] !== el) return;
+      const items = [...el.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((x) => x.getClientRects().length > 0);
+      const active = document.activeElement as HTMLElement | null;
+      if (!items.length) {
+        e.preventDefault();
+        el.focus();
+        return;
+      }
+      const [head, tail] = [items[0], items[items.length - 1]];
+      if (!el.contains(active)) {
+        e.preventDefault();
+        (e.shiftKey ? tail : head).focus();
+      } else if (e.shiftKey && (active === head || active === el)) {
+        e.preventDefault();
+        tail.focus();
+      } else if (!e.shiftKey && active === tail) {
+        e.preventDefault();
+        head.focus();
+      }
+    };
+    document.addEventListener('keydown', key);
+    return () => {
+      document.removeEventListener('keydown', key);
+      traps.splice(traps.indexOf(el), 1);
+      if (back?.isConnected) back.focus?.();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+}
 
 function useEsc(on: boolean, close: () => void) {
   useEffect(() => {
@@ -80,12 +134,8 @@ export function Dialog({
 }) {
   useEsc(true, onClose);
   const box = useRef<HTMLFormElement>(null);
-  useEffect(() => {
-    const back = document.activeElement as HTMLElement | null;
-    const first = box.current?.querySelector<HTMLElement>('input:not([type=checkbox]):not([disabled]), textarea, select');
-    (first || box.current)?.focus();
-    return () => back?.focus?.();
-  }, []);
+  const titleId = useId();
+  useFocusTrap(box, () => box.current?.querySelector<HTMLElement>('input:not([type=checkbox]):not([disabled]), textarea, select'));
   return portal(
     <>
       <div className="scrim" onMouseDown={onClose} />
@@ -95,13 +145,14 @@ export function Dialog({
         className={`dialog${wide ? ' wide' : ''}`}
         role="dialog"
         aria-modal
+        aria-labelledby={titleId}
         onSubmit={(e) => {
           e.preventDefault();
           onSubmit?.();
         }}
       >
         <div className="dialog-head">
-          <div className="dialog-title">{title}</div>
+          <div className="dialog-title" id={titleId}>{title}</div>
           <span className="spacer" />
           <Button icon="x" kind="ghost" size="sm" title={t('Close')} onClick={onClose} />
         </div>
@@ -131,10 +182,12 @@ export function FormFoot({ onCancel, saveLabel, busy, left }: { onCancel: () => 
 /** A panel sliding in from the side: the details of one thing, beside the list it came from. */
 export function Drawer({ title, sub, onClose, children, actions, wide }: { title: React.ReactNode; sub?: React.ReactNode; onClose: () => void; children: React.ReactNode; actions?: React.ReactNode; wide?: boolean }) {
   useEsc(true, onClose);
+  const box = useRef<HTMLElement>(null);
+  useFocusTrap(box);
   return portal(
     <>
       <div className="scrim" style={{ background: 'color-mix(in srgb, var(--scrim) 50%, transparent)' }} onMouseDown={onClose} />
-      <aside className={`drawer${wide ? ' wide' : ''}`} role="dialog" aria-modal>
+      <aside ref={box} tabIndex={-1} className={`drawer${wide ? ' wide' : ''}`} role="dialog" aria-modal aria-label={typeof title === 'string' ? title : undefined}>
         <div className="dialog-head" style={{ padding: '16px 24px', alignItems: 'flex-start' }}>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: '-0.015em' }}>{title}</div>
@@ -162,8 +215,37 @@ export function Menu({ trigger, items, align = 'end', width }: { trigger: (open:
   const [at, setAt] = useState<{ top: number; left: number } | null>(null);
   const anchor = useRef<HTMLSpanElement>(null);
   const box = useRef<HTMLDivElement>(null);
-  const close = () => setAt(null);
-  useEsc(!!at, close);
+  const opener = () => anchor.current?.querySelector<HTMLElement>('button, [role=button], [tabindex]');
+  /** Close; `refocus` puts focus back on the button that opened it (Esc, or a choice made by keyboard). */
+  const close = (refocus = false) => {
+    setAt(null);
+    if (refocus) opener()?.focus();
+  };
+  useEsc(!!at, () => close(true));
+  // Say on the button that it opens a menu, and whether it's open.
+  useLayoutEffect(() => {
+    const b = opener();
+    if (!b) return;
+    b.setAttribute('aria-haspopup', 'menu');
+    b.setAttribute('aria-expanded', at ? 'true' : 'false');
+  });
+  // Opening moves focus into the menu, on its first choice.
+  useEffect(() => {
+    if (at) box.current?.querySelector<HTMLElement>('[role=menuitem]')?.focus();
+  }, [!!at]); // eslint-disable-line react-hooks/exhaustive-deps
+  const keys = (e: React.KeyboardEvent) => {
+    const items = [...(box.current?.querySelectorAll<HTMLElement>('[role=menuitem]') || [])];
+    const i = items.indexOf(document.activeElement as HTMLElement);
+    const go = (n: number) => {
+      e.preventDefault();
+      items[(n + items.length) % items.length]?.focus();
+    };
+    if (e.key === 'ArrowDown') go(i + 1);
+    else if (e.key === 'ArrowUp') go(i < 0 ? items.length - 1 : i - 1);
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(items.length - 1);
+    else if (e.key === 'Tab') close();
+  };
   const open = () => {
     const r = anchor.current!.getBoundingClientRect();
     const w = width || 220;
@@ -185,12 +267,22 @@ export function Menu({ trigger, items, align = 'end', width }: { trigger: (open:
   }, [at]);
   return (
     <>
-      <span ref={anchor} style={{ display: 'inline-flex' }}>
+      <span
+        ref={anchor}
+        style={{ display: 'inline-flex' }}
+        onKeyDown={(e) => {
+          // Down arrow on the button opens the menu, as it does in a native one.
+          if (!at && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+            e.preventDefault();
+            open();
+          }
+        }}
+      >
         {trigger(() => (at ? close() : open()), !!at)}
       </span>
       {at &&
         portal(
-          <div ref={box} className="menu" role="menu" style={{ top: at.top, left: at.left, width: width || 220 }}>
+          <div ref={box} className="menu" role="menu" style={{ top: at.top, left: at.left, width: width || 220 }} onKeyDown={keys}>
             {items.map((it, i) =>
               it === '-' ? (
                 <div key={i} className="menu-sep" />
@@ -202,9 +294,11 @@ export function Menu({ trigger, items, align = 'end', width }: { trigger: (open:
                 <button
                   key={i}
                   role="menuitem"
+                  tabIndex={-1}
                   className={`menu-item${it.danger ? ' danger' : ''}`}
-                  onClick={() => {
-                    close();
+                  onClick={(e) => {
+                    // Chosen by keyboard (no pointer position): focus goes back to the button.
+                    close(e.detail === 0);
                     it.run();
                   }}
                 >
@@ -221,11 +315,31 @@ export function Menu({ trigger, items, align = 'end', width }: { trigger: (open:
 }
 
 export function Field({ label, children, hint, full, style }: { label: React.ReactNode; children: React.ReactNode; hint?: React.ReactNode; full?: boolean; style?: React.CSSProperties }) {
+  const id = useId();
+  const box = useRef<HTMLDivElement>(null);
+  // The visible label is the control's name for a screen reader: a text box,
+  // a list or a date gets it through `for`, and a set of buttons (a choice
+  // between a few options) through `aria-labelledby`. Done after render so it
+  // works whatever the control is wrapped in.
+  useLayoutEffect(() => {
+    const el = box.current;
+    const lab = el?.querySelector<HTMLLabelElement>(':scope > label');
+    if (!el || !lab) return;
+    const control = el.querySelector<HTMLElement>('input:not([type=hidden]):not([type=checkbox]):not([type=radio]), textarea, select');
+    if (control) {
+      if (!control.id) control.id = `${id}-control`;
+      lab.htmlFor = control.id;
+      if (hint) control.setAttribute('aria-describedby', `${id}-hint`);
+      return;
+    }
+    const group = el.querySelector<HTMLElement>('[role=radiogroup], [role=group], [role=switch], [role=checkbox], [role=slider]');
+    if (group && !group.hasAttribute('aria-label') && !group.hasAttribute('aria-labelledby')) group.setAttribute('aria-labelledby', `${id}-label`);
+  });
   return (
-    <div className={`field${full ? ' full' : ''}`} style={style}>
-      <label>{label}</label>
+    <div ref={box} className={`field${full ? ' full' : ''}`} style={style}>
+      <label id={`${id}-label`}>{label}</label>
       {children}
-      {hint && <div className="hint">{hint}</div>}
+      {hint && <div className="hint" id={`${id}-hint`}>{hint}</div>}
     </div>
   );
 }

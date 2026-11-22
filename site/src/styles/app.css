@@ -18,7 +18,7 @@
   --line-soft: #1a1a20;
   --text: #f4f4f5;
   --text-2: #a1a1aa;
-  --text-3: #71717a;
+  --text-3: #8a8a93; /* 4.9:1 or more on every dark surface */
   --accent: #8b93ff;
   --accent-ink: #0b0b12;
   --good: #4ade80;
@@ -40,7 +40,7 @@
   --line-soft: #efeff2;
   --text: #18181b;
   --text-2: #52525b;
-  --text-3: #8a8a93;
+  --text-3: #6b6b74; /* 4.8:1 or more on every light surface */
   --accent: #4f46e5;
   --accent-ink: #ffffff;
   --good: #16a34a;
