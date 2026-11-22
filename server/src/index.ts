@@ -24,6 +24,21 @@ import { partnerRouter, listReports } from './partner.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+// Always HTTPS. Render ends the secure connection in front of the app and says
+// which way a request arrived in X-Forwarded-Proto. A page opened as http:// is
+// sent to the same address over https, the browser is told to go straight to
+// https from then on (HSTS), and anything a page asks for over http is fetched
+// over https instead. A request without the header (local development, the
+// tests, Render's own health check) is left alone.
+app.use((req, res, next) => {
+  const proto = req.headers['x-forwarded-proto'];
+  if (proto === 'http' && req.headers.host) return res.redirect(308, `https://${req.headers.host}${req.originalUrl}`);
+  if (proto === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000');
+    res.setHeader('Content-Security-Policy', 'upgrade-insecure-requests');
+  }
+  next();
+});
 // Larger limit so small profile photos (data URLs) fit.
 // A restored backup is the one request that can be big (years of entries); it
 // gets its own, larger limit on its route.
