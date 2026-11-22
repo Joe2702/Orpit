@@ -38,19 +38,30 @@ export function Tasks() {
   const done = list ? s.todos.filter((x) => x.listId === list.id && x.doneTs != null).sort((a, b) => (b.doneTs || 0) - (a.doneTs || 0)) : [];
   const target = list?.id || s.todoLists[0]?.id;
 
+  const tomorrow = dayKey(addDays(Date.now(), 1));
+  // Where a task with this date shows up, so one added here never seems to vanish.
+  const showsHere = (d: string | null) => (view === 'today' ? !!d && d <= today : view === 'upcoming' ? !!d && d > today : true);
   const add = () => {
     if (!title.trim() || !target) return;
-    const body = { listId: target, title: title.trim(), due: due || (view === 'today' ? today : null) };
+    // Added under Upcoming with no date: tomorrow, the first day Upcoming shows.
+    const body = { listId: target, title: title.trim(), due: due || (view === 'today' ? today : view === 'upcoming' ? tomorrow : null) };
+    const draft = { title, due };
     setTitle('');
     setDue('');
-    mutate(null, () => api.addTodo(body));
+    const where = body.due && body.due <= today ? t('Today') : body.due ? t('Upcoming') : t('All open');
+    mutate(null, () => api.addTodo(body), showsHere(body.due) ? undefined : t('Added to {place}', { place: where })).then((ok) => {
+      // Cleared straight away so the next one can be typed; a failed save
+      // gives back what was typed instead of losing it with the error.
+      if (ok) return;
+      setTitle((cur) => cur || draft.title);
+      setDue((cur) => cur || draft.due);
+    });
   };
   const setDone = (x: Todo, v: boolean) => mutate((st) => ({ ...st, todos: st.todos.map((y) => (y.id === x.id ? { ...y, doneTs: v ? Date.now() : null } : y)) }), () => api.setTodoDone(x.id, v));
   const listName = (id: string) => tData(s.todoLists.find((l) => l.id === id)?.name || '');
   const dueChip = (d: string | null) => {
     if (!d) return null;
     const late = d < today;
-    const tomorrow = dayKey(addDays(Date.now(), 1));
     const label = d === today ? t('Today') : d === tomorrow ? t('Tomorrow') : date(new Date(`${d}T12:00`), { weekday: 'short', month: 'short', day: 'numeric' });
     return (
       <span className={`badge${late ? ' bad' : d === today ? ' accent' : ''}`}>

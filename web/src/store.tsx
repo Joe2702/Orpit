@@ -239,6 +239,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // out-of-order server responses from rapid mutations don't overwrite newer UI.
   const stateRef = useRef<AppState | null>(null);
   const seqRef = useRef(0);
+  // Saves in flight, and whether any of them overlapped. Each answer is the
+  // whole account at one moment, so two that cross can each miss the other's
+  // change; once the last is back, the account is fetched again (settle).
+  const inFlight = useRef(0);
+  const crossed = useRef(false);
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
@@ -639,11 +644,31 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (online) sync();
   }, [online, sync]);
 
+  const settle = useCallback(() => {
+    inFlight.current--;
+    if (inFlight.current > 0 || !crossed.current) return;
+    crossed.current = false;
+    // Entries waiting to go out aren't on the server yet: its copy would hide
+    // them. The sync that sends them brings the account back anyway.
+    if (pendingOps() > 0) return;
+    const at = seqRef.current;
+    api
+      .getState()
+      .then((s) => {
+        // A save started meanwhile has its own answer coming.
+        if (seqRef.current !== at) return;
+        setState(s);
+        cacheState(s);
+      })
+      .catch(() => {});
+  }, []);
+
   const mutate = useCallback(
     async (fn: () => Promise<AppState>, toastMsg?: string) => {
       // Takes a sequence number like mutateOpt, so a slow response here can't
       // overwrite a newer one that has already landed.
       const mySeq = ++seqRef.current;
+      if (++inFlight.current > 1) crossed.current = true;
       try {
         const s = await fn();
         setState((cur) => (seqRef.current === mySeq ? s : cur));
@@ -660,9 +685,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
         showToast(e instanceof Error ? e.message : t('Something went wrong'));
         throw e;
+      } finally {
+        settle();
       }
     },
-    [showToast]
+    [showToast, settle]
   );
 
   const mutateOpt = useCallback(
@@ -673,6 +700,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     ) => {
       const mySeq = ++seqRef.current;
       const prev = stateRef.current;
+      if (++inFlight.current > 1) crossed.current = true;
       // Apply the predicted state immediately for instant feedback.
       setState((cur) => (cur ? optimistic(cur) : cur));
       try {
@@ -695,13 +723,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           showToast(toastMsg ? `${toastMsg} · ${connectivity() === 'offline' ? t('syncing when online') : t('syncing shortly')}` : queuedMessage());
           throw e;
         }
-        // Roll back to the pre-mutation state, unless something newer supersedes.
-        setState((cur) => (seqRef.current === mySeq ? prev : cur));
+        // Roll back to the pre-mutation state, unless something newer
+        // supersedes it, or another save crossed this one: then the state from
+        // before may itself be out of date, and the fetch once they're all back
+        // puts the screen right.
+        const alone = !crossed.current;
+        setState((cur) => (seqRef.current === mySeq && alone ? prev : cur));
         showToast(e instanceof Error ? e.message : t('Something went wrong'));
         throw e;
+      } finally {
+        settle();
       }
     },
-    [showToast]
+    [showToast, settle]
   );
 
   const haptic = useCallback(

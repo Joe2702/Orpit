@@ -299,6 +299,7 @@ export const AR_SITE: Record<string, string | Plural> = {
   "All open tasks": "كل المهام المفتوحة",
   "{n} open tasks across your lists": { one: "مهمة مفتوحة واحدة في قوائمك", two: "مهمتان مفتوحتان في قوائمك", few: "{n} مهام مفتوحة في قوائمك", many: "{n} مهمة مفتوحة في قوائمك", other: "{n} مهمة مفتوحة في قوائمك" },
   "All open": "كل المفتوحة",
+  "Added to {place}": "أُضيفت إلى {place}",
   "No lists yet": "لا قوائم بعد",
   "List options": "خيارات القائمة",
   "Rename or recolour": "إعادة التسمية أو تغيير اللون",

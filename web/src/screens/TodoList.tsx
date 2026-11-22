@@ -40,7 +40,11 @@ export function TodoList() {
   const submit = () => {
     const title = text.trim();
     if (!title) return;
-    add(list.id, title.slice(0, 200));
+    // Cleared straight away for the next one; if it doesn't save, what was
+    // typed comes back instead of going with the error.
+    add(list.id, title.slice(0, 200)).then((kept) => {
+      if (!kept) setText((cur) => cur || title);
+    });
     rememberList(list.id);
     setText('');
     inputRef.current?.focus();

@@ -74,7 +74,11 @@ export function Overview() {
     if (!newTask.trim() || !listId) return;
     const title = newTask.trim();
     setNewTask('');
-    mutate(null, () => api.addTodo({ listId, title, due: todayKey }), t('Task added'));
+    // Cleared straight away so the next one can be typed; if the save fails,
+    // what was typed comes back rather than being lost with the error.
+    mutate(null, () => api.addTodo({ listId, title, due: todayKey }), t('Task added')).then((ok) => {
+      if (!ok) setNewTask((cur) => cur || title);
+    });
   };
   const bills = s.recurring
     .filter((r) => r.nextTs && r.nextTs < addDays(today, 15))
