@@ -4,6 +4,7 @@ import { api } from './api';
 import { dueLabel } from './lib/todos';
 import type { Todo } from './types';
 import { t } from './i18n';
+import { OfflineQueuedError } from './lib/offline';
 
 /**
  * Ticking a task off and deleting one, the same everywhere a task appears:
@@ -46,11 +47,17 @@ export function useTodoActions() {
       .catch(() => {});
   };
 
-  /** Add a task now; it shows straight away and saves behind. */
-  const add = (listId: string, title: string, due: string | null = null, note: string | null = null) => {
+  /**
+   * Add a task now; it shows straight away and saves behind. Resolves to
+   * whether it's kept (saved, or waiting to sync), so a box it was typed in
+   * can give the words back when it isn't.
+   */
+  const add = (listId: string, title: string, due: string | null = null, note: string | null = null): Promise<boolean> => {
     const tmp: Todo = { id: `tmp-${Date.now().toString(36)}`, listId, title, note, due, doneTs: null, sort: 1e9, ts: Date.now() };
     haptic(10);
-    return mutateOpt((s) => ({ ...s, todos: [...s.todos, tmp] }), () => api.addTodo({ listId, title, due, note })).catch(() => {});
+    return mutateOpt((s) => ({ ...s, todos: [...s.todos, tmp] }), () => api.addTodo({ listId, title, due, note }))
+      .then(() => true)
+      .catch((e) => e instanceof OfflineQueuedError);
   };
 
   return { toggle, remove, add, pending };

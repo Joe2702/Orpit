@@ -77,7 +77,7 @@ export const api = {
   sendVerify: () => req<{ ok: boolean; already?: boolean }>('/verify/send', 'POST'),
   state: () => req('/state'),
   exportAll: () => req<Record<string, unknown>>('/export'),
-  importData: (data: unknown) => req<{ added: number; state: AppState }>('/import', 'POST', { data }),
+  importData: (data: unknown) => req<{ added: number; skipped: number; failed: number; state: AppState }>('/import', 'POST', { data }),
 
   // Profile
   updateMe: (patch: Partial<AppState['profile']>) => req('/me', 'PATCH', patch),
@@ -101,6 +101,7 @@ export const api = {
   deleteWCat: (id: Id) => req(`/categories/${id}`, 'DELETE'),
   addNight: (b: { hours: number; quality: number; bedH: number | null; wakeH: number | null; note?: string | null; ts?: number }) => req('/nights', 'POST', b),
   deleteNight: (id: Id) => req(`/nights/${id}`, 'DELETE'),
+  editNight: (id: Id, b: { hours: number; quality: number; bedH: number | null; wakeH: number | null; note?: string | null; ts?: number }) => req(`/nights/${id}`, 'PATCH', b),
 
   // Money
   addTxn: (b: TxnBody) => req('/txns', 'POST', b),

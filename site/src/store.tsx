@@ -97,6 +97,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [confirming, setConfirming] = useState<Ctx['confirming']>(null);
   const [sysTick, setSysTick] = useState(0);
   const seq = useRef(0);
+  // Saves in flight, and whether any of them overlapped. Each answer is the
+  // whole account as the server had it at that moment, so when two saves
+  // cross, neither answer can be trusted to hold both changes: once the last
+  // one is back, the account is fetched again (see settle below).
+  const inFlight = useRef(0);
+  const crossed = useRef(false);
   const live = useRef<AppState | null>(null);
   live.current = state;
 
@@ -159,18 +165,38 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (state) setCurrency(state.profile.currency);
   }, [state?.profile.currency]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const settle = useCallback(() => {
+    inFlight.current--;
+    if (inFlight.current > 0 || !crossed.current) return;
+    crossed.current = false;
+    const at = seq.current;
+    api
+      .state()
+      .then((s) => {
+        // A save started meanwhile has its own answer coming.
+        if (seq.current === at && s && Array.isArray(s.txns)) setState(s);
+      })
+      .catch(() => {});
+  }, []);
+
   const mutate = useCallback<Ctx['mutate']>(
     async (optimistic, call, done) => {
       const mine = ++seq.current;
       const before = live.current;
+      if (++inFlight.current > 1) crossed.current = true;
       if (optimistic) setState((cur) => (cur ? optimistic(cur) : cur));
       try {
         const next = await call();
         if (seq.current === mine && next && Array.isArray((next as AppState).txns)) setState(next);
         if (done) toast(done);
+        settle();
         return true;
       } catch (e) {
-        if (seq.current === mine && optimistic) setState(before);
+        // Alone, undo what was shown. Crossed with another save, the state
+        // before this one may already be out of date: the fetch once they're
+        // all back puts the screen right instead.
+        if (seq.current === mine && optimistic && !crossed.current) setState(before);
+        settle();
         const msg = e instanceof ApiError && e.status === 0 ? t('You’re offline. Nothing was saved.') : e instanceof Error ? e.message : t('That didn’t save.');
         toast(msg, { bad: true });
         if (e instanceof ApiError && e.status === 401) {
@@ -180,7 +206,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
     },
-    [toast]
+    [toast, settle]
   );
 
   const confirm = useCallback((o: ConfirmOpts) => new Promise<boolean>((resolve) => setConfirming({ ...o, resolve })), []);

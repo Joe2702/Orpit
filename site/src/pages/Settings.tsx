@@ -4,10 +4,10 @@ import { useStore, useData, PRESET_NAMES, presetHex } from '../store';
 import { api, setToken } from '../api';
 import { CODES, POPULAR, currencyName } from '@core/lib/currencies';
 import { getDigits, setDigits } from '@core/i18n';
-import { t, getLang, setLangPref } from '../i18n';
+import { t, tn, getLang, setLangPref } from '../i18n';
 import { Avatar, Button, Dialog, Field, FormFoot, Seg, Switch } from '../ui/kit';
 import { Icon, type IconName } from '../ui/Icon';
-import { exportCsv, type ExportKind } from '../lib/exports';
+import { saveCsv, type ExportKind } from '../lib/exports';
 import { switchToPhone } from '../layout/nav';
 
 // Settings in sections down the side, the way desktop apps do it. The same
@@ -309,12 +309,13 @@ function Data() {
       toast(e instanceof Error ? e.message : t('That didn’t work'), { bad: true });
     }
   };
-  const csv = async (k: ExportKind) => toast(t('{n} rows saved', { n: await exportCsv(k, s) }));
+  const csv = (k: ExportKind) => saveCsv(k, s, toast);
   const restore = async (f: File) => {
     try {
       const r = await api.importData(JSON.parse(await f.text()));
       replace(r.state);
-      toast(t('Added {n} entries', { n: r.added }));
+      const said = r.added ? t('Added {n} entries', { n: r.added }) : t('Nothing new to import');
+      toast(r.failed ? `${said} · ${tn(r.failed, '{n} entry couldn’t be read', '{n} entries couldn’t be read')}` : said, { bad: r.failed > 0 });
     } catch (e) {
       toast(e instanceof Error ? e.message : t('That file couldn’t be read'), { bad: true });
     }

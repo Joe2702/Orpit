@@ -81,3 +81,27 @@ test('nonsense is skipped, and a category must be the person’s own', async () 
   assert.deepEqual(r.imported, { nights: 0, workouts: 1, skipped: 5 });
   assert.equal((r as unknown as S).workouts[0].catId, null);
 });
+
+test('editing an imported night changes it in place: it keeps its source and the next sync leaves it alone', async () => {
+  const c = await new Client(server.base).signup();
+  await c.call('/api/health/import', 'POST', { nights: [night('hc-edit', MORNING)], workouts: [] });
+  let s = (await c.call('/api/state')) as unknown as S;
+  const n = s.nights[0];
+  await c.call(`/api/nights/${n.id}`, 'PATCH', { hours: 8, quality: 9, bedH: 23, wakeH: 7, note: 'Fixed the bedtime', ts: n.ts });
+  s = (await c.call('/api/state')) as unknown as S;
+  assert.equal(s.nights.length, 1);
+  const e = s.nights[0] as S['nights'][number] & { note: string | null };
+  assert.deepEqual([e.id, e.hours, e.quality, e.bedH, e.source, e.note], [n.id, 8, 9, 23, 'Fitbit', 'Fixed the bedtime']);
+
+  // The health app offers the same night again: it's already here, edited.
+  const again = await c.call<Imported>('/api/health/import', 'POST', { nights: [night('hc-edit', MORNING)], workouts: [] });
+  assert.deepEqual(again.imported, { nights: 0, workouts: 0, skipped: 0 });
+  s = (await c.call('/api/state')) as unknown as S;
+  assert.deepEqual(s.nights.map((x) => x.hours), [8]);
+
+  // A bad edit changes nothing.
+  await assert.rejects(c.call(`/api/nights/${n.id}`, 'PATCH', { hours: 30, quality: 9 }), /400/);
+  await assert.rejects(c.call('/api/nights/999999999', 'PATCH', { hours: 7, quality: 7 }), /404/);
+  s = (await c.call('/api/state')) as unknown as S;
+  assert.deepEqual(s.nights.map((x) => x.hours), [8]);
+});

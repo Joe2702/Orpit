@@ -31,6 +31,7 @@ export function Accounts() {
       </div>
     );
   const monthStart = startOfMonth(Date.now());
+  const nextMonth = startOfMonth(Date.now(), 1);
   return (
     <>
       <div className="card card-pad row" style={{ marginBottom: 16, gap: 28 }}>
@@ -49,7 +50,7 @@ export function Accounts() {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
         {d.accounts.map((a: (typeof d.accounts)[number]) => {
-          const moved = s.txns.filter((x) => (x.accId === a.id || x.toAccId === a.id) && x.ts >= monthStart);
+          const moved = s.txns.filter((x) => (x.accId === a.id || x.toAccId === a.id) && x.ts >= monthStart && x.ts < nextMonth);
           return (
             <div key={a.id} className="card" style={{ overflow: 'hidden' }}>
               <div style={{ height: 3, background: paint(a.color) }} />

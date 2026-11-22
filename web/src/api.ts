@@ -314,6 +314,8 @@ export const api = {
   addNight: (b: { hours: number; quality: number; bedH: number | null; wakeH: number | null; note?: string | null; ts?: number }) =>
     request<AppState>('/nights', { method: 'POST', body: JSON.stringify(b) }),
   deleteNight: (id: string) => request<AppState>(`/nights/${id}`, { method: 'DELETE' }),
+  editNight: (id: string, b: { hours: number; quality: number; bedH: number | null; wakeH: number | null; note?: string | null; ts?: number }) =>
+    request<AppState>(`/nights/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
 
   addTxn: (b: {
     name?: string;
@@ -503,7 +505,7 @@ export const api = {
   signOutOthers: () => request<{ token: string }>('/me/signout-others', { method: 'POST' }),
   // Restore a previously exported file (additive — never deletes)
   importData: (data: unknown) =>
-    request<{ added: number; state: AppState }>('/import', { method: 'POST', body: JSON.stringify({ data }) }),
+    request<{ added: number; skipped: number; failed: number; state: AppState }>('/import', { method: 'POST', body: JSON.stringify({ data }) }),
   // Deletes the whole user account (not a finance account — see deleteAccount).
   deleteMyAccount: (password: string) =>
     request<{ ok: boolean }>('/me', { method: 'DELETE', body: JSON.stringify({ password }) }),

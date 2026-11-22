@@ -342,9 +342,21 @@ export function BarChart({
   const col = cssVar(color);
   const pct = (v: number) => Math.min(100, (v / max) * 100);
   const hasData = peak > 0;
+  // The bars in words, for a screen reader: the span, and the highest and
+  // lowest. Kept out of sight; the bars stay tappable.
+  const said = (() => {
+    const real = buckets.map((b, i) => ({ name: b.name, v: b.future ? null : values[i] })).filter((x): x is { name: string; v: number } => x.v != null);
+    if (!real.length || !hasData) return t('No data yet');
+    const hi = real.reduce((a, x) => (x.v > a.v ? x : a));
+    const lo = real.reduce((a, x) => (x.v < a.v ? x : a));
+    return t('From {from} to {to}. Highest {high} ({when}), lowest {low} ({when2}).', {
+      from: buckets[0].name, to: buckets[n - 1].name, high: format(hi.v), when: hi.name, low: format(lo.v), when2: lo.name,
+    });
+  })();
 
   return (
     <div style={{ position: 'relative', userSelect: 'none' }} onClick={interactive ? (e) => e.stopPropagation() : undefined}>
+      <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' }}>{said}</span>
       <div style={{ position: 'relative', height }}>
         {grid &&
           [1, 0.5].map((f) => (

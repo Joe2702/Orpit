@@ -52,7 +52,7 @@ export function Overview() {
   const avg30 = spend30.reduce((a, x) => a + x.amount, 0) / 30;
   let cum = 0;
   const monthCum = spend30.filter((x) => x.day >= monthStart).map((x) => (cum += x.amount));
-  const cats = byCategory(s, monthStart).slice(0, 6);
+  const cats = byCategory(s, monthStart, startOfMonth(now, 1)).slice(0, 6);
 
   // ---- Sleep and training ----
   const nights = useMemo(() => sleepNights(s, 14, now), [s, day]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -74,7 +74,11 @@ export function Overview() {
     if (!newTask.trim() || !listId) return;
     const title = newTask.trim();
     setNewTask('');
-    mutate(null, () => api.addTodo({ listId, title, due: todayKey }), t('Task added'));
+    // Cleared straight away so the next one can be typed; if the save fails,
+    // what was typed comes back rather than being lost with the error.
+    mutate(null, () => api.addTodo({ listId, title, due: todayKey }), t('Task added')).then((ok) => {
+      if (!ok) setNewTask((cur) => cur || title);
+    });
   };
   const bills = s.recurring
     .filter((r) => r.nextTs && r.nextTs < addDays(today, 15))
@@ -191,9 +195,9 @@ export function Overview() {
       )}
 
       {kpis.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${kpis.length}, minmax(0, 1fr))`, gap: 16, marginBottom: 16 }}>
+        <div className={`kpis${kpis.length >= 3 ? ' many' : ''}`} style={{ '--n': kpis.length } as React.CSSProperties}>
           {kpis.map((k) => (
-            <div key={k.key} className="card card-pad" role="link" tabIndex={0} onClick={() => nav(k.to)} onKeyDown={(e) => e.key === 'Enter' && nav(k.to)} style={{ cursor: 'pointer' }}>
+            <div key={k.key} className="card card-pad kpi" role="link" tabIndex={0} onClick={() => nav(k.to)} onKeyDown={(e) => e.key === 'Enter' && nav(k.to)} style={{ cursor: 'pointer' }}>
               <div className="stat-label">
                 <Icon name={k.icon} size={15} style={{ color: 'var(--text-3)' }} />
                 {k.label}
@@ -202,7 +206,11 @@ export function Overview() {
                 <div className="stat-value truncate" style={{ flex: 1 }}>
                   {k.value}
                 </div>
-                {k.spark && <Spark values={k.spark} width={96} />}
+                {k.spark && (
+                  <span className="kpi-spark" aria-hidden>
+                    <Spark values={k.spark} width={96} />
+                  </span>
+                )}
               </div>
               <div className="faint" style={{ fontSize: 12, marginTop: 8 }}>
                 {k.sub}
@@ -323,6 +331,7 @@ export function Overview() {
               <div className="card-body">
                 <BarChart
                   height={300}
+                  label={t('Spending, last 30 days')}
                   data={spend30.map((x, i) => ({ label: date(x.day, { day: 'numeric' }), value: x.amount, title: date(x.day, { weekday: 'short', month: 'short', day: 'numeric' }), now: i === spend30.length - 1 }))}
                   fmt={moneyShort}
                   tipFmt={(v) => money0(v || 0)}
@@ -393,7 +402,7 @@ export function Overview() {
               </Button>
             </div>
             <div className="card-body">
-              <SleepSchedule nights={nights} clock={fmtClock} />
+              <SleepSchedule nights={nights} clock={fmtClock} label={t('Bedtimes, last two weeks')} />
             </div>
           </div>
         )}
@@ -409,6 +418,7 @@ export function Overview() {
             <div className="card-body">
               <BarChart
                 height={220}
+                label={t('Training, minutes per week')}
                 data={weeks.map((w, i) => ({ label: i === weeks.length - 1 ? t('This week') : date(w.start, { month: 'short', day: 'numeric' }), value: w.minutes, title: t('Week of {date}', { date: date(w.start, { month: 'short', day: 'numeric' }) }), now: i === weeks.length - 1 }))}
                 tipFmt={(v) => minutes(v || 0)}
                 refLine={prev4 ? { value: prev4, label: t('4-week avg') } : undefined}

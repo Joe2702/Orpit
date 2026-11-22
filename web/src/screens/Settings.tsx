@@ -395,7 +395,8 @@ export function Settings() {
         const parsed = JSON.parse(await file.text());
         const r = await api.importData(parsed);
         applyState(r.state);
-        showToast(r.added ? t('Imported {added} items', { added: r.added }) : t('Nothing new to import'));
+        const said = r.added ? t('Imported {added} items', { added: r.added }) : t('Nothing new to import');
+        showToast(r.failed ? `${said} · ${tn(r.failed, '{n} entry couldn’t be read', '{n} entries couldn’t be read')}` : said);
       } catch (e) {
         showToast(e instanceof Error ? e.message : t('That file couldn\'t be read'));
       }

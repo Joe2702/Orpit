@@ -1,12 +1,32 @@
 import React, { useState } from 'react';
 import { useWidth } from '../ui/kit';
-import { isRTL, date, num } from '../i18n';
+import { isRTL, date, num, t, tn } from '../i18n';
 
 // Charts for a big screen: real axes and gridlines, one colour (the accent),
 // a tooltip on every bar, point and square. Time runs right to left in Arabic,
 // the same as on the phone.
 
 /** A round number at or above `v`, for the top of an axis: 1, 2, 2.5, 5 × 10ⁿ. */
+/**
+ * What a chart shows, in words, for a screen reader: the span it covers and
+ * its highest and lowest points. Charts are drawn as one image, so without
+ * this a reader heard only "image".
+ */
+export function chartSummary(points: { title: string; value: number | null }[], fmt: (v: number) => string): string {
+  const real = points.filter((p): p is { title: string; value: number } => p.value != null);
+  if (!real.length) return t('No data yet');
+  const hi = real.reduce((a, p) => (p.value > a.value ? p : a));
+  const lo = real.reduce((a, p) => (p.value < a.value ? p : a));
+  return t('From {from} to {to}. Highest {high} ({when}), lowest {low} ({when2}).', {
+    from: points[0].title,
+    to: points[points.length - 1].title,
+    high: fmt(hi.value),
+    when: hi.title,
+    low: fmt(lo.value),
+    when2: lo.title,
+  });
+}
+
 export function niceMax(v: number): number {
   if (v <= 0) return 1;
   const p = Math.pow(10, Math.floor(Math.log10(v)));
@@ -62,6 +82,7 @@ export function BarChart({
   tipFmt,
   refLine,
   minTop,
+  label,
 }: {
   data: BarDatum[];
   height?: number;
@@ -69,6 +90,8 @@ export function BarChart({
   tipFmt?: (v: number | null) => string;
   refLine?: { value: number; label: string };
   minTop?: number;
+  /** What the chart is, for a screen reader ("Spending, last 30 days"); a summary of the values follows. */
+  label?: string;
 }) {
   const [ref, w] = useWidth<HTMLDivElement>();
   const [tip, setTip] = useState<Tip | null>(null);
@@ -89,11 +112,12 @@ export function BarChart({
   const Y = (v: number) => 8 + plotH - (v / top) * plotH;
   const axisX = rtl ? w - gutter + 8 : gutter - 8;
   const every = Math.ceil(data.length / Math.max(1, Math.floor(plotW / 56)));
+  const said = [label, chartSummary(data.filter((d) => !d.future), fmt)].filter(Boolean).join('. ');
 
   return (
     <div className="chart" ref={ref} style={{ height }} onMouseLeave={() => setTip(null)}>
       {w > 0 && (
-        <svg width={w} height={height} role="img">
+        <svg width={w} height={height} role="img" aria-label={said}>
           <g className="grid">
             {ys.map((v) => (
               <line key={v} x1={rtl ? 0 : gutter} x2={rtl ? w - gutter : w} y1={Y(v)} y2={Y(v)} strokeDasharray={v === 0 ? undefined : '3 4'} />
@@ -158,7 +182,7 @@ export interface LinePoint {
 }
 
 /** A line with a soft fill under it, and a crosshair that follows the mouse. */
-export function LineChart({ data, height = 220, fmt = (v: number) => num(Math.round(v)), zeroBased = false }: { data: LinePoint[]; height?: number; fmt?: (v: number) => string; zeroBased?: boolean }) {
+export function LineChart({ data, height = 220, fmt = (v: number) => num(Math.round(v)), zeroBased = false, label }: { data: LinePoint[]; height?: number; fmt?: (v: number) => string; zeroBased?: boolean; label?: string }) {
   const [ref, w] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
   const rtl = isRTL();
@@ -210,7 +234,7 @@ export function LineChart({ data, height = 220, fmt = (v: number) => num(Math.ro
   return (
     <div className="chart" ref={ref} style={{ height }} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
       {w > 0 && (
-        <svg width={w} height={height} role="img">
+        <svg width={w} height={height} role="img" aria-label={[label, chartSummary(data, fmt)].filter(Boolean).join('. ')}>
           <defs>
             <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor="var(--accent)" stopOpacity="0.28" />
@@ -255,7 +279,7 @@ export function LineChart({ data, height = 220, fmt = (v: number) => num(Math.ro
  * When each night started and ended: a bar from bedtime to waking, on a clock
  * running from early evening to midday. Steady bars mean a steady schedule.
  */
-export function SleepSchedule({ nights, height = 220, clock }: { nights: { day: number; bedH: number | null; wakeH: number | null; hours: number | null }[]; height?: number; clock: (h: number) => string }) {
+export function SleepSchedule({ nights, height = 220, clock, label }: { nights: { day: number; bedH: number | null; wakeH: number | null; hours: number | null }[]; height?: number; clock: (h: number) => string; label?: string }) {
   const [ref, w] = useWidth<HTMLDivElement>();
   const [tip, setTip] = useState<Tip | null>(null);
   const rtl = isRTL();
@@ -276,10 +300,20 @@ export function SleepSchedule({ nights, height = 220, clock }: { nights: { day: 
   };
   const marks = [20, 22, 0, 2, 4, 6, 8, 10, 12];
   const every = Math.ceil(nights.length / Math.max(1, Math.floor(plotW / 48)));
+  // Night by night, in words: each one's bedtime and wake-up.
+  const logged = nights.filter((n) => n.bedH != null && n.wakeH != null);
+  const said = [
+    label,
+    logged.length
+      ? logged.map((n) => `${date(n.day, { weekday: 'short', day: 'numeric', month: 'short' })}: ${clock(n.bedH!)}–${clock(n.wakeH!)}`).join(isRTL() ? '، ' : '; ')
+      : t('No data yet'),
+  ]
+    .filter(Boolean)
+    .join('. ');
   return (
     <div className="chart" ref={ref} style={{ height }} onMouseLeave={() => setTip(null)}>
       {w > 0 && (
-        <svg width={w} height={height} role="img">
+        <svg width={w} height={height} role="img" aria-label={said}>
           <g className="grid">
             {marks.map((h) => (
               <line key={h} x1={rtl ? 0 : gutter} x2={rtl ? w - gutter : w} y1={Y(h)} y2={Y(h)} strokeDasharray="3 4" />
@@ -332,7 +366,7 @@ export interface HeatCell {
 }
 
 /** A year of days as squares, a column per week: the darker, the more was done. */
-export function Heatmap({ weeks, title }: { weeks: HeatCell[][]; title: (c: HeatCell) => string }) {
+export function Heatmap({ weeks, title, label }: { weeks: HeatCell[][]; title: (c: HeatCell) => string; label?: string }) {
   const [ref, w] = useWidth<HTMLDivElement>();
   const [tip, setTip] = useState<Tip | null>(null);
   const left = 30;
@@ -352,10 +386,15 @@ export function Heatmap({ weeks, title }: { weeks: HeatCell[][]; title: (c: Heat
     const d = new Date(wk[0].day);
     if (i === 0 || new Date(weeks[i - 1][0].day).getMonth() !== d.getMonth()) months.push({ i, label: date(d, { month: 'short' }) });
   });
+  const past = weeks.flat().filter((c) => !c.future && c.share !== null);
+  const active = past.filter((c) => (c.share || 0) > 0).length;
+  const said = [label, tn(active, '{n} day with something done', '{n} days with something done'), past.length ? t('out of {n}', { n: past.length }) : '']
+    .filter(Boolean)
+    .join(' ');
   return (
     <div className="chart" ref={ref} style={{ height }} onMouseLeave={() => setTip(null)}>
       {w > 0 && (
-        <svg width={w} height={height} role="img">
+        <svg width={w} height={height} role="img" aria-label={said}>
           <g className="axis">
             {months.map((m) => (
               <text key={m.i} x={X(m.i) + (rtl ? cell : 0)} y={11} textAnchor={rtl ? 'end' : 'start'}>
