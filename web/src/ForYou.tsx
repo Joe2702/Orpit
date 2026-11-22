@@ -48,7 +48,7 @@ export function ForYou({ slides }: { slides: Slide[] }) {
 
   return (
     <div style={{ marginBottom: 24 }}>
-      <div ref={track} className="foryou-track" data-single={n === 1 ? '' : undefined} onScroll={onScroll} role="region" aria-label={t('For you')}>
+      <div ref={track} className="foryou-track" data-single={n === 1 ? '' : undefined} data-own-swipe="" onScroll={onScroll} role="region" aria-label={t('For you')}>
         {slides.map((s) => {
           // With a control at the end, only the text part opens the card, so
           // the two buttons sit side by side rather than one inside the other.
