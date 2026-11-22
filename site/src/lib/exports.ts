@@ -1,6 +1,7 @@
 // Spreadsheet downloads from the website. Each one asks the server for the full
-// history (the app itself only holds the recent window), and falls back to
-// what's loaded if that fails.
+// history (the app itself only holds the recent window). If that fails nothing
+// is saved: a file that quietly stops a year back looks complete, and the
+// person would never know what's missing.
 
 import { api } from '../api';
 import type { AppState, Txn } from '@core/types';
@@ -20,14 +21,27 @@ type Full = {
   checkins?: { habitId: string; day: string }[];
 };
 
-async function everything(state: AppState): Promise<Full> {
+async function everything(): Promise<Full> {
+  const all = (await api.exportAll()) as Full;
+  if (!all || !Array.isArray(all.txns)) throw new Error('Incomplete export');
+  return all;
+}
+
+type Say = (text: string, opts?: { bad?: boolean; action?: { label: string; run: () => void } }) => void;
+
+/**
+ * Download a spreadsheet and say how many rows it has, or say that nothing was
+ * saved and offer to try again.
+ */
+export async function saveCsv(kind: ExportKind, state: AppState, toast: Say, said = (n: number) => t('{n} rows saved', { n })): Promise<void> {
   try {
-    const all = (await api.exportAll()) as Full;
-    if (all && Array.isArray(all.txns)) return all;
+    toast(said(await exportCsv(kind, state)));
   } catch {
-    /* offline, or the server is waking: use what's here */
+    toast(t('Couldn’t get your whole history, so nothing was saved. Check your connection and try again.'), {
+      bad: true,
+      action: { label: t('Try again'), run: () => void saveCsv(kind, state, toast, said) },
+    });
   }
-  return state as unknown as Full;
 }
 
 export function txnKind(x: Pick<Txn, 'toAccId' | 'adjust' | 'amount' | 'income'>): string {
@@ -60,7 +74,7 @@ export function txnRows(txns: Txn[], accounts: { id: string; name: string }[]): 
 const stamp = () => dayKey();
 
 export async function exportCsv(kind: ExportKind, state: AppState): Promise<number> {
-  const all = await everything(state);
+  const all = await everything();
   if (kind === 'txns') {
     const { header, rows } = txnRows(all.txns || [], all.accounts || state.accounts);
     downloadCsv(`orbit-transactions-${stamp()}.csv`, toCsv(header, rows));
@@ -81,7 +95,7 @@ export async function exportCsv(kind: ExportKind, state: AppState): Promise<numb
     const rows = [...(all.nights || [])]
       .sort((a, b) => b.ts - a.ts)
       .map((n) => [dayKey(n.ts), n.hours, n.quality, n.bedH == null ? '' : fmtClock(n.bedH), n.wakeH == null ? '' : fmtClock(n.wakeH), n.note || '']);
-    downloadCsv(`orbit-sleep-${stamp()}.csv`, toCsv([t('Night of'), t('Hours'), t('Quality (1–5)'), t('Bedtime'), t('Woke up'), t('Note')], rows));
+    downloadCsv(`orbit-sleep-${stamp()}.csv`, toCsv([t('Night of'), t('Hours'), t('Quality (1–10)'), t('Bedtime'), t('Woke up'), t('Note')], rows));
     return rows.length;
   }
   const names = new Map((all.habits || state.habits).map((h) => [h.id, h.name]));

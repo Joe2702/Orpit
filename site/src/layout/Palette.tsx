@@ -8,7 +8,7 @@ import { dayKey, money } from '@core/lib/format';
 import { t, tData, getLang, setLangPref, date } from '../i18n';
 import { Kbd } from '../ui/kit';
 import { Icon, type IconName } from '../ui/Icon';
-import { exportCsv, type ExportKind } from '../lib/exports';
+import { saveCsv, type ExportKind } from '../lib/exports';
 import { plannedOn } from '../lib/series';
 import { visiblePlaces, switchToPhone, MOD } from './nav';
 
@@ -171,10 +171,7 @@ export function Palette({ initial, onClose, showHelp }: { initial: string; onClo
           label,
           alt: 'export download csv excel spreadsheet',
           icon: 'download',
-          run: async () => {
-            const n = await exportCsv(k, s);
-            toast(t('{n} rows saved', { n }));
-          },
+          run: () => saveCsv(k, s, toast),
         });
     out.push({ id: 'help', group: G.cmd, label: t('Keyboard shortcuts'), alt: 'keys help', icon: 'keyboard', hint: <Kbd>?</Kbd>, run: showHelp });
     out.push({ id: 'phone', group: G.cmd, label: t('Use the phone layout'), alt: 'mobile', icon: 'phone', run: switchToPhone });

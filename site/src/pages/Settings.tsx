@@ -7,7 +7,7 @@ import { getDigits, setDigits } from '@core/i18n';
 import { t, tn, getLang, setLangPref } from '../i18n';
 import { Avatar, Button, Dialog, Field, FormFoot, Seg, Switch } from '../ui/kit';
 import { Icon, type IconName } from '../ui/Icon';
-import { exportCsv, type ExportKind } from '../lib/exports';
+import { saveCsv, type ExportKind } from '../lib/exports';
 import { switchToPhone } from '../layout/nav';
 
 // Settings in sections down the side, the way desktop apps do it. The same
@@ -309,7 +309,7 @@ function Data() {
       toast(e instanceof Error ? e.message : t('That didn’t work'), { bad: true });
     }
   };
-  const csv = async (k: ExportKind) => toast(t('{n} rows saved', { n: await exportCsv(k, s) }));
+  const csv = (k: ExportKind) => saveCsv(k, s, toast);
   const restore = async (f: File) => {
     try {
       const r = await api.importData(JSON.parse(await f.text()));

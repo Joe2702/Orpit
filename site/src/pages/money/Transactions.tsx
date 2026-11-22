@@ -11,7 +11,7 @@ import { t, tn, tData, date } from '../../i18n';
 import { Button, Check, Empty } from '../../ui/kit';
 import { Icon } from '../../ui/Icon';
 import { downloadCsv, toCsv } from '../../lib/csv';
-import { exportCsv, txnRows } from '../../lib/exports';
+import { saveCsv, txnRows } from '../../lib/exports';
 import { startOfMonth } from '../../lib/series';
 
 // Every payment as a real table. The filters live in the address, so a view
@@ -122,10 +122,7 @@ export function Transactions() {
     clear();
   };
   const download = async () => {
-    if (!selRows.length && !filtered) {
-      const n = await exportCsv('txns', s);
-      return toast(tn(n, '{n} row saved as a spreadsheet', '{n} rows saved as a spreadsheet'));
-    }
+    if (!selRows.length && !filtered) return saveCsv('txns', s, toast, (n) => tn(n, '{n} row saved as a spreadsheet', '{n} rows saved as a spreadsheet'));
     const { header, rows: r } = txnRows(selRows.length ? selRows : rows, s.accounts);
     downloadCsv(`orbit-transactions-${dayKey()}.csv`, toCsv(header, r));
     toast(tn(r.length, '{n} row saved as a spreadsheet', '{n} rows saved as a spreadsheet'));

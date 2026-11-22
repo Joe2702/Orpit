@@ -1670,6 +1670,11 @@ app.post(
   })
 );
 
+// The entries a bulk action is for: every one of them. These used to stop
+// quietly at 1,000 or 2,000 while the app said it had done them all; a
+// "select all" over a few years of entries is more than that.
+const bulkIds = (v: unknown): string[] => (Array.isArray(v) ? [...new Set(v.map(String).filter((x) => /^\d{1,18}$/.test(x)))] : []);
+
 // Mark imported entries as looked at.
 app.post(
   '/api/txns/reviewed',
@@ -1677,7 +1682,7 @@ app.post(
   idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    const ids = Array.isArray(req.body.ids) ? req.body.ids.slice(0, 1000).map(String) : [];
+    const ids = bulkIds(req.body.ids);
     if (ids.length) {
       await query('UPDATE txns SET review = FALSE WHERE user_id = $1 AND id = ANY($2::bigint[])', [uid, ids]);
     }
@@ -1693,7 +1698,7 @@ app.post(
   idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    const ids = Array.isArray(req.body.ids) ? req.body.ids.slice(0, 2000).map(String) : [];
+    const ids = bulkIds(req.body.ids);
     const cat = String(req.body.cat || '').trim().slice(0, 60);
     if (!cat) return res.status(400).json({ error: 'Category required' });
     if (ids.length) {
@@ -1778,7 +1783,7 @@ app.post(
   idempotency,
   wrap(async (req, res) => {
     const uid = req.userId!;
-    const ids: string[] = Array.isArray(req.body.ids) ? req.body.ids.slice(0, 2000).map(String).filter((x: string) => /^\d{1,18}$/.test(x)) : [];
+    const ids = bulkIds(req.body.ids);
     if (ids.length) {
       await tx(async (c) => {
         const gone = await c.query<{ k: string | null }>('DELETE FROM txns WHERE user_id = $1 AND id = ANY($2::bigint[]) RETURNING sms_key AS k', [uid, ids]);
