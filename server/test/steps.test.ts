@@ -135,3 +135,30 @@ test('existing accounts get the Steps habit once, and a removed one stays remove
     again.stop();
   }
 });
+
+test('a database with the older steps table is brought up to date, and its counts kept', async () => {
+  // Production had a steps table from an earlier Orpit: the day's total in a
+  // column called "steps", with no source or updated_at. The new code read
+  // "count" from it, and every account failed to load.
+  const c = await new Client(server.base).signup();
+  const db = new pg.Pool({ connectionString: process.env.TEST_DATABASE_URL });
+  try {
+    await db.query('ALTER TABLE steps RENAME COLUMN count TO steps');
+    await db.query('ALTER TABLE steps DROP COLUMN source, DROP COLUMN updated_at');
+    await db.query(`INSERT INTO steps (user_id, day, steps) SELECT id, $2, 6400 FROM users WHERE email = $1`, [c.email, day(-1)]);
+  } finally {
+    await db.end();
+  }
+
+  // The server brings the table up to date when it starts.
+  const again = await startServer();
+  try {
+    const c2 = Object.assign(new Client(again.base), { token: c.token });
+    await c2.call('/api/state');
+    assert.deepEqual(st(c2).steps.map((s) => [s.day, s.count, s.source]), [[day(-1), 6400, null]]);
+    await c2.call('/api/steps', 'POST', { days: [{ day: day(), count: 4200, source: 'Samsung Health' }] });
+    assert.equal(st(c2).steps.find((s) => s.day === day())!.source, 'Samsung Health');
+  } finally {
+    again.stop();
+  }
+});
