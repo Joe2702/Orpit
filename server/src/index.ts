@@ -15,6 +15,7 @@ import { pickView, isFileRequest } from './view.js';
 import { signToken, requireAuth, type AuthedRequest } from './auth.js';
 import { seedUser, STEP_GOAL } from './seed.js';
 import { buildState } from './state.js';
+import { readBackup, restoreBackup } from './backup.js';
 import { fetchRates } from './fx.js';
 import { SCHEMA_SQL } from './schema.js';
 import { deletionPages, legalPage, legalRouter, pickLang } from './legal.js';
@@ -24,7 +25,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 // Larger limit so small profile photos (data URLs) fit.
-app.use(express.json({ limit: '2mb' }));
+// A restored backup is the one request that can be big (years of entries); it
+// gets its own, larger limit on its route.
+const jsonBody = express.json({ limit: '2mb' });
+app.use((req, res, next) => (req.path === '/api/import' ? next() : jsonBody(req, res, next)));
 // Origins allowed to call the API. The web dev server plus the origins a
 // Capacitor native shell serves the app from (iOS uses capacitor://localhost,
 // Android uses http://localhost / https://localhost). Requests with no Origin
@@ -438,34 +442,7 @@ app.get(
   '/api/export',
   requireAuth,
   wrap(async (req, res) => {
-    const uid = req.userId!;
-    const [profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs, todoLists, todos, assistantBriefs, steps] =
-      await Promise.all([
-        one('SELECT name, email, (EXTRACT(EPOCH FROM created_at) * 1000)::float8 AS "createdAt" FROM users WHERE id = $1', [uid]),
-        query('SELECT id::text, name, color, target, days, why, paused, archived, auto, goal FROM habits WHERE user_id = $1 ORDER BY sort, id', [uid]),
-        query(`SELECT habit_id::text AS "habitId", to_char(day, 'YYYY-MM-DD') AS day FROM habit_checkins WHERE user_id = $1 ORDER BY day`, [uid]),
-        query('SELECT id::text, name, color FROM workout_categories WHERE user_id = $1 ORDER BY sort, id', [uid]),
-        query(`SELECT id::text, name, category_id::text AS "catId", dur, dist, kcal, intensity, note, sets, ${TS('ts')} FROM workouts WHERE user_id = $1 ORDER BY ts`, [uid]),
-        query(`SELECT id::text, hours, quality, bed_h AS "bedH", wake_h AS "wakeH", note, ${TS('ts')} FROM nights WHERE user_id = $1 ORDER BY ts`, [uid]),
-        query(`SELECT id::text, name, cat, amount, income, acc_id::text AS "accId", to_acc_id::text AS "toAccId", adjust, note, ${TS('ts')} FROM txns WHERE user_id = $1 ORDER BY ts`, [uid]),
-        query('SELECT id::text, name, type, color, opening FROM accounts WHERE user_id = $1 ORDER BY sort, id', [uid]),
-        query('SELECT id::text, name, icon, color, kind FROM fcats WHERE user_id = $1 ORDER BY sort, id', [uid]),
-        query('SELECT id::text, name, unit, color, icon, step FROM counters WHERE user_id = $1 ORDER BY sort, id', [uid]),
-        query(`SELECT id::text, counter_id::text AS "counterId", amount, ${TS('ts')} FROM count_logs WHERE user_id = $1 ORDER BY ts`, [uid]),
-        query('SELECT id::text, name, color, icon FROM todo_lists WHERE user_id = $1 ORDER BY sort, id', [uid]),
-        query(
-          `SELECT id::text, list_id::text AS "listId", title, note, to_char(due, 'YYYY-MM-DD') AS due,
-                  to_char(done_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS "doneAt", ${TS('created_at')}
-           FROM todos WHERE user_id = $1 ORDER BY list_id, sort, id`,
-          [uid]
-        ),
-        query(`SELECT title, sections, ${TS('created_at')} FROM assistant_briefs WHERE user_id = $1 ORDER BY created_at`, [uid]),
-        query(`SELECT to_char(day, 'YYYY-MM-DD') AS day, count, source FROM steps WHERE user_id = $1 ORDER BY day`, [uid]),
-      ]);
-    res.json({
-      profile, habits, checkins, wCats, workouts, nights, txns, accounts, fcats, counters, countLogs, todoLists, todos, assistantBriefs, steps,
-      exportedAt: new Date().toISOString(),
-    });
+    res.json(await readBackup(req.userId!));
   })
 );
 
@@ -2754,92 +2731,20 @@ app.delete(
 );
 
 // ---------------- Import ----------------
-// Restore entries from a previously exported JSON file. Additive by design: it
-// never deletes what's already there, so an import can't destroy live data.
+// Restore a previously exported JSON file (see backup.ts). Additive: it never
+// deletes what's already there, so an import can't destroy live data, and an
+// entry that's already here isn't added twice.
 app.post(
   '/api/import',
   requireAuth,
+  rateLimit('import', 20, 60 * 60 * 1000),
+  express.json({ limit: '60mb' }),
   wrap(async (req, res) => {
     const uid = req.userId!;
     const d = req.body?.data;
-    if (!d || typeof d !== 'object') return res.status(400).json({ error: 'That file does not look like an Orpit export' });
-
-    const num = (v: unknown, def = 0) => (Number.isFinite(Number(v)) ? Number(v) : def);
-    const str = (v: unknown, def = '') => (typeof v === 'string' ? v : def);
-    let added = 0;
-
-    await tx(async (c) => {
-      // Habits (matched by name — re-importing the same file won't duplicate).
-      if (Array.isArray(d.habits)) {
-        for (const h of d.habits.slice(0, 200)) {
-          const name = str(h?.name).trim();
-          if (!name) continue;
-          const exists = await c.query('SELECT id FROM habits WHERE user_id = $1 AND name = $2', [uid, name]);
-          if (exists.rows.length) continue;
-          await c.query(
-            'INSERT INTO habits (user_id, name, color, target, days) VALUES ($1,$2,$3,$4,$5)',
-            [uid, name, str(h?.color, 'teal'), str(h?.target, 'Daily'), /^[01]{7}$/.test(h?.days) ? h.days : '1111111']
-          );
-          added++;
-        }
-      }
-      // Check-ins, matched back to habits by name.
-      if (Array.isArray(d.checkins) && Array.isArray(d.habits)) {
-        const byId = new Map<string, string>();
-        for (const h of d.habits) if (h?.id && h?.name) byId.set(String(h.id), String(h.name));
-        for (const ci of d.checkins.slice(0, 5000)) {
-          const hname = byId.get(String(ci?.habitId));
-          if (!hname || !/^\d{4}-\d{2}-\d{2}$/.test(ci?.day)) continue;
-          const row = await c.query('SELECT id FROM habits WHERE user_id = $1 AND name = $2', [uid, hname]);
-          if (!row.rows.length) continue;
-          await c.query(
-            'INSERT INTO habit_checkins (habit_id, user_id, day) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
-            [row.rows[0].id, uid, ci.day]
-          );
-          added++;
-        }
-      }
-      // Workouts / nights / transactions — skipped when the same timestamp exists.
-      if (Array.isArray(d.workouts)) {
-        for (const w of d.workouts.slice(0, 2000)) {
-          const ts = new Date(num(w?.ts, Date.now()));
-          const dup = await c.query('SELECT id FROM workouts WHERE user_id = $1 AND ts = $2', [uid, ts]);
-          if (dup.rows.length) continue;
-          await c.query(
-            'INSERT INTO workouts (user_id, name, dur, dist, kcal, intensity, ts) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-            [uid, str(w?.name, 'Workout'), num(w?.dur), w?.dist ? String(w.dist) : null, w?.kcal ? num(w.kcal) : null, w?.intensity ? String(w.intensity) : null, ts]
-          );
-          added++;
-        }
-      }
-      if (Array.isArray(d.nights)) {
-        for (const n of d.nights.slice(0, 2000)) {
-          const ts = new Date(num(n?.ts, Date.now()));
-          const dup = await c.query('SELECT id FROM nights WHERE user_id = $1 AND ts = $2', [uid, ts]);
-          if (dup.rows.length) continue;
-          await c.query(
-            'INSERT INTO nights (user_id, hours, quality, bed_h, wake_h, ts) VALUES ($1,$2,$3,$4,$5,$6)',
-            [uid, num(n?.hours), num(n?.quality, 7), n?.bedH != null ? num(n.bedH) : null, n?.wakeH != null ? num(n.wakeH) : null, ts]
-          );
-          added++;
-        }
-      }
-      if (Array.isArray(d.txns)) {
-        for (const t of d.txns.slice(0, 5000)) {
-          const ts = new Date(num(t?.ts, Date.now()));
-          const amt = num(t?.amount);
-          const dup = await c.query('SELECT id FROM txns WHERE user_id = $1 AND ts = $2 AND amount = $3', [uid, ts, amt]);
-          if (dup.rows.length) continue;
-          await c.query(
-            'INSERT INTO txns (user_id, name, cat, amount, income, note, ts) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-            [uid, str(t?.name, 'Entry'), str(t?.cat, 'Other'), amt, amt > 0, t?.note ? String(t.note) : null, ts]
-          );
-          added++;
-        }
-      }
-    });
-
-    res.json({ added, state: await buildState(uid) });
+    if (!d || typeof d !== 'object' || Array.isArray(d)) return res.status(400).json({ error: 'That file does not look like an Orpit export' });
+    const report = await tx((c) => restoreBackup(c, uid, d));
+    res.json({ ...report, state: await buildState(uid) });
   })
 );
 

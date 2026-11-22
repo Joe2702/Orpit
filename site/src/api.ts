@@ -77,7 +77,7 @@ export const api = {
   sendVerify: () => req<{ ok: boolean; already?: boolean }>('/verify/send', 'POST'),
   state: () => req('/state'),
   exportAll: () => req<Record<string, unknown>>('/export'),
-  importData: (data: unknown) => req<{ added: number; state: AppState }>('/import', 'POST', { data }),
+  importData: (data: unknown) => req<{ added: number; skipped: number; failed: number; state: AppState }>('/import', 'POST', { data }),
 
   // Profile
   updateMe: (patch: Partial<AppState['profile']>) => req('/me', 'PATCH', patch),

@@ -4,7 +4,7 @@ import { useStore, useData, PRESET_NAMES, presetHex } from '../store';
 import { api, setToken } from '../api';
 import { CODES, POPULAR, currencyName } from '@core/lib/currencies';
 import { getDigits, setDigits } from '@core/i18n';
-import { t, getLang, setLangPref } from '../i18n';
+import { t, tn, getLang, setLangPref } from '../i18n';
 import { Avatar, Button, Dialog, Field, FormFoot, Seg, Switch } from '../ui/kit';
 import { Icon, type IconName } from '../ui/Icon';
 import { exportCsv, type ExportKind } from '../lib/exports';
@@ -314,7 +314,8 @@ function Data() {
     try {
       const r = await api.importData(JSON.parse(await f.text()));
       replace(r.state);
-      toast(t('Added {n} entries', { n: r.added }));
+      const said = r.added ? t('Added {n} entries', { n: r.added }) : t('Nothing new to import');
+      toast(r.failed ? `${said} · ${tn(r.failed, '{n} entry couldn’t be read', '{n} entries couldn’t be read')}` : said, { bad: r.failed > 0 });
     } catch (e) {
       toast(e instanceof Error ? e.message : t('That file couldn’t be read'), { bad: true });
     }

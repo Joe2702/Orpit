@@ -1143,6 +1143,7 @@ export const AR: Dict = {
   "Account deleted": "تم حذف الحساب",
   "Could not delete the account": "تعذّر حذف الحساب",
   "Imported {added} items": "تم استيراد {added} عنصر",
+  "{n} entries couldn’t be read": { one: "تعذّرت قراءة إدخال واحد", two: "تعذّرت قراءة إدخالين", few: "تعذّرت قراءة {n} إدخالات", many: "تعذّرت قراءة {n} إدخالًا", other: "تعذّرت قراءة {n} إدخال" },
   "Nothing new to import": "لا جديد للاستيراد",
   "That file couldn't be read": "تعذّرت قراءة هذا الملف",
   "Current password (leave blank if you signed up with Google)": "كلمة المرور الحالية (اتركها فارغة إن سجّلت بحساب Google)",

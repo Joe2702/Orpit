@@ -503,7 +503,7 @@ export const api = {
   signOutOthers: () => request<{ token: string }>('/me/signout-others', { method: 'POST' }),
   // Restore a previously exported file (additive — never deletes)
   importData: (data: unknown) =>
-    request<{ added: number; state: AppState }>('/import', { method: 'POST', body: JSON.stringify({ data }) }),
+    request<{ added: number; skipped: number; failed: number; state: AppState }>('/import', { method: 'POST', body: JSON.stringify({ data }) }),
   // Deletes the whole user account (not a finance account — see deleteAccount).
   deleteMyAccount: (password: string) =>
     request<{ ok: boolean }>('/me', { method: 'DELETE', body: JSON.stringify({ password }) }),
