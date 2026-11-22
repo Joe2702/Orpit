@@ -611,6 +611,19 @@ CREATE TABLE IF NOT EXISTS steps (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (user_id, day)
 );
+-- An earlier Orpit made a steps table with the day's total in a column named
+-- "steps" and nothing else, and CREATE TABLE IF NOT EXISTS leaves a table
+-- like that as it is. Bring it to today's shape: the total keeps its numbers
+-- under its new name, and the newer columns are added.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'steps' AND column_name = 'steps')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'steps' AND column_name = 'count') THEN
+    ALTER TABLE steps RENAME COLUMN steps TO count;
+  END IF;
+END $$;
+ALTER TABLE steps ADD COLUMN IF NOT EXISTS source TEXT;
+ALTER TABLE steps ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
 -- Set once the day has had its chance to tick the Steps habit, so a check-in
 -- the person takes back stays taken back on the next sync.
 ALTER TABLE steps ADD COLUMN IF NOT EXISTS ticked BOOLEAN NOT NULL DEFAULT FALSE;
