@@ -4,8 +4,8 @@ import { useEffect } from 'react';
  * Pull a bottom sheet down to close it, the way sheets close on a phone.
  *
  * The sheet follows the finger and the dimmed page behind it brightens as it
- * goes. Let go past a third of its height, or with a quick flick down, and it
- * slides away; otherwise it settles back.
+ * goes. Let go past a third of its height (at most 180px), or with a quick
+ * flick down, and it slides away; otherwise it settles back.
  *
  * A pull starts from the handle at the top at any time, and from anywhere in
  * the sheet when its content is already scrolled to the top, so scrolling the
@@ -86,7 +86,8 @@ export function useSheetDrag(
       if (!dragging) return;
       dragging = false;
       const h = el.offsetHeight;
-      if (dy > h / 3 || (speed > 0.5 && dy > 24)) {
+      // Far enough (a third of a short sheet, at most 180px of a tall one), or a flick.
+      if (dy > Math.min(h / 3, 180) || (speed > 0.5 && dy > 24)) {
         set(h + 40, true);
         window.setTimeout(close, 220);
       } else {
