@@ -37,7 +37,12 @@ export interface Server {
 export async function startServer(): Promise<Server> {
   const db = process.env.TEST_DATABASE_URL;
   if (!db) throw new Error('Set TEST_DATABASE_URL to a throwaway Postgres database to run the server tests.');
-  const port = 4800 + Math.floor(Math.random() * 900);
+  // Not 5060 or 5061: they're on the web's list of unsafe ports, and Node's
+  // fetch refuses them, so a server started there looks as if it never came
+  // up ("Server did not start" with the log showing it listening).
+  let port: number;
+  do port = 4800 + Math.floor(Math.random() * 900);
+  while (port === 5060 || port === 5061);
   const outboxFile = join(mkdtempSync(join(tmpdir(), 'orbit-mail-')), 'outbox.jsonl');
   const child: ChildProcess = spawn(process.execPath, ['--import', 'tsx', 'src/index.ts'], {
     cwd: ROOT,
