@@ -66,11 +66,13 @@ export function Shell() {
           ))}
         </nav>
         <span className="spacer" />
-        <div className="search-trigger" role="button" tabIndex={0} onClick={() => setPalette('')} onKeyDown={(e) => e.key === 'Enter' && setPalette('')}>
+        <div className="search-trigger" role="button" tabIndex={0} aria-label={t('Search or jump to…')} aria-keyshortcuts="Control+K Meta+K" onClick={() => setPalette('')} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), setPalette(''))}>
           <Icon name="search" size={15} />
-          <span style={{ flex: 1 }}>{t('Search or jump to…')}</span>
-          <Kbd>{MOD}</Kbd>
-          <Kbd>K</Kbd>
+          <span className="search-label" aria-hidden>{t('Search or jump to…')}</span>
+          <span className="search-keys" aria-hidden>
+            <Kbd>{MOD}</Kbd>
+            <Kbd>K</Kbd>
+          </span>
         </div>
         <Menu
           width={240}

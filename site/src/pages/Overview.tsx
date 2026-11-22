@@ -195,9 +195,9 @@ export function Overview() {
       )}
 
       {kpis.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${kpis.length}, minmax(0, 1fr))`, gap: 16, marginBottom: 16 }}>
+        <div className={`kpis${kpis.length >= 3 ? ' many' : ''}`} style={{ '--n': kpis.length } as React.CSSProperties}>
           {kpis.map((k) => (
-            <div key={k.key} className="card card-pad" role="link" tabIndex={0} onClick={() => nav(k.to)} onKeyDown={(e) => e.key === 'Enter' && nav(k.to)} style={{ cursor: 'pointer' }}>
+            <div key={k.key} className="card card-pad kpi" role="link" tabIndex={0} onClick={() => nav(k.to)} onKeyDown={(e) => e.key === 'Enter' && nav(k.to)} style={{ cursor: 'pointer' }}>
               <div className="stat-label">
                 <Icon name={k.icon} size={15} style={{ color: 'var(--text-3)' }} />
                 {k.label}
@@ -206,7 +206,11 @@ export function Overview() {
                 <div className="stat-value truncate" style={{ flex: 1 }}>
                   {k.value}
                 </div>
-                {k.spark && <Spark values={k.spark} width={96} />}
+                {k.spark && (
+                  <span className="kpi-spark" aria-hidden>
+                    <Spark values={k.spark} width={96} />
+                  </span>
+                )}
               </div>
               <div className="faint" style={{ fontSize: 12, marginTop: 8 }}>
                 {k.sub}

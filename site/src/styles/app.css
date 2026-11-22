@@ -202,7 +202,18 @@ textarea {
   background: var(--accent);
   margin-inline-start: 8px;
 }
+.search-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-keys {
+  display: flex;
+  gap: 4px;
+}
 .search-trigger {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -326,6 +337,35 @@ textarea {
   .c4, .c5, .c7, .c8, .c9 { grid-column: span 12; }
   .c6 { grid-column: span 12; }
   .search-trigger { width: 200px; }
+}
+/* A small laptop or a tablet: the header keeps every section and the search
+   in reach without pushing the page sideways. */
+@media (max-width: 960px) {
+  .topbar { padding: 0 16px; gap: 0; }
+  .brand { margin-inline-end: 8px; }
+  .nav-link { padding: 0 8px; }
+  .nav-link.active::after { inset-inline: 8px; }
+  .search-trigger { width: 34px; padding: 0; justify-content: center; }
+  .search-label, .search-keys { display: none; }
+  .page { padding: 24px 16px 64px; }
+}
+
+/* ---------- The summary cards at the top of Overview ---------- */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+/* Four across stops fitting the numbers before 1120px: two rows of two. */
+@media (max-width: 1120px) {
+  .kpis.many { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpis.many > :last-child:nth-child(odd) { grid-column: span 2; }
+}
+/* The number is the point of the card; the little chart goes first. */
+.kpi { container-type: inline-size; }
+@container (max-width: 290px) {
+  .kpi-spark { display: none; }
 }
 .card {
   background: var(--panel);
