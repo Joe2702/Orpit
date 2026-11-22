@@ -314,6 +314,8 @@ export const api = {
   addNight: (b: { hours: number; quality: number; bedH: number | null; wakeH: number | null; note?: string | null; ts?: number }) =>
     request<AppState>('/nights', { method: 'POST', body: JSON.stringify(b) }),
   deleteNight: (id: string) => request<AppState>(`/nights/${id}`, { method: 'DELETE' }),
+  editNight: (id: string, b: { hours: number; quality: number; bedH: number | null; wakeH: number | null; note?: string | null; ts?: number }) =>
+    request<AppState>(`/nights/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
 
   addTxn: (b: {
     name?: string;

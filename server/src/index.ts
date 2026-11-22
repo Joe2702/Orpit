@@ -999,6 +999,32 @@ app.post(
   })
 );
 
+// Editing a night changes the one row in place. It used to be a delete and
+// then an add: if the add failed the night was simply gone, and a night from
+// the health app lost where it came from (and was marked as thrown away).
+app.patch(
+  '/api/nights/:id',
+  requireAuth,
+  idempotency,
+  wrap(async (req, res) => {
+    const uid = req.userId!;
+    const b = req.body || {};
+    const hours = Number(b.hours);
+    const quality = Number(b.quality);
+    if (!Number.isFinite(hours) || hours < 0 || hours > 24) return res.status(400).json({ error: 'Hours must be between 0 and 24' });
+    if (!Number.isFinite(quality) || quality < 0 || quality > 10) return res.status(400).json({ error: 'Quality must be between 0 and 10' });
+    const clock = (v: unknown) => (v != null && v !== '' && Number.isFinite(Number(v)) ? Number(v) : null);
+    const ts = b.ts != null && Number.isFinite(Number(b.ts)) ? new Date(Number(b.ts)) : null;
+    const row = await one(
+      `UPDATE nights SET hours = $1, quality = $2, bed_h = $3, wake_h = $4, note = $5, ts = COALESCE($6, ts)
+       WHERE id = $7 AND user_id = $8 RETURNING id`,
+      [hours, Math.round(quality), clock(b.bedH), clock(b.wakeH), b.note ? String(b.note).slice(0, 500) : null, ts, req.params.id, uid]
+    );
+    if (!row) return res.status(404).json({ error: 'That night is gone' });
+    res.json(await buildState(uid));
+  })
+);
+
 app.delete(
   '/api/nights/:id',
   requireAuth,

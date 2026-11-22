@@ -320,8 +320,9 @@ export function NightForm({ night, onClose }: { night?: Night; onClose: () => vo
   const save = () => {
     const ts = new Date(`${day}T${wake || '07:00'}`).getTime();
     const body = { hours: Math.round(hours * 100) / 100, quality, bedH, wakeH, note: note.trim() || null, ts };
-    // Nights can't be edited in place on the server: replace it.
-    if (night) run(async () => (await api.deleteNight(night.id), api.addNight(body)), t('Saved'), onClose);
+    // One change to the same night: it keeps where it came from, and a failed
+    // save leaves it exactly as it was.
+    if (night) run(() => api.editNight(night.id, body), t('Saved'), onClose);
     else run(() => api.addNight(body), t('Sleep logged'), onClose);
   };
   return (
