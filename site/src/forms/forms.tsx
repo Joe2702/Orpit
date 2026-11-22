@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import type { Account, AppState, Budget, Counter, FCat, Goal, Habit, Night, Recurring, Todo, TodoList, Txn, WCat, Workout } from '@core/types';
 import { daysLabel, dayKey, fmtClock, money } from '@core/lib/format';
 import { accountBalance } from '@core/lib/ledger';
-import { derive } from '@core/lib/derive';
+import { derive, endOfToday } from '@core/lib/derive';
 import { savedTxnMessage, workoutLoggedMessage } from '@core/lib/endings';
 import { FIN_ICONS, FinIcon } from '@core/lib/iconPaths';
 import { api, type TxnBody } from '../api';
@@ -615,7 +615,8 @@ export function AccountForm({ account, onClose }: { account?: Account; onClose: 
   const s = useData();
   const { busy, run } = useSave();
   const remove = useRemove();
-  const balance = account ? accountBalance(account, s.txns, s.archive?.accSums?.[account.id] || 0) : 0;
+  // The same balance the accounts page shows: up to today.
+  const balance = account ? accountBalance(account, s.txns, s.archive?.accSums?.[account.id] || 0, endOfToday()) : 0;
   const [name, setName] = useState(account?.name || '');
   const [type, setType] = useState(account?.type || 'Bank');
   const [color, setColor] = useState(account?.color || 'indigo');

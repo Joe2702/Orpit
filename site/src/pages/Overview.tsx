@@ -52,7 +52,7 @@ export function Overview() {
   const avg30 = spend30.reduce((a, x) => a + x.amount, 0) / 30;
   let cum = 0;
   const monthCum = spend30.filter((x) => x.day >= monthStart).map((x) => (cum += x.amount));
-  const cats = byCategory(s, monthStart).slice(0, 6);
+  const cats = byCategory(s, monthStart, startOfMonth(now, 1)).slice(0, 6);
 
   // ---- Sleep and training ----
   const nights = useMemo(() => sleepNights(s, 14, now), [s, day]); // eslint-disable-line react-hooks/exhaustive-deps

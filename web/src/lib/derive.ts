@@ -40,6 +40,11 @@ function monthStart(off: number, now: number = Date.now()): number {
   return startOfMonth(now, -(off || 0));
 }
 
+/** The first moment of tomorrow: balances count everything up to here. */
+export function endOfToday(now: number = Date.now()): number {
+  return addDays(startOfDay(now), 1);
+}
+
 function budgetColor(pct: number): string {
   return pct >= 100 ? 'var(--danger)' : pct >= 80 ? 'var(--warning)' : 'var(--emerald)';
 }
@@ -469,15 +474,20 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
     .sort((a, b) => b.val - a.val);
 
   // ---- Full finance module (month-based, independent of the range control) ----
+  // Every month is closed at both ends: an entry dated next month (a bill
+  // logged ahead, a payment typed with the wrong year) belongs to that month,
+  // not to this one's "spent so far".
   const mNow = monthStart(0, now),
-    mPrev = monthStart(1, now);
-  const spentThisMonth = T.filter((t) => isSpend(t) && t.ts >= mNow).reduce((s, t) => s - t.amount, 0);
+    mPrev = monthStart(1, now),
+    mNext = monthStart(-1, now);
+  const thisMonth = (ts: number) => ts >= mNow && ts < mNext;
+  const spentThisMonth = T.filter((t) => isSpend(t) && thisMonth(t.ts)).reduce((s, t) => s - t.amount, 0);
   const spentPrevMonth = T.filter((t) => isSpend(t) && t.ts >= mPrev && t.ts < mNow).reduce((s, t) => s - t.amount, 0);
-  const incThisMonth = T.filter((t) => isIncome(t) && t.ts >= mNow).reduce((s, t) => s + t.amount, 0);
+  const incThisMonth = T.filter((t) => isIncome(t) && thisMonth(t.ts)).reduce((s, t) => s + t.amount, 0);
   const incPrevMonth = T.filter((t) => isIncome(t) && t.ts >= mPrev && t.ts < mNow).reduce((s, t) => s + t.amount, 0);
 
   const catMonthSpent: Record<string, number> = {};
-  T.filter((t) => isSpend(t) && t.ts >= mNow).forEach(
+  T.filter((t) => isSpend(t) && thisMonth(t.ts)).forEach(
     (t) => (catMonthSpent[t.cat] = (catMonthSpent[t.cat] || 0) + -t.amount)
   );
   const budgets = state.budgets.map((b) => {
@@ -511,7 +521,10 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
   // net effect comes from the archive totals; without that, a long-lived account
   // would appear to reset every time old rows aged out.
   const accSums = state.archive?.accSums || {};
-  const accounts = state.accounts.map((a) => ({ ...a, balance: accountBalance(a, ALL, accSums[a.id] || 0) }));
+  // What each account holds today: an entry dated after today hasn't happened
+  // yet, so it waits for its day before it moves a balance.
+  const todayEnd = endOfToday(now);
+  const accounts = state.accounts.map((a) => ({ ...a, balance: accountBalance(a, ALL, accSums[a.id] || 0, todayEnd) }));
 
   // Net worth at the end of each of the last six months, worked out the same
   // way, so the line ends exactly on today's total.
@@ -520,7 +533,7 @@ export function derive(state: AppState, range: Range, offset = 0, now: number = 
   {
     const months = 6;
     for (let i = months - 1; i >= 0; i--) {
-      const cutoff = i === 0 ? now + 1 : monthStart(i - 1, now); // end of that month, or now
+      const cutoff = i === 0 ? todayEnd : monthStart(i - 1, now); // end of that month, or of today
       netWorthSeries.push(state.accounts.reduce((sum, a) => sum + accountBalance(a, ALL, accSums[a.id] || 0, cutoff), 0));
       netWorthLabels.push(monthShort(new Date(monthStart(i, now)).getMonth()));
     }
