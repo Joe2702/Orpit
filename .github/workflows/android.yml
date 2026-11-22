@@ -134,11 +134,18 @@ jobs:
           chmod +x ./gradlew
           ./gradlew assembleDebug --no-daemon
 
+      # The APK is uploaded as the .apk itself, not inside a zip: a phone that
+      # downloads a zipped artifact saves it as an unknown file (".bin") with
+      # nothing to tap to install. `archive: false` (upload-artifact v7) keeps
+      # the file as it is, under its own name.
+      - name: Name the APK after the build
+        run: cp web/android/app/build/outputs/apk/debug/app-debug.apk "web/android/app/build/outputs/apk/debug/Orpit-${{ github.run_number }}.apk"
+
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: orbit-apk-${{ github.run_number }}
-          path: web/android/app/build/outputs/apk/debug/app-debug.apk
+          path: web/android/app/build/outputs/apk/debug/Orpit-${{ github.run_number }}.apk
+          archive: false
           if-no-files-found: error
 
       # ---- Play Store release bundle (only when signing secrets exist) ----
