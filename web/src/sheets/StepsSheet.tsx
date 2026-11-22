@@ -4,6 +4,8 @@ import { api } from '../api';
 import { ago, dayKey } from '../lib/format';
 import { connectHealth, healthGranted, healthPrefs, healthSupported } from '../lib/health';
 import {
+  GOAL_MAX,
+  GOAL_MIN,
   GOAL_PRESETS,
   STEP_GOAL,
   backgroundStatus,
@@ -100,6 +102,18 @@ export function StepsSheet() {
     } finally {
       setBusy(false);
     }
+  };
+
+  // A goal of their own: any number of steps the server takes (500 to 100,000).
+  const [typing, setTyping] = useState(false);
+  const [typed, setTyped] = useState('');
+  const typedGoal = Math.round(Number(typed.replace(/[^\d]/g, '')));
+  const typedOk = typedGoal >= GOAL_MIN && typedGoal <= GOAL_MAX;
+  const saveTyped = () => {
+    if (!typedOk) return;
+    setGoal(typedGoal);
+    setTyping(false);
+    setTyped('');
   };
 
   const setGoal = (g: number) => {
@@ -345,7 +359,68 @@ export function StepsSheet() {
                 </div>
               );
             })}
+            <div
+              role="button"
+              tabIndex={0}
+              aria-expanded={typing}
+              onClick={() => {
+                haptic(8);
+                setTyping((v) => !v);
+              }}
+              className="press"
+              style={{
+                padding: '8px 12px',
+                minHeight: 44,
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: 'calc(12px * var(--sq))',
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: 'pointer',
+                border: `1.5px ${typing ? 'solid var(--indigo)' : 'dashed var(--border)'}`,
+                background: 'var(--surface)',
+                color: typing ? 'var(--indigo)' : 'var(--text2)',
+              }}
+            >
+              {t('Other…')}
+            </div>
           </div>
+          {typing && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  autoFocus
+                  inputMode="numeric"
+                  enterKeyHint="done"
+                  aria-label={t('Your daily goal, in steps')}
+                  placeholder={num(goal)}
+                  value={typed}
+                  onChange={(e) => setTyped(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && saveTyped()}
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    height: 48,
+                    padding: '0 16px',
+                    borderRadius: 'calc(14px * var(--sq))',
+                    border: `1.5px solid ${typed && !typedOk ? 'var(--danger)' : 'var(--border)'}`,
+                    background: 'var(--bg)',
+                    color: 'var(--text)',
+                    fontSize: 17,
+                    fontWeight: 600,
+                    fontVariantNumeric: 'tabular-nums',
+                    outline: 'none',
+                  }}
+                />
+                <div role="button" tabIndex={0} aria-disabled={!typedOk} onClick={saveTyped} className="press" style={{ ...btn(true), height: 48, padding: '0 20px', flex: 'none', opacity: typedOk ? 1 : 0.5 }}>
+                  {t('Save')}
+                </div>
+              </div>
+              <div style={{ fontSize: 13, color: typed && !typedOk ? 'var(--danger)' : 'var(--text3)', marginTop: 8 }}>
+                {t('Any goal from {min} to {max} steps.', { min: num(GOAL_MIN), max: num(GOAL_MAX) })}
+              </div>
+            </div>
+          )}
           <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 12, lineHeight: 1.5 }}>{t('Reaching it ticks your Steps habit for the day.')}</div>
         </div>
       )}

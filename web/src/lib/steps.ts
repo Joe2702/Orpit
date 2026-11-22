@@ -44,6 +44,9 @@ export const STEP_GOAL = 8000;
 
 /** Goals people pick from; any other number set elsewhere still shows. */
 export const GOAL_PRESETS = [5000, 6000, 8000, 10000, 12000];
+/** The goals the server accepts; the same limits as stepGoal() there. */
+export const GOAL_MIN = 500;
+export const GOAL_MAX = 100_000;
 
 // ---------------------------------------------------------------------------
 // This phone's settings.

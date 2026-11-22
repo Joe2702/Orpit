@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useSheetDrag } from './lib/sheetDrag';
 import { track, flushUsage, setUsageSharing } from './lib/usage';
 import { Capacitor, SystemBars, SystemBarsStyle } from '@capacitor/core';
 import { useStore } from './store';
@@ -1005,6 +1006,29 @@ export function App() {
     else go('faddtx'); // expenses use the full add-transaction screen
   }, [shortcut, ready, authed, open, go]);
 
+  /**
+   * Whether a touch began on something that scrolls sideways itself (the
+   * cards at the top of Home, a row of chips) or says it handles its own
+   * swipes: there, a sideways swipe moves that, and must not change the tab
+   * as well.
+   */
+  const scrollsSideways = (from: Element | null): boolean => {
+    for (let el = from; el && el !== document.body; el = el.parentElement) {
+      if (el instanceof HTMLElement && el.dataset.ownSwipe !== undefined) return true;
+      if (el.scrollWidth > el.clientWidth + 1) {
+        const x = getComputedStyle(el).overflowX;
+        if (x === 'auto' || x === 'scroll') return true;
+      }
+    }
+    return false;
+  };
+
+  // ---- Pull a sheet down to close it ----
+  const sheetPanel = useRef<HTMLDivElement>(null);
+  const sheetBody = useRef<HTMLDivElement>(null);
+  const sheetBackdrop = useRef<HTMLDivElement>(null);
+  useSheetDrag(sheetPanel, sheetBody, sheetBackdrop, closeSheet, !!sheet);
+
   // ---- Swipe between the main tabs ----
   // Only on the three top-level destinations, and only for a clearly horizontal
   // flick: `touch-action: pan-y` on swipeable rows means a row swipe never
@@ -1014,7 +1038,7 @@ export function App() {
   const [slide, setSlide] = useState<'l' | 'r' | null>(null);
 
   const onSwipeStart = (e: React.TouchEvent) => {
-    swipe.current = showTabs && e.touches.length === 1
+    swipe.current = showTabs && e.touches.length === 1 && !scrollsSideways(e.target as Element)
       ? { x: e.touches[0].clientX, y: e.touches[0].clientY, axis: '' }
       : null;
   };
@@ -1180,12 +1204,13 @@ export function App() {
       {sheet && (
         // The sheet floats clear of the edges, the way liquid-glass sheets do.
         <div style={{ position: 'absolute', inset: 0, zIndex: 90, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: mobile ? '0 8px calc(8px + env(safe-area-inset-bottom))' : '0 8px 8px' }}>
-          <div onClick={closeSheet} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .25s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
-          <div className="glass-strong" data-lens="sheet" style={{ position: 'relative', borderRadius: 'calc(36px * var(--sq))', animation: 'sheetUp .34s cubic-bezier(.22,1,.36,1)', maxHeight: '92%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 2px', flex: 'none' }}>
+          <div ref={sheetBackdrop} onClick={closeSheet} style={{ position: 'absolute', inset: 0, background: 'rgba(8,9,14,.38)', animation: 'fadeIn .25s ease', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
+          <div ref={sheetPanel} className="glass-strong" data-lens="sheet" style={{ position: 'relative', borderRadius: 'calc(36px * var(--sq))', animation: 'sheetUp .34s cubic-bezier(.22,1,.36,1)', maxHeight: '92%', display: 'flex', flexDirection: 'column', willChange: 'transform' }}>
+            {/* The handle: pull from here to close, whatever the content's scrolled to. */}
+            <div data-sheet-handle="" aria-hidden style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px', flex: 'none', cursor: 'grab' }}>
               <div style={{ width: 38, height: 4, borderRadius: 999, background: 'var(--border)' }} />
             </div>
-            <div style={{ overflowY: 'auto', paddingBottom: 4, borderRadius: '0 0 calc(36px * var(--sq)) calc(36px * var(--sq))' }}>
+            <div ref={sheetBody} style={{ overflowY: 'auto', overscrollBehavior: 'contain', paddingBottom: 4, borderRadius: '0 0 calc(36px * var(--sq)) calc(36px * var(--sq))' }}>
               <Suspense fallback={null}>
                 <SheetBody />
               </Suspense>
