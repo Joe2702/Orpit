@@ -3100,7 +3100,18 @@ app.get(
       `SELECT name, count(DISTINCT user_id)::int AS users, sum(n)::int AS total
        FROM usage_counts WHERE day > CURRENT_DATE - 30 GROUP BY name ORDER BY users DESC, total DESC`
     );
-    res.json({ active, cohorts, features });
+    // Day by day for the last 30 days, every day present even when nothing
+    // happened: people who opened Orpit, how many times it was opened (a
+    // launch, or coming back to it after a while), and new accounts.
+    const daily = await query<{ day: string; people: number; opens: number; signups: number }>(
+      `SELECT to_char(d, 'YYYY-MM-DD') AS day,
+         (SELECT count(DISTINCT user_id) FROM usage_counts WHERE name = 'open' AND day = d)::int AS people,
+         (SELECT coalesce(sum(n), 0) FROM usage_counts WHERE name = 'open' AND day = d)::int AS opens,
+         (SELECT count(*) FROM users WHERE created_at::date = d)::int AS signups
+       FROM generate_series(CURRENT_DATE - 29, CURRENT_DATE, interval '1 day') AS g(d)
+       ORDER BY d`
+    );
+    res.json({ active, cohorts, features, daily });
   })
 );
 

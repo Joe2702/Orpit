@@ -20,6 +20,7 @@ const Tasks = lazy(loadFresh(() => import('./pages/Tasks').then((m) => ({ defaul
 const Insights = lazy(loadFresh(() => import('./pages/Insights').then((m) => ({ default: m.Insights }))));
 const Settings = lazy(loadFresh(() => import('./pages/Settings').then((m) => ({ default: m.Settings }))));
 const Auth = lazy(loadFresh(() => import('./pages/auth/Auth')));
+const Admin = lazy(loadFresh(() => import('./pages/Admin').then((m) => ({ default: m.Admin }))));
 
 const PUBLIC = ['/signin', '/signup', '/forgot', '/reset', '/verify'];
 
@@ -70,6 +71,7 @@ function Gate() {
           <Route path="insights" element={<Lazy el={<Insights />} />} />
           <Route path="settings/:section?" element={<Lazy el={<Settings />} />} />
           <Route path="welcome" element={<Lazy el={<Settings setup />} />} />
+          <Route path="admin" element={<Lazy el={<Admin />} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
