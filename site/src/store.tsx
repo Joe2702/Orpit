@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { AppState } from '@core/types';
-import { setCurrency } from '@core/lib/format';
+import { dayKey, setCurrency } from '@core/lib/format';
 import { accentFor, isHex } from '@core/lib/color';
 import { api, ApiError, getToken, setToken, type Auth } from './api';
 import { t } from './i18n';
@@ -134,6 +134,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // A visit, for the active-people numbers (see /admin): one when Orpit opens,
+  // and one when someone comes back to the tab after half an hour away. The
+  // server drops it for anyone who has turned usage counts off.
+  useEffect(() => {
+    if (status !== 'in') return;
+    const count = () => api.countOpen(dayKey()).catch(() => {});
+    void count();
+    let hiddenAt = 0;
+    const on = () => {
+      if (document.visibilityState === 'hidden') hiddenAt = Date.now();
+      else if (hiddenAt && Date.now() - hiddenAt > 30 * 60_000) void count();
+    };
+    document.addEventListener('visibilitychange', on);
+    return () => document.removeEventListener('visibilitychange', on);
+  }, [status]);
 
   // Come back to the tab after a while: fetch what the phone logged meanwhile.
   useEffect(() => {

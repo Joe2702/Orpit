@@ -66,6 +66,14 @@ type Id = string;
 export type HabitBody = { name: string; color: string; target: string; days: string; why?: string | null; cue?: string | null; reminderTime?: string | null; paused?: boolean; archived?: boolean; goal?: number };
 export type TxnBody = { name: string; cat: string; amount: number; income: boolean; refund?: boolean; accId?: string | null; toAccId?: string | null; adjust?: boolean; note?: string | null; ts?: number };
 
+export interface AdminMetrics {
+  active: { d1: number; d7: number; d30: number; users: number } | null;
+  cohorts: { week: string; users: number; d1: number | null; w1: number | null; d30: number | null }[];
+  features: { name: string; users: number; total: number }[];
+  /** The last 30 days, oldest first. */
+  daily?: { day: string; people: number; opens: number; signups: number }[];
+}
+
 export const api = {
   // Session
   login: (email: string, password: string) => req<Auth>('/auth/login', 'POST', { email, password }),
@@ -77,6 +85,10 @@ export const api = {
   sendVerify: () => req<{ ok: boolean; already?: boolean }>('/verify/send', 'POST'),
   state: () => req('/state'),
   exportAll: () => req<Record<string, unknown>>('/export'),
+  /** The developer's numbers (orpitapp.com/admin), behind the admin password. */
+  adminMetrics: (password: string) => req<AdminMetrics>('/admin/metrics', 'GET', undefined, { 'x-admin-password': password }),
+  /** One more visit today, for the active-people numbers; the server drops it if they've turned usage counts off. */
+  countOpen: (day: string) => req<{ ok: boolean }>('/usage', 'POST', { day, counts: { open: 1 } }),
   importData: (data: unknown) => req<{ added: number; skipped: number; failed: number; state: AppState }>('/import', 'POST', { data }),
 
   // Profile
