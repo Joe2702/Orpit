@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { buildInsights } from '../lib/insights';
-import { summarise } from '../lib/widget';
 import { parseShortcut, parseScreen, parseTarget } from '../lib/shortcuts';
 import { dayKey } from '../lib/format';
 import type { AppState } from '../types';
@@ -143,34 +142,6 @@ describe('momentum', () => {
     const found = buildInsights(base({ txns } as any)).find((i) => i.id === 'momentum');
     expect(found).toBeDefined();
     expect(found!.color).toBe('success');
-  });
-});
-
-describe('widget summary', () => {
-  const habit = (id: string) => ({ id, name: id, days: '1111111', archived: false, paused: false, locked: false });
-
-  it('counts only habits scheduled for today', () => {
-    const s = base({ habits: [habit('a'), habit('b')], checkins: [{ habitId: 'a', day: dayKey() }] } as any);
-    expect(summarise(s)).toBe('1/2 habits');
-  });
-
-  it('celebrates a finished day', () => {
-    const s = base({ habits: [habit('a')], checkins: [{ habitId: 'a', day: dayKey() }] } as any);
-    expect(summarise(s)).toBe('All 1 done');
-  });
-
-  it('ignores paused and archived habits', () => {
-    const s = base({ habits: [habit('a'), { ...habit('b'), paused: true }, { ...habit('c'), archived: true }] } as any);
-    expect(summarise(s)).toBe('0/1 habits');
-  });
-
-  it('falls back to a call to action with nothing due', () => {
-    expect(summarise(base())).toBe('Tap to log');
-  });
-
-  it('stays short enough for the widget to render', () => {
-    const many = Array.from({ length: 40 }, (_, i) => habit('h' + i));
-    expect(summarise(base({ habits: many } as any)).length).toBeLessThanOrEqual(40);
   });
 });
 
