@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Money: spent this month, how much of the budget that is, and what's left a day. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/widget_card" android:padding="@dimen/w_pad">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+            <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_w_money" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/w_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:layout_marginStart="6dp" android:text="@string/w_money" android:textColor="@color/w_text2"
+                android:textSize="13sp" android:fontFamily="sans-serif-medium" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+        <View android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
+        <TextView android:id="@+id/w_value" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textColor="@color/w_text" android:textSize="24sp" android:fontFamily="sans-serif-medium"
+            android:maxLines="1" android:ellipsize="end" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="16sp" android:autoSizeMaxTextSize="26sp" />
+        <TextView android:id="@+id/w_caption" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textColor="@color/w_text2" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+        <ImageView android:id="@+id/w_bar" android:layout_width="match_parent" android:layout_height="8dp"
+            android:layout_marginTop="10dp" android:scaleType="fitXY" android:importantForAccessibility="no" />
+        <TextView android:id="@+id/w_bar_text" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="6dp" android:textColor="@color/w_text2" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+        <TextView android:id="@+id/w_safe" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="2dp" android:textColor="@color/w_text3" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+        <View android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
+    </LinearLayout>
+</FrameLayout>

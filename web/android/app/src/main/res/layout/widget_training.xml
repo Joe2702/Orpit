@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Training: minutes this week, and each day as a bar. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/widget_card" android:padding="@dimen/w_pad">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+            <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_w_train" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/w_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:layout_marginStart="6dp" android:text="@string/w_training" android:textColor="@color/w_text2"
+                android:textSize="13sp" android:fontFamily="sans-serif-medium" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+        <TextView android:id="@+id/w_value" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="6dp" android:textColor="@color/w_text" android:textSize="26sp"
+            android:fontFamily="sans-serif-medium" android:maxLines="1" android:ellipsize="end" />
+        <TextView android:id="@+id/w_caption" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textColor="@color/w_text2" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+        <ImageView android:id="@+id/w_chart" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+            android:layout_marginTop="8dp" android:scaleType="fitCenter" android:importantForAccessibility="no" />
+    </LinearLayout>
+</FrameLayout>

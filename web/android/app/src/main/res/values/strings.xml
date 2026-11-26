@@ -11,14 +11,27 @@
     <string name="shortcut_sleep_long">Log sleep</string>
     <string name="shortcut_expense_short">Expense</string>
     <string name="shortcut_expense_long">Add a transaction</string>
-    <string name="widget_no_data">Tap to log</string>
-    <string name="widget_description">Today\'s progress and one-tap logging</string>
-    <string name="widget_stats_description">A number worth glancing at, on your home screen</string>
-    <string name="widget_habits_label">Orpit · Habits</string>
-    <string name="widget_workouts_label">Orpit · Workouts</string>
-    <string name="widget_sleep_label">Orpit · Sleep</string>
-    <string name="widget_finance_label">Orpit · Finances</string>
-    <string name="widget_summary_label">Orpit · Summary</string>
+    <!-- Home-screen widgets: their names and descriptions in the widget
+         picker, and words shown before Orpit has written any data. Once it
+         has, the widgets use the app's own words (web/src/lib/widgetData.ts). -->
+    <string name="w_today">Today</string>
+    <string name="w_habits">Habits</string>
+    <string name="w_steps">Steps</string>
+    <string name="w_sleep">Sleep</string>
+    <string name="w_training">Training</string>
+    <string name="w_money">Money</string>
+    <string name="w_quick">Quick log</string>
+    <string name="w_habit">Habit</string>
+    <string name="w_workout">Workout</string>
+    <string name="w_expense">Expense</string>
+    <string name="w_open">Open Orpit to set this up</string>
+    <string name="w_today_desc">Your day at a glance: habits, steps, sleep and spending</string>
+    <string name="w_habits_desc">Today\'s habits and how many are done. Stretch it to see the list</string>
+    <string name="w_steps_desc">Today\'s steps filling a ring toward your goal</string>
+    <string name="w_sleep_desc">Last night\'s sleep, and your week as bars</string>
+    <string name="w_training_desc">Minutes trained this week, day by day</string>
+    <string name="w_money_desc">What you\'ve spent this month, against your budget</string>
+    <string name="w_quick_desc">One tap to tick a habit or log a workout, a night or an expense</string>
     <!-- Shown when someone asks, from Health Connect, why Orpit reads their data. -->
     <string name="health_connect_privacy_policy_url">https://orbit-x3z7.onrender.com/privacy</string>
 </resources>

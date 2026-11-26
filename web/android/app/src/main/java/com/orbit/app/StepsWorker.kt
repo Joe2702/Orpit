@@ -33,6 +33,9 @@ class StepsWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx,
             null
         } ?: return Result.success()
         val day = StepAlerts.today()
+        // The Steps and Today widgets show this count until the app next opens.
+        p.edit().putString("live_day", day).putLong("live_count", steps).apply()
+        Widgets.refreshSteps(ctx)
         val m = StepAlerts.record(ctx, day, steps, goal)
         if (m > 0) {
             StepAlerts.notify(ctx, m, steps, goal)

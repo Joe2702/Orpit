@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widgets, dark: the app's dark palette. -->
+<resources>
+    <color name="w_bg">#FF161619</color>
+    <color name="w_stroke">#14FFFFFF</color>
+    <color name="w_tile">#FF1F1F24</color>
+    <color name="w_text">#FFF0F0F3</color>
+    <color name="w_text2">#FFA2A2AC</color>
+    <color name="w_text3">#FF868690</color>
+    <color name="w_track">#FF2B2B32</color>
+    <color name="w_on_accent">#FF0C0C0F</color>
+    <color name="w_accent">#FF8A94FF</color>
+    <color name="w_good">#FF4DBB8F</color>
+    <color name="w_sleep">#FF6F9DFF</color>
+    <color name="w_train">#FFEA8A76</color>
+    <color name="w_money">#FFE5A94E</color>
+</resources>

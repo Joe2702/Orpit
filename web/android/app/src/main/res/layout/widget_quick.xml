@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Quick log: one tap to the habit list, or straight into logging a
+     workout, a night or an expense. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/widget_card" android:padding="8dp" android:orientation="horizontal">
+        <LinearLayout android:id="@+id/w_habit" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+            android:layout_marginHorizontal="3dp" android:background="@drawable/widget_tile" android:gravity="center" android:orientation="vertical"
+            android:contentDescription="@string/w_habit">
+            <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_w_habit" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/w_habit_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp"
+                android:text="@string/w_habit" android:textColor="@color/w_text" android:textSize="12sp" android:fontFamily="sans-serif-medium" android:maxLines="1" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/w_workout" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+            android:layout_marginHorizontal="3dp" android:background="@drawable/widget_tile" android:gravity="center" android:orientation="vertical"
+            android:contentDescription="@string/w_workout">
+            <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_w_train" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/w_workout_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp"
+                android:text="@string/w_workout" android:textColor="@color/w_text" android:textSize="12sp" android:fontFamily="sans-serif-medium" android:maxLines="1" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/w_sleep" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+            android:layout_marginHorizontal="3dp" android:background="@drawable/widget_tile" android:gravity="center" android:orientation="vertical"
+            android:contentDescription="@string/w_sleep">
+            <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_w_sleep" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/w_sleep_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp"
+                android:text="@string/w_sleep" android:textColor="@color/w_text" android:textSize="12sp" android:fontFamily="sans-serif-medium" android:maxLines="1" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/w_expense" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+            android:layout_marginHorizontal="3dp" android:background="@drawable/widget_tile" android:gravity="center" android:orientation="vertical"
+            android:contentDescription="@string/w_expense">
+            <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_w_money" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/w_expense_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp"
+                android:text="@string/w_expense" android:textColor="@color/w_text" android:textSize="12sp" android:fontFamily="sans-serif-medium" android:maxLines="1" />
+        </LinearLayout>
+</LinearLayout>

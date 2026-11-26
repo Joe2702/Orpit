@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The sleep widget in the picker: its size, the picture people choose it by,
+     and what it's for. Drawn by Widgets.java; refreshed every half hour, when
+     Orpit goes to the background, and (steps) after the background step check. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="110dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/widget_sleep"
+    android:previewImage="@drawable/w_preview_sleep"
+    android:description="@string/w_sleep_desc"
+    android:widgetCategory="home_screen" />

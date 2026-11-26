@@ -301,6 +301,8 @@ export const AR_SITE: Record<string, string | Plural> = {
   "All open": "كل المفتوحة",
   "Added to {place}": "أُضيفت إلى {place}",
   "Results": "النتائج",
+  // A change that was saved (the phone's "Saved" meant money put aside).
+  "Saved": "تم الحفظ",
   "{n} days with something done": { one: "يوم واحد أُنجز فيه شيء", two: "يومان أُنجز فيهما شيء", few: "{n} أيام أُنجز فيها شيء", many: "{n} يومًا أُنجز فيها شيء", other: "{n} يوم أُنجز فيه شيء" },
   "out of {n}": "من أصل {n}",
   "No lists yet": "لا قوائم بعد",

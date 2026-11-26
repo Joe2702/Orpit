@@ -20,15 +20,6 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
     }
 
-    /** Every analytics widget, so placing several doesn't leave some stale. */
-    private static final StatsWidget[] STATS_WIDGETS = {
-        new HabitsWidget(),
-        new WorkoutsWidget(),
-        new SleepWidget(),
-        new FinanceWidget(),
-        new SummaryWidget(),
-    };
-
     /**
      * Refresh the home-screen widgets as the app leaves the foreground.
      *
@@ -49,13 +40,7 @@ public class MainActivity extends BridgeActivity {
     public void onPause() {
         super.onPause();
         SmsReceiver.visible = false;
-        try {
-            OrbitWidget.refreshAll(this);
-            for (StatsWidget w : STATS_WIDGETS) {
-                w.refresh(this);
-            }
-        } catch (Exception ignored) {
-            // A widget refresh must never be able to disturb the app itself.
-        }
+        // Widgets.refreshAll never throws: a widget must not disturb the app.
+        Widgets.refreshAll(this);
     }
 }
