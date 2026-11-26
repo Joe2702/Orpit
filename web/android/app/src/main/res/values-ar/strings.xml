@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Arabic for what Android itself shows: the widget picker and the words a
+     widget has before Orpit writes its data. Everything else comes from the
+     app in the person's language. -->
+<resources>
+    <string name="w_today">اليوم</string>
+    <string name="w_habits">العادات</string>
+    <string name="w_steps">الخطوات</string>
+    <string name="w_sleep">النوم</string>
+    <string name="w_training">التمرين</string>
+    <string name="w_money">المال</string>
+    <string name="w_quick">تسجيل سريع</string>
+    <string name="w_habit">عادة</string>
+    <string name="w_workout">تمرين</string>
+    <string name="w_expense">مصروف</string>
+    <string name="w_open">افتح Orpit لإعداد هذا</string>
+    <string name="w_today_desc">يومك في لمحة: العادات والخطوات والنوم والإنفاق</string>
+    <string name="w_habits_desc">عادات اليوم وكم أنجزت منها. وسّعها لترى القائمة</string>
+    <string name="w_steps_desc">خطوات اليوم تملأ دائرة نحو هدفك</string>
+    <string name="w_sleep_desc">نوم الليلة الماضية، وأسبوعك على شكل أعمدة</string>
+    <string name="w_training_desc">دقائق التمرين هذا الأسبوع، يومًا بيوم</string>
+    <string name="w_money_desc">ما أنفقته هذا الشهر مقارنةً بميزانيتك</string>
+    <string name="w_quick_desc">لمسة واحدة لإنجاز عادة أو تسجيل تمرين أو ليلة أو مصروف</string>
+</resources>

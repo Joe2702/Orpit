@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The quick widget in the picker: its size, the picture people choose it by,
+     and what it's for. Drawn by Widgets.java; refreshed every half hour, when
+     Orpit goes to the background, and (steps) after the background step check. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="40dp"
+    android:minResizeWidth="180dp"
+    android:minResizeHeight="40dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="1"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/widget_quick"
+    android:previewImage="@drawable/w_preview_quick"
+    android:description="@string/w_quick_desc"
+    android:widgetCategory="home_screen" />

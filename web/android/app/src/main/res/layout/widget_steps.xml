@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Steps: today's count inside a ring that fills toward the goal. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/widget_card" android:padding="@dimen/w_pad">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+            <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_w_steps" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/w_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:layout_marginStart="6dp" android:text="@string/w_steps" android:textColor="@color/w_text2"
+                android:textSize="13sp" android:fontFamily="sans-serif-medium" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+        <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:layout_marginTop="6dp">
+            <ImageView android:id="@+id/w_ring" android:layout_width="match_parent" android:layout_height="match_parent"
+                android:scaleType="fitCenter" android:importantForAccessibility="no" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical">
+                <TextView android:id="@+id/w_value" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textColor="@color/w_text" android:textSize="22sp" android:fontFamily="sans-serif-medium" android:maxLines="1" />
+                <TextView android:id="@+id/w_sub" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textColor="@color/w_text3" android:textSize="11sp" android:maxLines="1" />
+            </LinearLayout>
+        </FrameLayout>
+        <TextView android:id="@+id/w_caption" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="6dp" android:gravity="center" android:textColor="@color/w_text2" android:textSize="12sp"
+            android:fontFamily="sans-serif-medium" android:maxLines="1" android:ellipsize="end" />
+    </LinearLayout>
+</FrameLayout>

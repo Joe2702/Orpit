@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Habits: a ring of today's progress, and today's habits beside it when
+     there's room (the widget shows or hides the list by its width). -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/widget_card" android:padding="@dimen/w_pad">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+            <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_w_habit" android:importantForAccessibility="no" />
+            <TextView android:id="@+id/w_title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:layout_marginStart="6dp" android:text="@string/w_habits" android:textColor="@color/w_text2"
+                android:textSize="13sp" android:fontFamily="sans-serif-medium" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+            android:layout_marginTop="8dp" android:gravity="center_vertical" android:orientation="horizontal">
+            <FrameLayout android:id="@+id/w_ring_box" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent">
+                <ImageView android:id="@+id/w_ring" android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:scaleType="fitCenter" android:importantForAccessibility="no" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/w_value" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:textColor="@color/w_text" android:textSize="22sp" android:fontFamily="sans-serif-medium" android:maxLines="1" />
+                    <TextView android:id="@+id/w_sub" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:textColor="@color/w_text3" android:textSize="11sp" android:maxLines="1" />
+                </LinearLayout>
+            </FrameLayout>
+            <LinearLayout android:id="@+id/w_list" android:layout_width="0dp" android:layout_weight="1.4" android:layout_height="wrap_content"
+                android:layout_marginStart="12dp" android:orientation="vertical" android:visibility="gone">
+                <LinearLayout android:id="@+id/w_h1" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingVertical="3dp">
+                    <ImageView android:id="@+id/w_h1_icon" android:layout_width="16dp" android:layout_height="16dp" android:importantForAccessibility="no" />
+                    <TextView android:id="@+id/w_h1_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:textColor="@color/w_text" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/w_h2" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingVertical="3dp">
+                    <ImageView android:id="@+id/w_h2_icon" android:layout_width="16dp" android:layout_height="16dp" android:importantForAccessibility="no" />
+                    <TextView android:id="@+id/w_h2_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:textColor="@color/w_text" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/w_h3" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingVertical="3dp">
+                    <ImageView android:id="@+id/w_h3_icon" android:layout_width="16dp" android:layout_height="16dp" android:importantForAccessibility="no" />
+                    <TextView android:id="@+id/w_h3_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:textColor="@color/w_text" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/w_h4" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingVertical="3dp">
+                    <ImageView android:id="@+id/w_h4_icon" android:layout_width="16dp" android:layout_height="16dp" android:importantForAccessibility="no" />
+                    <TextView android:id="@+id/w_h4_name" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:textColor="@color/w_text" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" />
+                </LinearLayout>
+                <TextView android:id="@+id/w_more" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="2dp"
+                    android:textColor="@color/w_text3" android:textSize="12sp" android:maxLines="1" />
+            </LinearLayout>
+        </LinearLayout>
+        <TextView android:id="@+id/w_caption" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="6dp" android:textColor="@color/w_text2" android:textSize="12sp"
+            android:fontFamily="sans-serif-medium" android:maxLines="1" android:ellipsize="end" />
+    </LinearLayout>
+</FrameLayout>

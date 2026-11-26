@@ -114,76 +114,86 @@
 
         </activity>
 
-        <!-- Home-screen widget: today's progress plus one-tap logging. -->
+        <!-- Home-screen widgets, drawn by Widgets.java from what the app writes
+             (web/src/lib/widgetData.ts). One provider each, so each is its own
+             entry in the widget picker, with its own preview. The class names
+             are the first widgets', so ones already placed become these. -->
         <receiver
-            android:name=".OrbitWidget"
+            android:name=".SummaryWidget"
+            android:label="@string/w_today"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_orbit_info" />
+                android:resource="@xml/widget_today_info" />
         </receiver>
-
-        <!-- Analytics widgets. One provider each, so every module is its own
-             entry in the widget picker and the user can place any combination
-             without a configuration screen. They share a layout and a provider
-             description; only the picker label differs. -->
         <receiver
             android:name=".HabitsWidget"
-            android:label="@string/widget_habits_label"
+            android:label="@string/w_habits"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_stats_info" />
+                android:resource="@xml/widget_habits_info" />
         </receiver>
         <receiver
-            android:name=".WorkoutsWidget"
-            android:label="@string/widget_workouts_label"
+            android:name=".StepsWidget"
+            android:label="@string/w_steps"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_stats_info" />
+                android:resource="@xml/widget_steps_info" />
         </receiver>
         <receiver
             android:name=".SleepWidget"
-            android:label="@string/widget_sleep_label"
+            android:label="@string/w_sleep"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_stats_info" />
+                android:resource="@xml/widget_sleep_info" />
+        </receiver>
+        <receiver
+            android:name=".WorkoutsWidget"
+            android:label="@string/w_training"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_training_info" />
         </receiver>
         <receiver
             android:name=".FinanceWidget"
-            android:label="@string/widget_finance_label"
+            android:label="@string/w_money"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_stats_info" />
+                android:resource="@xml/widget_money_info" />
         </receiver>
         <receiver
-            android:name=".SummaryWidget"
-            android:label="@string/widget_summary_label"
+            android:name=".OrbitWidget"
+            android:label="@string/w_quick"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_stats_info" />
+                android:resource="@xml/widget_quick_info" />
         </receiver>
 
         <!-- Bank messages as they arrive. Exported because the system sends

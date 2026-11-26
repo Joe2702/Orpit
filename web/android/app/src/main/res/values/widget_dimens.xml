@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The launcher's own corner radius from Android 12 (values-v31). -->
+    <dimen name="w_radius">24dp</dimen>
+    <dimen name="w_pad">14dp</dimen>
+</resources>
